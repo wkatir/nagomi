@@ -1,0 +1,27 @@
+node_modules
+.DS_Store
+dist
+*.local
+.env
+.tanstack
+.wrangler
+__unconfig*
+src/paraglide
+public/fonts/*.woff2
+seed/seed.sql
+seed/sync-texts.sql
+worker-configuration.d.ts
+
+# Local Worker secrets
+.dev.vars
+.dev.vars.*
+
+.vercel
+.output
+.nitro
+.env*.local
+.dev.vars*
+
+*.pdf
+/Base de datos ejemplo.sql
+/23d8fed8-716f-4c7f-bf6d-de075fbd32d3.jpg

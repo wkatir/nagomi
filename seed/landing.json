@@ -1,0 +1,206 @@
+{
+  "concerns": {
+    "oily-acne": {
+      "es": {
+        "description": "Limpiadores, tónicos y cremas ligeras para la piel con brillo o con tendencia a las imperfecciones. Elígelos uno por uno o sigue una rutina completa, en el orden en que se usan.",
+        "seoTitle": "Productos para piel grasa e imperfecciones",
+        "seoDescription": "Limpiadores, tónicos y cremas ligeras para piel con brillo o con tendencia a imperfecciones. Compra en El Salvador, por producto o en rutina completa."
+      },
+      "en": {
+        "description": "Cleansers, toners and light moisturizers for shiny skin or skin prone to blemishes. Pick them one by one or follow a complete routine, in the order they are used.",
+        "seoTitle": "Products for oily and blemish-prone skin",
+        "seoDescription": "Cleansers, toners and light moisturizers for shiny or blemish-prone skin. Shop in El Salvador, product by product or as a complete routine."
+      }
+    },
+    "sensitive": {
+      "es": {
+        "description": "Limpiadores, cremas y protección solar indicados para piel sensible. Elígelos uno por uno o sigue una rutina completa, en el orden en que se usan.",
+        "seoTitle": "Productos para piel sensible",
+        "seoDescription": "Limpiadores, cremas y protección solar indicados para piel sensible. Compra en El Salvador, por producto o en rutina completa."
+      },
+      "en": {
+        "description": "Cleansers, moisturizers and sun protection indicated for sensitive skin. Pick them one by one or follow a complete routine, in the order they are used.",
+        "seoTitle": "Products for sensitive skin",
+        "seoDescription": "Cleansers, moisturizers and sun protection indicated for sensitive skin. Shop in El Salvador, product by product or as a complete routine."
+      }
+    },
+    "hydration": {
+      "es": {
+        "description": "Sérums, cremas hidratantes y brumas para la hidratación de todos los días. Elígelos uno por uno o combínalos en una rutina completa.",
+        "seoTitle": "Productos para hidratar la piel",
+        "seoDescription": "Sérums, cremas hidratantes y brumas para la hidratación diaria. Compra en El Salvador, por producto o en rutina completa."
+      },
+      "en": {
+        "description": "Serums, moisturizers and mists for everyday hydration. Pick them one by one or combine them in a complete routine.",
+        "seoTitle": "Products to hydrate your skin",
+        "seoDescription": "Serums, moisturizers and mists for everyday hydration. Shop in El Salvador, product by product or as a complete routine."
+      }
+    },
+    "dark-spots": {
+      "es": {
+        "description": "Sérums, cremas y protección solar para el tono desigual y las marcas de la piel. Elígelos uno por uno o sigue una rutina completa, en el orden en que se usan.",
+        "seoTitle": "Productos para manchas y tono de la piel",
+        "seoDescription": "Sérums, cremas y protección solar para el tono desigual y las marcas de la piel. Compra en El Salvador, por producto o en rutina completa."
+      },
+      "en": {
+        "description": "Serums, moisturizers and sun protection for uneven tone and marks on the skin. Pick them one by one or follow a complete routine, in the order they are used.",
+        "seoTitle": "Products for dark spots and skin tone",
+        "seoDescription": "Serums, moisturizers and sun protection for uneven tone and marks on the skin. Shop in El Salvador, product by product or as a complete routine."
+      }
+    },
+    "pores": {
+      "es": {
+        "description": "Limpiadores, tónicos y pads para el cuidado de los poros y el brillo. Elígelos uno por uno o sigue una rutina completa, en el orden en que se usan.",
+        "seoTitle": "Productos para el cuidado de los poros",
+        "seoDescription": "Limpiadores, tónicos y pads para el cuidado de los poros y el brillo. Compra en El Salvador, por producto o en rutina completa."
+      },
+      "en": {
+        "description": "Cleansers, toners and pads to care for pores and shine. Pick them one by one or follow a complete routine, in the order they are used.",
+        "seoTitle": "Products for pore care",
+        "seoDescription": "Cleansers, toners and pads to care for pores and shine. Shop in El Salvador, product by product or as a complete routine."
+      }
+    },
+    "sun-protection": {
+      "es": {
+        "description": "Protectores solares y esencias solares para usar cada mañana. Combínalos con tu limpieza y tu crema en una rutina completa.",
+        "seoTitle": "Protector solar para uso diario",
+        "seoDescription": "Protectores solares y esencias solares para usar cada mañana. Compra en El Salvador, por producto o en rutina completa."
+      },
+      "en": {
+        "description": "Sunscreens and sun essences to use every morning. Combine them with your cleanser and moisturizer in a complete routine.",
+        "seoTitle": "Sunscreen for everyday use",
+        "seoDescription": "Sunscreens and sun essences to use every morning. Shop in El Salvador, product by product or as a complete routine."
+      }
+    },
+    "firmness": {
+      "es": {
+        "description": "Sérums, cremas y mascarillas indicados para la firmeza de la piel. Elígelos uno por uno o combínalos en una rutina completa.",
+        "seoTitle": "Productos para la firmeza de la piel",
+        "seoDescription": "Sérums, cremas y mascarillas indicados para la firmeza de la piel. Compra en El Salvador, por producto o en rutina completa."
+      },
+      "en": {
+        "description": "Serums, moisturizers and masks indicated for skin firmness. Pick them one by one or combine them in a complete routine.",
+        "seoTitle": "Products for skin firmness",
+        "seoDescription": "Serums, moisturizers and masks indicated for skin firmness. Shop in El Salvador, product by product or as a complete routine."
+      }
+    }
+  },
+  "categories": {
+    "cleansing-oil": {
+      "es": {
+        "description": "Aceites que retiran el maquillaje y el protector solar. Son el primer paso de la limpieza y van antes del limpiador.",
+        "seoTitle": "Aceites limpiadores para el rostro",
+        "seoDescription": "Aceites limpiadores que retiran el maquillaje y el protector solar. Compra en El Salvador, uno por uno o en rutina completa."
+      },
+      "en": {
+        "description": "Oils that remove makeup and sunscreen. They are the first step of cleansing and go before the cleanser.",
+        "seoTitle": "Cleansing oils for the face",
+        "seoDescription": "Cleansing oils that remove makeup and sunscreen. Shop in El Salvador, one by one or as a complete routine."
+      }
+    },
+    "cleanser": {
+      "es": {
+        "description": "Limpiadores para el rostro, para usar en la mañana y en la noche. Van después del aceite limpiador, si lo usas.",
+        "seoTitle": "Limpiadores faciales",
+        "seoDescription": "Limpiadores faciales para la mañana y la noche. Compra en El Salvador, uno por uno o en rutina completa."
+      },
+      "en": {
+        "description": "Face cleansers to use in the morning and at night. They go after the cleansing oil, if you use one.",
+        "seoTitle": "Face cleansers",
+        "seoDescription": "Face cleansers for morning and night. Shop in El Salvador, one by one or as a complete routine."
+      }
+    },
+    "toner": {
+      "es": {
+        "description": "Tónicos que se usan después de limpiar y antes del sérum.",
+        "seoTitle": "Tónicos faciales",
+        "seoDescription": "Tónicos faciales para usar después de limpiar y antes del sérum. Compra en El Salvador, uno por uno o en rutina completa."
+      },
+      "en": {
+        "description": "Toners used after cleansing and before the serum.",
+        "seoTitle": "Face toners",
+        "seoDescription": "Face toners to use after cleansing and before the serum. Shop in El Salvador, one by one or as a complete routine."
+      }
+    },
+    "toner-pad": {
+      "es": {
+        "description": "Pads humedecidos que se usan después de limpiar, en el mismo paso que el tónico.",
+        "seoTitle": "Pads faciales",
+        "seoDescription": "Pads faciales humedecidos para usar después de limpiar. Compra en El Salvador, uno por uno o en rutina completa."
+      },
+      "en": {
+        "description": "Pre-soaked pads used after cleansing, in the same step as the toner.",
+        "seoTitle": "Face toner pads",
+        "seoDescription": "Pre-soaked face pads to use after cleansing. Shop in El Salvador, one by one or as a complete routine."
+      }
+    },
+    "serum": {
+      "es": {
+        "description": "Sérums y ampollas con una función específica, como hidratar o unificar el tono. Van después del tónico y antes de la crema.",
+        "seoTitle": "Sérums y ampollas faciales",
+        "seoDescription": "Sérums y ampollas faciales para usar después del tónico y antes de la crema. Compra en El Salvador, uno por uno o en rutina completa."
+      },
+      "en": {
+        "description": "Serums and ampoules with a specific function, such as hydrating or evening out tone. They go after the toner and before the moisturizer.",
+        "seoTitle": "Face serums and ampoules",
+        "seoDescription": "Face serums and ampoules to use after the toner and before the moisturizer. Shop in El Salvador, one by one or as a complete routine."
+      }
+    },
+    "mist": {
+      "es": {
+        "description": "Brumas para refrescar e hidratar la piel durante el día.",
+        "seoTitle": "Brumas faciales",
+        "seoDescription": "Brumas faciales para refrescar e hidratar la piel durante el día. Compra en El Salvador, una por una o en rutina completa."
+      },
+      "en": {
+        "description": "Mists to refresh and hydrate the skin during the day.",
+        "seoTitle": "Face mists",
+        "seoDescription": "Face mists to refresh and hydrate the skin during the day. Shop in El Salvador, one by one or as a complete routine."
+      }
+    },
+    "moisturizer": {
+      "es": {
+        "description": "Cremas hidratantes para la mañana y la noche. Van después del sérum y, en la mañana, antes del protector solar.",
+        "seoTitle": "Cremas hidratantes faciales",
+        "seoDescription": "Cremas hidratantes faciales para la mañana y la noche. Compra en El Salvador, una por una o en rutina completa."
+      },
+      "en": {
+        "description": "Moisturizers for morning and night. They go after the serum and, in the morning, before the sunscreen.",
+        "seoTitle": "Face moisturizers",
+        "seoDescription": "Face moisturizers for morning and night. Shop in El Salvador, one by one or as a complete routine."
+      }
+    },
+    "sunscreen": {
+      "es": {
+        "description": "Protectores solares y esencias solares. Son el último paso de la rutina de la mañana, después de la crema.",
+        "seoTitle": "Protectores solares para el rostro",
+        "seoDescription": "Protectores solares y esencias solares para el rostro. Compra en El Salvador, uno por uno o en rutina completa."
+      },
+      "en": {
+        "description": "Sunscreens and sun essences. They are the last step of the morning routine, after the moisturizer.",
+        "seoTitle": "Sunscreens for the face",
+        "seoDescription": "Sunscreens and sun essences for the face. Shop in El Salvador, one by one or as a complete routine."
+      }
+    },
+    "mask": {
+      "es": {
+        "description": "Mascarillas para usar después de limpiar, con la frecuencia que indica cada producto.",
+        "seoTitle": "Mascarillas faciales",
+        "seoDescription": "Mascarillas faciales para usar después de limpiar. Compra en El Salvador, una por una o en rutina completa."
+      },
+      "en": {
+        "description": "Masks to use after cleansing, as often as each product indicates.",
+        "seoTitle": "Face masks",
+        "seoDescription": "Face masks to use after cleansing. Shop in El Salvador, one by one or as a complete routine."
+      }
+    }
+  },
+  "routines": {
+    "oily-acne-prone-skin": "oily-acne",
+    "sensitive-skin": "sensitive",
+    "pores-and-shine": "pores",
+    "dark-spots-and-tone": "dark-spots",
+    "three-step-morning": "sun-protection",
+    "double-cleanse-and-protect": "sun-protection"
+  }
+}

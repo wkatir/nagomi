@@ -1,0 +1,64 @@
+{
+  "slides": [
+    {
+      "image": "hero-2.webp",
+      "mobileImage": "hero-2-mobile.webp",
+      "linkPath": "/products",
+      "es": {
+        "title": "Belleza y cuidado personal, sin adivinar.",
+        "body": "Para lo que usas cada día, con entrega en El Salvador.",
+        "ctaLabel": "Comprar ahora"
+      },
+      "en": {
+        "title": "Beauty and personal care, without the guesswork.",
+        "body": "For what you use every day, delivered in El Salvador.",
+        "ctaLabel": "Shop now"
+      }
+    },
+    {
+      "image": "hero-2.webp",
+      "mobileImage": "hero-2-mobile.webp",
+      "linkPath": "/needs/sun-protection",
+      "es": {
+        "title": "Protección solar para el calor de todos los días.",
+        "body": "Protectores SPF 50+ ligeros, sin residuo blanco.",
+        "ctaLabel": "Ver protectores"
+      },
+      "en": {
+        "title": "Sun protection for everyday heat.",
+        "body": "Lightweight SPF 50+, no white cast.",
+        "ctaLabel": "Shop sunscreen"
+      }
+    },
+    {
+      "image": "hero-4.webp",
+      "mobileImage": "hero-4-mobile.webp",
+      "linkPath": "/routines",
+      "es": {
+        "title": "Rutinas completas.",
+        "body": "Productos que se usan juntos, en el orden en que van.",
+        "ctaLabel": "Ver rutinas"
+      },
+      "en": {
+        "title": "Complete routines.",
+        "body": "Products used together, in the order they go.",
+        "ctaLabel": "See routines"
+      }
+    },
+    {
+      "image": "hero-4.webp",
+      "mobileImage": "hero-4-mobile.webp",
+      "linkPath": "/needs/sensitive",
+      "es": {
+        "title": "Calma para la piel sensible.",
+        "body": "Productos suaves para la piel que se irrita con facilidad.",
+        "ctaLabel": "Ver productos"
+      },
+      "en": {
+        "title": "Soothing care for sensitive skin.",
+        "body": "Gentle products for skin that gets irritated easily.",
+        "ctaLabel": "See products"
+      }
+    }
+  ]
+}

@@ -1,0 +1,105 @@
+{
+	"$schema": "https://biomejs.dev/schemas/2.4.5/schema.json",
+	"vcs": {
+		"enabled": false,
+		"clientKind": "git",
+		"useIgnoreFile": false
+	},
+	"files": {
+		"ignoreUnknown": false,
+		"includes": [
+			"**/src/**/*",
+			"**/.vscode/**/*",
+			"**/index.html",
+			"**/vite.config.ts",
+			"!**/src/routeTree.gen.ts",
+			"!**/src/paraglide",
+			"!**/src/db/auth-schema.ts",
+			"!**/src/styles.css"
+		]
+	},
+	"formatter": {
+		"enabled": true,
+		"indentStyle": "tab"
+	},
+	"assist": { "actions": { "source": { "organizeImports": "on" } } },
+	"linter": {
+		"enabled": true,
+		"rules": {
+			"recommended": true,
+			"correctness": {
+				"noRestrictedElements": {
+					"level": "error",
+					"options": {
+						"elements": {
+							"button": "Use Button (or a wrapper in components/store/ui or components/admin) from components/ui.",
+							"input": "Use Input, Checkbox or Switch from components/ui.",
+							"select": "Use NativeSelect from components/ui.",
+							"textarea": "Use Textarea from components/ui.",
+							"label": "Use Label, or FieldLabel inside a Field, from components/ui."
+						}
+					}
+				}
+			}
+		}
+	},
+	"javascript": {
+		"formatter": {
+			"quoteStyle": "double"
+		}
+	},
+	"overrides": [
+		{
+			"includes": ["**/src/routes/_store/**", "**/src/components/store/**"],
+			"linter": {
+				"rules": {
+					"style": {
+						"noRestrictedImports": {
+							"level": "error",
+							"options": {
+								"paths": {
+									"#/components/ui/button": "The store has its own buttons: StoreButton or StoreIconButton (components/store/ui/store-button).",
+									"#/components/ui/button.tsx": "The store has its own buttons: StoreButton or StoreIconButton (components/store/ui/store-button)."
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		{
+			"includes": [
+				"**/src/components/store/ui/store-button.tsx",
+				"**/src/components/store/quantity-stepper.tsx"
+			],
+			"linter": {
+				"rules": { "style": { "noRestrictedImports": "off" } }
+			}
+		},
+		{
+			"includes": ["**/src/components/ui/**"],
+			"linter": {
+				"rules": {
+					"a11y": {
+						"useFocusableInteractive": "off",
+						"useSemanticElements": "off",
+						"useKeyWithClickEvents": "off",
+						"noRedundantRoles": "off"
+					},
+					"suspicious": {
+						"noArrayIndexKey": "off",
+						"noDoubleEquals": "off",
+						"noDocumentCookie": "off"
+					},
+					"security": {
+						"noDangerouslySetInnerHtml": "off"
+					},
+					"correctness": {
+						"useExhaustiveDependencies": "off",
+						"noRestrictedElements": "off"
+					}
+				}
+			}
+		}
+	]
+}

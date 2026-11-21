@@ -1,0 +1,316 @@
+@import 'tailwindcss';
+@plugin '@tailwindcss/typography';
+@import 'tw-animate-css';
+
+/* Light only: no element ever gets .dark, so generated dark: classes stay inert (Tailwind's default would follow the OS setting). */
+@custom-variant dark (&:is(.dark *));
+
+/* Satoshi is self-hosted (Fontshare ITF FFL). Binaries are restored locally, not committed. */
+@font-face { font-family: Satoshi; src: url('/fonts/satoshi-regular.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: Satoshi; src: url('/fonts/satoshi-medium.woff2') format('woff2'); font-weight: 500; font-display: swap; }
+@font-face { font-family: Satoshi; src: url('/fonts/satoshi-bold.woff2') format('woff2'); font-weight: 700; font-display: swap; }
+
+/* Monochrome palette: white, ink and one photo grey; colour comes from photography only. */
+:root {
+  --radius: 2px;
+  --background: #ffffff;
+  --foreground: #111111;
+  --foreground-secondary: #333333;
+  --card: #ffffff;
+  --card-foreground: #111111;
+  --popover: #ffffff;
+  --popover-foreground: #111111;
+  --primary: #111111;
+  --primary-foreground: #ffffff;
+  --secondary: #f2f2f0;
+  --secondary-foreground: #111111;
+  --muted: #f2f2f0;
+  --muted-foreground: #6b6b6b;
+  --accent: #f2f2f0;
+  --accent-foreground: #111111;
+  --destructive: #b42318;
+  --border: #e6e6e3;
+  /* 3.47:1 on white: text field boundaries need 3:1 (WCAG 1.4.11); the hairline is only 1.25:1. */
+  --input: #8a8a86;
+  --ring: #111111;
+  --success: #1e7a46;
+  /* Text-only states that are not errors (short shelf life, unpaid). */
+  --warning: #8a5300;
+  --photo: #f2f2f0;
+  /* Ink surface for full-bleed black bands. */
+  --inverse: #111111;
+  --inverse-foreground: #ffffff;
+  --inverse-muted: #bdbdbd;
+  --inverse-border: #333333;
+  /* Admin charts: one ink series; the grey only with a second encoding (dashes, direct labels). */
+  --chart-1: #111111;
+  --chart-2: #6b6b6b;
+  /* Control heights. Use h-(--control-lg), not a made-up h-control-lg: cn merges the var()
+     syntax with a component's own h-9 but keeps both when it cannot read the class. */
+  --control-sm: 2rem;
+  --control-md: 2.25rem;
+  --control-lg: 2.75rem;
+  --control-xl: 3.25rem;
+  --sidebar: var(--background);
+  --sidebar-foreground: var(--foreground);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: var(--accent);
+  --sidebar-accent-foreground: var(--accent-foreground);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--ring);
+}
+
+@theme inline {
+  --font-sans: 'Satoshi', ui-sans-serif, system-ui, sans-serif;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-foreground-secondary: var(--foreground-secondary);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-photo: var(--photo);
+  --color-inverse: var(--inverse);
+  --color-inverse-foreground: var(--inverse-foreground);
+  --color-inverse-muted: var(--inverse-muted);
+  --color-inverse-border: var(--inverse-border);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --radius-xs: var(--radius);
+  --radius-sm: var(--radius);
+  --radius-md: var(--radius);
+  --radius-lg: var(--radius);
+  --radius-xl: var(--radius);
+  --radius-2xl: var(--radius);
+  --radius-3xl: var(--radius);
+  --radius-4xl: var(--radius);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+}
+
+@theme {
+  /* The standard size names follow the type scale, so generated parts (text-xs, text-base)
+     match it: tailwind-merge knows these names, unlike a made-up text-ui. */
+  --text-xs: 0.8125rem;
+  --text-xs--line-height: 1.4;
+  --text-base: 1.0625rem;
+  --text-base--line-height: 1.5;
+
+  /* Vertical rhythm between page sections (py-section-sm, py-section). Vary them. */
+  --spacing-section-sm: clamp(2.5rem, 1.75rem + 3vw, 4.5rem);
+  --spacing-section: clamp(3.5rem, 2.25rem + 5vw, 7rem);
+
+  /* Back office density: every admin screen takes its spacing from these (px-admin-page,
+     mb-admin-section, gap-admin-stack, p-admin-card, min-h-admin-header), so it changes here.
+     Page padding, space under page-level blocks (header, tabs, summaries), space between
+     stacked cards, padding inside a card, height of a card header. */
+  --spacing-admin-page: 1.5rem;
+  --spacing-admin-section: 1rem;
+  --spacing-admin-stack: 0.75rem;
+  --spacing-admin-card: 1rem;
+  --spacing-admin-header: 3rem;
+
+  /* Flat surfaces; floating layers (popover, menu, dialog, sheet) get one quiet shadow plus a hairline.
+     0 0 #0000 rather than none, because Tailwind composes shadows and rings in one box-shadow. */
+  --shadow-2xs: 0 0 #0000;
+  --shadow-xs: 0 0 #0000;
+  --shadow-sm: 0 0 #0000;
+  --shadow-md: 0 1px 2px rgb(17 17 17 / 0.08);
+  --shadow-lg: 0 1px 2px rgb(17 17 17 / 0.08);
+  --shadow-xl: 0 1px 2px rgb(17 17 17 / 0.08);
+  --shadow-2xl: 0 1px 2px rgb(17 17 17 / 0.08);
+}
+
+@layer base {
+  * { @apply border-border; }
+  html { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+  body { @apply bg-background font-sans text-[1.0625rem] leading-normal text-foreground; }
+  ::selection { background: var(--foreground); color: var(--background); }
+  :focus-visible { outline: 2px solid var(--ring); outline-offset: 3px; }
+  /* Icons keep the brand stroke, also inside generated components (author CSS beats the SVG attribute). */
+  .lucide { stroke-width: 1.5; }
+}
+
+/* One focus indicator on every control, generated or not. Unlayered on purpose: it must beat the
+   utilities layer (outline-none, focus-visible:ring-*), and it survives forced-colours mode, where
+   box-shadow rings are dropped. */
+:where(button, a, input, select, textarea, [role='checkbox'], [role='radio'], [role='switch'], [role='tab'], [role='slider'])[data-slot]:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 3px;
+  box-shadow: none;
+}
+
+/* A grouped input (search box, money field: one bordered box holding the input and its
+   buttons) draws the indicator around the box, so it is one frame with the icon inside, not a
+   ring around the inner input that stops short of the buttons. The border keeps its colour. */
+[data-slot='input-group-control']:focus-visible {
+  outline: none;
+}
+[data-slot='input-group']:has([data-slot='input-group-control']:focus-visible) {
+  border-color: var(--input);
+  outline: 2px solid var(--ring);
+  outline-offset: 3px;
+  box-shadow: none;
+}
+
+/* Embla and Radix crop their panels to the box, which cut the 5px focus outline of a control at the
+   edge (a link at the edge of a slide, a filter checkbox). The carousel keeps its crop but lets the
+   outline out. The accordion panel is padded and pulled back by the same amount, so the layout
+   does not move and the height animation is untouched. */
+[data-slot='carousel-content'] {
+  overflow: clip;
+  overflow-clip-margin: 0.5rem;
+}
+[data-slot='accordion-content'] {
+  margin-inline: -0.5rem;
+  padding-inline: 0.5rem;
+}
+
+/* The search box of a command list fills a box that clips what is outside it, so its ring is
+   drawn inside. */
+[data-slot='command-input']:focus-visible {
+  outline-offset: -2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Type scale, fluid between 390px and 1440px; Satoshi Bold needs negative tracking at large sizes.
+   Named type-* (not text-*) so cn/tailwind-merge does not mistake them for colours and drop them
+   next to text-muted-foreground. Do not combine with text-<size>, leading-* or tracking-* on one element. */
+@utility type-display {
+  font-size: clamp(2.75rem, 1.5rem + 5.4vw, 6rem);
+  line-height: 0.92;
+  letter-spacing: -0.055em;
+  font-weight: 700;
+}
+@utility type-h1 {
+  font-size: clamp(2.25rem, 1.55rem + 2.9vw, 4.25rem);
+  line-height: 0.98;
+  letter-spacing: -0.05em;
+  font-weight: 700;
+}
+@utility type-h2 {
+  font-size: clamp(1.75rem, 1.3rem + 1.9vw, 3rem);
+  line-height: 1.02;
+  letter-spacing: -0.045em;
+  font-weight: 700;
+}
+@utility type-h3 {
+  font-size: clamp(1.25rem, 1.1rem + 0.6vw, 1.625rem);
+  line-height: 1.12;
+  letter-spacing: -0.03em;
+  font-weight: 700;
+}
+@utility type-lead {
+  font-size: clamp(1.0625rem, 1rem + 0.35vw, 1.25rem);
+  line-height: 1.5;
+}
+@utility type-body {
+  font-size: 1.0625rem;
+  line-height: 1.5;
+}
+@utility type-small {
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+@utility type-meta {
+  font-size: 0.8125rem;
+  line-height: 1.4;
+}
+@utility type-ui {
+  font-size: 0.9375rem;
+  line-height: 1.45;
+}
+@utility type-title {
+  font-size: 1.375rem;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  font-weight: 700;
+}
+@utility type-stat {
+  font-size: 1.75rem;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Page widths, all with 24px (16px below 768px) side gutters. */
+@utility container-page {
+  width: min(100% - 48px, 1320px);
+  margin-inline: auto;
+  @media (width < 48rem) { width: calc(100% - 32px); }
+}
+
+/* A 44px tap area around a small control (a 16px checkbox) that takes no room: it reaches to
+   the left, above and below the control and stops at its right edge, where the label starts. */
+@utility tap-area {
+  position: relative;
+  &::before {
+    content: '';
+    position: absolute;
+    inset-block: -0.875rem;
+    inset-inline: -0.875rem 0;
+  }
+}
+
+/* Ink section: flips the semantic tokens so shadcn components and store primitives inside it
+   (buttons, links, hairlines, focus ring) render light on ink without per-call classes. */
+@utility surface-inverse {
+  background-color: var(--inverse);
+  color: var(--inverse-foreground);
+  --background: var(--inverse);
+  --foreground: var(--inverse-foreground);
+  --foreground-secondary: #dcdcdc;
+  --primary: var(--inverse-foreground);
+  --primary-foreground: var(--inverse);
+  --secondary: #222222;
+  --secondary-foreground: var(--inverse-foreground);
+  --muted: #222222;
+  --muted-foreground: var(--inverse-muted);
+  --accent: #222222;
+  --accent-foreground: var(--inverse-foreground);
+  --border: var(--inverse-border);
+  --ring: var(--inverse-foreground);
+  --destructive: #f97066;
+  --success: #5cc28a;
+  --warning: #f0b45a;
+}
+
+/* Legibility scrim for text set on photography: bottom fade on phones, bottom-left on wider screens. */
+@utility scrim {
+  background-image: linear-gradient(to top, rgb(17 17 17 / 0.72) 0%, rgb(17 17 17 / 0.32) 42%, rgb(17 17 17 / 0) 70%);
+  @media (width >= 48rem) {
+    background-image:
+      linear-gradient(to top, rgb(17 17 17 / 0.55) 0%, rgb(17 17 17 / 0) 55%),
+      linear-gradient(to right, rgb(17 17 17 / 0.45) 0%, rgb(17 17 17 / 0) 60%);
+  }
+}

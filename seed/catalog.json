@@ -1,0 +1,919 @@
+{
+  "settings": {
+    "name": "Eclalune", "legalName": "Eclalune, S.A.S.", "currency": "USD", "defaultLocale": "es", "email": "contact@eclalune.com",
+    "whatsappNumber": "+50362862515",
+    "timeZone": "America/El_Salvador", "countryCode": "SV", "taxIdLabel": "NIT", "orderCodePrefix": "ECL",
+    "maxQuantityPerLine": 20, "minShelfLifeDays": 365, "expiryWarningDays": 180, "returnWindowDays": 8,
+    "foundingYear": 2026,
+    "acceptedPaymentMethods": ["bank_transfer", "cash_on_delivery", "cash"]
+  },
+  "promises": [
+    {
+      "slug": "pay-on-delivery", "published": true,
+      "es": { "title": "Pagas al recibir", "body": "Pagas en efectivo cuando recibes tu pedido, o por transferencia bancaria si lo prefieres." },
+      "en": { "title": "Pay on delivery", "body": "Pay in cash when your order arrives, or by bank transfer if you prefer." }
+    },
+    {
+      "slug": "authorized-supplier", "published": false,
+      "es": { "title": "Originales y sin abrir", "body": "Cada producto te llega nuevo, sin abrir y en su empaque original." },
+      "en": { "title": "Authentic and unopened", "body": "Every product reaches you new, unopened and in its original packaging." }
+    },
+    {
+      "slug": "batch-and-expiry", "published": true,
+      "es": { "title": "Sabes cuándo vence", "body": "Antes de la entrega te enviamos el lote y la fecha de vencimiento de cada producto." },
+      "en": { "title": "Know when it expires", "body": "Before delivery, we send you the batch number and expiry date of every product." }
+    },
+    {
+      "slug": "returns", "published": true,
+      "es": { "title": "{return_window_days} días para devolver", "body": "Si no te convence, devuélvelo sin usar dentro de los {return_window_days} días después de recibirlo y te devolvemos lo que pagaste." },
+      "en": { "title": "{return_window_days} days to return", "body": "Not right for you? Return it unused within {return_window_days} days of delivery and we refund what you paid." }
+    },
+    {
+      "slug": "whatsapp-orders", "published": true,
+      "es": { "title": "Te ayudamos a elegir", "body": "Escríbenos por WhatsApp con lo que necesitas y te sugerimos qué usar y en qué orden." },
+      "en": { "title": "We help you choose", "body": "Message us on WhatsApp with what you need, and we'll suggest what to use and in what order." }
+    },
+    {
+      "slug": "sanitary-registration", "published": false,
+      "es": { "title": "Con registro sanitario", "body": "Cada producto está registrado ante la Superintendencia de Regulación Sanitaria para venderse en El Salvador." },
+      "en": { "title": "Sanitary registration", "body": "Every product is registered with El Salvador's health regulator (SRS) for sale in the country." }
+    }
+  ],
+  "brands": [
+    {
+      "slug": "skin1004", "name": "SKIN1004", "countryCode": "KR",
+      "es": { "description": "SKIN1004 es una marca coreana de cuidado de la piel construida alrededor de la centella asiática de Madagascar. Recolecta su centella siguiendo los principios GACP (buenas prácticas agrícolas y de recolección), hoja por hoja y sin dañar las raíces. Sus líneas incluyen Centella, Hyalu-Cica, Poremizing, Tone Brightening, Tea-Trica y Probio-Cica." },
+      "en": { "description": "SKIN1004 is a Korean skincare brand built around centella asiatica from Madagascar. Its centella is harvested under GACP principles (Good Agricultural and Collection Practices), leaf by leaf and without harming the roots. Its lines include Centella, Hyalu-Cica, Poremizing, Tone Brightening, Tea-Trica and Probio-Cica." }
+    },
+    {
+      "slug": "face-republic", "name": "Face Republic", "countryCode": "KR",
+      "es": { "description": "Face Republic es una marca coreana de cuidado de la piel de Face Republic Korea, con sede en Seúl. Trabaja con ingredientes de origen natural y fórmulas de baja irritación, y se enfoca en devolverle a la piel su salud natural más que en seguir tendencias. Organiza su catálogo en cuatro líneas por color, cada una para una necesidad distinta de la piel." },
+      "en": { "description": "Face Republic is a Korean skincare brand from Face Republic Korea, based in Seoul. It works with naturally derived ingredients and low-irritation formulas, and focuses on restoring the skin's natural health rather than following trends. Its range is organized into four color-coded lines, each for a different skin need." }
+    }
+  ],
+  "categories": [
+    { "slug": "cleansing-oil", "routineStep": 1, "es": "Aceite limpiador", "en": "Cleansing oil" },
+    { "slug": "cleanser", "routineStep": 2, "es": "Limpiador", "en": "Cleanser" },
+    { "slug": "toner", "routineStep": 3, "es": "Tónico", "en": "Toner" },
+    { "slug": "toner-pad", "routineStep": 3, "es": "Pads", "en": "Toner pads" },
+    { "slug": "serum", "routineStep": 4, "es": "Sérum y ampolla", "en": "Serum & ampoule" },
+    { "slug": "mist", "routineStep": 4, "es": "Bruma", "en": "Mist" },
+    { "slug": "moisturizer", "routineStep": 5, "es": "Crema hidratante", "en": "Moisturizer" },
+    { "slug": "sunscreen", "routineStep": 6, "es": "Protector solar", "en": "Sunscreen" },
+    { "slug": "mask", "routineStep": 7, "es": "Mascarilla", "en": "Mask" }
+  ],
+  "concerns": [
+    { "slug": "oily-acne", "es": "Grasa e imperfecciones", "en": "Oily & blemish-prone" },
+    { "slug": "sensitive", "es": "Piel sensible", "en": "Sensitive skin" },
+    { "slug": "hydration", "es": "Hidratación", "en": "Hydration" },
+    { "slug": "dark-spots", "es": "Manchas y tono", "en": "Dark spots & tone" },
+    { "slug": "pores", "es": "Poros", "en": "Pores" },
+    { "slug": "sun-protection", "es": "Protección solar", "en": "Sun protection" },
+    { "slug": "firmness", "es": "Firmeza", "en": "Firmness" }
+  ],
+  "products": [
+    {
+      "slug": "skin1004-light-cleansing-oil", "brand": "skin1004", "category": "cleansing-oil", "status": "published", "image": "s1004-light-cleansing-oil", "lifestyle": true,
+      "concerns": ["oily-acne", "sensitive"], "skinTypes": ["normal", "dry", "combination", "sensitive"], "name": "Madagascar Centella Light Cleansing Oil",
+      "variant": { "sku": "S1004-LCO-200", "size": 200, "unit": "ml", "price": 2400 },
+      "inci": "Ethylhexyl Stearate, Cetyl Ethylhexanoate, Sorbeth-30 Tetraoleate, Caprylic/Capric Triglyceride, Citrus Aurantium Bergamia (Bergamot) Fruit Oil, Centella Asiatica Extract, Simmondsia Chinensis (Jojoba) Seed Oil, Olea Europaea (Olive) Fruit Oil, Helianthus Annuus (Sunflower) Seed Oil, Ethylhexylglycerin, Pelargonium Graveolens Flower Oil, Rosa Damascena Flower Oil, Limonene, Linalool",
+      "es": {
+        "tagline": "Aceite limpiador ligero que disuelve maquillaje y protector solar.",
+        "description": "Aceite limpiador de textura acuosa con centella asiática de Madagascar y seis aceites vegetales. Disuelve maquillaje, protector solar, suciedad y exceso de sebo; con un poco de agua se vuelve una emulsión lechosa que se enjuaga sin dejar residuo graso.\n\nLa marca lo describe como un aceite micelar que limpia sin dejar sensación de piel tirante ni reseca, que es suave con la zona de los ojos y que tiene una fórmula no comedogénica que ayuda a mantener los poros despejados. Por su textura tan ligera, también lo considera adecuado para quienes usan aceite limpiador por primera vez.\n\nAceite acuoso de color marrón claro que limpia con suavidad y se enjuaga sin dejar residuo aceitoso.",
+        "benefits": [
+          "Disuelve maquillaje, protector solar y exceso de sebo",
+          "Se enjuaga sin residuo graso ni sensación tirante, según la marca",
+          "Suave con la zona de los ojos, según la marca",
+          "Fórmula no comedogénica, según la marca"
+        ],
+        "howToUse": "1. Con las manos secas, aplica unas cuantas pulsaciones sobre el rostro seco.\n2. Masajea en círculos suaves para disolver el maquillaje y las impurezas.\n3. Agrega un poco de agua y sigue masajeando hasta formar una emulsión ligera y lechosa.\n4. Enjuaga bien con agua tibia.",
+        "keyIngredients": [
+          "Extracto de centella asiática de Madagascar: según la marca, es conocida por sus propiedades calmantes y deja la piel con sensación de calma y equilibrio.",
+          "Aceites de bergamota, girasol, oliva, jojoba, geranio y rosa damascena: según la marca, son los seis aceites vegetales que, junto con la centella, disuelven el maquillaje, el protector solar y el exceso de sebo."
+        ],
+        "cautions": "Aplícalo con las manos y el rostro secos; el agua va después. Si tu piel es sensible o tiene tendencia al acné, la marca sugiere probarlo primero en una zona pequeña. Si durante el uso, o al exponerte al sol después de usarlo, notas manchas rojas, hinchazón o picazón, suspende su uso y consulta a un especialista. No lo apliques sobre heridas. Guárdalo fuera del alcance de niñas y niños y lejos de la luz solar directa."
+      },
+      "en": {
+        "tagline": "A light cleansing oil that dissolves makeup and sunscreen.",
+        "description": "A watery cleansing oil with Madagascar centella asiatica and six plant oils. It dissolves makeup, sunscreen, dirt and excess sebum; with a little water it turns into a milky emulsion that rinses off with no oily residue.\n\nThe brand describes it as a micellar cleansing oil that cleans without leaving skin feeling stripped or dry, that is gentle on the eye area and that has a non-comedogenic formula that helps keep pores clear. Because the texture is so light, the brand also considers it suitable for people trying an oil cleanser for the first time.\n\nA watery, light-brown oil that cleanses smoothly and rinses off without an oily residue.",
+        "benefits": [
+          "Dissolves makeup, sunscreen and excess sebum",
+          "Rinses off with no oily residue or tight feel, according to the brand",
+          "Gentle on the eye area, according to the brand",
+          "Non-comedogenic formula, according to the brand"
+        ],
+        "howToUse": "1. With dry hands, apply a few pumps onto a dry face.\n2. Massage in gentle circles to dissolve makeup and impurities.\n3. Add a little water and keep massaging until it forms a light, milky emulsion.\n4. Rinse well with lukewarm water.",
+        "keyIngredients": [
+          "Madagascar centella asiatica extract: according to the brand, it is known for its soothing properties and leaves skin feeling calm and balanced.",
+          "Bergamot, sunflower, olive, jojoba, geranium and damask rose oils: according to the brand, the six plant oils that, together with centella, dissolve makeup, sunscreen and excess sebum."
+        ],
+        "cautions": "Apply it with dry hands on a dry face; water comes after. If your skin is sensitive or acne-prone, the brand suggests trying it on a small area first. If you notice red spots, swelling or itching during use, or when exposed to the sun after use, stop using it and consult a specialist. Do not apply it on wounds. Keep it out of reach of children and away from direct sunlight."
+      }
+    },
+    {
+      "slug": "skin1004-hyalu-cica-water-fit-sun-serum", "brand": "skin1004", "category": "sunscreen", "status": "published", "image": "s1004-water-fit-sun-serum", "lifestyle": true,
+      "concerns": ["sun-protection", "hydration", "sensitive"], "skinTypes": ["normal", "dry", "combination", "sensitive"], "name": "Hyalu-Cica Water-Fit Sun Serum SPF50+ PA++++",
+      "variant": { "sku": "S1004-WFSS-50", "size": 50, "unit": "ml", "price": 2200 },
+      "es": {
+        "tagline": "Protector solar SPF50+ PA++++ con textura de sérum, sin efecto blanco.",
+        "description": "Protector solar con filtros químicos, SPF50+ PA++++, en una textura de sérum muy ligera. Se absorbe rápido, no se siente pegajoso ni grasoso y deja un acabado luminoso, sin efecto blanco.\n\nSegún la marca, es hidratante y calmante, y su Green Complex, una mezcla de siete tipos de extractos, aporta antioxidantes y minerales. Entre sus ingredientes clave están la centella asiática de Madagascar y el ácido hialurónico. La marca también indica que está formulado sin benzofenona-3, -4 ni -8, octinoxato, avobenzona ni octocrileno.\n\nCrema ligera tipo sérum, sin sensación pegajosa, que se absorbe con facilidad y deja un acabado luminoso.",
+        "benefits": [
+          "Protección UVA y UVB con SPF50+ PA++++",
+          "Textura de sérum ligera que se absorbe rápido",
+          "Acabado luminoso, sin efecto blanco ni sensación grasosa",
+          "Hidrata y calma la piel, según la marca"
+        ],
+        "howToUse": "1. Úsalo como último paso de tu rutina de cuidado.\n2. Aplica una cantidad adecuada de manera uniforme en las zonas expuestas al sol, como rostro, cuello, brazos y piernas.",
+        "keyIngredients": [
+          "Extracto de centella asiática de Madagascar: según la marca, es conocida por sus propiedades calmantes y deja la piel con sensación de calma.",
+          "Ácido hialurónico: según la marca, ayuda a mantener la humedad de la piel.",
+          "Green Complex: una mezcla de siete tipos de extractos que, según la marca, aporta antioxidantes y minerales.",
+          "Extractos de hoja de té verde, brote de trigo, hoja de camelia y brote de brócoli: también forman parte de los ingredientes clave que destaca la marca."
+        ],
+        "cautions": "Aplica en cantidad suficiente antes de exponerte al sol y reaplica con frecuencia, sobre todo después de sudar, nadar o secarte con toalla. Si tu piel es sensible o tiene tendencia al acné, la marca sugiere probarlo primero en una zona pequeña. Si durante el uso, o al exponerte al sol después de usarlo, notas manchas rojas, hinchazón o picazón, suspende su uso y consulta a un especialista. No lo apliques sobre heridas. Guárdalo fuera del alcance de niñas y niños y lejos de la luz solar directa."
+      },
+      "en": {
+        "tagline": "SPF50+ PA++++ sunscreen in a serum texture, with no white cast.",
+        "description": "A sunscreen with chemical filters, SPF50+ PA++++, in a very light serum texture. It absorbs fast, does not feel sticky or greasy and leaves a dewy finish with no white cast.\n\nAccording to the brand, it is hydrating and soothing, and its Green Complex, a blend of seven types of extracts, adds antioxidants and minerals. Its key ingredients include Madagascar centella asiatica and hyaluronic acid. The brand also states it is made without benzophenone-3, -4 or -8, octinoxate, avobenzone or octocrylene.\n\nA light, serum-like cream with no stickiness that absorbs easily and leaves a glowy finish.",
+        "benefits": [
+          "UVA and UVB protection with SPF50+ PA++++",
+          "Light serum texture that absorbs fast",
+          "Dewy finish with no white cast or greasy feel",
+          "Hydrates and soothes, according to the brand"
+        ],
+        "howToUse": "1. Use it as the last step of your care routine.\n2. Apply an appropriate amount evenly to skin exposed to the sun, such as face, neck, arms and legs.",
+        "keyIngredients": [
+          "Madagascar centella asiatica extract: according to the brand, it is known for its soothing properties and leaves skin feeling calm.",
+          "Hyaluronic acid: according to the brand, it helps maintain skin moisture.",
+          "Green Complex: a blend of seven types of extracts that, according to the brand, adds antioxidants and minerals.",
+          "Green tea leaf, wheat sprout, camellia leaf and broccoli sprout extracts: also among the key ingredients the brand highlights."
+        ],
+        "cautions": "Apply generously before sun exposure and reapply often, especially after sweating, swimming or towel drying. If your skin is sensitive or acne-prone, the brand suggests trying it on a small area first. If you notice red spots, swelling or itching during use, or when exposed to the sun after use, stop using it and consult a specialist. Do not apply it on wounds. Keep it out of reach of children and away from direct sunlight."
+      }
+    },
+    {
+      "slug": "face-republic-calming-salicylic-acid-cleanser", "brand": "face-republic", "category": "cleanser", "status": "published", "image": "fr-salicylic-cleanser", "lifestyle": true,
+      "concerns": ["oily-acne", "pores", "sensitive"], "skinTypes": ["normal", "dry", "oily", "combination", "sensitive"], "name": "Calming Salicylic Acid Cleanser",
+      "variant": { "sku": "FR-SAC-100", "size": 100, "unit": "ml", "price": 1700 },
+      "inci": "Water, Sodium Cocoyl Alaninate, Glycerin, Dipropylene Glycol, Coco-Glucoside, Acrylates/C10-30 Alkyl Acrylate Crosspolymer, Potassium Cocoate, Lauryl Glucoside, Pentylene Glycol, Laminaria Japonica Extract, Eclipta Prostrata Leaf Extract, Centella Asiatica Extract, Ficus Carica (Fig) Fruit Extract, Camellia Sinensis Leaf Extract, Melaleuca Alternifolia (Tea Tree) Leaf Extract, Ulmus Davidiana Root Extract, Amaranthus Caudatus Seed Extract, Rosmarinus Officinalis (Rosemary) Leaf Oil, Hydrogenated Lecithin, Polyglyceryl-10 Laurate, Salicylic Acid (5,000ppm), Decylene Glycol, Butylene Glycol, Disodium EDTA, Fructooligosaccharides, Beta-Glucan, Hydrolyzed Hyaluronic Acid, Ceramide NP, 1,2-Hexanediol, Hydroxyacetophenone, Ethylhexylglycerin, Tocopherol",
+      "es": {
+        "tagline": "Gel limpiador con ácido salicílico que ayuda a limpiar los poros sin resecar.",
+        "description": "Limpiador en gel con 0.5 % de ácido salicílico (BHA) que forma una espuma suave. Retira suciedad, grasa e impurezas y, según la marca, exfolia con suavidad, ayuda a limpiar los poros y a controlar el exceso de grasa, y deja la piel limpia y sin tirantez.\n\nLa marca lo formula con un pH ligeramente ácido y con extractos de té verde, centella asiática, árbol de té, higo y alga laminaria para ayudar a calmar la piel, más betaglucano, ceramida NP y ácido hialurónico hidrolizado para ayudar a mantenerla hidratada. Lo indica para todo tipo de piel, en especial grasa o con tendencia al acné, y lo describe como suave incluso para piel sensible.\n\nGel que forma una espuma suave con agua; deja la piel limpia y sin resecar.",
+        "benefits": [
+          "Según la marca, ayuda a limpiar los poros y a controlar el exceso de grasa.",
+          "Espuma suave con pH ligeramente ácido, según la marca.",
+          "Deja la piel limpia, suave y sin sensación de tirantez.",
+          "Limpia con tensioactivos de origen vegetal; fórmula vegana, según la marca."
+        ],
+        "howToUse": "Lávate las manos y moja tu rostro. Pon una cantidad adecuada en las manos y haz suficiente espuma. Masajea el rostro con suavidad, con las yemas de los dedos y en círculos, durante 1 o 2 minutos. Enjuaga bien con agua tibia, seca con toques suaves con una toalla limpia y aplica enseguida tu tónico o crema. Si usas maquillaje o protector solar, la marca sugiere retirarlo antes con un aceite o agua limpiadora.",
+        "keyIngredients": [
+          "Ácido salicílico (BHA, 0.5 %): según la marca, exfolia con suavidad y ayuda a limpiar los poros y a controlar la grasa.",
+          "Extractos de té verde, centella asiática, árbol de té, higo y alga laminaria: según la marca, ayudan a calmar la piel y a equilibrar la grasa.",
+          "Betaglucano, ceramida NP y ácido hialurónico hidrolizado: según la marca, ayudan a mantener la hidratación y a fortalecer la barrera natural de la piel."
+        ],
+        "cautions": "Si entra en los ojos, enjuágalos con agua y, si notas alguna anomalía, consulta a un especialista. No lo uses en niñas y niños de 3 años o menos ni sobre heridas. Úsalo con cuidado si lo aplicas en grandes cantidades sobre zonas extensas o por períodos largos, porque pueden aparecer efectos secundarios. La marca indica evitarlo si tienes hipersensibilidad al ácido salicílico, diabetes, problemas de circulación sanguínea, insuficiencia renal, una infección o enrojecimiento, entre otros, y durante la menstruación, el embarazo o si existe la posibilidad de embarazo, porque la piel o el cuerpo pueden volverse hipersensibles o los síntomas pueden empeorar. Si durante o después del uso aparecen en la zona manchas rojas, hinchazón, picazón u otra reacción por la exposición directa al sol, consulta a un especialista. Guárdalo fuera del alcance de niñas y niños y lejos del sol directo. Su aroma natural viene de aceites esenciales, según la marca."
+      },
+      "en": {
+        "tagline": "A salicylic acid gel cleanser that helps clear pores without drying.",
+        "description": "A gel cleanser with 0.5% salicylic acid (BHA) that works into a soft foam. It removes dirt, oil and impurities and, according to the brand, gently exfoliates, helps clear pores and control excess oil, and leaves skin clean without tightness.\n\nThe brand formulates it with a mildly acidic pH and with green tea, centella asiatica, tea tree, fig and laminaria kelp extracts to help calm the skin, plus beta-glucan, ceramide NP and hydrolyzed hyaluronic acid to help keep it hydrated. It lists it for all skin types, especially oily and acne-prone skin, and describes it as gentle enough for sensitive skin.\n\nA gel that works into a soft foam with water; leaves skin clean, not dry.",
+        "benefits": [
+          "Helps clear pores and control excess oil, according to the brand.",
+          "A soft foam with a mildly acidic pH, according to the brand.",
+          "Leaves skin clean, soft and free of tightness.",
+          "Cleanses with plant-derived surfactants; vegan formula, according to the brand."
+        ],
+        "howToUse": "Wash your hands and wet your face. Work an appropriate amount into a rich lather in your hands. Gently massage it over your face with your fingertips in circles for 1 to 2 minutes. Rinse well with lukewarm water, pat dry with a clean towel and apply your toner or moisturizer right away. If you wear makeup or sunscreen, the brand suggests removing it first with a cleansing oil or water.",
+        "keyIngredients": [
+          "Salicylic acid (BHA, 0.5%): according to the brand, gently exfoliates and helps clear pores and control oil.",
+          "Green tea, centella asiatica, tea tree, fig and laminaria kelp extracts: according to the brand, help calm the skin and balance oil.",
+          "Beta-glucan, ceramide NP and hydrolyzed hyaluronic acid: according to the brand, help maintain hydration and strengthen the skin's natural barrier."
+        ],
+        "cautions": "If it gets into your eyes, rinse with water and see a specialist if you notice anything abnormal. Do not use on children aged 3 or under or on wounds. Take care when applying large amounts over large areas or using it for long periods, as side effects may occur. The brand says to avoid it if you are hypersensitive to salicylic acid or have diabetes, blood circulation problems, kidney failure, an infection or redness, among others, and during menstruation, pregnancy or if pregnancy is possible, as the skin or body may become hypersensitive or symptoms may worsen. If red spots, swelling, itching or other reactions appear on the area due to direct sunlight during or after use, see a specialist. Keep out of children's reach and away from direct sunlight. Its natural scent comes from essential oils, according to the brand."
+      }
+    },
+    {
+      "slug": "face-republic-purity-sun-essence", "brand": "face-republic", "category": "sunscreen", "status": "published", "image": "fr-purity-sun-essence", "lifestyle": true,
+      "concerns": ["sun-protection", "hydration"], "skinTypes": ["normal", "dry", "oily", "combination", "sensitive"], "name": "Purity Sun Essence SPF50+ PA++++",
+      "variant": { "sku": "FR-PSE-50", "size": 50, "unit": "ml", "price": 1900 },
+      "inci": "Water, Dibutyl Adipate, Propanediol, Diethylamino Hydroxybenzoyl Hexyl Benzoate, Polymethylsilsesquioxane, Ethylhexyl Triazone, Niacinamide, Methylene Bis-Benzotriazolyl Tetramethylbutylphenol, Coco-Caprylate/Caprate, Caprylyl Methicone, Diethylhexyl Butamido Triazone, Glycerin, Butylene Glycol, 1,2-Hexanediol, Hippophae Rhamnoides Fruit Extract, Daucus Carota Sativa (Carrot) Root Extract, Rosa Canina Fruit Extract, Pyrus Malus (Apple) Fruit Extract, Aloe Ferox Leaf Extract, Artemisia Capillaris Extract, Artemisia Vulgaris Oil, Prunus Armeniaca (Apricot) Juice, Hydrogenated Lecithin, Pentylene Glycol, Behenyl Alcohol, Poly C10-30 Alkyl Acrylate, Polyglyceryl-3 Methylglucose Distearate, Decyl Glucoside, Tromethamine, Carbomer, Acrylates/C10-30 Alkyl Acrylate Crosspolymer, Sodium Stearoyl Glutamate, Polyacrylate Crosspolymer-6, Ethylhexylglycerin, Adenosine, Xanthan Gum, t-Butyl Alcohol, Tocopherol, Ascorbic Acid, Moringa Oleifera Seed Oil, Ceramide NP, Phytosphingosine",
+      "es": {
+        "tagline": "Protector solar ligero SPF50+ PA++++, sin residuo blanco y resistente al agua.",
+        "description": "Protector solar en textura de esencia con SPF50+ PA++++ que protege de los rayos UVA y UVB. Se extiende fácil, se absorbe rápido y deja un acabado fresco, no pegajoso y sin residuo blanco. Es resistente al agua, según su etiqueta.\n\nAdemás de la protección solar, la marca le suma niacinamida, adenosina y ceramida NP con extractos vegetales; según la marca, ayudan a mejorar el tono apagado, la firmeza y la elasticidad, y a mantener la piel hidratada. No lleva oxibenzona ni octinoxato y, según la marca, tampoco fragancia artificial; la marca lo indica para todo tipo de piel, incluida la sensible.\n\nEsencia ligera y lechosa que se absorbe rápido; acabado fresco, no pegajoso y sin residuo blanco.",
+        "benefits": [
+          "SPF50+ PA++++ contra rayos UVA y UVB; resistente al agua, según la etiqueta.",
+          "Textura ligera, sin residuo blanco ni sensación pegajosa.",
+          "Según la marca, ayuda a mejorar el tono apagado y la firmeza de la piel.",
+          "Para uso diario y antes del maquillaje; fórmula vegana, según la marca."
+        ],
+        "howToUse": "Lávate el rostro y las manos. Como último paso de tu rutina, pon una línea de protector a lo largo de dos dedos (una en cada dedo). Aplícalo en el rostro y en todas las zonas expuestas al sol, como cuello, manos, brazos y piernas. Extiéndelo de manera uniforme y da toques suaves para que se absorba. Aplícalo de 15 a 20 minutos antes de salir.",
+        "keyIngredients": [
+          "Filtros UVA y UVB: dan la protección SPF50+ PA++++.",
+          "Niacinamida: según la marca, ayuda a mejorar el tono apagado.",
+          "Adenosina: según la marca, ayuda a la firmeza y la elasticidad de la piel.",
+          "Ceramida NP y extractos de frutas y plantas, como espino amarillo y rosa canina: según la marca, ayudan a mantener la piel hidratada."
+        ],
+        "cautions": "La marca recomienda volver a aplicarlo cada 3 a 4 horas para una protección más eficaz. Al final del día, la marca recomienda retirarlo con una doble limpieza completa. Si durante o después del uso aparecen en la zona manchas rojas, hinchazón, picazón u otra reacción por la exposición directa al sol, consulta a un especialista. No lo apliques sobre heridas. Guárdalo fuera del alcance de niñas y niños y lejos del sol directo."
+      },
+      "en": {
+        "tagline": "A lightweight SPF50+ PA++++ sunscreen with no white cast, water resistant.",
+        "description": "An essence-texture sunscreen with SPF50+ PA++++ that protects against UVA and UVB rays. It spreads easily, absorbs quickly and leaves a fresh, non-sticky finish with no white cast. It is water resistant, as stated on its label.\n\nBeyond sun protection, the brand adds niacinamide, adenosine and ceramide NP with plant extracts; according to the brand, they help improve dull skin tone, firmness and elasticity, and keep skin hydrated. It contains no oxybenzone or octinoxate and, according to the brand, no artificial fragrance; the brand lists it for all skin types, including sensitive skin.\n\nA light, milky essence that absorbs quickly; fresh, non-sticky finish with no white cast.",
+        "benefits": [
+          "SPF50+ PA++++ against UVA and UVB rays; water resistant, as stated on the label.",
+          "Lightweight texture with no white cast or sticky feel.",
+          "Helps improve dull tone and skin firmness, according to the brand.",
+          "For daily use and before makeup; vegan formula, according to the brand."
+        ],
+        "howToUse": "Wash your face and hands. As the last step of your routine, squeeze a line of sunscreen along two fingers (one line per finger). Apply it to your face and every area exposed to the sun, such as neck, hands, arms and legs. Spread evenly and pat gently until absorbed. Apply 15 to 20 minutes before going out.",
+        "keyIngredients": [
+          "UVA and UVB filters: provide the SPF50+ PA++++ protection.",
+          "Niacinamide: according to the brand, helps improve dull skin tone.",
+          "Adenosine: according to the brand, helps skin firmness and elasticity.",
+          "Ceramide NP and fruit and plant extracts such as sea buckthorn and rosa canina: according to the brand, help keep skin hydrated."
+        ],
+        "cautions": "The brand recommends reapplying every 3 to 4 hours for more effective protection. At the end of the day, the brand recommends removing it with a thorough double cleanse. If red spots, swelling, itching or other reactions appear on the area due to direct sunlight during or after use, see a specialist. Do not apply to wounds. Keep out of children's reach and away from direct sunlight."
+      }
+    },
+    {
+      "slug": "face-republic-blooming-time-bakuchiol-cream", "brand": "face-republic", "category": "moisturizer", "status": "published", "image": "fr-bakuchiol-cream", "lifestyle": true,
+      "concerns": ["firmness", "dark-spots"], "skinTypes": ["normal", "dry", "oily", "combination"], "name": "Blooming Time Bakuchiol Cream",
+      "variant": { "sku": "FR-BTBC", "size": 50, "unit": "ml", "price": 2000 },
+      "inci": "Purified Water, Hydrogenated Polyisobutene, Polyglyceryl-3 Methylglucose Distearate, Neopentyl Glycol Diheptanoate, Methylpropanediol, Glyceryl Stearate, Niacinamide, Cyclohexasiloxane, Cetyl Dimethicone, Caprylic/Capric Triglyceride, Cetearyl Alcohol, Panthenol, Betaine, Hydrogenated Poly(C6-14 Olefin), Bakuchiol (5,000ppm), Calendula Officinalis Flower Extract, Malt Extract, Houttuynia Cordata Extract, Lupinus Albus Seed Extract, Pelargonium Graveolens Flower Oil, Sodium Hyaluronate, Helianthus Annuus (Sunflower) Seed Oil, Salvia Officinalis (Sage) Oil, Olea Europaea (Olive) Fruit Oil, Citrus Aurantium Bergamia (Bergamot) Fruit Oil, Dicaprylyl Ether, Polyglyceryl-10 Laurate, Hydrogenated Polydecene, Sodium Polyacrylate, Ethylhexyl Stearate, Sodium Stearoyl Glutamate, Tocopheryl Acetate, Allantoin, Adenosine, Disodium EDTA, Trideceth-6, Butylene Glycol, Tocopherol, 1,2-Hexanediol, Hydroxyacetophenone, Ethylhexylglycerin, Citronellol, Geraniol, Linalool",
+      "es": {
+        "tagline": "Crema de día y de noche con bakuchiol, una alternativa vegetal al retinol.",
+        "description": "Crema nutritiva para usar de día y de noche, con 0.5 % de bakuchiol de origen vegetal. Según la marca, ayuda a mejorar la firmeza y la elasticidad de la piel y a reducir la apariencia de líneas finas y arrugas, mientras la mantiene hidratada.\n\nLa marca presenta el bakuchiol como una alternativa vegetal al retinol, más suave con la piel. Lo combina con extracto de semilla de lupino blanco, adenosina para el cuidado de las arrugas, niacinamida para un tono de aspecto más luminoso y parejo, y aceites de origen vegetal que, según la marca, nutren la piel cansada. Es una fórmula vegana, según la marca.\n\nCrema ligera tipo loción; se extiende fácil, se absorbe rápido, no deja sensación pegajosa y tiene un aroma floral y cítrico suave.",
+        "benefits": [
+          "Según la marca, ayuda a mejorar la firmeza y la elasticidad.",
+          "Ayuda a suavizar la apariencia de líneas finas y arrugas, según la marca.",
+          "Ayuda a que el tono se vea más luminoso y parejo, según la marca.",
+          "Hidrata con una textura ligera que no deja sensación pegajosa."
+        ],
+        "howToUse": "Con el rostro limpio, después del tónico o sérum, toma una cantidad del tamaño de la punta de un dedo. Extiéndela en rostro y cuello y da toques suaves para que se absorba. Úsala como último paso de tu rutina, de día o de noche.",
+        "keyIngredients": [
+          "Bakuchiol (0.5 %): alternativa vegetal al retinol que, según la marca, ayuda a la firmeza y la elasticidad.",
+          "Extracto de semilla de lupino blanco: rico en péptidos, según la marca; acompaña al bakuchiol en el cuidado de la firmeza.",
+          "Adenosina: según la marca, ayuda a suavizar la apariencia de las arrugas.",
+          "Niacinamida: según la marca, ayuda a que el tono se vea más luminoso y parejo.",
+          "Aceites de origen vegetal: según la marca, nutren e hidratan la piel cansada."
+        ],
+        "cautions": "La marca indica que, si la usas de día, apliques protector solar. También aconseja cuidado al combinarla con productos con mucha vitamina C o con ingredientes ácidos, porque la combinación puede irritar la piel. Úsala dentro de los 12 meses después de abrirla, ya que su color puede cambiar un poco con el tiempo, y guárdala lejos del calor intenso y del sol directo. Su aroma viene de aceites esenciales como los de geranio y bergamota, según la marca. Si durante o después del uso aparecen en la zona manchas rojas, hinchazón, picazón u otra reacción por la exposición directa al sol, consulta a un especialista. No la apliques sobre heridas. Guárdala fuera del alcance de niñas y niños."
+      },
+      "en": {
+        "tagline": "A day and night cream with bakuchiol, a plant-based alternative to retinol.",
+        "description": "A nourishing cream for day and night with 0.5% plant-derived bakuchiol. According to the brand, it helps improve skin firmness and elasticity and reduce the look of fine lines and wrinkles while keeping skin hydrated.\n\nThe brand presents bakuchiol as a plant-based alternative to retinol that is gentler on the skin. It pairs it with white lupin seed extract, adenosine for wrinkle care, niacinamide for a more radiant, even-looking tone, and plant-derived oils that, according to the brand, nourish tired skin. The brand describes it as a vegan formula.\n\nA light, lotion-like cream; spreads easily, absorbs quickly, leaves no sticky feel and has a soft floral and citrus scent.",
+        "benefits": [
+          "Helps improve firmness and elasticity, according to the brand.",
+          "Helps soften the look of fine lines and wrinkles, according to the brand.",
+          "Helps skin tone look more radiant and even, according to the brand.",
+          "Hydrates with a light texture that leaves no sticky feel."
+        ],
+        "howToUse": "On clean skin, after toner or serum, take a fingertip-sized amount. Spread it over face and neck and pat gently until absorbed. Use it as the last step of your routine, morning or night.",
+        "keyIngredients": [
+          "Bakuchiol (0.5%): a plant-based alternative to retinol that, according to the brand, helps firmness and elasticity.",
+          "White lupin seed extract: rich in peptides, according to the brand; supports bakuchiol in firming care.",
+          "Adenosine: according to the brand, helps soften the look of wrinkles.",
+          "Niacinamide: according to the brand, helps skin tone look more radiant and even.",
+          "Plant-derived oils: according to the brand, nourish and moisturize tired skin."
+        ],
+        "cautions": "The brand says to apply sunscreen if you use it during the day. It also advises care when combining it with products high in vitamin C or with acidic ingredients, as the combination may irritate the skin. Use within 12 months of opening, as its color may shift slightly over time, and keep it away from high heat and direct sunlight. Its scent comes from essential oils such as geranium and bergamot, according to the brand. If red spots, swelling, itching or other reactions appear on the area due to direct sunlight during or after use, see a specialist. Do not apply to wounds. Keep out of children's reach."
+      }
+    },
+    {
+      "slug": "face-republic-blooming-essence-rose-mist", "brand": "face-republic", "category": "mist", "status": "published", "image": "fr-rose-mist", "lifestyle": true,
+      "concerns": ["hydration"], "skinTypes": ["normal", "dry", "oily", "combination", "sensitive"], "name": "Blooming Essence Rose Mist",
+      "variant": { "sku": "FR-BERM", "size": 100, "unit": "ml", "price": 2200 },
+      "inci": "Purified Water, Triethylhexanoin, Hydrogenated Poly(C6-14 Olefin), Pentylene Glycol, Niacinamide, Glycerin, Methylpropanediol, Butylene Glycol, Rosa Damascena Flower Water (5023.311ppm), Panthenol, Helianthus Annuus (Sunflower) Seed Oil, Eclipta Prostrata Extract, Melia Azadirachta Leaf Extract, Rosa Damascena Flower Oil (24.3328ppm), Pelargonium Graveolens Flower Oil, Citrus Aurantium Bergamia (Bergamot) Fruit Oil, Cananga Odorata Flower Oil, Cynanchum Atratum Extract, Moringa Oleifera Seed Oil, Althaea Rosea Flower Extract, Borago Officinalis Seed Oil, Calendula Officinalis Flower Oil, Oenothera Biennis (Evening Primrose) Oil, Rosa Canina Fruit Oil, Chamomilla Recutita (Matricaria) Flower Extract, Lavandula Angustifolia (Lavender) Flower Extract, Robinia Pseudoacacia Flower Extract, 1,2-Hexanediol, Trilaureth-4 Phosphate, Diphenyl Dimethicone, Ethylhexylglycerin, Adenosine, Bakuchiol, Hydrogenated Lecithin, Tocopherol, Ceramide NP, Sodium Phytate, Citric Acid, Octanediol, Polyquaternium-51, Ascorbyl Dipalmitate, Citronellol, Geraniol",
+      "es": {
+        "tagline": "Bruma de dos fases con agua y aceite de rosa damascena que ayuda a hidratar y deja un acabado luminoso.",
+        "description": "Bruma facial de dos fases: una capa de aceites de rosa damascena y otras flores, y otra de agua de rosa damascena con extractos florales. Al agitarla, las fases se mezclan y, según la marca, dan a tu piel un golpe de hidratación y la dejan luminosa y con aspecto fresco.\n\nLa marca le suma niacinamida para ayudar a mejorar el tono apagado, y bakuchiol con adenosina para ayudar a suavizar la apariencia de las líneas finas. La propone dentro de tu rutina, debajo o encima del maquillaje, o en cualquier momento del día en que tu piel necesite hidratación. Es una fórmula vegana, según la marca.\n\nBruma fina de dos fases que se mezclan al agitar; deja un acabado luminoso y un aroma floral suave.",
+        "benefits": [
+          "Según la marca, hidrata al instante y deja un acabado luminoso.",
+          "Ayuda a que la piel cansada o apagada se vea más fresca, según la marca.",
+          "Se puede usar debajo o encima del maquillaje, y durante el día.",
+          "Según la marca, ayuda a mejorar el tono apagado y la apariencia de las líneas finas."
+        ],
+        "howToUse": "Lávate el rostro y las manos. Agita bien para mezclar las dos fases. Sostén el envase a unos 15 o 20 cm del rostro, cierra los ojos y rocía de manera uniforme, evitando el contacto directo con los ojos. Da toques suaves para ayudar a que se absorba o deja que se seque sola.",
+        "keyIngredients": [
+          "Agua de flor de rosa damascena (0.5 %): forma parte de la fase acuosa; según la marca, aporta hidratación.",
+          "Aceites de rosa damascena y otras flores: forman la fase oleosa; según la marca, nutren la piel.",
+          "Niacinamida: según la marca, ayuda a mejorar el tono apagado y a que se vea más parejo.",
+          "Bakuchiol y adenosina: según la marca, ayudan a suavizar la apariencia de las líneas finas y arrugas."
+        ],
+        "cautions": "Agítala antes de cada uso: es normal que las fases se separen con el tiempo. Evita rociarla directo en los ojos. El tono rosado de la capa superior viene de extractos vegetales y puede perder intensidad si queda mucho tiempo al sol directo, así que guárdala lejos del sol. Su aroma viene de aceites esenciales de rosa damascena, geranio, bergamota e ylang-ylang, según la marca. Si durante o después del uso aparecen en la zona manchas rojas, hinchazón, picazón u otra reacción por la exposición directa al sol, consulta a un especialista. No la apliques sobre heridas. Guárdala fuera del alcance de niñas y niños."
+      },
+      "en": {
+        "tagline": "A two-phase damask rose water and oil mist that helps hydrate and leaves a dewy glow.",
+        "description": "A two-phase face mist: one layer of damask rose and other flower oils, and one of damask rose water with flower extracts. Shaking blends the phases and, according to the brand, gives your skin a burst of hydration and leaves it glowing and fresh-looking.\n\nThe brand adds niacinamide to help improve dull tone, and bakuchiol with adenosine to help soften the look of fine lines. It suggests using it in your routine, under or over makeup, or any time of day your skin needs hydration. The brand describes it as a vegan formula.\n\nA fine two-phase mist that blends when shaken; leaves a dewy finish and a soft floral scent.",
+        "benefits": [
+          "Hydrates instantly and leaves a dewy finish, according to the brand.",
+          "Helps tired, dull skin look fresher, according to the brand.",
+          "Works under or over makeup and throughout the day.",
+          "Helps improve dull tone and the look of fine lines, according to the brand."
+        ],
+        "howToUse": "Wash your face and hands. Shake well to blend the two phases. Hold the bottle about 15 to 20 cm from your face, close your eyes and spray evenly, avoiding direct contact with the eyes. Pat gently to help it absorb, or let it air dry.",
+        "keyIngredients": [
+          "Damask rose flower water (0.5%): part of the water phase; according to the brand, it provides hydration.",
+          "Damask rose and other flower oils: form the oil phase; according to the brand, they nourish the skin.",
+          "Niacinamide: according to the brand, helps improve dull tone and evenness.",
+          "Bakuchiol and adenosine: according to the brand, help soften the look of fine lines and wrinkles."
+        ],
+        "cautions": "Shake before every use: it is normal for the phases to separate over time. Avoid spraying directly into the eyes. The pink tone of the top layer comes from plant extracts and can fade with long exposure to direct sunlight, so store it away from the sun. Its scent comes from damask rose, geranium, bergamot and ylang-ylang essential oils, according to the brand. If red spots, swelling, itching or other reactions appear on the area due to direct sunlight during or after use, see a specialist. Do not apply to wounds. Keep out of children's reach."
+      }
+    },
+    {
+      "slug": "face-republic-calming-care-aha-bha-moisturizer", "brand": "face-republic", "category": "moisturizer", "status": "published", "image": "fr-aha-bha-moisturizer", "lifestyle": true,
+      "concerns": ["sensitive", "hydration"], "skinTypes": ["normal", "dry", "oily", "combination", "sensitive"], "name": "Calming Care AHA/BHA Moisturizer",
+      "variant": { "sku": "FR-CCABM", "size": 50, "unit": "ml", "price": 1700 },
+      "inci": "Water, Glycerin, Dipropylene Glycol, Caprylic/Capric Triglyceride, Propanediol, Squalane, Niacinamide, Methyl Gluceth-20,1, 2-Hexanediol, Butylene Glycol, Carbomer, Aloe Barbadensis Leaf Extract, Betaine, Tromethamine, Centella Asiatica Extract, Ammonium Acryloyldimethyltaurate/VP Copolymer, Sodium Acrylate/Sodium Acryloyldimethyl Taurate Copolymer, Polyisobutene, Lactic Acid (1,080ppm), Salix Alba (Willow) Bark Extract (1,000ppm), Ethylhexylglycerin, Adenosine, Melia Azadirachta Leaf Extract, Melia Azadirachta Flower Extract, Disodium EDTA, Sorbitan Oleate, Caprylyl/Capryl Glucoside, Curcuma Longa (Turmeric) Root Extract, Melaleuca Alternifolia (Tea Tree) Leaf Oil, Eucalyptus Globulus Leaf Oil, Sodium Hyaluronate, Coccinia Indica Fruit Extract, Ocimum Sanctum Leaf Extract, Solanum Melongena (Eggplant) Fruit Extract, Panthenol, Allantoin, Corallina Officinalis Extract, Hamamelis Virginiana (Witch Hazel) Leaf Extract, Rosmarinus Officinalis (Rosemary) Leaf Extract, Tocopherol",
+      "es": {
+        "tagline": "Gel crema con AHA y BHA que ayuda a calmar e hidratar la piel y a controlar el sebo.",
+        "description": "Gel crema ligero que, según la marca, ayuda a calmar e hidratar la piel sensible o cansada, con un acabado fresco y no pegajoso. Lleva ácido láctico (AHA) y extracto de corteza de sauce, que la marca presenta como BHA; según la marca, ayudan a suavizar la textura y a controlar el sebo.\n\nLa marca combina extractos de aloe y centella asiática, que ayudan a calmar la piel, con escualano vegetal de oliva, que ayuda a mantener la hidratación. Suma niacinamida para un tono de aspecto más luminoso y adenosina para el cuidado de las arrugas, y la indica para todo tipo de piel, incluidas la sensible y la grasa o con tendencia al acné.\n\nGel crema ligero de color verde claro; se absorbe rápido y deja un acabado fresco, no pegajoso.",
+        "benefits": [
+          "Según la marca, ayuda a calmar e hidratar la piel sensible o cansada.",
+          "Ayuda a suavizar la textura y a controlar el exceso de grasa, según la marca.",
+          "Se absorbe rápido y no deja sensación pegajosa.",
+          "Sin fragancia ni colorantes artificiales; fórmula vegana, según la marca."
+        ],
+        "howToUse": "Lávate el rostro y las manos. Después del tónico o sérum, toma una cantidad del tamaño de la punta de un dedo. Extiéndela de manera uniforme en rostro y cuello y da toques suaves para que se absorba. La marca sugiere aplicar una capa más generosa antes de dormir, como mascarilla de noche, y, en piel seca, mezclarla con una o dos gotas de sérum o aceite.",
+        "keyIngredients": [
+          "Extracto de aloe (0.5 %) y extracto de centella asiática (0.2 %): según la marca, ayudan a calmar la piel.",
+          "Escualano vegetal de oliva (2 %): según la marca, ayuda a hidratar y a fortalecer la barrera natural de la piel.",
+          "Ácido láctico (AHA, 0.108 %) y extracto de corteza de sauce (BHA, 0.1 %): según la marca, ayudan a suavizar la textura y a controlar el sebo.",
+          "Niacinamida y adenosina: según la marca, ayudan a un tono de aspecto más luminoso y al cuidado de las arrugas."
+        ],
+        "cautions": "No la uses en niñas y niños de 3 años o menos. Su color verde claro viene de extractos vegetales y puede variar un poco entre lotes; guárdala lejos del sol directo para que no pierda color. Su aroma viene de aceites esenciales de árbol de té y eucalipto, según la marca. Si durante o después del uso aparecen en la zona manchas rojas, hinchazón, picazón u otra reacción por la exposición directa al sol, consulta a un especialista. No la apliques sobre heridas. Guárdala fuera del alcance de niñas y niños."
+      },
+      "en": {
+        "tagline": "An AHA/BHA gel cream that helps soothe and hydrate skin and control sebum.",
+        "description": "A light gel cream that, according to the brand, helps soothe and hydrate sensitive or tired skin, with a fresh, non-sticky finish. It contains lactic acid (AHA) and willow bark extract, which the brand presents as a BHA; according to the brand, they help smooth texture and control sebum.\n\nThe brand pairs aloe and centella asiatica extracts, which help calm the skin, with plant-based squalane from olives, which helps keep it hydrated. It adds niacinamide for a more radiant-looking tone and adenosine for wrinkle care, and lists it for all skin types, including sensitive, oily and acne-prone skin.\n\nA light, pale green gel cream; absorbs quickly with a fresh, non-sticky finish.",
+        "benefits": [
+          "Helps soothe and hydrate sensitive or tired skin, according to the brand.",
+          "Helps smooth texture and control excess oil, according to the brand.",
+          "Absorbs quickly with no sticky feel.",
+          "No artificial fragrance or coloring; vegan formula, according to the brand."
+        ],
+        "howToUse": "Wash your face and hands. After toner or serum, take a fingertip-sized amount. Spread it evenly over face and neck and pat gently until absorbed. The brand suggests applying a thicker layer at night as a sleeping mask and, for dry skin, mixing it with one or two drops of serum or oil.",
+        "keyIngredients": [
+          "Aloe extract (0.5%) and centella asiatica extract (0.2%): according to the brand, help calm the skin.",
+          "Plant-based olive squalane (2%): according to the brand, helps hydrate and strengthen the skin's natural barrier.",
+          "Lactic acid (AHA, 0.108%) and willow bark extract (BHA, 0.1%): according to the brand, help smooth texture and control sebum.",
+          "Niacinamide and adenosine: according to the brand, support a more radiant-looking tone and wrinkle care."
+        ],
+        "cautions": "Do not use on children aged 3 or under. Its pale green color comes from plant extracts and may vary slightly between batches; store it away from direct sunlight so it does not lose color. Its scent comes from tea tree and eucalyptus essential oils, according to the brand. If red spots, swelling, itching or other reactions appear on the area due to direct sunlight during or after use, see a specialist. Do not apply to wounds. Keep out of children's reach."
+      }
+    },
+    {
+      "slug": "face-republic-calming-blemish-madecassoside-serum", "brand": "face-republic", "category": "serum", "status": "published", "image": "fr-madecassoside-serum", "lifestyle": true,
+      "concerns": ["oily-acne", "sensitive"], "skinTypes": ["normal", "dry", "oily", "combination", "sensitive"], "name": "Calming Tea Tree Madecassoside Serum",
+      "variant": { "sku": "FR-CBMS", "size": 45, "unit": "ml", "price": 2000 },
+      "inci": "Water, Dipropylene Glycol, 1,2-Hexanediol, Caprylic/Capric Triglyceride, Glycerin, Polyglyceryl-10 Distearate, Melaleuca Alternifolia (Tea Tree) Leaf Extract (5,000ppm), Glyceryl Stearate, Pentylene Glycol, Carbomer, Panthenol, Arginine, Madecassoside (1,000ppm), Xanthan Gum, Allantoin, Butylene Glycol, Disodium EDTA, Sodium Hyaluronate, Centella Asiatica Extract, Melaleuca Alternifolia (Tea Tree) Leaf Oil, Eucalyptus Globulus Leaf Oil, Betaine, Lonicera Japonica (Honeysuckle) Flower Extract, Houttuynia Cordata Extract, Artemisia Princeps Leaf Extract, Agave Tequilana Leaf Extract, Forsythia Suspensa Fruit Extract, Opuntia Ficus-Indica Stem Extract, Adenium Obesum Leaf Cell Extract, Myrothamnus Flabellifolia Leaf/Stem Extract",
+      "es": {
+        "tagline": "Sérum ligero con árbol de té y madecassoside que ayuda a calmar la piel cansada o sensible.",
+        "description": "Sérum ligero con extracto de hoja de árbol de té y madecassoside, que la marca presenta como un sérum para piel con tendencia a imperfecciones. Según la marca, ayuda a calmar la piel cansada o sensible y la hidrata con suavidad, con un acabado fresco y no pegajoso.\n\nSegún la marca, el madecassoside, uno de los componentes de la centella asiática, ayuda a calmar y proteger la piel, y el árbol de té ayuda a equilibrar la grasa. Lo acompaña extracto de centella asiática, y la marca lo indica para todo tipo de piel, incluidas la sensible y la grasa o con tendencia al acné.\n\nSérum ligero tipo esencia; se extiende fácil, se absorbe rápido y deja un acabado fresco, no pegajoso.",
+        "benefits": [
+          "Según la marca, ayuda a calmar la piel cansada o sensible.",
+          "Con extracto de árbol de té, que según la marca ayuda a equilibrar la grasa.",
+          "Hidratación ligera que se absorbe rápido y no deja sensación pegajosa.",
+          "Fórmula vegana, sin fragancia ni colorantes artificiales, según la marca."
+        ],
+        "howToUse": "Lávate el rostro y las manos. Después del tónico, toma un gotero lleno. Aplica unas gotas a la vez sobre el rostro o ponlo primero en la palma; extiéndelo de manera uniforme y da toques suaves. Deja que se absorba por completo antes de otra capa o del siguiente paso. Para más hidratación, la marca sugiere aplicar 2 o 3 capas y, si combinas sérums, ir del más ligero al más espeso.",
+        "keyIngredients": [
+          "Extracto de hoja de árbol de té (0.5 %): según la marca, ayuda a equilibrar la grasa y a calmar la piel.",
+          "Madecassoside (0.1 %): componente de la centella asiática que, según la marca, ayuda a calmar y proteger la piel.",
+          "Extracto de centella asiática: según la marca, ayuda a proteger la piel áspera."
+        ],
+        "cautions": "Su aroma viene de aceites esenciales de árbol de té y eucalipto, según la marca. Si durante o después del uso aparecen en la zona manchas rojas, hinchazón, picazón u otra reacción por la exposición directa al sol, consulta a un especialista. No lo apliques sobre heridas. Guárdalo fuera del alcance de niñas y niños y lejos del sol directo."
+      },
+      "en": {
+        "tagline": "A light tea tree and madecassoside serum that helps calm tired or sensitive skin.",
+        "description": "A light serum with tea tree leaf extract and madecassoside, which the brand presents as a serum for blemish-prone skin. According to the brand, it helps calm tired or sensitive skin and hydrates gently, with a fresh, non-sticky finish.\n\nAccording to the brand, madecassoside, one of the components of centella asiatica, helps calm and protect the skin, and tea tree helps balance oil. Centella asiatica extract completes the formula, and the brand lists it for all skin types, including sensitive, oily and acne-prone skin.\n\nA light, essence-like serum; spreads easily, absorbs quickly and leaves a fresh, non-sticky finish.",
+        "benefits": [
+          "Helps calm tired or sensitive skin, according to the brand.",
+          "With tea tree extract, which the brand says helps balance oil.",
+          "Light hydration that absorbs quickly with no sticky feel.",
+          "Vegan formula with no artificial fragrance or coloring, according to the brand."
+        ],
+        "howToUse": "Wash your face and hands. After toner, take one full dropper. Apply a few drops at a time to your face, or dispense it into your palm first; spread evenly and pat gently. Let it absorb fully before another layer or the next step. For extra hydration, the brand suggests layering 2 or 3 times and, when combining serums, going from lightest to thickest.",
+        "keyIngredients": [
+          "Tea tree leaf extract (0.5%): according to the brand, helps balance oil and calm the skin.",
+          "Madecassoside (0.1%): a component of centella asiatica that, according to the brand, helps calm and protect the skin.",
+          "Centella asiatica extract: according to the brand, helps protect rough skin."
+        ],
+        "cautions": "Its scent comes from tea tree and eucalyptus essential oils, according to the brand. If red spots, swelling, itching or other reactions appear on the area due to direct sunlight during or after use, see a specialist. Do not apply to wounds. Keep out of children's reach and away from direct sunlight."
+      }
+    },
+    {
+      "slug": "face-republic-full-bloom-sun-tint", "brand": "face-republic", "category": "sunscreen", "status": "published", "image": "fr-sun-tint", "lifestyle": true,
+      "concerns": ["sun-protection", "dark-spots"], "skinTypes": ["normal", "dry", "oily", "combination", "sensitive"], "name": "Full Bloom Sun Tint SPF50+ PA++++",
+      "variant": { "sku": "FR-FBST", "size": 50, "unit": "ml", "price": 2200 },
+      "inci": "Purified Water, Zinc Oxide, Cyclohexasiloxane, Dibutyl Adipate, Dipropylene Glycol, Butyloctyl Salicylate, Dicaprylyl Carbonate, Propylheptyl Caprylate, Polyglyceryl-4 Diisostearate/Polyhydroxystearate/Sebacate, Titanium Dioxide, Niacinamide, Disiloxane, Diethylamino Hydroxybenzoyl Hexyl Benzoate, Methyl Methacrylate Crosspolymer, Bis-Ethylhexyloxyphenol Methoxyphenyl Triazine, Ethylhexyl Triazone, Polyglyceryl-3 Polydimethylsiloxyethyl Dimethicone, Rosmarinus Officinalis (Rosemary) Leaf Oil, Sodium Hyaluronate, Disteardimonium Hectorite, Magnesium Sulfate, Triethoxycaprylylsilane, 1,2-Hexanediol, Polymethylsilsesquioxane, Glyceryl Caprylate, Caprylyl Glycol, Mica, Ethylhexylglycerin, Adenosine, Tocopherol, Yellow Iron Oxide, Red Iron Oxide, Black Iron Oxide",
+      "es": {
+        "tagline": "Protector solar con color SPF50+ PA++++ que ayuda a unificar el tono con una cobertura natural.",
+        "description": "Protector solar con color, SPF50+ PA++++, que protege de los rayos UVA y UVB y da una cobertura natural. Según la marca, ayuda a unificar el tono y a disimular imperfecciones, así que puedes usarlo debajo del maquillaje, como prebase, o en una capa fina en lugar de tu base, para un aspecto natural.\n\nCombina filtros minerales (óxido de zinc y dióxido de titanio) con filtros químicos; según la marca, así se aplica de forma cómoda, sin dejar residuo blanco, y es suave incluso con la piel sensible. Suma niacinamida, que según la marca ayuda a la luminosidad, y adenosina, que ayuda a la firmeza. Es una fórmula vegana, según la marca, y no lleva oxibenzona ni octinoxato.\n\nCrema con color, ligera y no grasa; se extiende fácil y da una cobertura natural, sin dejar residuo blanco.",
+        "benefits": [
+          "SPF50+ PA++++ contra rayos UVA y UVB.",
+          "Cobertura natural que ayuda a unificar el tono, según la marca.",
+          "Funciona como prebase de maquillaje o como alternativa a la base.",
+          "Textura ligera y no grasa que se siente cómoda en la piel."
+        ],
+        "howToUse": "Lávate el rostro y las manos. Como último paso de tu rutina, pon una línea de protector a lo largo de dos dedos (una en cada dedo). Aplícalo en el rostro poco a poco para construir una cobertura natural, extiéndelo de manera uniforme y da toques suaves. Aplícalo de 15 a 20 minutos antes de salir.",
+        "keyIngredients": [
+          "Óxido de zinc y dióxido de titanio: filtros minerales que, según la marca, son suaves con la piel sensible, dejan un acabado no graso y dan un efecto de luminosidad natural.",
+          "Filtros químicos: según la marca, aportan una textura ligera y un acabado hidratante.",
+          "Niacinamida: según la marca, ayuda a mejorar el tono apagado y a realzar la luminosidad natural de la piel.",
+          "Adenosina: según la marca, ayuda a la firmeza y la elasticidad de la piel."
+        ],
+        "cautions": "La marca recomienda volver a aplicarlo cada 3 a 4 horas para una protección más eficaz. Si tu piel es muy sensible, la marca sugiere hacer una prueba en una zona pequeña antes de usarlo. Al final del día, la marca recomienda retirarlo con una doble limpieza completa. Su aroma viene del aceite de hoja de romero, según la marca. Si durante o después del uso aparecen en la zona manchas rojas, hinchazón, picazón u otra reacción por la exposición directa al sol, consulta a un especialista. No lo apliques sobre heridas. Guárdalo fuera del alcance de niñas y niños y lejos del sol directo."
+      },
+      "en": {
+        "tagline": "A tinted SPF50+ PA++++ sunscreen that helps even out tone with natural coverage.",
+        "description": "A tinted sunscreen with SPF50+ PA++++ that protects against UVA and UVB rays and gives natural coverage. According to the brand, it helps even out tone and blur imperfections, so you can wear it under makeup as a primer or, in a thin layer, instead of foundation for a natural look.\n\nIt combines mineral filters (zinc oxide and titanium dioxide) with chemical filters; according to the brand, this makes it comfortable to wear, not chalky, and mild even on sensitive skin. It adds niacinamide, which the brand says helps radiance, and adenosine, which helps firmness. The brand describes it as a vegan formula, and it contains no oxybenzone or octinoxate.\n\nA light, non-greasy tinted cream; spreads easily and gives natural coverage without a white cast.",
+        "benefits": [
+          "SPF50+ PA++++ against UVA and UVB rays.",
+          "Natural coverage that helps even out tone, according to the brand.",
+          "Works as a makeup primer or as an alternative to foundation.",
+          "Light, non-greasy texture that feels comfortable on the skin."
+        ],
+        "howToUse": "Wash your face and hands. As the last step of your routine, squeeze a line of sunscreen along two fingers (one line per finger). Apply it to your face a little at a time to build natural coverage, spread evenly and pat gently. Apply 15 to 20 minutes before going out.",
+        "keyIngredients": [
+          "Zinc oxide and titanium dioxide: mineral filters that, according to the brand, are mild on sensitive skin, leave a non-oily finish and give a natural radiance effect.",
+          "Chemical filters: according to the brand, give a light texture and a moisturizing finish.",
+          "Niacinamide: according to the brand, helps improve dull tone and enhance the skin's natural radiance.",
+          "Adenosine: according to the brand, helps skin firmness and elasticity."
+        ],
+        "cautions": "The brand recommends reapplying every 3 to 4 hours for more effective protection. If your skin is very sensitive, the brand suggests a patch test on a small area first. At the end of the day, the brand recommends removing it with a thorough double cleanse. Its scent comes from rosemary leaf oil, according to the brand. If red spots, swelling, itching or other reactions appear on the area due to direct sunlight during or after use, see a specialist. Do not apply to wounds. Keep out of children's reach and away from direct sunlight."
+      }
+    },
+    {
+      "slug": "face-republic-aha-bha-calming-toner", "brand": "face-republic", "category": "toner", "status": "published", "image": "fr-aha-bha-toner", "lifestyle": true,
+      "concerns": ["pores", "oily-acne"], "skinTypes": ["normal", "dry", "oily", "combination", "sensitive"], "name": "AHA BHA Toner",
+      "variant": { "sku": "FR-ABCT", "size": 160, "unit": "ml", "price": 1500 },
+      "inci": "Water, Methylpropanediol, Dipropylene Glycol, Butylene Glycol, 1,2-Hexanediol, Pentylene Glycol, Glycerin, Salicylic Acid (4,500ppm), Tromethamine, C12-14 Alketh-12, Glucose, Sodium Citrate, Chlorella Vulgaris Extract, Citric Acid (1,000ppm), Panthenol, Fructose, Fructooligosaccharides, Ethylhexylglycerin, Melaleuca Alternifolia (Tea Tree) Leaf Extract, Xanthan Gum, Sodium Phytate, Gluconolactone, Sodium Hyaluronate, Allantoin, Capryloyl Salicylic Acid, Beta-Glucan, Tocopherol",
+      "es": {
+        "tagline": "Tónico de exfoliación suave con AHA, BHA, PHA y LHA para todos los días.",
+        "description": "Tónico diario que, según la marca, exfolia con suavidad, ayuda a limpiar los poros y a equilibrar la grasa y la hidratación de la piel. Retira los restos que quedan después de la limpieza y, según la marca, deja la piel más lisa y lista para el siguiente paso.\n\nLa marca combina cuatro exfoliantes: ácido cítrico (AHA), ácido salicílico (BHA), gluconolactona (PHA) y ácido capriloil salicílico (LHA). Suma árbol de té y alantoína para ayudar a calmar la piel, y hialuronato de sodio, chlorella y pantenol para que no la reseque. Según la marca, no lleva alcohol ni fragancia o colorantes artificiales y es apto para todo tipo de piel, incluida la sensible.\n\nLíquido ligero que deja la piel fresca, hidratada y sin sensación pegajosa.",
+        "benefits": [
+          "Exfoliación suave que se puede usar de mañana y de noche, según la marca.",
+          "Ayuda a limpiar los poros y a controlar el exceso de grasa, según la marca.",
+          "Según la marca, ayuda a calmar la piel sin resecarla.",
+          "Sin alcohol ni fragancia o colorantes artificiales; fórmula vegana, según la marca."
+        ],
+        "howToUse": "Justo después de limpiar tu rostro, aplícalo de una de estas dos formas: pon un poco en la palma y da toques suaves en rostro y cuello, o empapa bien un algodón y pásalo con suavidad por rostro y cuello, siguiendo la textura de la piel. Evita el contorno de ojos y no frotes con fuerza. Para un extra de hidratación, la marca sugiere dejar algodones empapados sobre la piel 2 o 3 minutos, como mascarilla.",
+        "keyIngredients": [
+          "Ácido salicílico (BHA, 0.45 %): según la marca, ayuda a limpiar los poros y a controlar el exceso de grasa.",
+          "Ácido cítrico (AHA, 0.1 %): según la marca, exfolia con suavidad para una piel más lisa.",
+          "Gluconolactona (PHA) y ácido capriloil salicílico (LHA): exfolian con suavidad; según la marca, el LHA actúa sobre los poros obstruidos para una textura más lisa.",
+          "Extracto de árbol de té y alantoína: según la marca, ayudan a calmar la piel.",
+          "Hialuronato de sodio, extracto de chlorella y pantenol: según la marca, ayudan a mantener la piel hidratada."
+        ],
+        "cautions": "Evita el contorno de ojos y no frotes con fuerza, para no irritar la piel. Si tu piel es sensible, la marca sugiere probar primero una pequeña cantidad. Si durante o después del uso aparecen en la zona manchas rojas, hinchazón, picazón u otra reacción por la exposición directa al sol, consulta a un especialista. No lo apliques sobre heridas. Guárdalo fuera del alcance de niñas y niños y lejos del sol directo."
+      },
+      "en": {
+        "tagline": "A gentle daily exfoliating toner with AHA, BHA, PHA and LHA.",
+        "description": "A daily toner that, according to the brand, gently exfoliates, helps clear pores and balances oil and hydration. It removes what is left after cleansing and, according to the brand, leaves skin smoother and ready for the next step.\n\nThe brand combines four exfoliants: citric acid (AHA), salicylic acid (BHA), gluconolactone (PHA) and capryloyl salicylic acid (LHA). It adds tea tree and allantoin to help calm the skin, and sodium hyaluronate, chlorella and panthenol so it does not dry it out. According to the brand, it has no alcohol, artificial fragrance or coloring and suits all skin types, including sensitive skin.\n\nA light liquid that leaves skin fresh, hydrated and free of stickiness.",
+        "benefits": [
+          "Gentle exfoliation you can use morning and night, according to the brand.",
+          "Helps clear pores and control excess oil, according to the brand.",
+          "Helps calm the skin without drying it, according to the brand.",
+          "No alcohol, artificial fragrance or coloring; vegan formula, according to the brand."
+        ],
+        "howToUse": "Right after cleansing, apply it in one of two ways: pour a little into your palm and pat it onto face and neck, or soak a cotton pad well and sweep it gently over face and neck, following the skin's texture. Avoid the eye area and do not rub hard. For extra hydration, the brand suggests leaving soaked cotton pads on the skin for 2 to 3 minutes as a mask.",
+        "keyIngredients": [
+          "Salicylic acid (BHA, 0.45%): according to the brand, helps clear pores and control excess oil.",
+          "Citric acid (AHA, 0.1%): according to the brand, gently exfoliates for smoother skin.",
+          "Gluconolactone (PHA) and capryloyl salicylic acid (LHA): exfoliate gently; according to the brand, LHA targets clogged pores for smoother texture.",
+          "Tea tree extract and allantoin: according to the brand, help calm the skin.",
+          "Sodium hyaluronate, chlorella extract and panthenol: according to the brand, help keep skin hydrated."
+        ],
+        "cautions": "Avoid the eye area and do not rub hard, to prevent irritation. If your skin is sensitive, the brand suggests trying a small amount first. If red spots, swelling, itching or other reactions appear on the area due to direct sunlight during or after use, see a specialist. Do not apply to wounds. Keep out of children's reach and away from direct sunlight."
+      }
+    },
+    {
+      "slug": "skin1004-centella-ampoule-foam", "brand": "skin1004", "category": "cleanser", "status": "published", "image": "s1004-ampoule-foam", "lifestyle": true,
+      "concerns": ["sensitive"], "skinTypes": ["normal", "sensitive"], "name": "Madagascar Centella Ampoule Foam",
+      "variant": { "sku": "S1004-CAF", "size": 125, "unit": "ml", "price": 1800 },
+      "inci": "Water, Sodium Cocoyl Isethionate, Glycerin, Sodium Methyl Cocoyl Taurate, Coco-Betaine, Centella Asiatica Extract, Potassium Cocoyl Glycinate, 1,2-Hexanediol, Potassium Cocoate, Potassium Benzoate, Polyquaternium-67, Citric Acid, Sodium Chloride, Butylene Glycol, Dextrin, Theobroma Cacao (Cocoa) Extract, Disodium EDTA, Sodium Acetate, Sodium Bicarbonate, Coptis Chinensis Root Extract, Sodium Hyaluronate, Coccinia Indica Fruit Extract, Eclipta Prostrata Extract",
+      "es": {
+        "tagline": "Espuma limpiadora de pH 5 para todos los días.",
+        "description": "Limpiador de pH 5 para todos los días: una pasta cremosa que se convierte en una espuma rica y delicada. Según la marca, retira el maquillaje y las impurezas sin dejar la piel con sensación reseca ni tirante.\n\nLa marca explica que sus tensioactivos derivados del coco limpian con suavidad y ayudan a mantener el equilibrio de humedad de la piel, y que el bicarbonato de sodio en polvo ultrafino ayuda a retirar el exceso de sebo. También indica que la centella asiática de Madagascar deja la piel con sensación de calma, que el ácido cítrico aporta una exfoliación suave y que el hialuronato de sodio ayuda a retener la humedad.\n\nPasta cremosa de color marrón claro que se transforma en una espuma rica y delicada.",
+        "benefits": [
+          "pH 5, pensado para el uso diario",
+          "Retira maquillaje e impurezas sin resecar ni dejar tirante, según la marca",
+          "Exfoliación suave con ácido cítrico, según la marca",
+          "Deja la piel con sensación de calma e hidratación, según la marca"
+        ],
+        "howToUse": "1. Pon una cantidad adecuada en las palmas húmedas y frótalas hasta hacer espuma.\n2. Masajea el rostro con suavidad.\n3. Enjuaga con agua tibia.",
+        "keyIngredients": [
+          "Extracto de centella asiática de Madagascar: según la marca, es conocida por sus propiedades calmantes y deja la piel con sensación de calma y equilibrio.",
+          "Ácido cítrico: según la marca, es un AHA de origen frutal que ayuda a exfoliar con suavidad las células muertas de la superficie y a mejorar la apariencia de la textura.",
+          "Hialuronato de sodio: según la marca, es una forma de ácido hialurónico de bajo peso molecular que ayuda a atraer y retener la humedad.",
+          "Bicarbonato de sodio en polvo ultrafino: según la marca, ayuda a retirar el exceso de sebo y los residuos, para una sensación de frescura."
+        ],
+        "cautions": "Si tu piel es sensible o tiene tendencia al acné, la marca sugiere probarla primero en una zona pequeña. Si durante el uso, o al exponerte al sol después de usarla, notas manchas rojas, hinchazón o picazón, suspende su uso y consulta a un especialista. No la apliques sobre heridas. Guárdala fuera del alcance de niñas y niños y lejos de la luz solar directa."
+      },
+      "en": {
+        "tagline": "A pH 5 cleansing foam for every day.",
+        "description": "An everyday pH 5 cleanser: a creamy paste that turns into a rich, delicate foam. According to the brand, it removes makeup and impurities without leaving skin feeling dry or tight.\n\nThe brand explains that its coconut-derived surfactants cleanse gently and help keep the skin's moisture balance, and that ultra-fine baking soda powder helps lift away excess sebum. It also states that Madagascar centella asiatica leaves skin feeling calm, citric acid adds gentle exfoliation and sodium hyaluronate helps hold in moisture.\n\nA light-brown creamy paste that turns into a rich, delicate foam.",
+        "benefits": [
+          "pH 5, made for daily use",
+          "Removes makeup and impurities without drying or tightness, according to the brand",
+          "Gentle exfoliation with citric acid, according to the brand",
+          "Leaves skin feeling calm and hydrated, according to the brand"
+        ],
+        "howToUse": "1. Work an appropriate amount into a lather between damp palms.\n2. Massage gently over your face.\n3. Rinse with lukewarm water.",
+        "keyIngredients": [
+          "Madagascar centella asiatica extract: according to the brand, it is known for its soothing properties and leaves skin feeling calm and balanced.",
+          "Citric acid: according to the brand, a fruit-derived AHA that helps gently exfoliate surface dead skin cells and improve the look of skin texture.",
+          "Sodium hyaluronate: according to the brand, a low-molecular-weight form of hyaluronic acid that helps attract and hold moisture.",
+          "Ultra-fine baking soda powder: according to the brand, it helps lift away excess sebum and buildup for a refreshed feel."
+        ],
+        "cautions": "If your skin is sensitive or acne-prone, the brand suggests trying it on a small area first. If you notice red spots, swelling or itching during use, or when exposed to the sun after use, stop using it and consult a specialist. Do not apply it on wounds. Keep it out of reach of children and away from direct sunlight."
+      }
+    },
+    {
+      "slug": "skin1004-centella-toning-toner", "brand": "skin1004", "category": "toner", "status": "published", "image": "s1004-toning-toner", "lifestyle": true,
+      "concerns": ["hydration", "sensitive"], "skinTypes": ["normal", "dry", "oily", "combination", "sensitive"], "name": "Madagascar Centella Toning Toner",
+      "variant": { "sku": "S1004-CTT", "size": 210, "unit": "ml", "price": 2400 },
+      "inci": "Water, Dipropylene Glycol, Centella Asiatica Extract, 1,2-Hexanediol, Niacinamide, Sodium Citrate, Gluconolactone, Ethylhexylglycerin, Adenosine, Disodium EDTA, Dipotassium Glycyrrhizate, Betaine, Hyaluronic Acid, Carbomer, Tromethamine",
+      "es": {
+        "tagline": "Tónico exfoliante suave con PHA, para usar todos los días.",
+        "description": "Tónico de textura acuosa con centella asiática de Madagascar y PHA (gluconolactona), un exfoliante suave pensado para el uso diario. Se absorbe rápido y no deja sensación pegajosa.\n\nSegún la marca, el PHA actúa de forma gradual para ayudar a retirar el exceso de sebo y las células muertas, y el tónico ayuda a que la piel se vea más lisa, luminosa y refinada. La marca añade que la betaína ayuda a mantener el equilibrio de humedad y que la centella deja la piel con sensación de calma. También indica que fue probado como no comedogénico y que es apto para todo tipo de piel, incluida la piel con tendencia a imperfecciones.\n\nTónico acuoso de color marrón claro que se absorbe rápido, sin dejar sensación pegajosa.",
+        "benefits": [
+          "Exfoliación suave con PHA, apta para el uso diario",
+          "Ayuda a que la piel se vea más lisa y luminosa, según la marca",
+          "Ayuda a mantener la hidratación y deja la piel con sensación de calma, según la marca",
+          "Probado como no comedogénico, según la marca"
+        ],
+        "howToUse": "1. Aplica una cantidad adecuada en un algodón o directamente en la palma.\n2. Da toques suaves sobre el rostro hasta que se absorba.\n3. Continúa tu rutina de la textura más ligera a la más densa, como sugiere la marca.",
+        "keyIngredients": [
+          "Extracto de centella asiática de Madagascar: según la marca, es conocida por sus propiedades calmantes y deja la piel con sensación de calma y equilibrio.",
+          "Gluconolactona (PHA): según la marca, exfolia con suavidad para mejorar la apariencia de la textura y atrae humedad del ambiente para ayudar a mantener la hidratación.",
+          "Betaína: según la marca, ayuda a mantener el equilibrio de humedad y deja la piel suave y cómoda."
+        ],
+        "cautions": "Si tu piel es sensible o tiene tendencia al acné, la marca sugiere probarlo primero en una zona pequeña. Si durante el uso, o al exponerte al sol después de usarlo, notas manchas rojas, hinchazón o picazón, suspende su uso y consulta a un especialista. No lo apliques sobre heridas. Guárdalo fuera del alcance de niñas y niños y lejos de la luz solar directa."
+      },
+      "en": {
+        "tagline": "A gentle PHA exfoliating toner for everyday use.",
+        "description": "A watery toner with Madagascar centella asiatica and PHA (gluconolactone), a mild exfoliant made for daily use. It absorbs fast and leaves no sticky feel.\n\nAccording to the brand, PHA works gradually to help remove excess sebum and dead skin cells, and the toner helps skin look smoother, more radiant and more refined. The brand adds that betaine helps maintain the skin's moisture balance and that centella leaves skin feeling calm. It also states that the toner is non-comedogenic tested and suitable for all skin types, including blemish-prone skin.\n\nA watery, light-brown toner that absorbs fast with no stickiness.",
+        "benefits": [
+          "Gentle PHA exfoliation, suitable for daily use",
+          "Helps skin look smoother and more radiant, according to the brand",
+          "Helps maintain hydration and leaves skin feeling calm, according to the brand",
+          "Tested as non-comedogenic, according to the brand"
+        ],
+        "howToUse": "1. Apply an appropriate amount to a cotton pad or straight into your palm.\n2. Pat gently over your face until absorbed.\n3. Continue your routine from the lightest to the richest texture, as the brand suggests.",
+        "keyIngredients": [
+          "Madagascar centella asiatica extract: according to the brand, it is known for its soothing properties and leaves skin feeling calm and balanced.",
+          "Gluconolactone (PHA): according to the brand, it gently exfoliates to improve the look of skin texture and draws moisture from the air to help maintain hydration.",
+          "Betaine: according to the brand, it helps keep the skin's moisture balance, leaving it soft and comfortable."
+        ],
+        "cautions": "If your skin is sensitive or acne-prone, the brand suggests trying it on a small area first. If you notice red spots, swelling or itching during use, or when exposed to the sun after use, stop using it and consult a specialist. Do not apply it on wounds. Keep it out of reach of children and away from direct sunlight."
+      }
+    },
+    {
+      "slug": "skin1004-centella-soothing-cream", "brand": "skin1004", "category": "moisturizer", "status": "published", "image": "s1004-soothing-cream", "lifestyle": true,
+      "concerns": ["sensitive", "hydration"], "skinTypes": ["normal", "dry", "sensitive"], "name": "Madagascar Centella Soothing Cream",
+      "variant": { "sku": "S1004-CSC", "size": 75, "unit": "ml", "price": 2400 },
+      "inci": "Water, Glycerin, Propanediol, Dipropylene Glycol, Cyclopentasiloxane, Centella Asiatica Extract, 1,2-Hexanediol, Cyclohexasiloxane, Trehalose, Caprylyl Methicone, C12-14 Pareth-12, Carbomer, Tromethamine, C30-45 Alkyl Cetearyl Dimethicone Crosspolymer, Ammonium Acryloyldimethyltaurate/VP Copolymer, Butylene Glycol, Xanthan Gum, Zingiber Officinale (Ginger) Root Extract, Mentha Piperita (Peppermint) Leaf Extract, Ethylhexylglycerin, Dipotassium Glycyrrhizate, Tranexamic Acid, Dextrin, Theobroma Cacao (Cocoa) Seed Extract, Leuconostoc/Radish Root Ferment Filtrate, Biosaccharide Gum-1, Disodium EDTA, Sodium Hyaluronate, Beta-Glucan, Hydrogenated Lecithin, Coptis Chinensis Root Extract, Cetearyl Alcohol, Stearic Acid, Ceramide NP, Ceramide NG, Cholesterol, Phytosphingosine, Ceramide AS, Ceramide AP, Ceramide EOP",
+      "es": {
+        "tagline": "Gel crema ligero y no pegajoso para calmar e hidratar.",
+        "description": "Crema hidratante en textura de gel, ligera y no pegajosa, con centella asiática de Madagascar. Según la marca, se absorbe rápido, aporta hidratación inmediata y deja una sensación fresca que ayuda a calmar el enrojecimiento visible.\n\nLa marca la formula con trehalosa e hialuronato de sodio para ayudar a mantener la hidratación, y con ceramidas, colesterol y ácidos grasos, tres componentes que considera esenciales, para ayudar a cuidar la barrera natural de la piel. También indica que su pH es similar al de la piel, para ayudar a mantener su equilibrio natural.\n\nGel crema tipo jalea, de color marrón claro, que se absorbe rápido y deja un acabado no pegajoso.",
+        "benefits": [
+          "Hidratación inmediata, sin sensación pegajosa, según la marca",
+          "Sensación fresca que ayuda a calmar el enrojecimiento visible, según la marca",
+          "Ceramidas y colesterol que ayudan a cuidar la barrera natural de la piel, según la marca",
+          "Textura de gel ligera que se absorbe rápido"
+        ],
+        "howToUse": "1. Úsala como último paso de tu rutina de cuidado; de día, el protector solar va después.\n2. Aplica una cantidad adecuada en el rostro.\n3. Da toques suaves con ambas palmas para que se absorba.",
+        "keyIngredients": [
+          "Extracto de centella asiática de Madagascar: según la marca, es conocida por sus propiedades calmantes y deja la piel con sensación de calma y equilibrio.",
+          "Trehalosa: según la marca, ayuda a evitar la pérdida de humedad y mantiene la piel hidratada y cómoda.",
+          "Hialuronato de sodio: según la marca, ayuda a mantener la humedad y la elasticidad de la piel.",
+          "Ceramida NP: según la marca, es un componente clave de las capas externas de la piel que ayuda a cuidar su barrera natural y a mantenerla flexible e hidratada.",
+          "Colesterol: según la marca, está presente de forma natural en la barrera de la piel y ayuda a retener la humedad."
+        ],
+        "cautions": "Si tu piel es sensible o tiene tendencia al acné, la marca sugiere probarla primero en una zona pequeña. Si durante el uso, o al exponerte al sol después de usarla, notas manchas rojas, hinchazón o picazón, suspende su uso y consulta a un especialista. No la apliques sobre heridas. Guárdala fuera del alcance de niñas y niños y lejos de la luz solar directa."
+      },
+      "en": {
+        "tagline": "A light, non-sticky gel cream made to soothe and hydrate.",
+        "description": "A light, non-sticky gel moisturizer with Madagascar centella asiatica. According to the brand, it absorbs fast, gives immediate hydration and leaves a cooling feel that helps soothe visible redness.\n\nThe brand formulates it with trehalose and sodium hyaluronate to help keep skin hydrated, and with ceramides, cholesterol and fatty acids, three components it calls essential, to help support the skin's natural barrier. It also states that its pH is similar to the skin's, to help keep its natural balance.\n\nA light-brown, jelly-like gel cream that absorbs fast and leaves a non-sticky finish.",
+        "benefits": [
+          "Immediate hydration with no sticky feel, according to the brand",
+          "Cooling feel that helps soothe visible redness, according to the brand",
+          "Ceramides and cholesterol that help support the skin's natural barrier, according to the brand",
+          "Light gel texture that absorbs fast"
+        ],
+        "howToUse": "1. Use it as the last step of your care routine; during the day, sunscreen goes on after it.\n2. Apply an appropriate amount to your face.\n3. Pat gently with both palms until absorbed.",
+        "keyIngredients": [
+          "Madagascar centella asiatica extract: according to the brand, it is known for its soothing properties and leaves skin feeling calm and balanced.",
+          "Trehalose: according to the brand, it helps prevent moisture loss and keeps skin hydrated and comfortable.",
+          "Sodium hyaluronate: according to the brand, it helps maintain the skin's moisture and elasticity.",
+          "Ceramide NP: according to the brand, a key component of the skin's outer layers that helps support its natural barrier and keep it supple and hydrated.",
+          "Cholesterol: according to the brand, it is naturally found in the skin barrier and helps retain moisture."
+        ],
+        "cautions": "If your skin is sensitive or acne-prone, the brand suggests trying it on a small area first. If you notice red spots, swelling or itching during use, or when exposed to the sun after use, stop using it and consult a specialist. Do not apply it on wounds. Keep it out of reach of children and away from direct sunlight."
+      }
+    },
+    {
+      "slug": "skin1004-centella-ampoule", "brand": "skin1004", "category": "serum", "status": "published", "image": "s1004-centella-ampoule", "lifestyle": true,
+      "concerns": ["sensitive", "hydration"], "skinTypes": ["normal", "dry", "oily", "combination", "sensitive"], "name": "Madagascar Centella Ampoule",
+      "variant": { "sku": "S1004-CA", "size": 55, "unit": "ml", "price": 1900 },
+      "inci": "Water, Glycerin, Butylene Glycol, Centella Asiatica Extract, 1,2-Hexanediol, Cellulose Gum, Ethylhexylglycerin",
+      "es": {
+        "tagline": "Ampolla calmante e hidratante con centella asiática de Madagascar.",
+        "description": "Ampolla de textura acuosa con extracto de centella asiática de Madagascar como ingrediente clave. Se extiende con facilidad y se absorbe rápido, sin sensación pegajosa.\n\nEs la ampolla insignia de la marca, que la describe como un producto versátil que hidrata en profundidad, apoya la barrera natural de la piel y ayuda a calmar el enrojecimiento visible. La marca indica que es apta para todo tipo de piel, en especial la seca y la delicada.\n\nAmpolla acuosa y deslizante que se extiende con suavidad y se absorbe rápido, sin sensación pegajosa.",
+        "benefits": [
+          "Hidrata en profundidad, según la marca",
+          "Ayuda a calmar el enrojecimiento visible, según la marca",
+          "Apoya la barrera natural de la piel, según la marca",
+          "Textura acuosa que no se siente pegajosa"
+        ],
+        "howToUse": "1. Después del tónico, aplica una cantidad adecuada con el gotero.\n2. Extiéndela de manera uniforme sobre la piel.\n3. Da toques suaves para ayudar a que se absorba.",
+        "keyIngredients": [
+          "Extracto de centella asiática de Madagascar: el ingrediente clave de la fórmula; según la marca, es conocida por sus propiedades calmantes y deja la piel con sensación de calma y equilibrio."
+        ],
+        "cautions": "Si tu piel es sensible o tiene tendencia al acné, la marca sugiere probarla primero en una zona pequeña. Si durante el uso, o al exponerte al sol después de usarla, notas manchas rojas, hinchazón o picazón, suspende su uso y consulta a un especialista. No la apliques sobre heridas. Guárdala fuera del alcance de niñas y niños y lejos de la luz solar directa."
+      },
+      "en": {
+        "tagline": "A soothing, hydrating ampoule with Madagascar centella asiatica.",
+        "description": "A watery ampoule with Madagascar centella asiatica extract as its key ingredient. It spreads easily and absorbs fast with no stickiness.\n\nIt is the brand's signature ampoule, which it describes as an all-rounder that gives deep hydration, supports the skin's natural barrier and helps soothe visible redness. The brand says it suits all skin types, especially dry and delicate skin.\n\nA watery, slippery ampoule that spreads smoothly and absorbs fast with no stickiness.",
+        "benefits": [
+          "Deep hydration, according to the brand",
+          "Helps soothe visible redness, according to the brand",
+          "Supports the skin's natural barrier, according to the brand",
+          "Watery texture that does not feel sticky"
+        ],
+        "howToUse": "1. After toner, apply an appropriate amount with the dropper.\n2. Spread it evenly over your skin.\n3. Pat gently to help it absorb.",
+        "keyIngredients": [
+          "Madagascar centella asiatica extract: the formula's key ingredient; according to the brand, it is known for its soothing properties and leaves skin feeling calm and balanced."
+        ],
+        "cautions": "If your skin is sensitive or acne-prone, the brand suggests trying it on a small area first. If you notice red spots, swelling or itching during use, or when exposed to the sun after use, stop using it and consult a specialist. Do not apply it on wounds. Keep it out of reach of children and away from direct sunlight."
+      }
+    },
+    {
+      "slug": "skin1004-centella-quick-calming-pad", "brand": "skin1004", "category": "toner-pad", "status": "published", "image": "s1004-quick-calming-pad", "lifestyle": true,
+      "concerns": ["sensitive", "hydration"], "skinTypes": ["normal", "oily", "combination", "sensitive"], "name": "Madagascar Centella Quick Calming Pad",
+      "variant": { "sku": "S1004-QCP", "size": 70, "unit": "units", "price": 2500 },
+      "inci": "Water, 1,2-Hexanediol, Butylene Glycol, Centella Asiatica Extract, Panthenol, Xanthan Gum, Sodium Hyaluronate, Ethylhexylglycerin, Disodium EDTA, Citric Acid",
+      "es": {
+        "tagline": "Pads tónicos con esencia de centella y pantenol, para calmar e hidratar.",
+        "description": "Pads tónicos de triple capa empapados en una esencia con centella asiática de Madagascar y pantenol. Son grandes, se adhieren bien a la piel y su forma de media luna facilita aplicarlos alrededor de los ojos y la nariz.\n\nSegún la marca, con centella y pantenol calman e hidratan la piel en un paso simple, y son más prácticos que una mascarilla de tela. La esencia lleva además hialuronato de sodio, otro de los ingredientes clave que destaca la marca.\n\nPads con una esencia abundante que se absorbe rápido, sin sensación pegajosa.",
+        "benefits": [
+          "Calman e hidratan en pocos minutos, según la marca",
+          "Pads grandes de triple capa que contienen más esencia",
+          "Más prácticos que una mascarilla de tela, según la marca",
+          "La esencia se absorbe rápido, sin sensación pegajosa"
+        ],
+        "howToUse": "1. Coloca los pads de 3 a 5 minutos sobre las mejillas, la frente o las zonas que quieras cuidar.\n2. Retíralos y da toques suaves para que se absorba el resto de la esencia.\nAl abrir el envase, coloca dentro la tapa y la pinza incluidas para usarlo con más comodidad.",
+        "keyIngredients": [
+          "Extracto de centella asiática de Madagascar: según la marca, es conocida por sus propiedades calmantes y deja la piel con sensación de calma y equilibrio.",
+          "Pantenol (provitamina B5): según la marca, junto con la centella, calma e hidrata la piel.",
+          "Hialuronato de sodio: según la marca, ayuda a atraer y retener la humedad."
+        ],
+        "cautions": "Si tu piel es sensible o tiene tendencia al acné, la marca sugiere probarlos primero en una zona pequeña. Si durante el uso, o al exponerte al sol después de usarlos, notas manchas rojas, hinchazón o picazón, suspende su uso y consulta a un especialista. No los apliques sobre heridas. Guarda el envase fuera del alcance de niñas y niños y lejos de la luz solar directa."
+      },
+      "en": {
+        "tagline": "Centella and panthenol essence pads made to soothe and hydrate.",
+        "description": "Triple-layer toner pads soaked in an essence with Madagascar centella asiatica and panthenol. They are large, cling well to the skin and their crescent shape makes them easy to place around the eyes and nose.\n\nAccording to the brand, with centella and panthenol they soothe and hydrate the skin in one simple step, and they are more convenient than a sheet mask. The essence also contains sodium hyaluronate, another key ingredient the brand highlights.\n\nPads holding a generous essence that absorbs fast with no stickiness.",
+        "benefits": [
+          "Soothe and hydrate in a few minutes, according to the brand",
+          "Large triple-layer pads that contain more essence",
+          "More convenient than a sheet mask, according to the brand",
+          "The essence absorbs fast with no sticky feel"
+        ],
+        "howToUse": "1. Place the pads on your cheeks, forehead or any areas you want to care for, for 3 to 5 minutes.\n2. Remove them and pat in the remaining essence.\nWhen you open the container, put the included lid and tweezers inside it for easier use.",
+        "keyIngredients": [
+          "Madagascar centella asiatica extract: according to the brand, it is known for its soothing properties and leaves skin feeling calm and balanced.",
+          "Panthenol (provitamin B5): according to the brand, together with centella, it soothes and hydrates the skin.",
+          "Sodium hyaluronate: according to the brand, it helps attract and hold moisture."
+        ],
+        "cautions": "If your skin is sensitive or acne-prone, the brand suggests trying them on a small area first. If you notice red spots, swelling or itching during use, or when exposed to the sun after use, stop using them and consult a specialist. Do not apply them on wounds. Keep the container out of reach of children and away from direct sunlight."
+      }
+    },
+    {
+      "slug": "skin1004-poremizing-fresh-ampoule", "brand": "skin1004", "category": "serum", "status": "published", "image": "s1004-poremizing-ampoule", "lifestyle": true,
+      "concerns": ["pores", "oily-acne"], "skinTypes": ["normal", "oily", "combination", "sensitive"], "name": "Madagascar Centella Poremizing Fresh Ampoule",
+      "variant": { "sku": "S1004-PFA", "size": 100, "unit": "ml", "price": 2600 },
+      "inci": "Water, Butylene Glycol, Propanediol, 1,2-Hexanediol, Aloe Barbadensis Leaf Extract, Centella Asiatica Extract, Glycereth-26, Hydroxyacetophenone, Glycerin, Carbomer, Tromethamine, Panthenol, Ethylhexylglycerin, Disodium EDTA, Dipotassium Glycyrrhizate, Ammonium Polyacryloyldimethyl Taurate, Biosaccharide Gum-1, Hyaluronic Acid, Hydrolyzed Hyaluronic Acid, Sodium Hyaluronate, Hydroxyethylcellulose, Chamomilla Recutita (Matricaria) Flower Extract, Mineral Salts, Tripeptide-3, Acetyl Hexapeptide-8, Acetyl Octapeptide-3, Copper Tripeptide-1, Palmitoyl Pentapeptide-4, Palmitoyl Tetrapeptide-7, Palmitoyl Tripeptide-1, Tripeptide-1, Tripeptide-2",
+      "es": {
+        "tagline": "Ampolla ligera para el cuidado de los poros, con sal rosa y 9 péptidos.",
+        "description": "Ampolla ligera, de textura acuosa y con poco contenido de aceite, formulada para ayudar a minimizar la apariencia de los poros. Lleva sal rosa del Himalaya, 9 péptidos, centella asiática de Madagascar y aloe vera.\n\nSegún la marca, aporta hidratación con un acabado fresco y no pegajoso; la sal rosa, rica en 80 minerales, ayuda a limpiar las impurezas de los poros, y los 9 péptidos ayudan a mejorar la apariencia de la elasticidad y a refinar la de los poros.\n\nAmpolla de peso ligero a medio, con mínima sensación aceitosa, que se absorbe sin dejar sensación pegajosa y con un acabado muy fresco.",
+        "benefits": [
+          "Ayuda a minimizar la apariencia de los poros, según la marca",
+          "Ayuda a limpiar las impurezas de los poros, según la marca",
+          "Textura acuosa con acabado fresco y no pegajoso",
+          "9 péptidos que ayudan a mejorar la apariencia de la elasticidad, según la marca"
+        ],
+        "howToUse": "1. Después del tónico, aplica una cantidad adecuada con el gotero.\n2. Extiéndela de manera uniforme sobre la piel.\n3. Da toques suaves para ayudar a que se absorba.",
+        "keyIngredients": [
+          "Sal rosa del Himalaya (sales minerales): según la marca, es rica en 80 minerales y ayuda a limpiar las impurezas de los poros.",
+          "9 péptidos: según la marca, ayudan a mejorar la apariencia de la elasticidad y a refinar la apariencia de los poros.",
+          "Extracto de centella asiática de Madagascar: según la marca, es conocida por sus propiedades calmantes y deja la piel con sensación de calma y equilibrio."
+        ],
+        "cautions": "Si tu piel es sensible o tiene tendencia al acné, la marca sugiere probarla primero en una zona pequeña. Si durante el uso, o al exponerte al sol después de usarla, notas manchas rojas, hinchazón o picazón, suspende su uso y consulta a un especialista. No la apliques sobre heridas. Guárdala fuera del alcance de niñas y niños y lejos de la luz solar directa."
+      },
+      "en": {
+        "tagline": "A light pore-care ampoule with pink salt and 9 peptides.",
+        "description": "A light, watery ampoule with minimal oil, made to help minimize the look of pores. It contains Himalayan pink salt, 9 peptides, Madagascar centella asiatica and aloe vera.\n\nAccording to the brand, it provides moisture with a fresh, non-sticky finish; the pink salt, rich in 80 minerals, helps clear impurities from pores, and the 9 peptides help improve the look of elasticity and refine the look of pores.\n\nA light-to-medium ampoule with minimal oiliness that absorbs with no stickiness and a very fresh finish.",
+        "benefits": [
+          "Helps minimize the look of pores, according to the brand",
+          "Helps clear impurities from pores, according to the brand",
+          "Watery texture with a fresh, non-sticky finish",
+          "9 peptides that help improve the look of elasticity, according to the brand"
+        ],
+        "howToUse": "1. After toner, apply an appropriate amount with the dropper.\n2. Spread it evenly over your skin.\n3. Pat gently to help it absorb.",
+        "keyIngredients": [
+          "Himalayan pink salt (mineral salts): according to the brand, it is rich in 80 minerals and helps clear impurities from pores.",
+          "9 peptides: according to the brand, they help improve the look of skin elasticity and refine the look of pores.",
+          "Madagascar centella asiatica extract: according to the brand, it is known for its soothing properties and leaves skin feeling calm and balanced."
+        ],
+        "cautions": "If your skin is sensitive or acne-prone, the brand suggests trying it on a small area first. If you notice red spots, swelling or itching during use, or when exposed to the sun after use, stop using it and consult a specialist. Do not apply it on wounds. Keep it out of reach of children and away from direct sunlight."
+      }
+    },
+    {
+      "slug": "skin1004-poremizing-quick-clay-stick-mask", "brand": "skin1004", "category": "mask", "status": "published", "image": "s1004-clay-stick-mask", "lifestyle": true,
+      "concerns": ["pores", "oily-acne"], "skinTypes": ["normal", "oily", "combination"], "name": "Madagascar Centella Poremizing Quick Clay Stick Mask",
+      "variant": { "sku": "S1004-PQCSM", "size": 27, "unit": "g", "price": 2400 },
+      "inci": "Water, Kaolin, Dipropylene Glycol, Glycerin, Titanium Dioxide (CI 77891), Butylene Glycol, Sodium Stearate, Centella Asiatica Extract, 1,2-Hexanediol, Phaseolus Angularis Seed Powder, Aloe Barbadensis Leaf Extract, Cetearyl Olivate, Propanediol, Sorbitan Olivate, Dimethicone, Iron Oxides (CI 77491), Ethylhexylglycerin, Sodium Phytate, Bentonite, Illite, Mineral Salts, Montmorillonite, Calamine",
+      "es": {
+        "tagline": "Mascarilla de arcilla en barra para absorber el exceso de sebo.",
+        "description": "Mascarilla de arcilla en barra, suave y húmeda, que se desliza con facilidad sobre la piel y se retira fácilmente al enjuagar. Combina cinco tipos de arcilla, con 18 % de caolín, y frijol rojo azuki finamente molido.\n\nSegún la marca, las arcillas absorben el exceso de sebo, la mascarilla ayuda a limpiar los poros sin irritar y el frijol rojo azuki retira las células muertas para una textura más lisa. La marca añade que, al retirar los residuos de la superficie, ayuda a mejorar la apariencia de los poros y deja la piel con aspecto renovado.\n\nBarra de arcilla fina y húmeda, con frijol rojo azuki molido, que se desliza con suavidad sobre la piel.",
+        "benefits": [
+          "Absorbe el exceso de sebo, según la marca",
+          "Ayuda a mejorar la apariencia de los poros, según la marca",
+          "Exfoliación suave con frijol rojo azuki molido, según la marca",
+          "Formato en barra fácil de aplicar y de enjuagar"
+        ],
+        "howToUse": "1. Con el rostro limpio, quita la tapa exterior, gira la base y retira la tapa interior.\n2. Desliza la barra sobre el rostro, evitando la zona de los ojos y la boca.\n3. Deja actuar de 3 a 5 minutos.\n4. Enjuaga bien con agua tibia.\n5. Cierra bien la tapa interior y la exterior para que no se reseque.",
+        "keyIngredients": [
+          "Caolín (18 %), bentonita, illita y montmorillonita: según la marca, son arcillas que absorben el exceso de sebo.",
+          "Frijol rojo azuki finamente molido: según la marca, retira las células muertas para una textura más lisa.",
+          "Extracto de centella asiática de Madagascar: según la marca, es conocida por sus propiedades calmantes y deja la piel con sensación de calma y equilibrio."
+        ],
+        "cautions": "Evita la zona de los ojos y la boca, y mantén los ojos cerrados al enjuagarte. Si alguna partícula entra en los ojos, enjuágalos de inmediato con agua y, si notas alguna molestia, consulta a un especialista. Si tu piel es sensible o tiene tendencia al acné, la marca sugiere probarla primero en una zona pequeña. Si durante el uso, o al exponerte al sol después de usarla, notas manchas rojas, hinchazón o picazón, suspende su uso y consulta a un especialista. No la apliques sobre heridas. Guárdala con ambas tapas bien cerradas, fuera del alcance de niñas y niños y lejos de la luz solar directa."
+      },
+      "en": {
+        "tagline": "A clay stick mask made to soak up excess sebum.",
+        "description": "A soft, moist clay mask in stick form that glides easily over the skin and washes off easily. It combines five kinds of clay, including 18% kaolin, with finely crushed adzuki red bean.\n\nAccording to the brand, the clays soak up excess sebum, the mask helps cleanse pores without irritation and the adzuki red bean removes dead skin cells for a smoother texture. The brand adds that, by clearing away surface buildup, it helps improve the look of pores and leaves skin looking refreshed.\n\nA fine, moist clay stick with crushed adzuki red bean that glides smoothly over the skin.",
+        "benefits": [
+          "Soaks up excess sebum, according to the brand",
+          "Helps improve the look of pores, according to the brand",
+          "Gentle exfoliation with crushed adzuki red bean, according to the brand",
+          "Stick format that is easy to apply and rinse off"
+        ],
+        "howToUse": "1. On a clean face, remove the outer cap, twist the base and take off the inner cap.\n2. Glide the stick over your face, avoiding the eyes and mouth.\n3. Leave on for 3 to 5 minutes.\n4. Rinse well with lukewarm water.\n5. Close the inner and outer caps tightly so it does not dry out.",
+        "keyIngredients": [
+          "Kaolin (18%), bentonite, illite and montmorillonite: according to the brand, clays that soak up excess sebum.",
+          "Finely crushed adzuki red bean: according to the brand, it removes dead skin cells for a smoother texture.",
+          "Madagascar centella asiatica extract: according to the brand, it is known for its soothing properties and leaves skin feeling calm and balanced."
+        ],
+        "cautions": "Avoid the eyes and mouth, and keep your eyes closed while rinsing. If any particles get into your eyes, rinse them right away with water and, if you notice any discomfort, consult a specialist. If your skin is sensitive or acne-prone, the brand suggests trying it on a small area first. If you notice red spots, swelling or itching during use, or when exposed to the sun after use, stop using it and consult a specialist. Do not apply it on wounds. Keep it with both caps tightly closed, out of reach of children and away from direct sunlight."
+      }
+    },
+    {
+      "slug": "skin1004-poremizing-velvet-finish-sunscreen", "brand": "skin1004", "category": "sunscreen", "status": "published", "image": "s1004-velvet-finish-sunscreen", "lifestyle": true,
+      "concerns": ["sun-protection", "pores", "oily-acne"], "skinTypes": ["normal", "oily", "combination"], "name": "Madagascar Centella Poremizing Velvet Finish Sunscreen SPF50+ PA++++",
+      "variant": { "sku": "S1004-PVFS-50", "size": 50, "unit": "ml", "price": 2600 },
+      "es": {
+        "tagline": "Protector solar con color, SPF50+ PA++++ y cobertura natural.",
+        "description": "Protector solar ligero con color beige neutro, cobertura natural y SPF50+ PA++++. Según la marca, protege de los rayos UV mientras difumina la apariencia de los poros, la textura irregular y el tono desigual, con un acabado suave y aterciopelado.\n\nLa marca indica que su color se integra de forma natural en distintos tonos de piel sin dejar efecto blanco, y que hidrata mientras ayuda a equilibrar el exceso de grasa. Según su lista de ingredientes, sus filtros UV son el óxido de zinc y el dióxido de titanio; la marca destaca además la centella asiática de Madagascar, la sal marina, el aloe vera, la niacinamida y la adenosina.\n\nTextura rica y sedosa que se desliza con facilidad, se adhiere en una capa fina y se asienta rápido, sin sensación pegajosa, con un acabado suave.",
+        "benefits": [
+          "Protección UV con SPF50+ PA++++",
+          "Color beige neutro que ayuda a difuminar la apariencia de poros, textura y tono desigual, según la marca",
+          "Sin efecto blanco, según la marca",
+          "Hidrata y ayuda a equilibrar el exceso de grasa, según la marca"
+        ],
+        "howToUse": "1. Úsalo como último paso de tu rutina de cuidado.\n2. Aplica una capa uniforme en las zonas expuestas al sol.\n3. En zonas que quieras disimular, como poros visibles, imperfecciones o líneas finas, aplica una pequeña cantidad adicional y difumínala con las yemas de los dedos con movimientos suaves.",
+        "keyIngredients": [
+          "Óxido de zinc y dióxido de titanio: los filtros UV que aparecen en su lista de ingredientes.",
+          "Centella asiática de Madagascar, sal marina, aloe vera, niacinamida y adenosina: los demás ingredientes clave que destaca la marca."
+        ],
+        "cautions": "Tiene color: un beige neutro que, según la marca, se integra de forma natural en distintos tonos de piel. Aplica en cantidad suficiente antes de exponerte al sol y reaplica con frecuencia, sobre todo después de sudar, nadar o secarte con toalla. Si tu piel es sensible o tiene tendencia al acné, la marca sugiere probarlo primero en una zona pequeña. Si durante el uso, o al exponerte al sol después de usarlo, notas manchas rojas, hinchazón o picazón, suspende su uso y consulta a un especialista. No lo apliques sobre heridas. Guárdalo fuera del alcance de niñas y niños y lejos de la luz solar directa."
+      },
+      "en": {
+        "tagline": "A tinted sunscreen with SPF50+ PA++++ and natural coverage.",
+        "description": "A lightweight sunscreen with a neutral beige tint, natural coverage and SPF50+ PA++++. According to the brand, it protects against UV rays while blurring the look of pores, uneven texture and uneven tone, with a soft, velvety finish.\n\nThe brand states that its tint blends naturally into different skin tones without a white cast, and that it hydrates while helping balance excess oil. According to its ingredient list, its UV filters are zinc oxide and titanium dioxide; the brand also highlights Madagascar centella asiatica, sea salt, aloe vera, niacinamide and adenosine.\n\nA rich, silky texture that glides on easily, sits in a thin layer and sets quickly with no stickiness, leaving a soft finish.",
+        "benefits": [
+          "UV protection with SPF50+ PA++++",
+          "Neutral beige tint that helps blur the look of pores, texture and uneven tone, according to the brand",
+          "No white cast, according to the brand",
+          "Hydrates and helps balance excess oil, according to the brand"
+        ],
+        "howToUse": "1. Use it as the last step of your care routine.\n2. Apply an even layer to skin exposed to the sun.\n3. On areas you want to cover, such as visible pores, blemishes or fine lines, apply a small extra amount and gently roll it in with your fingertips.",
+        "keyIngredients": [
+          "Zinc oxide and titanium dioxide: the UV filters that appear in its ingredient list.",
+          "Madagascar centella asiatica, sea salt, aloe vera, niacinamide and adenosine: the other key ingredients the brand highlights."
+        ],
+        "cautions": "It is tinted: a neutral beige that, according to the brand, blends naturally into different skin tones. Apply generously before sun exposure and reapply often, especially after sweating, swimming or towel drying. If your skin is sensitive or acne-prone, the brand suggests trying it on a small area first. If you notice red spots, swelling or itching during use, or when exposed to the sun after use, stop using it and consult a specialist. Do not apply it on wounds. Keep it out of reach of children and away from direct sunlight."
+      }
+    },
+    {
+      "slug": "skin1004-poremizing-deep-cleansing-foam", "brand": "skin1004", "category": "cleanser", "status": "published", "image": "s1004-deep-cleansing-foam", "lifestyle": true,
+      "concerns": ["pores", "oily-acne"], "skinTypes": ["normal", "oily", "combination", "sensitive"], "name": "Madagascar Centella Poremizing Deep Cleansing Foam",
+      "variant": { "sku": "S1004-PDCF-125", "size": 125, "unit": "ml", "price": 1900 },
+      "inci": "Water, Myristic Acid, Glycerin, Potassium Hydroxide, Stearic Acid, Glyceryl Stearate, Palmitic Acid, Cocamidopropyl Betaine, Sodium C14-16 Olefin Sulfonate, Butylene Glycol, Glucose, 1,2-Hexanediol, Sodium Chloride, Centella Asiatica Extract, Sorbitol, Acrylates/C10-30 Alkyl Acrylate Crosspolymer, Rosmarinus Officinalis (Rosemary) Leaf Oil, Cetearyl Alcohol, Potassium Benzoate, Polyquaternium-67, Papain, Hydrogenated Polydecene, Arachidic Acid, Lauric Acid, Aloe Barbadensis Leaf Extract, Sodium Citrate, Propanediol, Citrus Limon (Lemon) Fruit Extract, Pyrus Malus (Apple) Fruit Extract, Vinegar, Coccinia Indica Fruit Extract, Eclipta Prostrata Extract, Trisodium Ethylenediamine Disuccinate, Oleic Acid, Kaolin, Mineral Salts, Citric Acid, Oenothera Biennis (Evening Primrose) Flower Extract, Pueraria Lobata Root Extract, Pinus Palustris Leaf Extract, Ulmus Davidiana Root Extract, Disodium EDTA",
+      "es": {
+        "tagline": "Limpiador cremoso con sal rosa y caolín para limpiar los poros a fondo.",
+        "description": "Limpiador facial en crema espesa que, con agua, se convierte en una espuma rica y cremosa que se adhiere a la piel. Según la marca, retira a fondo los restos de protector solar, la suciedad y el sebo de los poros sin resecar la piel.\n\nLa marca explica que, con sal rosa del Himalaya (sales minerales), caolín y papaína, el limpiador actúa como un imán para absorber las impurezas y el exceso de sebo, y que la papaína, una enzima de la papaya, y el vinagre ayudan a exfoliar las células muertas. También lleva extracto de manzana y centella asiática de Madagascar.\n\nPasta espesa que se convierte en una espuma cremosa y abundante, que se adhiere a la piel y limpia sin resecarla.",
+        "benefits": [
+          "Limpieza a fondo: retira restos de protector solar, suciedad y sebo de los poros, según la marca",
+          "Ayuda a absorber las impurezas y el exceso de sebo, según la marca",
+          "Exfoliación suave con papaína y vinagre, según la marca",
+          "Espuma cremosa que no reseca la piel, según la marca"
+        ],
+        "howToUse": "1. Haz una espuma abundante con una cantidad moderada de producto y un poco de agua.\n2. Masajea suavemente todo el rostro.\n3. Enjuaga bien con agua tibia.",
+        "keyIngredients": [
+          "Sal rosa del Himalaya (sales minerales): según la marca, es rica en 80 minerales y ayuda a retirar las impurezas de la superficie.",
+          "Caolín: según la marca, junto con la sal rosa y la papaína, ayuda a absorber las impurezas y el exceso de sebo.",
+          "Papaína: según la marca, es una enzima de la papaya que, junto con el vinagre, ayuda a exfoliar las células muertas.",
+          "Extracto de manzana y extracto de centella asiática de Madagascar: completan los ingredientes clave que destaca la marca."
+        ],
+        "cautions": "Si tu piel es sensible o tiene tendencia al acné, la marca sugiere probarlo primero en una zona pequeña. Si durante el uso, o al exponerte al sol después de usarlo, notas manchas rojas, hinchazón o picazón, suspende su uso y consulta a un especialista. No lo apliques sobre heridas. Guárdalo fuera del alcance de niñas y niños y lejos de la luz solar directa."
+      },
+      "en": {
+        "tagline": "A creamy cleanser with pink salt and kaolin made to deep-clean pores.",
+        "description": "A thick cream cleanser that, with water, turns into a rich, creamy foam that clings to the skin. According to the brand, it thoroughly washes sunscreen residue, dirt and sebum out of pores without stripping the skin.\n\nThe brand explains that, with Himalayan pink salt (mineral salts), kaolin and papain, the cleanser acts like a magnet to absorb impurities and excess sebum, and that papain, an enzyme from papaya, and vinegar help exfoliate dead skin cells. It also contains apple fruit extract and Madagascar centella asiatica.\n\nA thick paste that turns into a creamy, rich foam that clings to the skin and cleanses without stripping it.",
+        "benefits": [
+          "Thorough cleanse: washes sunscreen residue, dirt and sebum out of pores, according to the brand",
+          "Helps absorb impurities and excess sebum, according to the brand",
+          "Gentle exfoliation with papain and vinegar, according to the brand",
+          "Creamy foam that does not strip the skin, according to the brand"
+        ],
+        "howToUse": "1. Work a moderate amount with a little water into a rich lather.\n2. Gently massage over your whole face.\n3. Rinse well with lukewarm water.",
+        "keyIngredients": [
+          "Himalayan pink salt (mineral salts): according to the brand, it is rich in 80 minerals and helps remove surface impurities.",
+          "Kaolin: according to the brand, together with pink salt and papain, it helps absorb impurities and excess sebum.",
+          "Papain: according to the brand, an enzyme from papaya that, with vinegar, helps exfoliate dead skin cells.",
+          "Apple fruit extract and Madagascar centella asiatica extract: they complete the key ingredients the brand highlights."
+        ],
+        "cautions": "If your skin is sensitive or acne-prone, the brand suggests trying it on a small area first. If you notice red spots, swelling or itching during use, or when exposed to the sun after use, stop using it and consult a specialist. Do not apply it on wounds. Keep it out of reach of children and away from direct sunlight."
+      }
+    }
+  ],
+  "routines": [
+    {
+      "slug": "first-routine", "published": true, "featured": true,
+      "skus": ["FR-SAC-100", "FR-PSE-50"],
+      "es": { "title": "Primera rutina: 2 pasos", "description": "Lo básico para todos los días: un limpiador que controla la grasa y un protector solar ligero, sin residuo blanco." },
+      "en": { "title": "First routine: 2 steps", "description": "The everyday basics: a cleanser that controls oil and a light sunscreen with no white cast." }
+    },
+    {
+      "slug": "double-cleanse-and-protect", "published": true, "featured": false,
+      "skus": ["S1004-LCO-200", "FR-SAC-100", "FR-PSE-50"],
+      "es": { "title": "Doble limpieza y protección", "description": "Aceite limpiador para retirar maquillaje y protector solar, un limpiador con BHA para el exceso de grasa y una esencia solar ligera para cada mañana." },
+      "en": { "title": "Double cleanse and protect", "description": "A cleansing oil to take off makeup and sunscreen, a BHA cleanser for excess oil and a light sun essence for every morning." }
+    },
+    {
+      "slug": "oily-acne-prone-skin", "published": true, "featured": false,
+      "skus": ["FR-SAC-100", "FR-CBMS", "S1004-CSC", "S1004-PVFS-50"],
+      "es": { "title": "Piel grasa o con tendencia al acné", "description": "Un limpiador con ácido salicílico, un sérum con árbol de té y madecassoside, un gel crema que hidrata sin engrasar y un protector solar de acabado mate para el día." },
+      "en": { "title": "Oily or acne-prone skin", "description": "A salicylic acid cleanser, a tea tree and madecassoside serum, a gel cream that hydrates without grease and a matte-finish sunscreen for the day." }
+    },
+    {
+      "slug": "sensitive-skin", "published": true, "featured": false,
+      "skus": ["S1004-CAF", "S1004-CTT", "S1004-CA", "S1004-CSC", "S1004-WFSS-50"],
+      "es": { "title": "Piel sensible", "description": "Centella asiática de Madagascar en cada paso: espuma de pH 5, tónico suave, ampolla calmante, gel crema para reforzar la barrera de la piel y un protector solar ligero para el día." },
+      "en": { "title": "Sensitive skin", "description": "Madagascar centella asiatica at every step: a pH 5 foam, a gentle toner, a soothing ampoule, a gel cream to support the skin barrier and a light sunscreen for the day." }
+    },
+    {
+      "slug": "three-step-morning", "published": true, "featured": false,
+      "skus": ["S1004-CAF", "S1004-CSC", "S1004-WFSS-50"],
+      "es": { "title": "Mañana en 3 pasos", "description": "Limpia, hidrata y protege en pocos minutos: espuma suave, gel crema ligero y protector solar en textura sérum." },
+      "en": { "title": "Three-step morning", "description": "Cleanse, hydrate and protect in a few minutes: a gentle foam, a light gel cream and a serum-texture sunscreen." }
+    },
+    {
+      "slug": "pores-and-shine", "published": true, "featured": false,
+      "skus": ["S1004-PDCF-125", "S1004-PFA", "S1004-PVFS-50"],
+      "es": { "title": "Poros y brillo", "description": "Una espuma que limpia los poros a fondo, una ampolla ligera que minimiza su apariencia y un protector solar de acabado mate." },
+      "en": { "title": "Pores and shine", "description": "A foam that deep-cleans pores, a light ampoule that minimizes their look and a matte-finish sunscreen." }
+    },
+    {
+      "slug": "dark-spots-and-tone", "published": true, "featured": false,
+      "skus": ["S1004-CAF", "FR-BTBC", "FR-FBST"],
+      "es": { "title": "Manchas y tono", "description": "Una espuma suave de pH 5, una crema con bakuchiol y un protector solar con tono beige de acabado mate." },
+      "en": { "title": "Dark spots and tone", "description": "A gentle pH 5 foam, a bakuchiol cream and a beige-tinted sunscreen with a matte finish." }
+    }
+  ],
+  "suppliers": [{ "name": "Sugar Glamour", "contactName": "Michel", "notes": "Authorized local distributor in El Salvador. Wholesale catalogue received 2026-09-29." }],
+  "purchaseOrders": [
+    {
+      "supplier": "Sugar Glamour", "reference": "SG-2026-10-03", "status": "ordered", "orderedOn": "2026-10-03",
+      "notes": "Quote request of 2026-10-03; the supplier's final quote is pending. Unit costs as received. IVA not stated: the 2026-10-14 request lists the Water-Fit Sun Serum at the same $15.91 with IVA included, so these costs are probably IVA-inclusive (confirm). Sizes match the request. Still to confirm: sanitary registration numbers and expiry dates.",
+      "items": [
+        { "sku": "S1004-LCO-200", "quantity": 8, "unitCost": 1551 },
+        { "sku": "S1004-WFSS-50", "quantity": 2, "unitCost": 1591 },
+        { "sku": "FR-SAC-100", "quantity": 4, "unitCost": 720 },
+        { "sku": "FR-PSE-50", "quantity": 7, "unitCost": 948 }
+      ]
+    },
+    {
+      "supplier": "Sugar Glamour", "reference": "SG-2026-10-14", "status": "draft", "orderedOn": null,
+      "notes": "Second quote request, sent 2026-10-14; the supplier's final quote is pending. Unit costs as received, IVA included. Centella Ampoule size not stated by the supplier: 55 ml assumed from the unit cost (confirm). Still to confirm: sanitary registration numbers and expiry dates.",
+      "items": [
+        { "sku": "S1004-CA", "quantity": 6, "unitCost": 1353 },
+        { "sku": "S1004-WFSS-50", "quantity": 5, "unitCost": 1591 },
+        { "sku": "S1004-PDCF-125", "quantity": 2, "unitCost": 1362 }
+      ]
+    }
+  ],
+  "shippingZones": []
+}

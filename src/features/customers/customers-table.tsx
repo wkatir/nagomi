@@ -1,0 +1,84 @@
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { DownloadIcon } from "lucide-react";
+import { DataTable } from "#/components/admin/data-table/data-table";
+import { TableToolbar } from "#/components/admin/data-table/table-toolbar";
+import { useDataTable } from "#/components/admin/data-table/use-data-table";
+import { Button } from "#/components/ui/button";
+import {
+	Empty,
+	EmptyDescription,
+	EmptyHeader,
+	EmptyTitle,
+} from "#/components/ui/empty";
+import {
+	CUSTOMER_SORTS,
+	type CustomerListSearch,
+} from "#/lib/schemas/customers";
+import { m } from "#/paraglide/messages";
+import { useCustomerColumns } from "./columns";
+import { customersQuery } from "./queries";
+import { clearedFilters, exportHref, isFiltered } from "./search";
+
+// No create button: customers are born from orders.
+export function CustomersTable({
+	search,
+	onSearchChange,
+}: {
+	search: CustomerListSearch;
+	onSearchChange: (change: Partial<CustomerListSearch>) => void;
+}) {
+	const query = useQuery({
+		...customersQuery(search),
+		placeholderData: keepPreviousData,
+	});
+	const columns = useCustomerColumns();
+	const table = useDataTable({
+		data: query.data?.items ?? [],
+		columns,
+		rowCount: query.data?.total ?? 0,
+		search,
+		sorts: CUSTOMER_SORTS,
+		onSearchChange,
+		getRowId: (customer) => String(customer.id),
+	});
+	const filtered = isFiltered(search);
+	const clear = () => onSearchChange(clearedFilters);
+
+	return (
+		<>
+			<TableToolbar
+				search={{
+					value: search.q,
+					onChange: (q) => onSearchChange({ page: 1, q }),
+					label: m.admin_customer_search(),
+				}}
+				filtered={filtered}
+				onClearFilters={clear}
+				actions={
+					<Button variant="outline" size="sm" asChild>
+						<a href={exportHref(search)} download>
+							<DownloadIcon aria-hidden />
+							{m.admin_export_csv()}
+						</a>
+					</Button>
+				}
+			/>
+			<DataTable
+				table={table}
+				query={query}
+				filtered={filtered}
+				onClearFilters={clear}
+				empty={
+					<Empty>
+						<EmptyHeader>
+							<EmptyTitle>{m.admin_customer_empty()}</EmptyTitle>
+							<EmptyDescription>
+								{m.admin_customer_empty_hint()}
+							</EmptyDescription>
+						</EmptyHeader>
+					</Empty>
+				}
+			/>
+		</>
+	);
+}

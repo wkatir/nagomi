@@ -1,0 +1,291 @@
+import { useMutation, useQuery, useSuspenseQuery } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { z } from "zod";
+import { AdminDialog } from "#/components/admin/admin-dialog";
+import { LocaleTabs } from "#/components/admin/form/locale-tabs";
+import { serverErrors } from "#/components/admin/form/server-errors";
+import {
+	useAppForm,
+	validationLogic,
+} from "#/components/admin/form/use-app-form";
+import { QueryState } from "#/components/admin/page-header";
+import { Button } from "#/components/ui/button";
+import { DialogFooter } from "#/components/ui/dialog";
+import { api, parseResponse } from "#/lib/api";
+import { type Locale, SLUG_REGEX } from "#/lib/enums";
+import { adminSettingsQuery } from "#/lib/queries";
+import { m } from "#/paraglide/messages";
+import { slugify } from "../merchandising/slug";
+import { useRefresh } from "../merchandising/status-change";
+import {
+	changedTexts,
+	invalidLocales,
+	languagesInUse,
+	requireInEachLanguage,
+	touchInvalidFields,
+} from "../merchandising/translations";
+import { type CategoryDetail, categoriesKeys, categoryQuery } from "./queries";
+
+const FIELDS = [
+	"slug",
+	"routineStep",
+	"translations.es.name",
+	"translations.es.description",
+	"translations.es.seoTitle",
+	"translations.es.seoDescription",
+	"translations.en.name",
+	"translations.en.description",
+	"translations.en.seoTitle",
+	"translations.en.seoDescription",
+] as const;
+const fieldOf = (path: string) => FIELDS.find((field) => field === path);
+
+const texts = z.object({
+	name: z.string().trim().max(80),
+	description: z.string().trim().max(1000),
+	seoTitle: z.string().trim().max(70),
+	seoDescription: z.string().trim().max(160),
+});
+
+export function CategoryDialog({
+	id,
+	onClose,
+}: {
+	id?: number;
+	onClose: () => void;
+}) {
+	return id === undefined ? (
+		<AdminDialog
+			onClose={onClose}
+			className="sm:max-w-xl"
+			title={m.admin_category_new()}
+		>
+			<CategoryForm onClose={onClose} />
+		</AdminDialog>
+	) : (
+		<EditCategoryDialog id={id} onClose={onClose} />
+	);
+}
+
+function EditCategoryDialog({
+	id,
+	onClose,
+}: {
+	id: number;
+	onClose: () => void;
+}) {
+	const query = useQuery(categoryQuery(id));
+	return (
+		<AdminDialog
+			onClose={onClose}
+			className="sm:max-w-xl"
+			title={m.admin_category_edit()}
+		>
+			<QueryState query={query}>
+				{(category) => <CategoryForm category={category} onClose={onClose} />}
+			</QueryState>
+		</AdminDialog>
+	);
+}
+
+export function CategoryForm({
+	category,
+	onClose,
+}: {
+	category?: CategoryDetail;
+	onClose: () => void;
+}) {
+	const refresh = useRefresh(categoriesKeys.all);
+	const { data: settings } = useSuspenseQuery(adminSettingsQuery);
+	const { defaultLocale } = settings;
+	const stored = category ? category.translations.map((t) => t.locale) : [];
+
+	const textsOf = (locale: Locale) => {
+		const row = category?.translations.find((t) => t.locale === locale);
+		return {
+			name: row?.name ?? "",
+			description: row?.description ?? "",
+			seoTitle: row?.seoTitle ?? "",
+			seoDescription: row?.seoDescription ?? "",
+		};
+	};
+	const initial = {
+		slug: category?.slug ?? "",
+		routineStep: category ? String(category.routineStep) : "",
+		translations: { es: textsOf("es"), en: textsOf("en") },
+	};
+
+	const schema = z
+		.object({
+			slug: z
+				.string()
+				.trim()
+				.max(80)
+				.regex(SLUG_REGEX, m.admin_merch_slug_invalid()),
+			routineStep: z
+				.string()
+				.trim()
+				.regex(/^(?:[1-9]|1\d|20)$/, m.admin_category_step_invalid()),
+			translations: z.object({ es: texts, en: texts }),
+		})
+		.superRefine((value, ctx) =>
+			requireInEachLanguage(
+				ctx,
+				value.translations,
+				languagesInUse(value.translations, stored, defaultLocale),
+				"name",
+			),
+		);
+
+	const save = useMutation({
+		mutationFn: async (value: z.output<typeof schema>) => {
+			const changed = changedTexts(
+				value.translations,
+				initial.translations,
+				languagesInUse(value.translations, stored, defaultLocale),
+			);
+			const routineStep = Number(value.routineStep);
+			if (!category)
+				return parseResponse(
+					api().admin.categories.$post({
+						json: {
+							slug: value.slug,
+							routineStep,
+							translations: Object.fromEntries(changed),
+						},
+					}),
+				);
+			const param = { id: String(category.id) };
+			const fields = {
+				...(value.slug === category.slug ? {} : { slug: value.slug }),
+				...(routineStep === category.routineStep ? {} : { routineStep }),
+			};
+			if (Object.keys(fields).length > 0)
+				await parseResponse(
+					api().admin.categories[":id"].$patch({ param, json: fields }),
+				);
+			for (const [locale, text] of changed)
+				await parseResponse(
+					api().admin.categories[":id"].translations[":locale"].$put({
+						param: { ...param, locale },
+						json: text,
+					}),
+				);
+		},
+		onSuccess: async () => {
+			await refresh();
+			toast.success(m.admin_saved());
+			onClose();
+		},
+	});
+
+	const form = useAppForm({
+		defaultValues: initial,
+		validationLogic,
+		validators: {
+			onDynamic: schema,
+			onSubmitAsync: async ({ value }) => {
+				try {
+					await save.mutateAsync(schema.parse(value));
+					return null;
+				} catch (error) {
+					return serverErrors(error, fieldOf);
+				}
+			},
+		},
+		onSubmitInvalid: ({ formApi }) => touchInvalidFields(formApi),
+	});
+
+	return (
+		<form
+			noValidate
+			className="grid gap-4"
+			onSubmit={(event) => {
+				event.preventDefault();
+				form.handleSubmit();
+			}}
+		>
+			<form.AppForm>
+				<form.Subscribe selector={(state) => invalidLocales(state.fieldMeta)}>
+					{(invalid) => (
+						<LocaleTabs defaultLocale={defaultLocale} invalid={invalid}>
+							{(locale) => (
+								<>
+									<form.AppField
+										name={`translations.${locale}.name`}
+										listeners={{
+											onChange: ({ value }) => {
+												if (
+													locale === defaultLocale &&
+													!category &&
+													!form.getFieldMeta("slug")?.isDirty
+												)
+													form.setFieldValue("slug", slugify(value), {
+														dontUpdateMeta: true,
+													});
+											},
+										}}
+									>
+										{(field) => (
+											<field.TextField
+												label={m.admin_field_name()}
+												maxLength={80}
+											/>
+										)}
+									</form.AppField>
+									<form.AppField name={`translations.${locale}.description`}>
+										{(field) => (
+											<field.TextareaField
+												label={m.admin_field_description()}
+												maxLength={1000}
+											/>
+										)}
+									</form.AppField>
+									<form.AppField name={`translations.${locale}.seoTitle`}>
+										{(field) => (
+											<field.TextField
+												label={m.admin_merch_seo_title()}
+												maxLength={70}
+											/>
+										)}
+									</form.AppField>
+									<form.AppField name={`translations.${locale}.seoDescription`}>
+										{(field) => (
+											<field.TextareaField
+												label={m.admin_merch_seo_description()}
+												maxLength={160}
+											/>
+										)}
+									</form.AppField>
+								</>
+							)}
+						</LocaleTabs>
+					)}
+				</form.Subscribe>
+				<div className="grid gap-3 sm:grid-cols-[1fr_10rem]">
+					<form.AppField name="slug">
+						{(field) => (
+							<field.TextField label={m.admin_merch_slug()} maxLength={80} />
+						)}
+					</form.AppField>
+					<form.AppField name="routineStep">
+						{(field) => (
+							<field.TextField
+								label={m.admin_category_step()}
+								inputMode="numeric"
+								maxLength={2}
+							/>
+						)}
+					</form.AppField>
+				</div>
+				<form.FormError />
+				<DialogFooter>
+					<Button type="button" variant="outline" onClick={onClose}>
+						{m.admin_cancel()}
+					</Button>
+					<form.SubmitButton>{m.admin_save()}</form.SubmitButton>
+				</DialogFooter>
+			</form.AppForm>
+		</form>
+	);
+}
