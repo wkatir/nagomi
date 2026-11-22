@@ -8,7 +8,6 @@ import {
 	CouponForm,
 	FreeShippingProgress,
 } from "#/components/store/cart-totals";
-import { DemoNotice } from "#/components/store/demo-notice";
 import { LocationFields } from "#/components/store/form-fields";
 import { EmptyState } from "#/components/store/ui/empty-state";
 import { StoreButton } from "#/components/store/ui/store-button";
@@ -80,7 +79,6 @@ function CartPage() {
 						className="panel grid h-fit gap-5 p-5 lg:sticky lg:top-[calc(var(--header-height)+1.25rem)]"
 					>
 						<h2 className="type-h3">{m.checkout_summary()}</h2>
-						<DemoNotice />
 						<fieldset className="grid gap-3">
 							<legend className="mb-2 type-small font-medium">
 								{m.cart_estimate_title()}

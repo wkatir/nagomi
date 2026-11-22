@@ -9,7 +9,6 @@ import { cn } from "cn";
 import { Banknote, CreditCard, Landmark, Lock, Truck } from "lucide-react";
 import { useEffect, useState } from "react";
 import { CartTotals, CouponForm } from "#/components/store/cart-totals";
-import { DemoNotice } from "#/components/store/demo-notice";
 import {
 	ConsentField,
 	LocationFields,
@@ -538,7 +537,6 @@ function Checkout() {
 							{m.cart_items_count({ count: data.count })}
 						</p>
 					</div>
-					<DemoNotice />
 					<CouponForm cart={data} />
 					<CartTotals cart={data} />
 					{failure?.code === "cart_changed" && (

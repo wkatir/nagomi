@@ -14,7 +14,7 @@ export const sellerDetails = (store: {
 	};
 }) =>
 	store.demoStore
-		? [m.store_demo_seller(), m.store_demo_notice()]
+		? [m.store_demo_seller()]
 		: [
 				store.business.legalName,
 				// The settings API only accepts a tax ID together with its label.

@@ -103,6 +103,14 @@ function OrderPage() {
 	}
 	const o = order.data;
 	const placedAt = o.history.find((h) => h.to === "pending")?.at;
+	const demoMessage =
+		o.paymentMethod === "bank_transfer"
+			? m.order_demo_transfer()
+			: o.paymentMethod === "cash_on_delivery"
+				? m.order_demo_cod()
+				: o.cardProvider === "demo"
+					? m.order_demo_card()
+					: null;
 	return (
 		<div className="container-page pt-6 md:pt-8">
 			{search.nuevo ? (
@@ -127,18 +135,7 @@ function OrderPage() {
 				<h1 className="mb-4 type-h1">{m.order_page_title({ code: o.code })}</h1>
 			)}
 
-			<DemoNotice
-				message={
-					o.paymentMethod === "bank_transfer"
-						? m.order_demo_transfer()
-						: o.paymentMethod === "cash_on_delivery"
-							? m.order_demo_cod()
-							: o.cardProvider === "demo"
-								? m.order_demo_card()
-								: undefined
-				}
-				className="mb-4"
-			/>
+			{demoMessage && <DemoNotice message={demoMessage} className="mb-4" />}
 			<div className="panel flex flex-wrap items-center gap-x-8 gap-y-3 p-4 md:px-5">
 				<Meta label={m.order_code_label()}>
 					<span className="font-semibold tabular-nums">{o.code}</span>

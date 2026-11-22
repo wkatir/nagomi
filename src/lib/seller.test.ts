@@ -20,9 +20,8 @@ test("a registered store shows its legal identity, skipping what is not set", ()
 	]);
 });
 
-test("a demo store shows the academic identity and the demo notice, never a legal name", () => {
+test("a demo store shows the academic identity, never a legal name", () => {
 	expect(sellerDetails({ demoStore: true, business })).toEqual([
 		m.store_demo_seller(),
-		m.store_demo_notice(),
 	]);
 });
