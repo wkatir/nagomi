@@ -1,0 +1,94 @@
+.admin-theme {
+	color-scheme: dark;
+	--radius: 6px;
+	--background: #0e1120;
+	--foreground: #e9eaf3;
+	--foreground-secondary: #c9cce0;
+	--card: #151a2c;
+	--card-foreground: #e9eaf3;
+	--popover: #191e31;
+	--popover-foreground: #e9eaf3;
+	--primary: #9d8cff;
+	--primary-foreground: #0e1120;
+	--secondary: #1d2337;
+	--secondary-foreground: #e9eaf3;
+	--muted: #1d2337;
+	--muted-foreground: #a1a7c0;
+	--accent: #232a42;
+	--accent-foreground: #e9eaf3;
+	--destructive: #f87171;
+	--border: #2a3150;
+	--input: #5d6584;
+	--ring: #b3a6ff;
+	--success: #5fd68f;
+	--warning: #f5c04f;
+	--photo: #1d2337;
+	--inverse: #e9eaf3;
+	--inverse-foreground: #0e1120;
+	--inverse-muted: #3a4060;
+	--inverse-border: #c9cce0;
+	--chart-1: #9d8cff;
+	--chart-2: #4fd1c5;
+	--chart-3: #f5a65b;
+	--chart-4: #f472b6;
+	--chart-5: #94a3b8;
+	--sidebar: #0a0d19;
+	--sidebar-foreground: #e9eaf3;
+	--sidebar-primary: #9d8cff;
+	--sidebar-primary-foreground: #0e1120;
+	--sidebar-accent: #1d2337;
+	--sidebar-accent-foreground: #e9eaf3;
+	--sidebar-border: #222842;
+	--sidebar-ring: #b3a6ff;
+	background-color: var(--background);
+	color: var(--foreground);
+}
+
+.admin-theme ::selection {
+	background: var(--primary);
+	color: var(--primary-foreground);
+}
+
+.admin-paper {
+	color-scheme: light;
+	--radius: 4px;
+	--background: #ffffff;
+	--foreground: #14162a;
+	--foreground-secondary: #33364d;
+	--card: #ffffff;
+	--card-foreground: #14162a;
+	--popover: #ffffff;
+	--popover-foreground: #14162a;
+	--primary: #5b47e0;
+	--primary-foreground: #ffffff;
+	--secondary: #f1f0f7;
+	--secondary-foreground: #14162a;
+	--muted: #f1f0f7;
+	--muted-foreground: #5c5f75;
+	--accent: #f1f0f7;
+	--accent-foreground: #14162a;
+	--destructive: #b42318;
+	--border: #dddbe8;
+	--input: #8a8aa0;
+	--ring: #5b47e0;
+	background-color: var(--background);
+	color: var(--foreground);
+}
+
+body:has(.admin-paper) {
+	background-color: #eceaf3;
+}
+
+@media print {
+	body:has(.admin-paper) {
+		background-color: #ffffff;
+	}
+
+	.admin-paper {
+		box-shadow: none;
+	}
+
+	@page {
+		margin: 14mm;
+	}
+}

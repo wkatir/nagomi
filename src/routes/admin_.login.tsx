@@ -3,7 +3,8 @@ import { createFileRoute, redirect, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import { z } from "zod";
 import { Field } from "#/components/admin/field";
-import { Wordmark } from "#/components/brand/wordmark";
+import { useAdminTheme } from "#/components/admin/use-admin-theme";
+import { Logo } from "#/components/brand/wordmark";
 import { Button } from "#/components/ui/button";
 import { Input } from "#/components/ui/input";
 import { authClient } from "#/lib/auth-client";
@@ -47,6 +48,7 @@ function signInError(status: number, code?: string) {
 }
 
 function Login() {
+	useAdminTheme();
 	const router = useRouter();
 	const { data: store } = useSuspenseQuery(storeQuery);
 	const { data: methods } = useSuspenseQuery(signInMethodsQuery);
@@ -88,9 +90,12 @@ function Login() {
 	}
 
 	return (
-		<main className="flex min-h-screen items-center justify-center px-4">
-			<form onSubmit={onSubmit} className="grid w-full max-w-sm gap-5">
-				<Wordmark label={store.name} className="text-[26px]" />
+		<main className="flex min-h-screen items-center justify-center bg-[radial-gradient(ellipse_at_top,color-mix(in_oklab,var(--primary)_18%,transparent),transparent_60%)] px-4">
+			<form
+				onSubmit={onSubmit}
+				className="grid w-full max-w-sm gap-5 rounded-lg border bg-card p-8"
+			>
+				<Logo label={store.name} className="h-10 w-auto text-primary" />
 				<h1 className="type-h3">{m.admin_login_title()}</h1>
 				{methods.google && (
 					<Button

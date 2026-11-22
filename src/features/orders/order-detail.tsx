@@ -1,10 +1,8 @@
 import { useState } from "react";
 import { DetailColumns, DetailPage } from "#/components/admin/detail-layout";
-import {
-	orderStatusLabel,
-	paymentStatusLabel,
-} from "#/components/admin/labels";
+import { paymentStatusLabel } from "#/components/admin/labels";
 import { PageHeader } from "#/components/admin/page-header";
+import { OrderStatusBadge } from "#/components/admin/tone-badge";
 import { Badge } from "#/components/ui/badge";
 import { useStoreDate } from "#/hooks/use-store-date";
 import type { AdminOrder } from "#/lib/api";
@@ -42,17 +40,7 @@ export function OrderDetail({
 				title={order.code}
 				badges={
 					<>
-						<Badge
-							variant={
-								order.status === "pending"
-									? "secondary"
-									: order.status === "cancelled"
-										? "outline"
-										: "default"
-							}
-						>
-							{orderStatusLabel[order.status]()}
-						</Badge>
+						<OrderStatusBadge status={order.status} />
 						<Badge variant="outline">
 							{paymentStatusLabel[payment.status]()}
 						</Badge>

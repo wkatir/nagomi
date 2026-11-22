@@ -12,6 +12,7 @@ import {
 import { toast } from "sonner";
 import { AdminShell } from "#/components/admin/admin-shell";
 import { StaffAccessProvider } from "#/components/admin/staff-access";
+import { useAdminTheme } from "#/components/admin/use-admin-theme";
 import { Button } from "#/components/ui/button";
 import { FieldError } from "#/components/ui/field";
 import { Toaster } from "#/components/ui/sonner";
@@ -53,6 +54,7 @@ export const Route = createFileRoute("/admin")({
 });
 
 function AdminLayout() {
+	useAdminTheme();
 	const { data: store } = useSuspenseQuery(storeQuery);
 	const { user } = Route.useRouteContext();
 	const router = useRouter();
@@ -98,7 +100,7 @@ function AdminLayout() {
 					<Outlet />
 				</AdminShell>
 			</StaffAccessProvider>
-			<Toaster theme="light" />
+			<Toaster theme="dark" />
 		</>
 	);
 }
