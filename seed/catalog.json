@@ -8,6 +8,7 @@
     "freeShippingFrom": 5000, "lowStockThreshold": 5,
     "frequentCustomerMinOrders": 3, "inactiveCustomerDays": 90,
     "followupPendingPaymentHours": 48, "followupPaidUnshippedHours": 24, "followupShippedUndeliveredHours": 96,
+    "taxRateBp": 1300, "bankName": "Banco Agrícola", "bankAccountType": "Cuenta corriente", "bankAccountNumber": "[Número de cuenta pendiente]", "bankAccountHolder": "[Razón social pendiente]",
     "discordUrl": "https://discord.gg/nagomi-placeholder",
     "instagramUrl": "https://www.instagram.com/nagomi.placeholder",
     "tiktokUrl": "https://www.tiktok.com/@nagomi.placeholder",
@@ -414,8 +415,8 @@
     { "name": "Taller Nagomi (demo)", "contactName": "Equipo Nagomi", "brands": ["nagomi"], "leadTimeDays": 7, "notes": "Producción propia de la marca Nagomi, ficticia para la demostración del curso." }
   ],
   "purchasing": {
-    "openingOrderedOn": "2026-10-25",
-    "openingReceivedOn": "2026-11-01",
+    "openingOrderedOn": "2026-05-15",
+    "openingReceivedOn": "2026-05-25",
     "pending": [{ "sku": "RAT-003", "quantity": 12, "orderedOn": "2026-11-15", "reference": "PED-2026-002" }]
   },
   "shippingZones": [

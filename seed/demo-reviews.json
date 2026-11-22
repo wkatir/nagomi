@@ -1,0 +1,73 @@
+{
+  "note": "Demo data for the course: fictional reviewers, their delivered orders and their reviews. Not real customers.",
+  "ratings": {
+    "TEC-001": [4.8, 24],
+    "RAT-001": [4.7, 18],
+    "ALF-001": [4.9, 12],
+    "ILU-001": [4.6, 27],
+    "ACC-001": [4.8, 15],
+    "TEC-002": [4.7, 9],
+    "TEC-003": [4.5, 6],
+    "TEC-004": [4.4, 5],
+    "RAT-002": [4.6, 8],
+    "ALF-002": [4.5, 7],
+    "ALF-003": [4.3, 3],
+    "AUD-001": [4.6, 7],
+    "AUD-002": [4.2, 5],
+    "ILU-002": [4.8, 6],
+    "ILU-003": [4.4, 9],
+    "ACC-002": [4.5, 4],
+    "ACC-003": [4.7, 3],
+    "ACC-004": [4.3, 5]
+  },
+  "firstNames": ["Ana", "Carlos", "Sofía", "Diego", "Valeria", "Javier", "Camila", "Ricardo", "Fernanda", "Mauricio", "Lucía", "Eduardo", "Paola", "Óscar", "Mariana", "Rodrigo", "Karla", "Ernesto", "Gabriela", "Andrés", "Natalia", "Héctor", "Alejandra", "Francisco", "Michelle", "Raúl", "Daniela", "Julio", "Katherine", "Mario", "Rebeca", "Samuel", "Tatiana", "Wilfredo", "Ximena", "Bryan", "Claudia", "Gerardo", "Jennifer", "Manuel", "Patricia", "Rafael", "Stephanie", "Vladimir", "Yesenia", "Josué", "Melissa", "Nelson", "Irene", "César"],
+  "lastNames": ["Hernández", "Martínez", "López", "Ramírez", "Flores", "Rodríguez", "Mejía", "Castillo", "Rivera", "Morales", "Guzmán", "Portillo", "Aguilar", "Cruz", "Sánchez", "Orellana", "Alvarado", "Chávez", "Menjívar", "Quintanilla", "Romero", "Escobar", "Ventura", "Henríquez", "Bonilla"],
+  "texts": {
+    "5": [
+      ["Superó lo que esperaba", "Llegó antes de lo prometido y bien empacado. La calidad se nota desde que lo sacas de la caja."],
+      ["Excelente compra", "Lo uso todos los días para trabajar y jugar. Cero quejas, lo volvería a comprar."],
+      ["Muy recomendado", "Me lo entregaron en San Salvador al día siguiente. El repartidor muy amable."],
+      ["Justo lo que buscaba", "Las fotos son fieles, se ve igual o mejor en persona. Mi escritorio quedó otro nivel."],
+      ["Calidad premium", "Por el precio pensé que sería más sencillo, pero los acabados son muy buenos."],
+      ["Feliz con el pedido", "Pagué por transferencia y me confirmaron rápido. Todo llegó completo."],
+      ["10 de 10", "Lo compré como regalo para mi novio y le encantó. Venía en su caja original, sellado."],
+      ["Vale cada centavo", "Llevo un mes usándolo y sigue como nuevo. Buena atención por WhatsApp cuando pregunté."],
+      ["Muy buena tienda", "Primera vez que compro aquí y la experiencia fue excelente. Ya les volví a pedir."],
+      ["Se siente muy bien", "Se nota que está bien hecho. Lo recomiendo si estás armando tu setup."],
+      ["Llegó perfecto", "Envío a Santa Ana en tres días, todo en orden y con factura. Muy serios."],
+      ["Encantada", "Combina perfecto con el resto de mi escritorio. Los colores son tal cual la foto."],
+      ["Recomendadísimo", "Buen precio comparado con otras tiendas de aquí y no tuve que esperar importación."],
+      ["Mejor de lo esperado", "Lo usé toda la semana en la oficina y nadie se quejó del ruido. Muy contento."],
+      ["Gran producto", "Fácil de instalar, en cinco minutos ya estaba funcionando."],
+      ["Lo amo", "Le da un toque muy bonito a mi espacio. Las fotos no le hacen justicia."],
+      ["Compra segura", "Pagué con tarjeta sin problema y el pedido llegó cuando dijeron."],
+      ["Excelente atención", "Tenía una duda con la compatibilidad y me respondieron enseguida. El producto, perfecto."],
+      ["Muy satisfecho", "Segunda compra en Nagomi y otra vez todo bien. Así da gusto."],
+      ["Buenísimo", "La relación calidad precio es muy buena. Ya se lo recomendé a mis compañeros."],
+      ["Una maravilla", "Desde que lo tengo trabajo más cómodo. Debí comprarlo antes."],
+      ["Perfecto para mi setup", "Se ve elegante y minimalista, justo el estilo que quería."],
+      ["Cumple y sobra", "Lo pedí un lunes y el martes ya lo tenía. Empaque impecable."],
+      ["Sin queja alguna", "Funciona exactamente como lo describen. Muy recomendado."],
+      ["De lo mejor que he comprado", "Uso diario de ocho horas y sigue perfecto. Calidad que se siente."],
+      ["Muy lindo", "El color es precioso y el material se siente resistente."],
+      ["Totalmente recomendado", "Pagué contra entrega y todo fue muy fácil. El producto excelente."]
+    ],
+    "4": [
+      ["Muy bueno", "Cumple bien. Le quito una estrella porque el envío tardó un día más de lo indicado."],
+      ["Buena compra", "Buena calidad por el precio. La caja venía un poco golpeada, pero el producto intacto."],
+      ["Contento", "Funciona bien, aunque las instrucciones solo venían en inglés."],
+      ["Bastante bien", "Me gusta mucho, solo que el color es un poquito más claro que en la foto."],
+      ["Recomendable", "Buen producto. Me hubiera gustado que trajera un cable más largo."],
+      ["Bien en general", "Hace lo que promete. Tardé unos días en acostumbrarme, ahora no lo cambio."],
+      ["Satisfecho", "Llegó bien y funciona. La atención fue rápida cuando pregunté por el estado del pedido."],
+      ["Buen detalle para el escritorio", "Se ve bonito y es práctico. Por el precio esperaba un material un poco más grueso."],
+      ["Me gustó", "Buena experiencia de compra. Solo pediría más opciones de color."],
+      ["Cumple lo prometido", "Todo bien, aunque el empaque podría ser más ecológico."]
+    ],
+    "3": [
+      ["Está bien", "Funciona, pero esperaba un poco más por lo que cuesta. La entrega sí fue puntual."],
+      ["Regular", "Es bonito, aunque tuve que reconfigurarlo varias veces. Soporte me ayudó a resolverlo."],
+      ["Normal", "Cumple, sin más. El envío fuera de San Salvador tardó cuatro días."]
+    ]
+  }
+}

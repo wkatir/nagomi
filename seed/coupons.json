@@ -1,0 +1,44 @@
+[
+  {
+    "code": "BIENVENIDA10",
+    "type": "percentage",
+    "value": 10,
+    "minSubtotal": null,
+    "startsOn": "2026-08-01",
+    "endsOn": null,
+    "usageLimit": null,
+    "perCustomerLimit": 1,
+    "firstOrderOnly": true,
+    "status": "active",
+    "es": { "description": "10 % de descuento en tu primera compra." },
+    "en": { "description": "10% off your first purchase." }
+  },
+  {
+    "code": "SETUP15",
+    "type": "percentage",
+    "value": 15,
+    "minSubtotal": 8000,
+    "startsOn": "2026-09-01",
+    "endsOn": "2026-12-31",
+    "usageLimit": 100,
+    "perCustomerLimit": null,
+    "firstOrderOnly": false,
+    "status": "active",
+    "es": { "description": "15 % de descuento en compras desde US$80, hasta el 31 de diciembre de 2026." },
+    "en": { "description": "15% off orders from US$80, through 31 December 2026." }
+  },
+  {
+    "code": "VERANO20",
+    "type": "percentage",
+    "value": 20,
+    "minSubtotal": 5000,
+    "startsOn": "2026-06-01",
+    "endsOn": "2026-08-31",
+    "usageLimit": 50,
+    "perCustomerLimit": 1,
+    "firstOrderOnly": false,
+    "status": "active",
+    "es": { "description": "20 % de descuento de verano desde US$50 (vencido)." },
+    "en": { "description": "Summer 20% off from US$50 (expired)." }
+  }
+]

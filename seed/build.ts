@@ -8,6 +8,7 @@ import { usesReturnWindow } from '../src/lib/promises'
 import { isSvMunicipality, SV_MUNICIPALITIES, SV_PHONE_REGEX } from '../src/lib/sv-locations'
 import { normalizePhone } from '../src/server/domain/phone'
 import { phoneDigits, searchKey } from '../src/server/domain/search'
+import { demoSql } from './demo'
 import { readLanding } from './landing'
 import { insertMissing, lit, raw } from './sql'
 
@@ -39,6 +40,11 @@ type Catalog = {
     followupPendingPaymentHours: number
     followupPaidUnshippedHours: number
     followupShippedUndeliveredHours: number
+    taxRateBp: number
+    bankName: string
+    bankAccountType: string
+    bankAccountNumber: string
+    bankAccountHolder: string
     discordUrl: string
     instagramUrl: string
     tiktokUrl: string
@@ -87,12 +93,25 @@ type Catalog = {
     consents: [string, boolean][]
   }[]
 }
+type Coupon = {
+  code: string
+  type: 'percentage' | 'fixed'
+  value: number
+  minSubtotal: number | null
+  startsOn: string | null
+  endsOn: string | null
+  usageLimit: number | null
+  perCustomerLimit: number | null
+  firstOrderOnly: boolean
+  status: string
+} & PerLocale<{ description: string }>
 type Collections = ({ slug: string; showOnHome: boolean; cover?: string; products: string[] } & PerLocale<{ title: string; description: string | null }>)[]
 
 const dir = import.meta.dir
 const readJson = <T,>(file: string): T => JSON.parse(readFileSync(join(dir, file), 'utf8'))
 const data = readJson<Catalog>('catalog.json')
 const collections = readJson<Collections>('collections.json')
+const coupons = readJson<Coupon[]>('coupons.json')
 
 const fail = (problems: string[], what: string) => {
   if (problems.length) throw new Error(`${what}:\n${problems.map((p) => `  ${p}`).join('\n')}`)
@@ -187,15 +206,35 @@ const landing = readLanding(data.categories.map((c) => c.slug))
 const s = data.settings
 const whatsappNumber = s.whatsappNumber ? normalizePhone(s.whatsappNumber, s.countryCode).slice(1) : null
 
-const stocked = data.products.filter((p) => p.stock > 0)
+const pageVersion = (slug: string, locale: string) =>
+  raw(`(SELECT v.id FROM page_versions v JOIN pages p ON p.id = v.page_id WHERE p.slug = ${lit(slug)} AND v.locale = ${lit(locale)} AND v.version = 1)`)
+const demo = demoSql({
+  products: data.products,
+  bundles: data.bundles,
+  zones: data.shippingZones,
+  customers: data.customers,
+  coupons,
+  brands: data.brands,
+  settings: { name: s.name, currency: s.currency, countryCode: s.countryCode, orderCodePrefix: s.orderCodePrefix, freeShippingFrom: s.freeShippingFrom, taxRateBp: s.taxRateBp },
+  skuId,
+  bundleId: (slug) => bySlug(data.bundles, slug),
+  couponId: (code) => idOf(coupons, (c) => c.code, code),
+  pageVersion: (slug) => pageVersion(slug, base),
+  now: Date.now(),
+})
+// The opening stock covers what the demo orders sold, so each product ends with its stock.
+const opening = (p: (typeof data.products)[number]) => p.stock + (demo.sold.get(p.sku) ?? 0)
+const createdOf = (c: (typeof data.customers)[number], i: number) => {
+  const first = demo.firstSeen.get(i + 1)
+  return first !== undefined && first - 2 * 86_400_000 < Date.parse(c.createdAt) ? new Date(first - 2 * 86_400_000).toISOString().replace(/\.\d{3}Z$/, 'Z') : c.createdAt
+}
+const stocked = data.products.filter((p) => opening(p) > 0)
 const openingOrders = data.suppliers.flatMap((_, i) => {
   const items = stocked.filter((p) => supplierOf(p.sku) === i + 1)
   return items.length ? [{ supplierId: i + 1, items }] : []
 })
 const pendingOrders = data.purchasing.pending.map((p) => ({ ...p, supplierId: supplierOf(p.sku) }))
 const openingItems = openingOrders.flatMap((po, i) => po.items.map((p) => ({ purchaseOrderId: i + 1, product: p })))
-const pageVersion = (slug: string, locale: string) =>
-  raw(`(SELECT v.id FROM page_versions v JOIN pages p ON p.id = v.page_id WHERE p.slug = ${lit(slug)} AND v.locale = ${lit(locale)} AND v.version = 1)`)
 const plusDays = (iso: string, days: number) => new Date(Date.parse(iso) + days * 86_400_000).toISOString().replace('.000Z', 'Z')
 const specId = (productIndex: number, position: number) => productIndex * 10 + position
 const ids = (list: unknown[]) => list.map((_, i) => i + 1).join(', ')
@@ -228,6 +267,11 @@ const sql = [
       followup_pending_payment_hours: s.followupPendingPaymentHours,
       followup_paid_unshipped_hours: s.followupPaidUnshippedHours,
       followup_shipped_undelivered_hours: s.followupShippedUndeliveredHours,
+      tax_rate_bp: s.taxRateBp,
+      bank_name: s.bankName,
+      bank_account_type: s.bankAccountType,
+      bank_account_number: s.bankAccountNumber,
+      bank_account_holder: s.bankAccountHolder,
       discord_url: s.discordUrl,
       instagram_url: s.instagramUrl,
       tiktok_url: s.tiktokUrl,
@@ -274,23 +318,23 @@ const sql = [
     ...pendingOrders.map((po, i) => ({ id: openingOrders.length + i + 1, supplier_id: po.supplierId, reference: po.reference, status: 'ordered', tax_included: true, ordered_on: po.orderedOn, notes: null })),
   ]),
   insertMissing('purchase_order_items', ['id'], [
-    ...openingItems.map((it, i) => ({ id: i + 1, purchase_order_id: it.purchaseOrderId, variant_id: skuId(it.product.sku), quantity: it.product.stock, unit_cost: it.product.cost })),
+    ...openingItems.map((it, i) => ({ id: i + 1, purchase_order_id: it.purchaseOrderId, variant_id: skuId(it.product.sku), quantity: opening(it.product), unit_cost: it.product.cost })),
     ...pendingOrders.map((po, i) => ({ id: openingItems.length + i + 1, purchase_order_id: openingOrders.length + i + 1, variant_id: skuId(po.sku), quantity: po.quantity, unit_cost: productOf(po.sku).cost })),
   ]),
   insertMissing('purchase_receipts', ['id'], openingOrders.map((_, i) => ({ id: i + 1, purchase_order_id: i + 1, received_on: data.purchasing.openingReceivedOn, shipping_cost: 0, created_by: 'seed' }))),
-  insertMissing('purchase_receipt_lines', ['id'], openingItems.map((it, i) => ({ id: i + 1, receipt_id: it.purchaseOrderId, purchase_order_item_id: i + 1, quantity: it.product.stock, allocated_shipping_e4: 0 }))),
+  insertMissing('purchase_receipt_lines', ['id'], openingItems.map((it, i) => ({ id: i + 1, receipt_id: it.purchaseOrderId, purchase_order_item_id: i + 1, quantity: opening(it.product), allocated_shipping_e4: 0 }))),
   insertMissing('lots', ['id'], openingItems.map((it, i) => ({ id: i + 1, variant_id: skuId(it.product.sku), receipt_line_id: i + 1, unit_cost_e4: it.product.cost * 100 }))),
-  insertMissing('inventory_movements', ['id'], openingItems.map((it, i) => ({ id: i + 1, lot_id: i + 1, kind: 'receive', quantity: it.product.stock, created_by: 'seed' }))),
+  insertMissing('inventory_movements', ['id'], openingItems.map((it, i) => ({ id: i + 1, lot_id: i + 1, kind: 'receive', quantity: opening(it.product), created_at: `${data.purchasing.openingReceivedOn}T16:00:00Z`, created_by: 'seed' }))),
   openingOrders.length ? `UPDATE purchase_orders SET status = 'received' WHERE status = 'ordered' AND id IN (${ids(openingOrders)});` : '',
   insertMissing('pages', ['id'], pageSlugs.map((slug, i) => ({ id: i + 1, slug, is_published: true, footer_position: data.pages[slug] }))),
   // Version 1 of every text: checkout consents point at the exact version shown.
   insertMissing('page_versions', ['page_id', 'locale', 'version'], pageSlugs.flatMap((slug, i) => LOCALES.map((l) => ({ page_id: i + 1, locale: l, version: 1, ...(({ title, body }) => ({ title, body_markdown: body }))(page(slug, l)) })))),
-  insertMissing('customers', ['id'], data.customers.map((c, i) => ({ id: i + 1, name: c.name, phone_e164: c.phone, email: c.email, search_key: searchKey(c.name, c.email, phoneDigits(c.phone)), created_at: c.createdAt }))),
+  insertMissing('customers', ['id'], data.customers.map((c, i) => ({ id: i + 1, name: c.name, phone_e164: c.phone, email: c.email, search_key: searchKey(c.name, c.email, phoneDigits(c.phone)), created_at: createdOf(c, i) }))),
   insertMissing(
     'customer_addresses',
     ['id'],
     data.customers
-      .flatMap((c, i) => c.addresses.map((a) => ({ customer_id: i + 1, recipient_name: a.recipient, department: a.department, municipality: a.municipality, address_line: a.line, reference: a.reference, phone_e164: a.phone, is_default: a.default, created_at: c.createdAt, updated_at: c.createdAt })))
+      .flatMap((c, i) => c.addresses.map((a) => ({ customer_id: i + 1, recipient_name: a.recipient, department: a.department, municipality: a.municipality, address_line: a.line, reference: a.reference, phone_e164: a.phone, is_default: a.default, created_at: createdOf(c, i), updated_at: createdOf(c, i) })))
       .map((a, n) => ({ id: n + 1, ...a })),
   ),
   insertMissing(
@@ -304,12 +348,16 @@ const sql = [
           granted,
           page_version_id: pageVersion(purpose === 'terms' ? 'terms' : 'privacy', base),
           channel: 'web',
-          recorded_at: plusDays(c.createdAt, Math.max(0, n - 1)),
+          recorded_at: plusDays(createdOf(c, i), Math.max(0, n - 1)),
         })),
       )
       .map((c, n) => ({ id: n + 1, ...c })),
   ),
+  insertMissing('promotions', ['id'], coupons.map((c, i) => ({ id: i + 1, code: c.code, type: c.type, value: c.value, min_subtotal: c.minSubtotal, starts_on: c.startsOn, ends_on: c.endsOn, usage_limit: c.usageLimit, per_customer_limit: c.perCustomerLimit, first_order_only: c.firstOrderOnly, status: c.status }))),
+  insertMissing('promotion_translations', ['promotion_id', 'locale'], coupons.flatMap((c, i) => LOCALES.map((l) => ({ promotion_id: i + 1, locale: l, description: c[l].description })))),
+  demo.customersSql,
+  ...demo.sql,
 ].join('\n')
 
 writeFileSync(join(dir, 'seed.sql'), `${sql}\n`)
-console.log(`seed.sql written: ${data.products.length} products, ${data.bundles.length} bundles, ${collections.length} collections, ${pageSlugs.length} pages, ${data.customers.length} customers`)
+console.log(`seed.sql written: ${data.products.length} products, ${data.bundles.length} bundles, ${collections.length} collections, ${pageSlugs.length} pages, ${data.customers.length} customers, ${coupons.length} coupons; demo: ${demo.customers} more customers (${demo.reviewers} reviewers), ${demo.orders} orders, ${demo.reviews} reviews`)
