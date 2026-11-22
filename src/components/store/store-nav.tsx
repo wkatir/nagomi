@@ -11,7 +11,7 @@ import { promiseIcon } from "./promise-icon";
 const SIDEBAR_PROMISES = ["fast-shipping", "secure-payment", "warranty"];
 
 const item =
-	"flex min-h-9 items-center gap-3.5 rounded-lg px-3 type-small text-foreground-secondary transition-colors hover:bg-accent/60 hover:text-foreground aria-[current=page]:bg-accent aria-[current=page]:text-foreground";
+	"flex min-h-11 items-center gap-3.5 rounded-lg px-3 type-small lg:min-h-9 text-foreground-secondary transition-colors hover:bg-accent/60 hover:text-foreground aria-[current=page]:bg-accent aria-[current=page]:text-foreground";
 
 export function StoreNav({ className }: { className?: string }) {
 	const { data: nav } = useSuspenseQuery(navigationQuery(getLocale()));
