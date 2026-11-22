@@ -23,6 +23,7 @@ import { Input } from "#/components/ui/input";
 import { Label } from "#/components/ui/label";
 import type { AdminOrder } from "#/lib/api";
 import { m } from "#/paraglide/messages";
+import { canTransition, SHIPPED_STATUSES } from "#/server/domain/order-state";
 import type { useOrderActions } from "./mutations";
 import { RefundOrderDialog } from "./refund-order-dialog";
 import { ReturnOrderDialog } from "./return-order-dialog";
@@ -32,15 +33,14 @@ type Actions = ReturnType<typeof useOrderActions>;
 type Open = (dialog: OrderDialog) => void;
 type Order = AdminOrder["order"];
 
-export const canCancel = (order: Pick<Order, "status">) =>
-	order.status === "pending" || order.status === "paid";
+const canCancel = (order: Pick<Order, "status" | "paymentMethod">) =>
+	canTransition(order.status, "cancelled", order.paymentMethod);
 
-export const canShip = (order: Pick<Order, "status" | "paymentMethod">) =>
-	order.status === "paid" ||
-	(order.status === "pending" && order.paymentMethod === "cash_on_delivery");
+const canShip = (order: Pick<Order, "status" | "paymentMethod">) =>
+	canTransition(order.status, "shipped", order.paymentMethod);
 
 export const canReturn = ({ order, lines }: AdminOrder) =>
-	(order.status === "shipped" || order.status === "delivered") &&
+	(SHIPPED_STATUSES as readonly string[]).includes(order.status) &&
 	lines.some((line) => line.quantity > line.returned);
 
 const takesPayment = ({ order, payment }: AdminOrder) =>
