@@ -11,6 +11,7 @@ import {
 	orderStatusLabel,
 	paymentStatusLabel,
 } from "#/components/admin/labels";
+import { IfWritable } from "#/components/admin/staff-access";
 import { Button } from "#/components/ui/button";
 import {
 	Empty,
@@ -100,14 +101,14 @@ export function OrdersTable({
 					</>
 				}
 				actions={
-					<>
+					<IfWritable area="reports">
 						<Button variant="outline" size="sm" asChild>
 							<a href={exportHref(search)} download>
 								<DownloadIcon aria-hidden />
 								{m.admin_export_csv()}
 							</a>
 						</Button>
-					</>
+					</IfWritable>
 				}
 			/>
 			<DataTable

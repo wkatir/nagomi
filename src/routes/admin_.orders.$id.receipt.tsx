@@ -132,7 +132,7 @@ function Receipt() {
 					))}
 				</tbody>
 			</table>
-			<dl className="mt-6 ml-auto grid w-72 grid-cols-2 gap-1.5">
+			<dl className="mt-6 ml-auto grid w-72 grid-cols-2 gap-y-1.5">
 				<dt>{m.cart_subtotal()}</dt>
 				<dd className="text-right tabular-nums">{money(order.subtotal)}</dd>
 				{order.discount > 0 && (

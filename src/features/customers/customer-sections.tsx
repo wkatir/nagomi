@@ -9,6 +9,7 @@ import { Fact, Section } from "#/components/admin/section";
 import {
 	CustomerSegmentBadge,
 	OrderStatusBadge,
+	reviewStatusTone,
 	ToneBadge,
 } from "#/components/admin/tone-badge";
 import {
@@ -250,12 +251,6 @@ export function CustomerAddresses({ detail }: { detail: AdminCustomer }) {
 	);
 }
 
-const reviewTone = {
-	pending: "warning",
-	approved: "success",
-	rejected: "neutral",
-} as const;
-
 export function CustomerReviews({ detail }: { detail: AdminCustomer }) {
 	const formatDate = useStoreDate();
 	return (
@@ -275,7 +270,7 @@ export function CustomerReviews({ detail }: { detail: AdminCustomer }) {
 								<span className="type-small font-bold">
 									{review.productName ?? m.admin_customer_review_product()}
 								</span>
-								<ToneBadge tone={reviewTone[review.status]}>
+								<ToneBadge tone={reviewStatusTone[review.status]}>
 									{reviewStatusLabel[review.status]()}
 								</ToneBadge>
 							</div>

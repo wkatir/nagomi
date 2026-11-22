@@ -115,7 +115,13 @@ export function FollowupTable({
 							</div>
 						</TableCell>
 						<TableCell>
-							<div className="grid justify-items-start gap-1">
+							<div
+								className={
+									compact
+										? "flex flex-wrap items-center gap-2"
+										: "grid justify-items-start gap-1"
+								}
+							>
 								<span className="type-small font-medium">
 									{followupActionLabel[order.action]()}
 								</span>
@@ -189,7 +195,7 @@ export function FollowupDigest({
 	);
 }
 
-const DIGEST_ROWS = 5;
+const DIGEST_ROWS = 3;
 
 export function FollowupDigestLoader() {
 	const query = useQuery(followupsQuery);

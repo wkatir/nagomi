@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { reviewStatusLabel } from "#/components/admin/labels";
 import { QueryError } from "#/components/admin/query-error";
 import { Section } from "#/components/admin/section";
+import { reviewStatusTone, ToneBadge } from "#/components/admin/tone-badge";
 import { Badge } from "#/components/ui/badge";
 import { Button } from "#/components/ui/button";
 import { Skeleton } from "#/components/ui/skeleton";
@@ -89,11 +90,9 @@ export function ReviewsModeration() {
 								<span className="font-medium">
 									{r.productName ?? r.productSlug} · {"★".repeat(r.rating)}
 								</span>
-								<Badge
-									variant={r.status === "approved" ? "default" : "outline"}
-								>
+								<ToneBadge tone={reviewStatusTone[r.status]}>
 									{reviewStatusLabel[r.status]()}
-								</Badge>
+								</ToneBadge>
 							</div>
 							<p className="font-medium">{r.title}</p>
 							<p className="type-small">{r.body}</p>

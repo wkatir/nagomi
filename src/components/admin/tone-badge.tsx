@@ -1,9 +1,18 @@
 import { cn } from "cn";
 import type { ComponentProps } from "react";
 import { Badge } from "#/components/ui/badge";
-import type { CustomerSegment, OrderStatus } from "#/lib/enums";
+import type {
+	CustomerSegment,
+	OrderPaymentStatus,
+	OrderStatus,
+	ReviewStatus,
+} from "#/lib/enums";
 import { m } from "#/paraglide/messages";
-import { customerSegmentLabel, orderStatusLabel } from "./labels";
+import {
+	customerSegmentLabel,
+	orderStatusLabel,
+	paymentStatusLabel,
+} from "./labels";
 
 export type Tone =
 	| "neutral"
@@ -77,3 +86,26 @@ export function CustomerSegmentBadge({
 		</ToneBadge>
 	);
 }
+
+export const paymentStatusTone: Record<OrderPaymentStatus, Tone> = {
+	unpaid: "warning",
+	partially_paid: "warning",
+	paid: "success",
+	refund_due: "danger",
+	refunded: "neutral",
+	nothing_due: "neutral",
+};
+
+export function PaymentStatusBadge({ status }: { status: OrderPaymentStatus }) {
+	return (
+		<ToneBadge tone={paymentStatusTone[status]}>
+			{paymentStatusLabel[status]()}
+		</ToneBadge>
+	);
+}
+
+export const reviewStatusTone: Record<ReviewStatus, Tone> = {
+	pending: "warning",
+	approved: "success",
+	rejected: "neutral",
+};

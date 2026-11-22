@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { DetailColumns, DetailPage } from "#/components/admin/detail-layout";
-import { paymentStatusLabel } from "#/components/admin/labels";
 import { PageHeader } from "#/components/admin/page-header";
-import { OrderStatusBadge } from "#/components/admin/tone-badge";
-import { Badge } from "#/components/ui/badge";
+import {
+	OrderStatusBadge,
+	PaymentStatusBadge,
+} from "#/components/admin/tone-badge";
 import { useStoreDate } from "#/hooks/use-store-date";
 import type { AdminOrder } from "#/lib/api";
 import { useOrderActions } from "./mutations";
@@ -41,9 +42,7 @@ export function OrderDetail({
 				badges={
 					<>
 						<OrderStatusBadge status={order.status} />
-						<Badge variant="outline">
-							{paymentStatusLabel[payment.status]()}
-						</Badge>
+						<PaymentStatusBadge status={payment.status} />
 					</>
 				}
 				description={formatDate(order.createdAt, {
