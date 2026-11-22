@@ -9,7 +9,6 @@ export const SUPPLIER_SORTS = [
 	"createdAt",
 ] as const;
 
-// `q` is a name or a contact.
 export const supplierListSearch = pagedSearch(SUPPLIER_SORTS, {
 	sort: "name",
 	dir: "asc",

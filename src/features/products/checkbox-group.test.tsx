@@ -28,20 +28,20 @@ describe("toggled", () => {
 describe("CheckboxGroup", () => {
 	const html = renderToStaticMarkup(
 		<CheckboxGroup
-			legend="Needs"
+			legend="Connectivity"
 			options={[
-				{ value: "acne", label: "Acne" },
-				{ value: "dryness", label: "Dryness" },
+				{ value: "bluetooth", label: "Bluetooth" },
+				{ value: "wired", label: "Wired" },
 			]}
-			value={["dryness"]}
+			value={["wired"]}
 			onChange={() => {}}
 		/>,
 	);
 
 	test("names the group and each option", () => {
 		expect(html).toContain("<legend");
-		expect(html).toContain("Needs");
-		expect(html.indexOf("Acne")).toBeLessThan(html.indexOf("Dryness"));
+		expect(html).toContain("Connectivity");
+		expect(html.indexOf("Bluetooth")).toBeLessThan(html.indexOf("Wired"));
 	});
 
 	test("shows as checked the ones chosen, and only those", () => {

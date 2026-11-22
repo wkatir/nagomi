@@ -56,8 +56,6 @@ function clientWith({ defaultLocale = "es", queries = [] }: Options) {
 	return queryClient;
 }
 
-// The markup a back office component renders on the server, with the store's data loaded as
-// the admin layout loads it before any screen (money, dates and the default language read it).
 export function renderAdmin(ui: ReactNode, options: Options = {}) {
 	return renderToStaticMarkup(
 		<QueryClientProvider client={clientWith(options)}>
@@ -68,7 +66,6 @@ export function renderAdmin(ui: ReactNode, options: Options = {}) {
 	);
 }
 
-// The same inside a router, for what draws links.
 export async function renderAdminPage(ui: ReactNode, options: Options = {}) {
 	const router = createRouter({
 		routeTree: createRootRoute({ component: () => ui }),

@@ -11,8 +11,6 @@ export type BrandRow = InferResponseType<
 >["items"][number];
 export type BrandDetail = InferResponseType<BrandsApi[":id"]["$get"], 200>;
 
-// Every query of the brands module starts with `brandsKeys.all`, so one invalidation refreshes
-// the list and the open dialog after a change.
 export const brandsKeys = { all: ["admin", "brands"] as const };
 
 export const brandsQuery = (search: BrandListSearch) =>

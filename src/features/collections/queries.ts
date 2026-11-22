@@ -14,8 +14,6 @@ export type CollectionDetail = InferResponseType<
 	200
 >;
 
-// Every query of the collections module starts with `collectionsKeys.all`, so one
-// invalidation refreshes the list and the open collection after a change.
 export const collectionsKeys = { all: ["admin", "collections"] as const };
 
 export const collectionsQuery = (search: CollectionListSearch) =>

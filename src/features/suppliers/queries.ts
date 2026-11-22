@@ -18,8 +18,6 @@ type SupplierItems = InferResponseType<
 >;
 export type SupplierItem = SupplierItems[number];
 
-// Every query of the suppliers module starts with `suppliersKeys.all`, so one invalidation
-// refreshes the lists, the open supplier and its products after a change.
 const suppliersKeys = {
 	all: ["admin", "suppliers"] as const,
 	list: (search: SupplierListSearch) =>
@@ -46,7 +44,6 @@ export const supplierQuery = (id: number) =>
 			),
 	});
 
-// Includes archived items.
 export const supplierItemsQuery = (id: number) =>
 	queryOptions({
 		queryKey: suppliersKeys.items(id),

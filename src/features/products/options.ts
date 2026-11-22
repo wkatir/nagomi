@@ -6,8 +6,6 @@ import {
 import { api, parseResponse } from "#/lib/api";
 import { productsKeys } from "./queries";
 
-// The only place the products module reads brands and categories from. Archived ones
-// stay named, since a product may point at one.
 export type ProductOption = {
 	value: string;
 	label: string;
@@ -39,9 +37,7 @@ export const productOptionsQuery = queryOptions({
 	},
 });
 
-// For a toolbar: the filters fill in when the lists arrive.
 export const useProductOptions = () => useQuery(productOptionsQuery);
 
-// For a form, whose route loads the lists first.
 export const useLoadedProductOptions = () =>
 	useSuspenseQuery(productOptionsQuery).data;

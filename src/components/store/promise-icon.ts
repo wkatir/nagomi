@@ -8,7 +8,7 @@ import {
 	Truck,
 } from "lucide-react";
 
-// Store promises are data; their slugs only pick an icon. A new promise gets a plain check.
+// A promise whose slug has no icon gets a plain check.
 const icons: Record<string, LucideIcon> = {
 	warranty: ShieldCheck,
 	"fast-shipping": Truck,

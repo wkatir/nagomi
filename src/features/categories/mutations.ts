@@ -6,8 +6,6 @@ import {
 } from "../merchandising/status-change";
 import { categoriesKeys } from "./queries";
 
-// Archiving a category with a published product is refused (`in_use`); restoring one needs its
-// name in the store's principal language.
 export const useCategoryStatus = () =>
 	useStatusChange<ArchivableStatus>({
 		root: categoriesKeys.all,

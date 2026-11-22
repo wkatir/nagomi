@@ -2,9 +2,6 @@ import { z } from "zod";
 import { daysBetween } from "#/lib/dates";
 import { calendarDate } from "./dates";
 
-// Checked by both the API and the screens, so a screen never asks for a range the API
-// refuses.
-
 export const GRANULARITIES = ["day", "week", "month"] as const;
 export type Granularity = (typeof GRANULARITIES)[number];
 

@@ -14,8 +14,6 @@ export type CategoryDetail = InferResponseType<
 	200
 >;
 
-// Every query of the categories module starts with `categoriesKeys.all`, so one invalidation
-// refreshes the list and the open dialog after a change.
 export const categoriesKeys = { all: ["admin", "categories"] as const };
 
 export const categoriesQuery = (search: CategoryListSearch) =>

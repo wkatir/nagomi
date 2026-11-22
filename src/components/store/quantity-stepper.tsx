@@ -15,7 +15,6 @@ export function QuantityStepper({
 	value: number;
 	onChange: (quantity: number) => void;
 	max: number;
-	// Accessible name of the group, for example "Quantity of <product>".
 	label: string;
 	size?: "sm" | "lg";
 	className?: string;

@@ -33,7 +33,6 @@ const fieldOf = (path: string) =>
 		? path
 		: undefined;
 
-// Editing changes the kind, size and descriptions of a photo, never its file.
 export function PhotoDialog({
 	product,
 	photo,
@@ -93,8 +92,7 @@ export function PhotoDialog({
 			const created = await parseResponse(
 				api().admin["product-images"].$post(undefined, { init: { body } }),
 			);
-			// The type also holds the text of the router's early refusals, which parseResponse
-			// throws.
+			// The type also holds the router's early text refusals, which parseResponse throws.
 			if (typeof created === "string")
 				throw new Error(`Unexpected upload answer: ${created}`);
 		},

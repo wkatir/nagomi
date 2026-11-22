@@ -19,8 +19,6 @@ import type { AdminZone } from "./queries";
 
 const column = createColumnHelper<ListFeatures, AdminZone>();
 
-// An archived zone may have no name in the default language (the API only asks for it to
-// restore or to create).
 export const zoneName = (zone: AdminZone, defaultLocale: Locale) =>
 	zone.translations.find((t) => t.locale === defaultLocale)?.name ?? zone.slug;
 

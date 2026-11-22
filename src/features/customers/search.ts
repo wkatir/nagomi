@@ -18,7 +18,6 @@ export const clearedFilters = {
 export const isFiltered = (search: CustomerListSearch) =>
 	Boolean(search.q || search.segment || search.marketing);
 
-// The whole search, not one page of it.
 export const exportHref = (search: CustomerListSearch) => {
 	const { page: _p, pageSize: _s, sort: _o, dir: _d, ...filters } = search;
 	const query = new URLSearchParams(toQuery(filters)).toString();

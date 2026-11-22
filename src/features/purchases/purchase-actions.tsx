@@ -34,8 +34,6 @@ const canCancel = (status: Purchase["status"]) =>
 const canReceive = (status: Purchase["status"]) =>
 	status === "ordered" || status === "partially_received";
 
-// Correcting and cancelling are behind "more": they are the exception. Receiving is on the
-// lines card.
 export function PurchaseHeaderActions({
 	purchase,
 	open,

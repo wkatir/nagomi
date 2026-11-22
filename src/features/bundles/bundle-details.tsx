@@ -31,7 +31,6 @@ const baseSchema = z.object({
 	price: z.string(),
 });
 
-// A published bundle keeps its address.
 export function BundleDetails({ bundle }: { bundle: BundleDetail }) {
 	const refresh = useRefresh(bundlesKeys.all);
 	const locked = bundle.status === "published";
@@ -103,7 +102,7 @@ export function BundleDetails({ bundle }: { bundle: BundleDetail }) {
 		>
 			<form.AppForm>
 				<Section
-					title={m.admin_routine_details()}
+					title={m.admin_bundle_details()}
 					action={
 						<form.Subscribe selector={(state) => state.isDefaultValue}>
 							{(unchanged) => (
@@ -154,13 +153,13 @@ export function BundleDetails({ bundle }: { bundle: BundleDetail }) {
 						</form.AppField>
 						{locked && (
 							<p className="type-meta text-muted-foreground">
-								{m.admin_routine_slug_locked()}
+								{m.admin_bundle_slug_locked()}
 							</p>
 						)}
 						<form.AppField name="position">
 							{(field) => (
 								<field.TextField
-									label={m.admin_routine_position()}
+									label={m.admin_bundle_position()}
 									inputMode="numeric"
 									maxLength={4}
 								/>
@@ -168,7 +167,7 @@ export function BundleDetails({ bundle }: { bundle: BundleDetail }) {
 						</form.AppField>
 						<form.AppField name="isFeatured">
 							{(field) => (
-								<field.CheckboxField label={m.admin_routine_featured()} />
+								<field.CheckboxField label={m.admin_bundle_featured()} />
 							)}
 						</form.AppField>
 						<form.FormError />

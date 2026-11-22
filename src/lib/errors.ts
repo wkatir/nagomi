@@ -1,8 +1,6 @@
 import { m } from "#/paraglide/messages";
 import { apiErrorOf } from "./api";
 
-// A code the server can answer must be here, or in a case of errorMessage, or be listed in
-// errors.test.ts as shown generically.
 const MESSAGES: Record<string, () => string> = {
 	product_unavailable: m.error_product_unavailable,
 	variant_unavailable: m.error_variant_unavailable,
@@ -117,14 +115,12 @@ const PROMOTION_REASONS: Record<string, () => string> = {
 	promotion_changed: m.error_cart_changed,
 };
 
-// Why a coupon does not apply; `minimum` is the formatted minimum subtotal when that is
-// the reason.
 export function promotionReasonMessage(reason: string, minimum: string | null) {
-	if (reason === "min_subtotal_not_met" && minimum)
+	if (reason === "min_subtotal_not_met" && minimum !== null)
 		return m.promotion_reason_min_subtotal_not_met({ amount: minimum });
 	return Object.hasOwn(PROMOTION_REASONS, reason)
 		? PROMOTION_REASONS[reason]()
-		: m.promotion_reason_not_found();
+		: m.error_generic();
 }
 
 export function errorMessage(error: unknown): string {
@@ -134,34 +130,12 @@ export function errorMessage(error: unknown): string {
 		return m.error_generic();
 	}
 	switch (e.code) {
-		case "quantity_exceeds_limit":
-			return typeof e.body.max === "number"
-				? m.error_quantity_exceeds_limit({ max: String(e.body.max) })
-				: m.error_generic();
-		case "insufficient_stock": {
-			// `lines`: an order's (back office); `items`: a cart's (storefront).
-			if (Array.isArray(e.body.lines))
-				return m.error_insufficient_stock_lines({
-					lines: (
-						e.body.lines as {
-							sku: string;
-							requested: number;
-							available: number;
-						}[]
-					)
-						.map((l) => `${l.sku} (${l.available} / ${l.requested})`)
-						.join(", "),
-				});
-			if (Array.isArray(e.body.items)) return m.error_insufficient_stock_cart();
-			const available = String(e.body.available);
-			// Stock adjustments report only what is left; order fulfilment also reports the request.
-			return e.body.requested === undefined
-				? m.error_insufficient_stock_available({ available })
-				: m.error_insufficient_stock({
-						available,
-						requested: String(e.body.requested),
+		case "insufficient_stock":
+			return Array.isArray(e.body.items)
+				? m.error_insufficient_stock_cart()
+				: m.error_insufficient_stock_available({
+						available: String(e.body.available),
 					});
-		}
 		case "promotion_invalid":
 			return promotionReasonMessage(String(e.body.reason), null);
 		case "variant_has_stock":

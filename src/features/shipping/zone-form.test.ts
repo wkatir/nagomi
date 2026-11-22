@@ -104,7 +104,6 @@ describe("zoneSchema", () => {
 		expect(refusals({ deliveryDaysMin: "2", deliveryDaysMax: "2" })).toEqual(
 			[],
 		);
-		// A day that is not a number is said once, not also as out of order.
 		expect(refusals({ deliveryDaysMin: "abc", deliveryDaysMax: "2" })).toEqual([
 			["deliveryDaysMin", m.admin_zone_days_invalid()],
 		]);
@@ -254,7 +253,6 @@ describe("changedTexts", () => {
 				stored,
 			),
 		).toEqual({ en: { name: "Downtown", description: "Near the plaza" } });
-		// Clearing a description is a change.
 		expect(
 			changedTexts(both(["Centro", ""], ["Downtown", ""]), stored),
 		).toEqual({ en: { name: "Downtown", description: "" } });

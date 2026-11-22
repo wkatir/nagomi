@@ -11,8 +11,6 @@ export type BundleRow = InferResponseType<
 >["items"][number];
 export type BundleDetail = InferResponseType<BundlesApi[":id"]["$get"], 200>;
 
-// Every query of the bundles module starts with `bundlesKeys.all`, so one invalidation
-// refreshes the list and the open bundle after a change.
 export const bundlesKeys = { all: ["admin", "bundles"] as const };
 
 export const bundlesQuery = (search: BundleListSearch) =>

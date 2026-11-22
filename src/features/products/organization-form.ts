@@ -1,12 +1,10 @@
 import type { AdminProduct } from "#/lib/api";
 
-// Ids as the text of a select.
 export type OrganizationValues = {
 	brandId: string;
 	categoryId: string;
 };
 
-// The page remounts the card when this changes (see basicsValues).
 export const organizationValues = (
 	product: AdminProduct,
 ): OrganizationValues => ({
@@ -14,8 +12,7 @@ export const organizationValues = (
 	categoryId: String(product.categoryId),
 });
 
-// Only what differs: sending an unchanged brand or category would make the API check it
-// again and refuse one archived after the product chose it.
+// Only what differs: the API would refuse an unchanged brand or category archived since.
 export function organizationPatch(
 	value: OrganizationValues,
 	started: OrganizationValues,

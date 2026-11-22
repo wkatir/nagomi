@@ -68,8 +68,6 @@ describe("ZonesTable", () => {
 		expect(html).toContain("$3.50");
 		expect(html).toContain(m.admin_zone_days_range({ min: 1, max: 3 }));
 		expect(html).toContain(m.admin_zone_status_active());
-		// Archived without a name in the default language: its identifier names it, as the
-		// name, under it and in the label of its menu.
 		expect(html.split(">retiro<").length - 1).toBe(2);
 		expect(html).toContain(
 			`aria-label="${m.admin_zone_row_actions({ name: "retiro" })}"`,
@@ -112,7 +110,6 @@ describe("ZonesTable", () => {
 			m.admin_col_status(),
 		])
 			expect(html).toContain(label);
-		// In the store's order by default: the position column is sorted, ascending.
 		const sorted = /<th[^>]*aria-sort="ascending"[^>]*>.*?<\/th>/.exec(html);
 		expect(sorted?.[0]).toContain(m.admin_zone_col_position());
 	});

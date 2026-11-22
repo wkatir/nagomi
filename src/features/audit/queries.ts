@@ -22,7 +22,7 @@ export const auditFeedQuery = (filters: AuditListSearch) =>
 					query: toQuery({ ...filters, cursor: pageParam }),
 				}),
 			),
-		getNextPageParam: (last) => last.nextCursor ?? undefined,
+		getNextPageParam: (last) => last.nextCursor,
 	});
 
 export const auditActorsQuery = queryOptions({

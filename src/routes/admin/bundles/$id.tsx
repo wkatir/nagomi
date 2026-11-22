@@ -17,7 +17,6 @@ export const Route = createFileRoute("/admin/bundles/$id")({
 		},
 		stringify: ({ id }) => ({ id: String(id) }),
 	},
-	// The store's principal language is loaded with the bundle: the editor needs it to open.
 	loader: async ({ context, params }): Promise<LoaderCrumb> => {
 		try {
 			const [bundle, settings] = await Promise.all([
@@ -33,9 +32,7 @@ export const Route = createFileRoute("/admin/bundles/$id")({
 		}
 	},
 	pendingComponent: DetailSkeleton,
-	notFoundComponent: () => (
-		<RecordNotFound listLabel={m.admin_nav_routines()} />
-	),
+	notFoundComponent: () => <RecordNotFound listLabel={m.admin_nav_bundles()} />,
 	component: Bundle,
 });
 

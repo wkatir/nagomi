@@ -97,8 +97,6 @@ const defaultOgImage = (
 	alt: string,
 ): OgImage => ({ url: `${origin}${OG_IMAGE_PATH[locale]}`, ...OG_IMAGE, alt });
 
-// Store pages get the site-wide Open Graph tags from the store layout; a page overrides
-// them with this.
 export function pageMeta({
 	title,
 	storeName,
@@ -205,7 +203,6 @@ export function organizationJsonLd(
 	};
 }
 
-// `name` is the site name Google shows.
 export function webSiteJsonLd(
 	origin: string,
 	store: StoreIdentity,
@@ -231,7 +228,6 @@ export function webSiteJsonLd(
 
 export type Availability = "InStock" | "BackOrder" | "PreOrder" | "OutOfStock";
 
-// A product without sellable units cannot be ordered (src/server/domain/stock.ts).
 export const stockAvailability = (
 	availability: "in_stock" | "sold_out",
 ): Availability => (availability === "in_stock" ? "InStock" : "OutOfStock");

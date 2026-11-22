@@ -24,7 +24,6 @@ import { paymentLabel } from "#/lib/payment";
 import { whatsappLink } from "#/lib/whatsapp";
 import { m } from "#/paraglide/messages";
 
-// A list, not a table: a line is a name and two figures, which fits any width.
 export function OrderLines({
 	detail,
 	action,
@@ -327,8 +326,7 @@ function MessageActions({
 
 type Event = AdminOrder["audit"][number];
 
-// `data` is whatever the API wrote, so each piece is checked before use; an action this does
-// not know shows its own name.
+// `data` is untyped JSON from the audit log, so each piece is checked before use.
 function eventText(event: Event, money: (amount: number) => string): string {
 	const data = (event.data ?? {}) as Record<string, unknown>;
 	switch (event.action) {

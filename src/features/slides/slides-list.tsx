@@ -51,7 +51,6 @@ function SlideRow({
 	moveDown,
 }: {
 	slide: Slide;
-	// From 1; undefined for an archived slide.
 	position: number | undefined;
 	moveUp: (() => void) | undefined;
 	moveDown: (() => void) | undefined;

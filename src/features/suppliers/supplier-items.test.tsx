@@ -27,9 +27,9 @@ const item = (change: Partial<SupplierItem>): SupplierItem => ({
 	supplierStatus: "active",
 	leadTimeDays: 7,
 	variantId: 1,
-	sku: "OIL-50",
+	sku: "RAT-050",
 	brand: "Brand",
-	name: "Aceite",
+	name: "Ratón",
 	optionLabel: null,
 	supplierSku: null,
 	packSize: null,
@@ -51,18 +51,18 @@ describe("SupplierItems", () => {
 			item({}),
 			item({ id: 2, variantId: 2, sku: "TEC-002", optionLabel: "Negro" }),
 		]);
-		expect(out).toContain("Brand Aceite");
-		expect(out).toContain("Brand Aceite Negro");
-		expect(out).toContain("OIL-50");
+		expect(out).toContain("Brand Ratón");
+		expect(out).toContain("Brand Ratón Negro");
+		expect(out).toContain("RAT-050");
 		expect(out).toContain("TEC-002");
 	});
 
 	test("says what the supplier ships it as: its code, pack and minimum", () => {
 		const out = html([
-			item({ supplierSku: "AC-50", packSize: 6, minOrderQuantity: 12 }),
+			item({ supplierSku: "PL-50", packSize: 6, minOrderQuantity: 12 }),
 		]);
 		expect(out).toContain(
-			`OIL-50 · ${m.admin_supplier_item_code({ code: "AC-50" })} · ${m.admin_supplier_item_pack({ count: 6 })} · ${m.admin_supplier_item_minimum({ count: 12 })}`,
+			`RAT-050 · ${m.admin_supplier_item_code({ code: "PL-50" })} · ${m.admin_supplier_item_pack({ count: 6 })} · ${m.admin_supplier_item_minimum({ count: 12 })}`,
 		);
 		const bare = html([item({})]);
 		expect(bare).not.toContain(m.admin_supplier_item_pack({ count: 6 }));
@@ -72,7 +72,7 @@ describe("SupplierItems", () => {
 	test("marks the preferred source and dims the archived products", () => {
 		const out = html([
 			item({ isPreferred: true }),
-			item({ id: 2, variantId: 2, sku: "OIL-100", status: "archived" }),
+			item({ id: 2, variantId: 2, sku: "RAT-100", status: "archived" }),
 		]);
 		expect(out.split(m.admin_supplier_item_preferred())).toHaveLength(2);
 		expect(out).toContain('data-archived="true"');
@@ -84,7 +84,7 @@ describe("SupplierItems", () => {
 		const out = html([item({})]);
 		expect(out).toContain(m.admin_supplier_item_new());
 		expect(out).toContain(
-			m.admin_supplier_item_actions({ name: "Brand Aceite" }),
+			m.admin_supplier_item_actions({ name: "Brand Ratón" }),
 		);
 	});
 
@@ -97,10 +97,10 @@ describe("SupplierItems", () => {
 	test("takes no change for an archived supplier: no add button and no menus", () => {
 		const archived: Supplier = { ...supplier, status: "archived" };
 		const out = html([item({})], archived);
-		expect(out).toContain("Brand Aceite");
+		expect(out).toContain("Brand Ratón");
 		expect(out).not.toContain(m.admin_supplier_item_new());
 		expect(out).not.toContain(
-			m.admin_supplier_item_actions({ name: "Brand Aceite" }),
+			m.admin_supplier_item_actions({ name: "Brand Ratón" }),
 		);
 		const empty = html([], archived);
 		expect(empty).toContain(m.admin_supplier_items_empty());

@@ -96,12 +96,12 @@ describe("UsageList", () => {
 					status: "active",
 					name: "Teclado",
 				},
-				{ id: 2, productId: 2, slug: "cream", status: "archived", name: null },
+				{ id: 2, productId: 2, slug: "raton", status: "archived", name: null },
 			],
 		});
 		expect(html).toContain("Esenciales");
 		expect(html).toContain("Teclado");
-		expect(html).toContain("cream");
+		expect(html).toContain("raton");
 	});
 
 	test("marks an archived photo and no other", async () => {
@@ -115,7 +115,7 @@ describe("UsageList", () => {
 					status: "active",
 					name: "Teclado",
 				},
-				{ id: 2, productId: 2, slug: "cream", status: "archived", name: null },
+				{ id: 2, productId: 2, slug: "raton", status: "archived", name: null },
 			],
 		});
 		expect(html.split(m.admin_library_photo_archived())).toHaveLength(2);

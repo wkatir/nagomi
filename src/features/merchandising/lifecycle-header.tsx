@@ -12,7 +12,6 @@ import type { ProductStatus } from "#/lib/enums";
 import { m } from "#/paraglide/messages";
 import { lifecycleBadge, lifecycleStatusLabel } from "./status-labels";
 
-// Unpublishing and archiving sit behind "more" since they are the exception.
 export function LifecycleHeader({
 	title,
 	status,

@@ -156,7 +156,6 @@ describe("CustomerConsents", () => {
 		expect(html).toContain(m.admin_consent_terms());
 		expect(html).toContain(m.admin_consent_revoked());
 		expect(html).toContain(m.admin_consent_granted());
-		// The history says where each change was given; the Accordion keeps it closed.
 		expect(html).toContain('data-state="closed"');
 	});
 });

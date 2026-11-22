@@ -7,7 +7,6 @@ import { m } from "#/paraglide/messages";
 
 export const Route = createFileRoute("/admin/purchases/new")({
 	staticData: { crumb: m.admin_purchase_new },
-	// A supplier's page opens the form with that supplier chosen.
 	validateSearch: z.object({
 		supplierId: z.coerce.number().int().positive().optional(),
 	}),

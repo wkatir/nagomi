@@ -8,23 +8,23 @@ type Item = Purchase["items"][number];
 type Receipt = Purchase["receipts"][number];
 type ReceiptLine = Receipt["lines"][number];
 
-const aceite: Item = {
+const mouse: Item = {
 	id: 4,
 	variantId: 1,
-	sku: "OIL-50",
+	sku: "RAT-050",
 	brand: "Brand",
-	name: "Aceite",
+	name: "Ratón",
 	optionLabel: null,
 	quantity: 20,
 	received: 8,
 	unitCost: 650,
 };
-const crema: Item = {
+const keyboard: Item = {
 	id: 5,
 	variantId: 3,
-	sku: "CRM-30",
+	sku: "TEC-030",
 	brand: "Brand",
-	name: "Crema",
+	name: "Teclado",
 	optionLabel: "Negro",
 	quantity: 10,
 	received: 0,
@@ -66,22 +66,21 @@ const purchase: Purchase = {
 	createdByName: "Admin",
 	supplierStatus: "active",
 	supplierLeadTimeDays: 14,
-	items: [aceite, crema],
+	items: [mouse, keyboard],
 	receipts: [receipt],
 };
 
 describe("PurchaseLines", () => {
 	test("lists each line with what arrived of it, its cost and what it comes to", () => {
 		const out = renderWithStore(<PurchaseLines purchase={purchase} />);
-		expect(out).toContain("Brand Aceite");
-		expect(out).toContain("Brand Crema Negro");
+		expect(out).toContain("Brand Ratón");
+		expect(out).toContain("Brand Teclado Negro");
 		// 20 × 6.50 and 10 × 4.00.
 		expect(out).toContain("$130.00");
 		expect(out).toContain("$40.00");
 		expect(out).toContain(
-			`OIL-50 · ${m.admin_po_received_units({ received: 8, ordered: 20 })}`,
+			`RAT-050 · ${m.admin_po_received_units({ received: 8, ordered: 20 })}`,
 		);
-		// Nothing has arrived of the cream: no count of it.
 		expect(out).not.toContain(
 			m.admin_po_received_units({ received: 0, ordered: 10 }),
 		);
@@ -99,7 +98,7 @@ describe("PurchaseLines", () => {
 	});
 
 	test("says a draft line has no cost yet, and only a draft's", () => {
-		const free: Item = { ...crema, unitCost: 0 };
+		const free: Item = { ...keyboard, unitCost: 0 };
 		const draft: Purchase = { ...purchase, status: "draft", items: [free] };
 		expect(renderWithStore(<PurchaseLines purchase={draft} />)).toContain(
 			m.admin_purchase_cost_pending(),
@@ -116,7 +115,7 @@ describe("PurchaseReceipts", () => {
 		const out = renderWithStore(<PurchaseReceipts purchase={purchase} />);
 		expect(out).toContain(m.admin_purchase_invoice({ ref: "F-77" }));
 		expect(out).toContain(m.admin_purchase_shipping_paid({ amount: "$1.50" }));
-		expect(out).toContain("8 × Brand Aceite");
+		expect(out).toContain("8 × Brand Ratón");
 		expect(out).toContain(m.admin_unit_cost({ amount: "$6.69" }));
 		expect(out).toContain(m.admin_batch({ code: "L1" }));
 		expect(out).toContain("One box dented");

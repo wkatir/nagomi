@@ -14,12 +14,9 @@ import { cartDrawer } from "./cart-ui";
 import { errorMessage } from "./errors";
 import { storeQuery } from "./queries";
 
-// Also checked by the cart API.
 export const useMaxQuantity = () =>
 	useSuspenseQuery(storeQuery).data.maxQuantityPerLine;
 
-// The cart lives on the server (an httpOnly cookie names it); every read is priced there.
-// The browser keeps only this query's cache, for the header count and the drawer.
 export type Cart = InferResponseType<
 	ReturnType<typeof api>["cart"]["$get"],
 	200
@@ -104,8 +101,6 @@ export function useCartActions() {
 	return { add, update, remove, clear, applyCoupon, removeCoupon };
 }
 
-// Adds and opens the drawer from the button that was pressed; a refusal (sold out meanwhile)
-// is shown as a toast.
 export function useAddToCart() {
 	const { add } = useCartActions();
 	return {

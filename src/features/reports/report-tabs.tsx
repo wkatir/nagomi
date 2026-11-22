@@ -13,7 +13,6 @@ const TABS = [
 	{ to: "/admin/reports/reorder", label: m.admin_report_reorder },
 ] as const;
 
-// The chosen days follow the user across tabs; the reorder report ignores them.
 export function ReportTabs({ days }: { days: { from?: string; to?: string } }) {
 	const pathname = useRouterState({ select: (s) => s.location.pathname });
 	const current = TABS.find((tab) => tab.to === pathname)?.to;

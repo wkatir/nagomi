@@ -30,7 +30,6 @@ const schema = z.object({
 	coverMediaId: z.number().nullable(),
 });
 
-// A published collection keeps its address.
 export function CollectionDetails({
 	collection,
 }: {

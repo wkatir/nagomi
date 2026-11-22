@@ -5,8 +5,6 @@ import { pagedSearch } from "#/lib/list";
 export const MARKETING_CHANNELS = ["email", "whatsapp"] as const;
 export type MarketingChannel = (typeof MARKETING_CHANNELS)[number];
 
-// `name` ignores case and accents; `orders`, `spent` and `lastOrder` count the booked orders
-// (confirmed, fulfilled, delivered).
 export const CUSTOMER_SORTS = [
 	"name",
 	"orders",
@@ -15,7 +13,6 @@ export const CUSTOMER_SORTS = [
 	"createdAt",
 ] as const;
 
-// `q` is a name, an email or the digits of a phone.
 export const customerListSearch = pagedSearch(CUSTOMER_SORTS, {
 	sort: "createdAt",
 	dir: "desc",
@@ -25,7 +22,6 @@ export const customerListSearch = pagedSearch(CUSTOMER_SORTS, {
 });
 export type CustomerListSearch = z.infer<typeof customerListSearch>;
 
-// Shared by the list and the CSV export.
 export const customerFilters = customerListSearch.pick({
 	q: true,
 	segment: true,

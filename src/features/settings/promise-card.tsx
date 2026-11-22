@@ -106,8 +106,7 @@ function TextForm({
 	);
 }
 
-// A promise is published only once it is true, so the switch asks the API, which checks the
-// text in the main language and the return window it may quote.
+// The switch asks the API, which checks the main-language text and the return window it quotes.
 export function PromiseCard({
 	promise,
 	defaultLocale,

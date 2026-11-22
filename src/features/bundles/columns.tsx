@@ -42,7 +42,7 @@ export const bundleColumns = (actions: {
 		shared.title,
 		shared.slug,
 		column.accessor("items", {
-			header: m.admin_routine_steps(),
+			header: m.admin_bundle_items(),
 			meta: { align: "right" },
 			cell: ({ getValue }) => (
 				<span className="tabular-nums">{getValue()}</span>
@@ -55,11 +55,11 @@ export const bundleColumns = (actions: {
 		}),
 		column.accessor("isFeatured", {
 			id: "featured",
-			header: m.admin_routine_col_featured(),
+			header: m.admin_bundle_col_featured(),
 			meta: { hideOnMobile: true },
 			cell: ({ getValue }) =>
 				getValue() && (
-					<Badge variant="secondary">{m.admin_routine_col_featured()}</Badge>
+					<Badge variant="secondary">{m.admin_bundle_col_featured()}</Badge>
 				),
 		}),
 		shared.position,

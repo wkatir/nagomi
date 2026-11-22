@@ -36,7 +36,6 @@ import {
 const fieldOf = (path: string) =>
 	path.startsWith("translations.") ? path : undefined;
 
-// The page remounts the card when this changes (see basicsValues).
 export const translationsValues = (product: AdminProduct) =>
 	translationValues(product.translations);
 
@@ -52,7 +51,6 @@ export function TranslationsCard({ product }: { product: AdminProduct }) {
 	const save = useMutation({
 		mutationFn: async (value: z.output<typeof schema>) => {
 			const translations = translationsPayload(value.translations, started);
-			// Spaces added or removed change no text: there is nothing to write.
 			if (Object.keys(translations).length === 0) return;
 			await parseResponse(
 				api().admin.products[":id"].translations.$put({

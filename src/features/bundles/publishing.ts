@@ -17,5 +17,5 @@ export function missingToPublish(
 
 export const missingLabel = {
 	title: m.admin_merch_needs_title,
-	steps: m.admin_routine_needs_steps,
+	steps: m.admin_bundle_needs_items,
 } as const;

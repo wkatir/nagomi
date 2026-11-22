@@ -34,7 +34,7 @@ export function useOrderColumns() {
 				</Link>
 			),
 		}),
-		column.accessor((order) => order.customerName ?? "", {
+		column.accessor("customerName", {
 			id: "customer",
 			header: m.admin_col_customer(),
 			cell: ({ row }) => (

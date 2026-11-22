@@ -27,8 +27,7 @@ const fieldOf = (path: string): Field | undefined =>
 		? FIELD_OF[path as keyof typeof FIELD_OF]
 		: undefined;
 
-// The page remounts the card when this changes, so a saved card shows what was stored and one
-// being edited is untouched by the saves of the others.
+// The page remounts the card when this changes, so saving one card never resets another.
 export const basicsValues = (product: AdminProduct) => ({
 	slug: product.slug,
 	warrantyMonths: String(product.warrantyMonths),

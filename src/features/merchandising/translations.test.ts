@@ -124,8 +124,6 @@ describe("invalidLocales", () => {
 });
 
 describe("touchInvalidFields", () => {
-	// A form whose validation, as the schema's does, left an error on a field that was never on
-	// screen: not touched, so it would show nothing once its tab is opened.
 	const formWith = (errors: Record<string, string>) => {
 		const form = new FormApi({
 			defaultValues: {
@@ -155,7 +153,6 @@ describe("touchInvalidFields", () => {
 
 	test("leaves alone the fields without one", () => {
 		const form = formWith({ "translations.en.name": "Required" });
-		// A field the form knows, with nothing wrong.
 		form.setFieldMeta("translations.es.name", (previous) => ({
 			...previous,
 			errorMap: {},

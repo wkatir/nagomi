@@ -4,7 +4,6 @@ import { mediaFilesQuery, uploadMedia } from "#/features/media/queries";
 import { errorMessage } from "#/lib/errors";
 import { m } from "#/paraglide/messages";
 
-// A refused file is named in a toast and the rest go on.
 export function useUploadImages() {
 	const queryClient = useQueryClient();
 	return useMutation({

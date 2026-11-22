@@ -8,8 +8,7 @@ export const Route = createFileRoute("/admin/inventory/movements")({
 	staticData: { crumb: m.admin_inventory_tab_movements },
 	validateSearch: movementFilters,
 	loaderDeps: ({ search }) => search,
-	// Started, not awaited: the ledger has its own loading state. prefetchInfiniteQuery never
-	// rejects; a failure shows in the ledger.
+	// Not awaited: the ledger has its own loading state; prefetchInfiniteQuery never rejects.
 	loader: ({ context, deps }) => {
 		void context.queryClient.prefetchInfiniteQuery(movementsQuery(deps));
 	},

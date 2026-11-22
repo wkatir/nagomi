@@ -22,16 +22,15 @@ const stored = (locale: "es" | "en", name: string, tagline: string | null) => ({
 
 describe("translationValues", () => {
 	test("holds the stored text of each language, and nothing in one that has none", () => {
-		const values = translationValues([stored("es", "Aceite", "Frase")]);
+		const values = translationValues([stored("es", "Teclado", "Frase")]);
 		expect(values.es).toEqual({
-			name: "Aceite",
+			name: "Teclado",
 			tagline: "Frase",
 			description: "",
 			shortSpecs: "",
 			seoTitle: "",
 			seoDescription: "Stored SEO",
 		});
-		// The English text is empty, not the Spanish name.
 		expect(values.en).toEqual({
 			name: "",
 			tagline: "",
@@ -45,7 +44,7 @@ describe("translationValues", () => {
 });
 
 describe("translationsPayload", () => {
-	const started = translationValues([stored("es", "Aceite", "Frase")]);
+	const started = translationValues([stored("es", "Teclado", "Frase")]);
 	const edit = (change: (v: TranslationValues) => void) => {
 		const values = structuredClone(started);
 		change(values);
@@ -58,7 +57,7 @@ describe("translationsPayload", () => {
 
 	test("never writes a language nobody typed in, whatever else changed", () => {
 		const payload = edit((v) => {
-			v.es.name = "Aceite limpiador";
+			v.es.name = "Teclado mecánico";
 		});
 		expect(Object.keys(payload)).toEqual(["es"]);
 		expect(payload.en).toBeUndefined();
@@ -66,14 +65,14 @@ describe("translationsPayload", () => {
 
 	test("writes the whole language that changed: trimmed, a blank field as null", () => {
 		const payload = edit((v) => {
-			v.es.name = "  Aceite limpiador ";
+			v.es.name = "  Teclado mecánico ";
 			v.es.tagline = "   ";
-			v.es.description = " Un aceite ";
+			v.es.description = " Un teclado ";
 		});
 		expect(payload.es).toEqual({
-			name: "Aceite limpiador",
+			name: "Teclado mecánico",
 			tagline: null,
-			description: "Un aceite",
+			description: "Un teclado",
 			shortSpecs: null,
 			seoTitle: null,
 			seoDescription: "Stored SEO",
@@ -82,12 +81,12 @@ describe("translationsPayload", () => {
 
 	test("adds a language by its name and what was typed with it", () => {
 		const payload = edit((v) => {
-			v.en.name = "Oil";
-			v.en.seoTitle = "Buy oil";
+			v.en.name = "Keyboard";
+			v.en.seoTitle = "Buy keyboard";
 		});
 		expect(payload.en).toMatchObject({
-			name: "Oil",
-			seoTitle: "Buy oil",
+			name: "Keyboard",
+			seoTitle: "Buy keyboard",
 			tagline: null,
 		});
 		expect(payload.es).toBeUndefined();
@@ -96,7 +95,7 @@ describe("translationsPayload", () => {
 	test("leaves out a language whose only change is spaces", () => {
 		expect(
 			edit((v) => {
-				v.es.name = "Aceite ";
+				v.es.name = "Teclado ";
 				v.en.tagline = "  ";
 			}),
 		).toEqual({});
@@ -106,7 +105,7 @@ describe("translationsPayload", () => {
 describe("translationsSchema", () => {
 	const schema = translationsSchema({ defaultLocale: "es", stored: ["es"] });
 	const values = (change: (v: TranslationValues) => void) => {
-		const v = translationValues([stored("es", "Aceite", null)]);
+		const v = translationValues([stored("es", "Teclado", null)]);
 		change(v);
 		return { translations: v };
 	};
@@ -153,7 +152,7 @@ describe("translationsSchema", () => {
 			schema.safeParse(
 				values((v) => {
 					v.en.tagline = "A tagline";
-					v.en.name = "Oil";
+					v.en.name = "Keyboard";
 				}),
 			).success,
 		).toBe(true);
@@ -180,11 +179,11 @@ describe("translationsSchema", () => {
 describe("productName", () => {
 	test("is the name in the language given, or the slug until there is one", () => {
 		const product = {
-			slug: "oil",
-			translations: [{ locale: "en" as const, name: "Oil" }],
+			slug: "keyboard",
+			translations: [{ locale: "en" as const, name: "Keyboard" }],
 		};
-		expect(productName(product, "en")).toBe("Oil");
-		expect(productName(product, "es")).toBe("oil");
+		expect(productName(product, "en")).toBe("Keyboard");
+		expect(productName(product, "es")).toBe("keyboard");
 	});
 });
 
@@ -219,7 +218,6 @@ describe("localesWithErrors", () => {
 		};
 		expect(localesWithErrors(meta, "alt")).toEqual(["es"]);
 		expect(localesWithErrors(meta, "translations")).toEqual(["en"]);
-		// "alt.es" is not a field of the language "e".
 		expect(localesWithErrors({ "alt.esx": { errors: ["x"] } }, "alt")).toEqual(
 			[],
 		);

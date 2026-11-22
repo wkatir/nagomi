@@ -29,7 +29,10 @@ export const textRows: Partial<Record<TextField, number>> = {
 export type TextValues = Record<TextField, string>;
 export type TranslationValues = Record<Locale, TextValues>;
 
-type StoredText = Record<TextField, string | null>;
+type StoredText = { name: string } & Record<
+	Exclude<TextField, "name">,
+	string | null
+>;
 
 const emptyText: TextValues = {
 	name: "",
@@ -45,7 +48,6 @@ const forEachLocale = <T>(make: (locale: Locale) => T): Record<Locale, T> => ({
 	en: make("en"),
 });
 
-// Nothing is copied from one language to another.
 export function translationValues(
 	stored: ({ locale: Locale } & StoredText)[],
 ): TranslationValues {
@@ -53,7 +55,7 @@ export function translationValues(
 		const text = stored.find((t) => t.locale === locale);
 		return text
 			? {
-					name: text.name ?? "",
+					name: text.name,
 					tagline: text.tagline ?? "",
 					shortSpecs: text.shortSpecs ?? "",
 					description: text.description ?? "",
@@ -67,7 +69,6 @@ export function translationValues(
 const isBlank = (text: TextValues) =>
 	TEXT_FIELDS.every((field) => text[field].trim() === "");
 
-// A language left blank is not a translation, unless it is the store's or already stored.
 export function translationsSchema({
 	defaultLocale,
 	stored,
@@ -113,7 +114,6 @@ type TextPayload = {
 
 const orNull = (text: string) => text.trim() || null;
 
-// Only the languages that changed, so one nobody typed in is never created.
 export function translationsPayload(
 	values: TranslationValues,
 	started: TranslationValues,

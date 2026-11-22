@@ -57,7 +57,6 @@ function usePhotoChanges(productId: number) {
 	};
 }
 
-// The first photo is the cover. A photo no longer shown is archived, never deleted.
 export function PhotosCard({ product }: { product: AdminProduct }) {
 	const { data: store } = useSuspenseQuery(storeQuery);
 	const [editing, setEditing] = useState<Photo | "new" | null>(null);
@@ -67,11 +66,16 @@ export function PhotosCard({ product }: { product: AdminProduct }) {
 		(photo) => photo.status === "archived",
 	);
 	const busy = reorder.isPending || status.isPending;
+	const skuOf = (variantId: number) => {
+		const size = product.variants.find((v) => v.id === variantId);
+		if (!size)
+			throw new Error(`Photo of a variant not in the product: ${variantId}`);
+		return size.sku;
+	};
 	const sizeOf = (photo: Photo) =>
 		photo.variantId === null
 			? m.admin_product_photo_all_sizes()
-			: (product.variants.find((size) => size.id === photo.variantId)?.sku ??
-				String(photo.variantId));
+			: skuOf(photo.variantId);
 	const move = (index: number, by: -1 | 1) => {
 		const ids = moved(
 			shown.map((photo) => photo.id),

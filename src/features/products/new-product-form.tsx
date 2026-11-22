@@ -40,10 +40,9 @@ import {
 } from "./translations";
 import { emptyVariant, variantIssues, variantPayload } from "./variant-form";
 
-// The rest of a variant is set on the product's page.
 const SIZE_FIELDS = ["sku", "optionLabel", "price"] as const;
 
-// The API sends the variant as `variant`.
+// The API names the form's `size` fields `variant.*`.
 const fieldOf = (path: string) => {
 	if (path.startsWith("variant."))
 		return `size.${path.slice("variant.".length)}`;
@@ -89,7 +88,6 @@ export function NewProductForm() {
 		})
 		.and(translationsSchema({ defaultLocale: store.defaultLocale, stored: [] }))
 		.superRefine((value, ctx) => {
-			// A variant is asked for only once something of it is typed.
 			if (SIZE_FIELDS.every((field) => value.size[field].trim() === "")) return;
 			const rules = { parseAmount: moneyInput.parse, priceRequired: false };
 			for (const issue of variantIssues(

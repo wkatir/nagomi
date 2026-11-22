@@ -38,7 +38,6 @@ export function SuppliersTable({
 		placeholderData: keepPreviousData,
 	});
 	const status = useSupplierStatus();
-	// `null` is the dialog for a new supplier; a row, the dialog that edits it.
 	const [editing, setEditing] = useState<SupplierRow | null | undefined>();
 	const columns = supplierColumns({
 		onEdit: setEditing,

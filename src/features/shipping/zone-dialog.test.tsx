@@ -47,7 +47,6 @@ describe("ZoneForm", () => {
 		const html = render();
 		expect(hasField(html, "slug")).toBe(true);
 		for (const name of FIELDS) expect(hasField(html, name)).toBe(true);
-		// The other language is on its own tab.
 		expect(hasField(html, "translations.en.name")).toBe(false);
 	});
 

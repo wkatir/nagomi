@@ -45,7 +45,6 @@ describe("PublishChecklist", () => {
 		expect(
 			html.match(new RegExp(m.admin_product_req_done(), "g")),
 		).toHaveLength(3);
-		// The one that is missing is the price, not the brand.
 		const price = html.indexOf(m.admin_product_req_price());
 		expect(html.slice(html.lastIndexOf("<li", price), price)).toContain(
 			'data-missing="true"',

@@ -97,7 +97,7 @@ describe("the ledger's filters", () => {
 		for (const filter of [
 			{ kind: "waste" },
 			{ reason: "damaged" },
-			{ sku: "OIL-50" },
+			{ sku: "CAB-050" },
 			{ lotId: 3 },
 			{ from: "2026-10-01" },
 			{ to: "2026-10-31" },
@@ -109,7 +109,7 @@ describe("the ledger's filters", () => {
 		const filtered: MovementFilters = {
 			kind: "waste",
 			reason: "damaged",
-			sku: "OIL-50",
+			sku: "CAB-050",
 			lotId: 3,
 			from: "2026-10-01",
 			to: "2026-10-31",
@@ -129,12 +129,12 @@ describe("movementsExportHref", () => {
 		expect(
 			movementsExportHref({
 				kind: "waste",
-				sku: "OIL-50",
+				sku: "CAB-050",
 				from: "2026-10-01",
 				to: undefined,
 			}),
 		).toBe(
-			"/api/admin/exports/movements.csv?kind=waste&sku=OIL-50&from=2026-10-01",
+			"/api/admin/exports/movements.csv?kind=waste&sku=CAB-050&from=2026-10-01",
 		);
 	});
 

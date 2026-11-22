@@ -116,7 +116,6 @@ describe("ProductEditor", () => {
 			m.admin_product_organization(),
 		])
 			expect(html).toContain(title);
-		// Each card with a form has its own Save.
 		expect(html.match(new RegExp(`>${m.admin_save()}<`, "g"))).toHaveLength(4);
 	});
 
@@ -145,7 +144,6 @@ describe("ProductEditor", () => {
 		expect(html).toContain(m.admin_product_unpublish());
 		expect(html).not.toContain(`>${m.admin_product_publish()}<`);
 		expect(html).toContain(m.admin_product_slug_locked());
-		// The checklist is for drafts.
 		expect(html).not.toContain(m.admin_product_checklist());
 	});
 
@@ -173,7 +171,6 @@ describe("ProductEditor", () => {
 		expect(html).toContain(m.admin_product_on_hand({ count: 12 }));
 		expect(html).toContain(m.admin_product_reorder_at({ count: 4 }));
 		expect(html).toContain("04006381333931");
-		// The archived variant comes last, marked, with Restore instead of Edit.
 		expect(html.indexOf("TEC-009")).toBeGreaterThan(html.indexOf("TEC-003"));
 		expect(html).toContain(m.admin_product_restore());
 	});
@@ -184,7 +181,6 @@ describe("ProductEditor", () => {
 		expect(html).toContain(m.admin_product_photo_cover());
 		expect(html).toContain(m.admin_product_photo_no_alt());
 		expect(html.match(/<img /g)).toHaveLength(2);
-		// The first cannot go up and the last cannot go down.
 		const disabled = (label: string) =>
 			buttonWith(html, label).includes('disabled=""');
 		expect(disabled(m.admin_product_photo_up({ n: 1 }))).toBe(true);
@@ -230,7 +226,7 @@ describe("NewProductForm", () => {
 		expect(html).toContain(m.admin_product_sku());
 	});
 
-	test("asks for the warranty and a variant option, and nothing about skin", () => {
+	test("asks for the warranty and a variant option, and no checkbox group", () => {
 		expect(html).toContain(m.admin_product_warranty_months());
 		expect(html).toContain(m.admin_product_option_label());
 		expect(html).not.toContain('role="checkbox"');

@@ -2,8 +2,7 @@ import { serverErrors } from "#/components/admin/form/server-errors";
 import { apiErrorOf } from "#/lib/api";
 import { errorMessage } from "#/lib/errors";
 
-// A rule the API enforces on one setting (the currency once there are orders, the main
-// language, the return window) comes back as a code, not as a field path.
+// Rules on a single setting come back as a code, not as a field path.
 export function settingsErrors<Field extends string>(
 	error: unknown,
 	fieldOf: (path: string) => Field | undefined,

@@ -111,10 +111,7 @@
   --spacing-section-sm: clamp(1.75rem, 1.25rem + 2vw, 2.75rem);
   --spacing-section: clamp(2.5rem, 1.75rem + 3vw, 4.5rem);
 
-  /* Back office density: every admin screen takes its spacing from these (px-admin-page,
-     mb-admin-section, gap-admin-stack, p-admin-card, min-h-admin-header), so it changes here.
-     Page padding, space under page-level blocks (header, tabs, summaries), space between
-     stacked cards, padding inside a card, height of a card header. */
+  /* Back office density: every admin screen takes its spacing from these. */
   --spacing-admin-page: 1.5rem;
   --spacing-admin-section: 1rem;
   --spacing-admin-stack: 0.75rem;

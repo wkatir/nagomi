@@ -35,7 +35,9 @@ export function StockReportView({ report }: { report: StockReport }) {
 	const decimal = useDecimal();
 	const { totals, variants } = report;
 	const covered = variants
-		.filter((v) => v.daysOfCover !== null && !v.outOfStock)
+		.flatMap(({ daysOfCover, ...v }) =>
+			daysOfCover !== null && !v.outOfStock ? [{ ...v, daysOfCover }] : [],
+		)
 		.slice(0, CHART_ROWS);
 	const dash = <span className="text-muted-foreground">—</span>;
 	return (
@@ -84,7 +86,7 @@ export function StockReportView({ report }: { report: StockReport }) {
 				points={covered.map((v) => ({
 					key: String(v.variantId),
 					label: v.sku,
-					value: v.daysOfCover ?? 0,
+					value: v.daysOfCover,
 				}))}
 				formatValue={(days) => m.admin_report_days_n({ count: days })}
 				formatTick={String}

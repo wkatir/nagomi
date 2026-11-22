@@ -76,7 +76,6 @@ export function changedTexts(
 	return changed;
 }
 
-// So a tab out of sight can say it needs attention.
 export function localesWithErrors(
 	fieldMeta: Readonly<Record<string, { errors: readonly unknown[] }>>,
 ): Locale[] {

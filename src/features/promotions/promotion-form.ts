@@ -15,9 +15,7 @@ import { m } from "#/paraglide/messages";
 
 type Amount = (text: string) => number | null;
 
-// Locked terms (an order used the code) are not on the form, so they are not checked. A
-// description can be changed but not removed: the default language's is required, and so is
-// any language that already has one (`stored`).
+// Locked terms (an order used the code) are not on the form, so they are not checked.
 export function promotionSchema({
 	amount,
 	locked,
@@ -97,7 +95,6 @@ function amountOf(amount: Amount, text: string) {
 	return value;
 }
 
-// The terms the API fixes once an order used the code.
 export const promotionTerms = (v: PromotionValues, amount: Amount) => ({
 	code: v.code,
 	type: v.type,

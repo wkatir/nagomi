@@ -4,8 +4,6 @@ import { api, parseResponse } from "#/lib/api";
 import { toQuery } from "#/lib/list";
 import type { ZoneListSearch } from "#/lib/schemas/shipping";
 
-// Every query of the shipping module starts with `shippingKeys.all`, so one invalidation
-// refreshes the table and the zones an order can be confirmed with.
 export const shippingKeys = {
 	all: ["admin", "shipping-zones"] as const,
 	list: (search: ZoneListSearch) =>

@@ -38,7 +38,6 @@ const wholeNumber = (max: number) =>
 
 const schema = z
 	.object({
-		// Only sent for a new product; an existing one keeps its size.
 		variantId: z.number().nullable(),
 		label: z.string(),
 		supplierSku: z.string().trim().max(60),
@@ -57,7 +56,6 @@ const schema = z
 
 const numberOrNull = (text: string) => (text === "" ? null : Number(text));
 
-// The preferred source is the one the reorder suggestions order from.
 export function SupplierItemDialog({
 	supplierId,
 	item,

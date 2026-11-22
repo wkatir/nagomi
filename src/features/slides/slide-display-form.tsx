@@ -54,7 +54,6 @@ function DisplayForm({ slide }: { slide: Slide }) {
 						desktopMediaId: value.desktopMediaId,
 						mobileMediaId: value.mobileMediaId,
 						linkPath: value.linkPath,
-						// An empty day leaves that side open.
 						startsOn: value.startsOn || null,
 						endsOn: value.endsOn || null,
 					},

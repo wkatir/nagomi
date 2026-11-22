@@ -16,7 +16,6 @@ export const SORTS = [
 
 export const LISTING_PAGE_SIZE = 24;
 
-// In the order the filters show them.
 export const FACETS = ["category", "brand"] as const;
 export type Facet = (typeof FACETS)[number];
 
@@ -116,13 +115,11 @@ export const clearFilters = (search: ListingSearch): ListingSearch =>
 		maxPrice: undefined,
 	});
 
-// The search is left out: it has its own box.
 export const activeCount = (search: ListingSearch) =>
 	FACETS.reduce((n, facet) => n + listOf(search[facet]).length, 0) +
 	(search.availability ? 1 : 0) +
 	(search.minPrice !== undefined || search.maxPrice !== undefined ? 1 : 0);
 
-// Equal searches give equal filters, so the cache can share their pages.
 export type ListingFilter = {
 	locale: Locale;
 	q?: string;

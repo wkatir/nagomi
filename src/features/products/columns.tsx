@@ -34,7 +34,6 @@ function Thumbnail({ url }: { url: string | null }) {
 	);
 }
 
-// Archived products are restored from their page, not from here.
 function RowActions({ product }: { product: ProductRow }) {
 	const change = useProductStatus();
 	const name = product.name;

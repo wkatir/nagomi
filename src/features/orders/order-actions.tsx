@@ -32,7 +32,6 @@ type Actions = ReturnType<typeof useOrderActions>;
 type Open = (dialog: OrderDialog) => void;
 type Order = AdminOrder["order"];
 
-// Offered only in the states the API (and the triggers) accept, so a refusal is rare.
 export const canCancel = (order: Pick<Order, "status">) =>
 	order.status === "pending" || order.status === "paid";
 
@@ -159,7 +158,7 @@ export function PaymentActions({
 	);
 }
 
-function TextDialog({
+function TextDialog<Id extends string>({
 	title,
 	description,
 	fields,
@@ -169,13 +168,16 @@ function TextDialog({
 }: {
 	title: string;
 	description?: string;
-	fields: { id: string; label: string; required: boolean }[];
+	fields: { id: Id; label: string; required: boolean }[];
 	submit: string;
 	onClose: () => void;
-	onSubmit: (values: Record<string, string>) => void;
+	onSubmit: (values: Record<Id, string>) => void;
 }) {
-	const [values, setValues] = useState<Record<string, string>>({});
-	const missing = fields.some((f) => f.required && !values[f.id]?.trim());
+	const [values, setValues] = useState(
+		() =>
+			Object.fromEntries(fields.map((f) => [f.id, ""])) as Record<Id, string>,
+	);
+	const missing = fields.some((f) => f.required && !values[f.id].trim());
 	return (
 		<AlertDialog open onOpenChange={(open) => !open && onClose()}>
 			<AlertDialogContent
@@ -193,7 +195,7 @@ function TextDialog({
 						<Input
 							id={f.id}
 							maxLength={200}
-							value={values[f.id] ?? ""}
+							value={values[f.id]}
 							onChange={(e) =>
 								setValues((v) => ({ ...v, [f.id]: e.target.value }))
 							}
@@ -207,8 +209,8 @@ function TextDialog({
 						onClick={() =>
 							onSubmit(
 								Object.fromEntries(
-									Object.entries(values).map(([k, v]) => [k, v.trim()]),
-								),
+									fields.map((f) => [f.id, values[f.id].trim()]),
+								) as Record<Id, string>,
 							)
 						}
 					>
@@ -250,7 +252,7 @@ export function OrderDialogs({
 					onClose={onClose}
 					onSubmit={(v) =>
 						actions.ship.mutate({
-							courier: v.courier ?? "",
+							courier: v.courier,
 							...(v.trackingCode ? { trackingCode: v.trackingCode } : {}),
 						})
 					}
@@ -290,7 +292,7 @@ export function OrderDialogs({
 					]}
 					submit={m.admin_order_cancel()}
 					onClose={onClose}
-					onSubmit={(v) => actions.cancel.mutate(v.reason ?? "")}
+					onSubmit={(v) => actions.cancel.mutate(v.reason)}
 				/>
 			);
 		case "return":

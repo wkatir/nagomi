@@ -5,7 +5,6 @@ const DEFAULT_REPORT_DAYS = 30;
 
 export type ReportRange = { from: string; to: string };
 
-// The URL carries both ends or neither (reportDays).
 export function reportRange(
 	search: { from?: string; to?: string },
 	timeZone: string,

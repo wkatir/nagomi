@@ -5,10 +5,9 @@ import { m } from "#/paraglide/messages";
 
 const KEY = "nagomi:cookie-notice:v1";
 
-// The store keeps only language and cart in the browser, so this notice informs and asks
-// for no consent (docs/research/2026-10-18-review/legal-el-salvador.md, section 2.4).
-// Measurement or ad tags would need an opt-in banner first. Opened after hydration so the
-// server and the first browser render agree.
+// Only language and cart are kept in the browser, so the notice asks for no consent;
+// measurement or ad tags would need an opt-in first. Opened after hydration so the server
+// and the first browser render agree.
 export function CookieNotice() {
 	const [open, setOpen] = useState(false);
 	useEffect(() => {

@@ -2,8 +2,7 @@ import { createLink } from "@tanstack/react-router";
 import { cn } from "cn";
 import type * as React from "react";
 
-// `underline` for links in a sentence or on their own, `nav` for header, menu and footer
-// lists; `inline` (inside a sentence) drops the 44px tap target (docs/strategy/DESIGN_SYSTEM.md).
+// `inline` (a link inside a sentence) drops the 44px tap target.
 export function TextAnchor({
 	inline,
 	variant = "underline",

@@ -11,11 +11,8 @@ export const STOCK_SORTS = [
 	"reorderPoint",
 ] as const;
 
-// `low`: at or under the variant's reorder point, or the store's low stock threshold when
-// the variant has none; `out`: none left to sell.
 export const STOCK_VIEWS = ["low", "out"] as const;
 
-// `q` is a product, a brand or a SKU.
 export const stockListSearch = pagedSearch(STOCK_SORTS, {
 	sort: "product",
 	dir: "asc",
@@ -34,14 +31,12 @@ export const LOT_SORTS = [
 	"value",
 ] as const;
 
-// `q` is a product, a brand, a SKU or a lot code.
 export const lotListSearch = pagedSearch(LOT_SORTS, {
 	sort: "receivedAt",
 	dir: "asc",
 });
 export type LotListSearch = z.infer<typeof lotListSearch>;
 
-// Shared by the feed and its CSV export.
 export const movementFilters = z
 	.object({
 		kind: z.enum(MOVEMENT_KINDS).optional(),

@@ -10,8 +10,7 @@ import { errorMessage } from "#/lib/errors";
 import { m } from "#/paraglide/messages";
 import { type PageVersion, pageVersionsQuery } from "./queries";
 
-// Taking a version back only refills the form: the old version stays as it was, since
-// consents point at it.
+// Restoring only refills the form: consents point at the old version, so it never changes.
 export function PageVersions({
 	pageId,
 	locale,

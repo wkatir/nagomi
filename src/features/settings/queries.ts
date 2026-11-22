@@ -10,7 +10,6 @@ export type PageVersion = InferResponseType<
 	200
 >["items"][number];
 
-// The store's own settings are `adminSettingsQuery` (lib/queries), read by other screens too.
 const settingsKeys = {
 	promises: ["admin", "settings", "promises"] as const,
 	pages: ["admin", "settings", "pages"] as const,
@@ -26,7 +25,6 @@ export const pagesQuery = queryOptions({
 	queryFn: () => parseResponse(api().admin.settings.pages.$get()),
 });
 
-// Under the pages' key, so saving a text refreshes the list and its history together.
 export const pageVersionsQuery = (pageId: number, locale: Locale) =>
 	infiniteQueryOptions({
 		queryKey: [...settingsKeys.pages, "versions", pageId, locale],

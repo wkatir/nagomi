@@ -60,7 +60,6 @@ describe("clearedFilters", () => {
 		const cleared = { ...filtered, ...clearedFilters };
 		expect(isFiltered(cleared)).toBe(false);
 		expect(cleared.page).toBe(1);
-		// The sort the user chose stays.
 		expect(cleared).toMatchObject({ sort: "priceFrom", dir: "asc" });
 	});
 });

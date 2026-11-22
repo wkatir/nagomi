@@ -41,20 +41,20 @@ export function BundlesTable({
 			statuses={PRODUCT_STATUSES}
 			statusLabel={lifecycleStatusLabel}
 			allLabel={m.admin_merch_all()}
-			searchLabel={m.admin_routine_search()}
+			searchLabel={m.admin_bundle_search()}
 			getRowId={(bundle) => String(bundle.id)}
 			action={
 				<IfWritable area="catalog">
 					<Button size="sm" asChild>
 						<Link to="/admin/bundles/new">
 							<PlusIcon aria-hidden />
-							{m.admin_routine_new()}
+							{m.admin_bundle_new()}
 						</Link>
 					</Button>
 				</IfWritable>
 			}
-			emptyTitle={m.admin_routine_empty()}
-			emptyHint={m.admin_routine_empty_hint()}
+			emptyTitle={m.admin_bundle_empty()}
+			emptyHint={m.admin_bundle_empty_hint()}
 		/>
 	);
 }

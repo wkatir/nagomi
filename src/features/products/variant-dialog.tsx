@@ -49,7 +49,6 @@ export function VariantDialog({
 }) {
 	const refresh = useRefreshAfterProductChange();
 	const moneyInput = useMoneyInput();
-	// An active variant of a published product always has a price.
 	const rules = {
 		parseAmount: moneyInput.parse,
 		priceRequired:

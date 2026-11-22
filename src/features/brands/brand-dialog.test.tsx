@@ -6,15 +6,15 @@ import type { BrandDetail } from "./queries";
 
 const brand: BrandDetail = {
 	id: 9,
-	slug: "creme-lab",
-	name: "Crème Lab",
+	slug: "pulsar",
+	name: "Pulsar",
 	countryCode: "KR",
 	status: "active",
 	translations: [
 		{
 			brandId: 9,
 			locale: "es",
-			description: "Fórmulas suaves",
+			description: "Ratones ligeros",
 			seoTitle: null,
 			seoDescription: null,
 		},
@@ -38,10 +38,10 @@ describe("BrandForm", () => {
 		const out = renderWithSettings(
 			<BrandForm brand={brand} onClose={() => {}} />,
 		);
-		expect(input(out, "name")).toContain('value="Crème Lab"');
-		expect(input(out, "slug")).toContain('value="creme-lab"');
+		expect(input(out, "name")).toContain('value="Pulsar"');
+		expect(input(out, "slug")).toContain('value="pulsar"');
 		expect(input(out, "countryCode")).toContain('value="KR"');
-		expect(out).toContain("Fórmulas suaves");
+		expect(out).toContain("Ratones ligeros");
 	});
 
 	test("a brand without a country shows the field empty", () => {

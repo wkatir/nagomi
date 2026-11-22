@@ -169,7 +169,6 @@ function LegalForm({ settings }: { settings: AdminSettings }) {
 	);
 }
 
-// Consumer law requires the seller's legal details on the site.
 // Keyed by what is stored, so a save remounts the form clean.
 export function LegalCard({ settings }: { settings: AdminSettings }) {
 	const stored = [

@@ -11,8 +11,7 @@ export const Route = createFileRoute("/admin/bundles/")({
 	validateSearch: bundleListSearch,
 	search: { middlewares: [stripSearchParams(defaults)] },
 	loaderDeps: ({ search }) => search,
-	// Started, not awaited: the table has its own loading state, and paging or filtering
-	// should keep the page on screen. prefetchQuery never rejects; a failure shows in the table.
+	// Not awaited, so paging keeps the page on screen; prefetchQuery never rejects.
 	loader: ({ context, deps }) => {
 		void context.queryClient.prefetchQuery(bundlesQuery(deps));
 	},
@@ -24,7 +23,7 @@ function Bundles() {
 	const navigate = Route.useNavigate();
 	return (
 		<>
-			<PageHeader title={m.admin_nav_routines()} />
+			<PageHeader title={m.admin_nav_bundles()} />
 			<BundlesTable
 				search={search}
 				onSearchChange={(change) =>

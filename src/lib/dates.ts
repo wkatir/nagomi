@@ -1,5 +1,4 @@
-// Instants are stored as UTC ISO strings; calendar dates (YYYY-MM-DD) and every business
-// day are in the store's IANA time zone.
+// Instants are UTC ISO strings; calendar dates and business days are in the store's time zone.
 
 const DAY_MS = 86_400_000;
 
@@ -52,7 +51,6 @@ export const localDate = (instant: Date, timeZone: string): string =>
 
 export const storeToday = (timeZone: string) => localDate(new Date(), timeZone);
 
-// The way a spreadsheet reads it.
 export function localDateTime(instant: Date, timeZone: string): string {
 	const t = wallClock(instant, timeZone);
 	return `${isoDate(t)} ${pad(t.hour)}:${pad(t.minute)}:${pad(t.second)}`;
@@ -87,7 +85,6 @@ export function startOfLocalDay(date: string, timeZone: string): string {
 	return toDbTimestamp(new Date(start));
 }
 
-// Rejects dates that do not exist, such as 2026-02-31.
 export function isCalendarDate(value: string): boolean {
 	if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
 	return formatDate(parseDate(value)) === value;
@@ -112,7 +109,6 @@ export const formatInstant = (
 		new Date(instant),
 	);
 
-// A calendar date has no time zone.
 export const formatCalendarDate = (
 	date: string,
 	locale: string,

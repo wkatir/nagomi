@@ -16,7 +16,6 @@ export const Route = createFileRoute("/_store")({
 		]);
 		return store;
 	},
-	// Defaults for every store page: pages override title, description and Open Graph.
 	head: ({ loaderData, match, matches }) => {
 		if (!loaderData) return {};
 		if (match.status === "notFound")

@@ -25,7 +25,7 @@ const collection: CollectionDetail = {
 			locale: "es",
 			title: "Los esenciales",
 			description: null,
-			coverAlt: "Frascos sobre una mesa",
+			coverAlt: "Teclados sobre un escritorio",
 			seoTitle: null,
 			seoDescription: null,
 		},
@@ -34,9 +34,9 @@ const collection: CollectionDetail = {
 		{
 			productId: 21,
 			position: 1,
-			slug: "cleanser",
+			slug: "raton-pulsar",
 			status: "published",
-			name: "Limpiador suave",
+			name: "Ratón Pulsar",
 		},
 		{
 			productId: 22,
@@ -48,7 +48,7 @@ const collection: CollectionDetail = {
 		{
 			productId: 23,
 			position: 3,
-			slug: "toner",
+			slug: "alfombrilla-xl",
 			status: "archived",
 			name: null,
 		},
@@ -64,18 +64,20 @@ describe("CollectionProducts", () => {
 	);
 
 	test("lists the products in order, each with its position, name and slug", () => {
-		expect(out.indexOf("Limpiador suave")).toBeLessThan(
+		expect(out.indexOf("Ratón Pulsar")).toBeLessThan(
 			out.indexOf("Teclado Sakura"),
 		);
-		expect(out.indexOf("Teclado Sakura")).toBeLessThan(out.indexOf("toner"));
-		expect(out).toMatch(/<li[^>]*>.*?>1<.*?Limpiador suave/);
-		expect(out).toMatch(/<li[^>]*>.*?>3<.*?toner/);
-		expect(out).toContain("cleanser");
+		expect(out.indexOf("Teclado Sakura")).toBeLessThan(
+			out.indexOf("alfombrilla-xl"),
+		);
+		expect(out).toMatch(/<li[^>]*>.*?>1<.*?Ratón Pulsar/);
+		expect(out).toMatch(/<li[^>]*>.*?>3<.*?alfombrilla-xl/);
+		expect(out).toContain("raton-pulsar");
 	});
 
 	test("a product without a name is told by its slug", () => {
 		expect(out).toContain(
-			`aria-label="${m.admin_merch_remove({ name: "toner" })}"`,
+			`aria-label="${m.admin_merch_remove({ name: "alfombrilla-xl" })}"`,
 		);
 	});
 
@@ -90,18 +92,18 @@ describe("CollectionProducts", () => {
 	test("the first cannot move up and the last cannot move down", () => {
 		const button = (label: string) =>
 			out.match(new RegExp(`<button[^>]*aria-label="${label}"[^>]*>`))?.[0];
+		expect(button(m.admin_merch_move_up({ name: "Ratón Pulsar" }))).toContain(
+			DISABLED,
+		);
 		expect(
-			button(m.admin_merch_move_up({ name: "Limpiador suave" })),
+			button(m.admin_merch_move_down({ name: "Ratón Pulsar" })),
+		).not.toContain(DISABLED);
+		expect(
+			button(m.admin_merch_move_down({ name: "alfombrilla-xl" })),
 		).toContain(DISABLED);
 		expect(
-			button(m.admin_merch_move_down({ name: "Limpiador suave" })),
+			button(m.admin_merch_move_up({ name: "alfombrilla-xl" })),
 		).not.toContain(DISABLED);
-		expect(button(m.admin_merch_move_down({ name: "toner" }))).toContain(
-			DISABLED,
-		);
-		expect(button(m.admin_merch_move_up({ name: "toner" }))).not.toContain(
-			DISABLED,
-		);
 	});
 
 	test("offers to search for a product and starts with save disabled", () => {
@@ -165,7 +167,7 @@ describe("CollectionTexts", () => {
 			'value="Los esenciales"',
 		);
 		expect(input(out, "translations.es.coverAlt")).toContain(
-			'value="Frascos sobre una mesa"',
+			'value="Teclados sobre un escritorio"',
 		);
 		expect(input(out, "translations.en.title")).toBeUndefined();
 		expect(out.indexOf(m.language_name_es())).toBeLessThan(

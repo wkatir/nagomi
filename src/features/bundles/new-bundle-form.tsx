@@ -49,7 +49,6 @@ const texts = z.object({
 });
 const blank = { name: "", description: "", seoTitle: "", seoDescription: "" };
 
-// Made as a draft with no steps; they are added on its page, which opens next.
 export function NewBundleForm() {
 	const navigate = useNavigate();
 	const refresh = useRefresh(bundlesKeys.all);
@@ -149,7 +148,7 @@ export function NewBundleForm() {
 			}}
 		>
 			<form.AppForm>
-				<Section title={m.admin_routine_new()}>
+				<Section title={m.admin_bundle_new()}>
 					<div className="grid gap-4 p-admin-card">
 						<form.Subscribe
 							selector={(state) => invalidLocales(state.fieldMeta)}
@@ -162,7 +161,6 @@ export function NewBundleForm() {
 												name={`translations.${locale}.name`}
 												listeners={{
 													onChange: ({ value }) => {
-														// The address follows the title until the user writes one.
 														if (
 															locale === defaultLocale &&
 															!form.getFieldMeta("slug")?.isDirty
@@ -225,7 +223,7 @@ export function NewBundleForm() {
 							<form.AppField name="position">
 								{(field) => (
 									<field.TextField
-										label={m.admin_routine_position()}
+										label={m.admin_bundle_position()}
 										inputMode="numeric"
 										maxLength={4}
 									/>
@@ -240,7 +238,7 @@ export function NewBundleForm() {
 						</p>
 						<form.AppField name="isFeatured">
 							{(field) => (
-								<field.CheckboxField label={m.admin_routine_featured()} />
+								<field.CheckboxField label={m.admin_bundle_featured()} />
 							)}
 						</form.AppField>
 						<form.FormError />
@@ -248,7 +246,7 @@ export function NewBundleForm() {
 							<Button variant="outline" asChild>
 								<Link to="/admin/bundles">{m.admin_cancel()}</Link>
 							</Button>
-							<form.SubmitButton>{m.admin_routine_create()}</form.SubmitButton>
+							<form.SubmitButton>{m.admin_bundle_create()}</form.SubmitButton>
 						</div>
 					</div>
 				</Section>

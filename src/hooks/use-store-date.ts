@@ -13,7 +13,6 @@ export function useStoreDate() {
 	) => formatInstant(instant, locale, data.timeZone, options);
 }
 
-// A calendar date (YYYY-MM-DD) has no time zone.
 export function useCalendarDate() {
 	const { data } = useSuspenseQuery(storeQuery);
 	const locale = intlLocale(getLocale(), data.countryCode);

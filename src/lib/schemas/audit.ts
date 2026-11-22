@@ -1,8 +1,6 @@
 import { z } from "zod";
 import { dayRange, fromAfterTo, fromNotAfterTo } from "./dates";
 
-// An action is `<entity>.<verb>`; audit.test.ts fails when the API writes an entity or a
-// verb that is not listed.
 export const AUDIT_ENTITY_TYPES = [
 	"brand",
 	"bundle",
@@ -36,7 +34,6 @@ export type AuditVerb = (typeof AUDIT_VERBS)[number];
 
 export const auditFilterShape = {
 	entityType: z.enum(AUDIT_ENTITY_TYPES).optional(),
-	// Better Auth user id.
 	actor: z.string().trim().min(1).max(64).optional(),
 	verb: z.enum(AUDIT_VERBS).optional(),
 	...dayRange,

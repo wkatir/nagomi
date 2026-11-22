@@ -114,7 +114,7 @@ export const navGroups: NavGroup[] = [
 			{
 				to: "/admin/bundles",
 				area: "catalog",
-				label: m.admin_nav_routines,
+				label: m.admin_nav_bundles,
 				icon: ListOrdered,
 			},
 			{

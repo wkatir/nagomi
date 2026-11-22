@@ -31,7 +31,6 @@ const PHONE_REFUSALS = [
 	"phone_not_salvadoran",
 ];
 
-// Name and phone cannot be cleared once they exist (an order needs them); email and notes can.
 export function CustomerForm({
 	customer,
 	onClose,

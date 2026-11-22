@@ -14,8 +14,8 @@ describe("ProductFilter", () => {
 	});
 
 	test("shows the SKU chosen, with a way to take it off", () => {
-		const out = html("OIL-50");
-		expect(out).toContain("OIL-50");
+		const out = html("CAB-050");
+		expect(out).toContain("CAB-050");
 		expect(out).toContain('data-active="true"');
 		expect(out).toContain(m.admin_movement_clear_product());
 	});

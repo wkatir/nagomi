@@ -23,7 +23,6 @@ export const isFiltered = (search: OrderListSearch) =>
 			search.to,
 	);
 
-// The CSV covers every order the filters match, not one page.
 export const exportHref = (search: OrderListSearch) => {
 	const { page: _p, pageSize: _s, sort: _o, dir: _d, ...filters } = search;
 	const query = new URLSearchParams(toQuery(filters)).toString();

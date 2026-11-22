@@ -19,8 +19,6 @@ export const Route = createFileRoute("/admin/products/$id")({
 		},
 		stringify: ({ id }) => ({ id: String(id) }),
 	},
-	// The brands, categories and needs the cards offer are loaded with the product, so the
-	// page opens ready.
 	loader: async ({ context, params }): Promise<LoaderCrumb> => {
 		try {
 			const store = await context.queryClient.ensureQueryData(storeQuery);

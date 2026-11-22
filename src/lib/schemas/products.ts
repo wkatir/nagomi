@@ -13,7 +13,6 @@ export const PRODUCT_SORTS = [
 
 const id = z.coerce.number().int().positive();
 
-// `q` matches the name, the brand, the SKU or barcode of any variant, and the slug.
 export const productListSearch = pagedSearch(PRODUCT_SORTS, {
 	sort: "createdAt",
 	dir: "desc",
@@ -24,7 +23,6 @@ export const productListSearch = pagedSearch(PRODUCT_SORTS, {
 });
 export type ProductListSearch = z.infer<typeof productListSearch>;
 
-// Shared by the API and the forms.
 export const PRODUCT_LIMITS = {
 	slug: 80,
 	sku: 7,
@@ -42,7 +40,6 @@ export const PRODUCT_LIMITS = {
 	seoDescription: 160,
 } as const;
 
-// In the order a person fixes them.
 export const PUBLISH_REQUIREMENTS = [
 	"text",
 	"price",

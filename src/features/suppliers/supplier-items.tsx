@@ -27,11 +27,9 @@ import {
 } from "./queries";
 import { SupplierItemDialog } from "./supplier-item-dialog";
 
-// Archived products stay listed, dimmed, so they can come back.
 export function SupplierItems({ supplier }: { supplier: Supplier }) {
 	const { data: items } = useSuspenseQuery(supplierItemsQuery(supplier.id));
 	const status = useSupplierItemStatus(supplier.id);
-	// `null` is the dialog for a new product; a row, the dialog that edits it.
 	const [editing, setEditing] = useState<SupplierItem | null | undefined>();
 	const active = supplier.status === "active";
 	const add = () => setEditing(null);

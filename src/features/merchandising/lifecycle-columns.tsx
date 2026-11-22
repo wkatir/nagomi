@@ -23,7 +23,6 @@ export function lifecycleColumns<R extends Row>({
 	onStatus,
 }: {
 	title: (row: R) => ReactNode;
-	// Null when the row has no title in the store's principal language.
 	titleOf: (row: R) => string | null;
 	titleSort?: string;
 	titleHeader?: () => string;

@@ -41,7 +41,6 @@ describe("CategoryForm", () => {
 		expect(input(out, "slug")).toContain('value=""');
 		expect(input(out, "sortOrder")).toContain('value="0"');
 		expect(input(out, "translations.es.name")).toContain('value=""');
-		// Only the open language's fields are drawn.
 		expect(input(out, "translations.en.name")).toBeUndefined();
 		expect(out.indexOf(m.language_name_es())).toBeLessThan(
 			out.indexOf(m.language_name_en()),

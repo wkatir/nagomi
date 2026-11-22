@@ -27,6 +27,7 @@ import { useMoney } from "#/hooks/use-money";
 import { api, apiErrorOf, parseResponse } from "#/lib/api";
 import { authClient } from "#/lib/auth-client";
 import { type Cart, invalidateCart, useCart } from "#/lib/cart";
+import type { CheckoutPaymentMethod } from "#/lib/enums";
 import { errorMessage, promotionReasonMessage } from "#/lib/errors";
 import { pageTitle } from "#/lib/head";
 import { paymentLabel } from "#/lib/payment";
@@ -72,7 +73,7 @@ const FIELD_MESSAGES: Record<string, Record<string, () => string>> = {
 const fieldMessage = (field: string, code: string | undefined) =>
 	code === undefined
 		? null
-		: (FIELD_MESSAGES[field]?.[code] ?? m.checkout_error_payment)();
+		: (FIELD_MESSAGES[field]?.[code] ?? m.error_generic)();
 
 const profileQuery = {
 	queryKey: ["account", "profile"],
@@ -141,7 +142,7 @@ function Checkout() {
 					addressLine: addressLine.trim(),
 					reference: reference.trim() || undefined,
 				},
-		paymentMethod: paymentMethod || ("bank_transfer" as const),
+		paymentMethod,
 		consents: {
 			privacyNotice: privacy,
 			terms,
@@ -152,9 +153,11 @@ function Checkout() {
 	};
 	const idempotencyKey = useIdempotencyKey(request);
 	const order = useMutation({
-		mutationFn: () =>
+		mutationFn: (method: CheckoutPaymentMethod) =>
 			parseResponse(
-				api().checkout.$post({ json: { ...request, idempotencyKey } }),
+				api().checkout.$post({
+					json: { ...request, paymentMethod: method, idempotencyKey },
+				}),
 			),
 		onSuccess: async (placed) => {
 			await invalidateCart(queryClient);
@@ -269,7 +272,7 @@ function Checkout() {
 							terms &&
 							privacy &&
 							option?.available;
-						if (ok) order.mutate();
+						if (ok && option) order.mutate(option.method);
 					}}
 					className="grid content-start gap-4"
 				>
@@ -552,7 +555,12 @@ function Checkout() {
 					)}
 					{failure?.code === "promotion_invalid" && (
 						<FieldError>
-							{promotionReasonMessage(String(failure.body.reason), null)}
+							{promotionReasonMessage(
+								String(failure.body.reason),
+								typeof failure.body.minSubtotal === "number"
+									? money(failure.body.minSubtotal)
+									: null,
+							)}
 						</FieldError>
 					)}
 					{order.isError &&

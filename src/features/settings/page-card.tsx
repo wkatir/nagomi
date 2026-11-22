@@ -52,7 +52,6 @@ function TextForm({
 		onSuccess: async () => {
 			await Promise.all([
 				queryClient.invalidateQueries({ queryKey: ["admin", "settings"] }),
-				// What the storefront shows of the page.
 				queryClient.invalidateQueries({ queryKey: ["page"] }),
 			]);
 			toast.success(m.admin_saved());

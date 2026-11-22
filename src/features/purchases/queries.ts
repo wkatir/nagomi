@@ -9,8 +9,6 @@ type Purchases = InferResponseType<Client["$get"], 200>;
 export type PurchaseRow = Purchases["items"][number];
 export type Purchase = InferResponseType<Client[":id"]["$get"], 200>;
 
-// Every query of the purchases module starts with `purchasesKeys.all`, so one invalidation
-// refreshes the lists and the open purchase order after a change.
 const purchasesKeys = {
 	all: ["admin", "purchase-orders"] as const,
 	list: (search: PurchaseListSearch) =>

@@ -38,7 +38,7 @@ export function BundleItems({ bundle }: { bundle: BundleDetail }) {
 				ctx.addIssue({
 					code: "custom",
 					path: [],
-					message: m.admin_routine_steps_max({ max: BUNDLE_MAX_ITEMS }),
+					message: m.admin_bundle_items_max({ max: BUNDLE_MAX_ITEMS }),
 				});
 			if (
 				(bundle.status === "published" || value.items.length > 0) &&
@@ -113,7 +113,7 @@ export function BundleItems({ bundle }: { bundle: BundleDetail }) {
 		>
 			<form.AppForm>
 				<Section
-					title={m.admin_routine_steps()}
+					title={m.admin_bundle_items()}
 					action={
 						<form.Subscribe selector={(state) => state.isDefaultValue}>
 							{(unchanged) => (
@@ -122,7 +122,7 @@ export function BundleItems({ bundle }: { bundle: BundleDetail }) {
 									variant="outline"
 									disabled={unchanged}
 								>
-									{m.admin_routine_save_steps()}
+									{m.admin_bundle_save_items()}
 								</form.SubmitButton>
 							)}
 						</form.Subscribe>
@@ -146,7 +146,7 @@ export function BundleItems({ bundle }: { bundle: BundleDetail }) {
 							{(list) =>
 								list.state.value.length === 0 ? (
 									<p className="type-small text-muted-foreground">
-										{m.admin_routine_steps_empty()}
+										{m.admin_bundle_items_empty()}
 									</p>
 								) : (
 									<ol className="rounded-md border">
@@ -160,7 +160,7 @@ export function BundleItems({ bundle }: { bundle: BundleDetail }) {
 													<>
 														{item.archived && (
 															<Badge variant="outline">
-																{m.admin_routine_size_archived()}
+																{m.admin_bundle_size_archived()}
 															</Badge>
 														)}
 														<form.Field name={`items[${index}].quantity`}>

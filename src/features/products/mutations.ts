@@ -7,8 +7,7 @@ import { errorMessage } from "#/lib/errors";
 import { invalidateCatalog } from "#/lib/queries";
 import { m } from "#/paraglide/messages";
 
-// Other screens name products too, so the whole admin cache refreshes, not only productsKeys;
-// the routes reload because the breadcrumb of an open product carries its name.
+// Other screens and the open product's breadcrumb name products, so everything reloads.
 export function useRefreshAfterProductChange() {
 	const queryClient = useQueryClient();
 	const router = useRouter();
@@ -21,8 +20,6 @@ export function useRefreshAfterProductChange() {
 	};
 }
 
-// A size on an open purchase order cannot be archived (`in_use`), and one with units on hand
-// only with `archiveWithStock`.
 export function useVariantStatus() {
 	const refresh = useRefreshAfterProductChange();
 	return useMutation({

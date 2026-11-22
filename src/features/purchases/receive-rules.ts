@@ -12,7 +12,6 @@ export type ReceiptDraft = {
 	}[];
 };
 
-// The API enforces these rules again.
 export function checkReceipt(
 	value: ReceiptDraft,
 	ctx: z.RefinementCtx,

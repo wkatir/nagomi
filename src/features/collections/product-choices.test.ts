@@ -6,7 +6,7 @@ const row = (overrides: Partial<ProductRow>): ProductRow => ({
 	productId: 1,
 	slug: "teclado-sakura",
 	status: "published",
-	brand: "Crème Lab",
+	brand: "Keychron",
 	category: "teclados",
 	name: "Teclado Sakura",
 	variantId: 10,
@@ -28,7 +28,7 @@ describe("productChoices", () => {
 		expect(productChoices([row({})])).toEqual([
 			{
 				key: 1,
-				label: "Crème Lab Teclado Sakura",
+				label: "Keychron Teclado Sakura",
 				hint: "teclado-sakura",
 				draft: false,
 			},
@@ -39,7 +39,12 @@ describe("productChoices", () => {
 		const choices = productChoices([
 			row({}),
 			row({ variantId: 11, sku: "TEC-012" }),
-			row({ productId: 2, variantId: 12, slug: "toner", name: "Tónico" }),
+			row({
+				productId: 2,
+				variantId: 12,
+				slug: "raton-pulsar",
+				name: "Ratón Pulsar",
+			}),
 		]);
 		expect(choices.map((c) => c.key)).toEqual([1, 2]);
 	});
@@ -58,7 +63,7 @@ describe("productChoices", () => {
 			row({ productId: 1, status: "draft", name: null }),
 		]);
 		expect(choices).toEqual([
-			{ key: 1, label: "Crème Lab", hint: "teclado-sakura", draft: true },
+			{ key: 1, label: "Keychron", hint: "teclado-sakura", draft: true },
 		]);
 	});
 });

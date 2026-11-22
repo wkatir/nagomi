@@ -77,7 +77,6 @@ describe("PromotionsTable", () => {
 		expect(html).toContain(m.admin_promotion_amount_off({ amount: "$5.00" }));
 		expect(html).toContain(m.admin_promotion_minimum({ amount: "$20.00" }));
 		expect(html).toContain(m.admin_promotion_status_inactive());
-		// The second has no dates: one "no date" per date column.
 		expect(html.split(m.admin_promotion_no_date()).length - 1).toBe(2);
 		expect(html).toContain(m.admin_table_range({ from: 1, to: 2, total: 2 }));
 	});

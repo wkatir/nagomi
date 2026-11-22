@@ -16,6 +16,5 @@ export const clearedFilters = {
 export const isFiltered = (search: ProductListSearch) =>
 	Boolean(search.q || search.status || search.brandId || search.categoryId);
 
-// Selects hold ids as text.
 export const idOf = (value: string | undefined) =>
 	value === undefined ? undefined : Number(value);

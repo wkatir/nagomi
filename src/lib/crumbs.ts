@@ -7,7 +7,6 @@ export const ANCESTORS = {
 } as const;
 type Ancestor = keyof typeof ANCESTORS;
 
-// Paths are route paths without the locale.
 export type Trail = {
 	ancestors: Ancestor[];
 	current: { name: string; path: string };

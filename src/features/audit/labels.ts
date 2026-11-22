@@ -47,7 +47,6 @@ export const entityOptions = () =>
 		label: auditEntityLabel[value](),
 	})).sort((a, b) => a.label.localeCompare(b.label, getLocale()));
 
-// A type or an action without a label is shown as stored, not hidden.
 export function entityText(type: string): string {
 	const known = AUDIT_ENTITY_TYPES.find((t) => t === type);
 	return known ? auditEntityLabel[known]() : type;

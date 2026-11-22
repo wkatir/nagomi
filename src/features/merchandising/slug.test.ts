@@ -3,7 +3,7 @@ import { SLUG_REGEX } from "#/lib/enums";
 import { slugify } from "./slug";
 
 test.each([
-	["Crème Lab", "creme-lab"],
+	["Ratón Óptico", "raton-optico"],
 	["Teclado RK75 + Switches", "teclado-rk75-switches"],
 	["  Ñandú   y  más  ", "nandu-y-mas"],
 	["Set de mañana", "set-de-manana"],
@@ -21,6 +21,6 @@ test("a long name is cut at 80 characters without ending in a hyphen", () => {
 });
 
 test("what it makes is a slug the API accepts", () => {
-	for (const name of ["Crème Lab", "SPF 50+", "Ñandú", "x"])
+	for (const name of ["Ratón Óptico", "RGB 65%+", "Ñandú", "x"])
 		expect(SLUG_REGEX.test(slugify(name))).toBe(true);
 });

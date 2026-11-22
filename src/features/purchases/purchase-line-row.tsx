@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { Button } from "#/components/ui/button";
 import { m } from "#/paraglide/messages";
 
-// The fields are nodes because each form brings its own, typed to that form.
+// Nodes because each form brings its own field, typed to that form.
 export function PurchaseLineRow({
 	label,
 	sku,

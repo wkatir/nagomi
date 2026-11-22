@@ -14,8 +14,6 @@ export type Paged<T> = {
 	pageCount: number;
 };
 
-// For ledgers that only grow (stock movements, audit): newest first, nextCursor null on the
-// last page.
 export type Feed<T> = { items: T[]; nextCursor: number | null };
 
 export const pageCountOf = (total: number, pageSize: number) =>

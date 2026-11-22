@@ -43,7 +43,6 @@ export const isLedgerFiltered = (filters: MovementFilters) =>
 			filters.to,
 	);
 
-// Every movement the filters match, not only the pages loaded.
 export const movementsExportHref = (filters: MovementFilters) => {
 	const query = new URLSearchParams(toQuery(filters)).toString();
 	return `/api/admin/exports/movements.csv${query ? `?${query}` : ""}`;

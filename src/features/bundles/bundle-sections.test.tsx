@@ -95,7 +95,7 @@ describe("BundleItems", () => {
 
 	test("says which variant was archived since it was added", () => {
 		expect(
-			out.match(new RegExp(m.admin_routine_size_archived(), "g")),
+			out.match(new RegExp(m.admin_bundle_size_archived(), "g")),
 		).toHaveLength(1);
 	});
 
@@ -103,7 +103,7 @@ describe("BundleItems", () => {
 		expect(out).toContain(m.admin_merch_find_product());
 		expect(out).toMatch(
 			new RegExp(
-				`<button[^>]* disabled=""[^>]*>[^<]*${m.admin_routine_save_steps()}`,
+				`<button[^>]* disabled=""[^>]*>[^<]*${m.admin_bundle_save_items()}`,
 			),
 		);
 	});
@@ -112,7 +112,7 @@ describe("BundleItems", () => {
 		const empty = renderWithSettings(
 			<BundleItems bundle={{ ...bundle, items: [] }} />,
 		);
-		expect(empty).toContain(m.admin_routine_steps_empty());
+		expect(empty).toContain(m.admin_bundle_items_empty());
 		expect(empty).not.toContain("<ol");
 	});
 });
@@ -132,7 +132,7 @@ describe("BundleDetails", () => {
 		expect(input(out, "slug")).not.toContain(DISABLED);
 		expect(input(out, "position")).toContain('value="3"');
 		expect(out).toMatch(/<button[^>]*role="checkbox"[^>]*aria-checked="true"/);
-		expect(out).not.toContain(m.admin_routine_slug_locked());
+		expect(out).not.toContain(m.admin_bundle_slug_locked());
 	});
 
 	test("a published bundle keeps its address, and says why", () => {
@@ -140,7 +140,7 @@ describe("BundleDetails", () => {
 			<BundleDetails bundle={{ ...bundle, status: "published" }} />,
 		);
 		expect(input(out, "slug")).toContain(DISABLED);
-		expect(out).toContain(m.admin_routine_slug_locked());
+		expect(out).toContain(m.admin_bundle_slug_locked());
 	});
 });
 

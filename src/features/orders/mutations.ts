@@ -4,7 +4,7 @@ import { api, parseResponse } from "#/lib/api";
 import { errorMessage } from "#/lib/errors";
 import { invalidateCatalog } from "#/lib/queries";
 
-// An order change moves stock and money, so every admin query and the store's catalog refresh.
+// An order change moves stock and money, so all admin queries and the catalog refresh.
 export function useRefreshAfterOrderChange() {
 	const queryClient = useQueryClient();
 	return () =>

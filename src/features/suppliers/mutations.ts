@@ -5,8 +5,7 @@ import type { ArchivableStatus } from "#/lib/enums";
 import { errorMessage } from "#/lib/errors";
 import { m } from "#/paraglide/messages";
 
-// A supplier shows in lists, pickers and the purchase orders that name it, so the whole back
-// office refreshes.
+// Suppliers appear in pickers and purchase orders, so all admin queries refresh.
 export function useRefreshAfterSupplierChange() {
 	const queryClient = useQueryClient();
 	return () => queryClient.invalidateQueries({ queryKey: ["admin"] });

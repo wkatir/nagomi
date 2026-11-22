@@ -265,17 +265,17 @@ describe("ProductsReportView and BrandsReportView", () => {
 		products: [
 			{
 				variantId: 1,
-				sku: "OIL",
-				brand: "SKIN1004",
-				name: "Aceite",
+				sku: "TEC-001",
+				brand: "Keychron",
+				name: "Teclado",
 				...row,
 				...sale,
 			},
 			{
 				variantId: 2,
-				sku: "TONER",
-				brand: "COSRX",
-				name: "Tónico",
+				sku: "RAT-002",
+				brand: "Pulsar",
+				name: "Ratón",
 				...row,
 				firstSoldOn: "2026-10-22",
 				daysOnSale: 10,
@@ -317,7 +317,7 @@ describe("ProductsReportView and BrandsReportView", () => {
 		).filter((r) => r.length === 10);
 		expect(table.slice(1)).toEqual([
 			[
-				"SKIN1004 Aceite | OIL",
+				"Keychron Teclado | TEC-001",
 				"2",
 				"4",
 				"1",
@@ -329,7 +329,7 @@ describe("ProductsReportView and BrandsReportView", () => {
 				`${formatCalendarDate("2026-10-01", locale)} | ${m.admin_report_days_on_sale({ count: 31 })}`,
 			],
 			[
-				"COSRX Tónico | TONER",
+				"Pulsar Ratón | RAT-002",
 				"2",
 				"3",
 				"2",
@@ -373,8 +373,8 @@ describe("ProductsReportView and BrandsReportView", () => {
 			),
 		).filter((r) => r.length === 2);
 		expect(ranked.slice(1)).toEqual([
-			["TONER", "0.3"],
-			["OIL", "0.1"],
+			["RAT-002", "0.3"],
+			["TEC-001", "0.1"],
 		]);
 	});
 
@@ -416,14 +416,14 @@ describe("ProductsReportView and BrandsReportView", () => {
 			from: products.from,
 			to: products.to,
 			totals,
-			brands: [{ brand: "SKIN1004", products: 3, ...row }],
+			brands: [{ brand: "Keychron", products: 3, ...row }],
 		};
 		const table = rows(render(<BrandsReportView report={brands} />)).filter(
 			(r) => r.length === 8,
 		);
 		expect(table.slice(1)).toEqual([
 			[
-				`SKIN1004 | ${m.admin_report_products_n({ count: 3 })}`,
+				`Keychron | ${m.admin_report_products_n({ count: 3 })}`,
 				"2",
 				"4",
 				"1",
@@ -503,11 +503,9 @@ describe("LossesReportView", () => {
 		const expired = movementReasonLabel.damaged();
 		const defective = returnReasonLabel.defective();
 		const withdrawal = returnReasonLabel.withdrawal();
-		// The charts' tables: write-offs at cost, returns at the order's price.
 		expect(table).toContainEqual([expired, money(3500)]);
 		expect(table).toContainEqual([defective, money(3000)]);
 		expect(table).toContainEqual([withdrawal, money(1500)]);
-		// The visible tables, each closed by its totals.
 		expect(table).toContainEqual([expired, "5", money(3500)]);
 		expect(table).toContainEqual([m.admin_report_total(), "5", money(3500)]);
 		expect(table).toContainEqual([defective, "1", "2", money(3000)]);
@@ -718,7 +716,7 @@ describe("ReorderReportView", () => {
 		supplier: ReorderReport["variants"][number]["supplier"],
 	) => ({
 		sku,
-		brand: "COSRX",
+		brand: "Logitech",
 		name: sku,
 		productStatus: "published" as const,
 		supplier,
@@ -734,7 +732,7 @@ describe("ReorderReportView", () => {
 		leadTimeOverride: null,
 		variants: [
 			// 7 are suggested; the supplier sells in packs of 12.
-			entry(1, "OIL", 3, {
+			entry(1, "TEC-001", 3, {
 				supplierId: 1,
 				supplier: "Acme",
 				supplierItemId: 1,
@@ -744,17 +742,17 @@ describe("ReorderReportView", () => {
 				minOrderQuantity: null,
 				source: "only_supplier",
 			}),
-			entry(2, "TONER", 40, null),
+			entry(2, "RAT-002", 40, null),
 		],
 	};
 	const html = render(<ReorderReportView report={report} />);
-	const [oil, toner] = report.variants;
-	if (!oil || !toner) throw new Error("The fixture has two sizes");
+	const [keyboard, mouse] = report.variants;
+	if (!keyboard || !mouse) throw new Error("The fixture has two sizes");
 
 	test("counts the sizes to order and says what the suggestion is based on", () => {
-		expect(oil.suggestedQuantity).toBe(7);
-		expect(oil.orderQuantity).toBe(12);
-		expect(toner.orderQuantity).toBe(0);
+		expect(keyboard.suggestedQuantity).toBe(7);
+		expect(keyboard.orderQuantity).toBe(12);
+		expect(mouse.orderQuantity).toBe(0);
 		expect(html).toContain(m.admin_report_to_order({ count: 1 }));
 		expect(html).toContain(
 			m.admin_report_reorder_basis({
@@ -767,26 +765,26 @@ describe("ReorderReportView", () => {
 
 	test("tables each size with what to order and from whom", () => {
 		const table = rows(html).filter((r) => r.length === 6);
-		const reasons = (own: typeof oil.reasons) =>
+		const reasons = (own: typeof keyboard.reasons) =>
 			own.map((reason) => reorderReasonLabel[reason]());
 		expect(table.slice(1)).toEqual([
 			[
-				`COSRX OIL | ${["OIL", ...reasons(oil.reasons)].join(" · ")}`,
+				`Logitech TEC-001 | ${["TEC-001", ...reasons(keyboard.reasons)].join(" · ")}`,
 				"3",
-				String(oil.ratePerWeek),
+				String(keyboard.ratePerWeek),
 				m.admin_report_na(),
 				"12",
 				"Acme",
 			],
 			[
-				`COSRX TONER | ${["TONER", ...reasons(toner.reasons)].join(" · ")}`,
+				`Logitech RAT-002 | ${["RAT-002", ...reasons(mouse.reasons)].join(" · ")}`,
 				"40",
-				String(toner.ratePerWeek),
+				String(mouse.ratePerWeek),
 				m.admin_report_na(),
 				"0",
 				m.admin_report_na(),
 			],
 		]);
-		expect(oil.reasons).toContain("below_reorder_point");
+		expect(keyboard.reasons).toContain("below_reorder_point");
 	});
 });

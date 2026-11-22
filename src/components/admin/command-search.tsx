@@ -200,7 +200,7 @@ function recordGroups(
 			found.categories,
 			(hit) => navigate({ to: "/admin/categories", search: { q: hit.label } }),
 		),
-		group("bundles", m.admin_nav_routines(), Layers, found.bundles, (hit) =>
+		group("bundles", m.admin_nav_bundles(), Layers, found.bundles, (hit) =>
 			navigate({ to: "/admin/bundles/$id", params: { id: hit.id } }),
 		),
 		group(

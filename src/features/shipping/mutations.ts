@@ -7,7 +7,7 @@ import { errorMessage } from "#/lib/errors";
 import { m } from "#/paraglide/messages";
 import { shippingKeys } from "./queries";
 
-// The public store data advertises the free shipping of the zones.
+// The storefront advertises the zones' free shipping.
 export function useRefreshZones() {
 	const queryClient = useQueryClient();
 	return () =>

@@ -10,7 +10,6 @@ const rules = {
 	parseMoney: (text: string) => parseMoney(text, "USD"),
 };
 
-// A delivery that follows every rule: 10 of line 1 in one lot and 4 of line 2.
 const first = {
 	purchaseOrderItemId: 1,
 	remaining: 10,

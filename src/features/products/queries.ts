@@ -10,8 +10,6 @@ export type ProductRow = InferResponseType<
 	200
 >["items"][number];
 
-// Every query of the products module starts with `productsKeys.all`, so one invalidation
-// refreshes the lists, the open product and the pickers that sell from it.
 export const productsKeys = {
 	all: ["admin", "products"] as const,
 	list: (search: ProductListSearch) =>

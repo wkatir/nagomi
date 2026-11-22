@@ -40,8 +40,6 @@ const fieldOf = (path: string) =>
 		? FIELD_OF[path as keyof typeof FIELD_OF]
 		: lineFieldOf(path);
 
-// Without an order date it is saved as a draft. Shipping is not here: it comes with each delivery,
-// spread over its lots as landed cost.
 export function NewPurchaseForm({
 	supplierId,
 }: {
@@ -51,7 +49,6 @@ export function NewPurchaseForm({
 	const refresh = useRefreshAfterPurchaseChange();
 	const money = useMoney();
 	const moneyInput = useMoneyInput();
-	// An archived supplier takes no new purchase orders.
 	const { data: suppliers } = useSuspenseQuery(supplierOptionsQuery("active"));
 
 	const schema = z

@@ -15,8 +15,6 @@ export const lifecycleMessage = (status: ProductStatus) =>
 			? m.admin_merch_drafted()
 			: m.admin_merch_archived();
 
-// `root` starts every query key of the module, so one invalidation refreshes its lists and
-// details.
 export function useRefresh(root: readonly string[]) {
 	const queryClient = useQueryClient();
 	return () =>

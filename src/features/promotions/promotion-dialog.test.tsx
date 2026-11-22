@@ -53,7 +53,6 @@ describe("PromotionForm", () => {
 		for (const name of [...TERMS, ...SETTINGS])
 			expect(hasField(html, name)).toBe(true);
 		expect(html).not.toContain(m.admin_promotion_locked());
-		// The other language's description is on its own tab.
 		expect(hasField(html, "translations.en.description")).toBe(false);
 		expect(html).toContain(m.language_name_en());
 	});
@@ -90,7 +89,6 @@ describe("PromotionForm", () => {
 		const html = render(promotion({ termsLocked: true, usage: 3 }));
 		expect(html).toContain(m.admin_promotion_locked());
 		for (const name of TERMS) expect(hasField(html, name)).toBe(false);
-		// What is fixed is still said: the code, its type and value, and that it has no minimum.
 		expect(html).toContain("SPRING10");
 		expect(html).toContain(m.admin_promotion_type_percentage());
 		expect(html).toContain("10%");

@@ -38,8 +38,7 @@ import { productName } from "./translations";
 import { TranslationsCard, translationsValues } from "./translations-card";
 import { VariantsCard } from "./variants-card";
 
-// Each card saves on its own and is rebuilt only when what it saved changes, so saving one
-// never discards what is being typed in another.
+// Each card is rebuilt only when what it saved changes, so saving one keeps another's typing.
 export function ProductEditor({ product }: { product: AdminProduct }) {
 	const { data: store } = useSuspenseQuery(storeQuery);
 	const formatDate = useStoreDate();

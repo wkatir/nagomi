@@ -35,7 +35,6 @@ export function RefundOrderDialog({
 	refundable: number;
 	onClose: () => void;
 }) {
-	// Money to refund means the order was confirmed, which fixes its payment method.
 	if (order.paymentMethod === null)
 		throw new Error(
 			`Order ${order.code} has money to refund but no payment method`,

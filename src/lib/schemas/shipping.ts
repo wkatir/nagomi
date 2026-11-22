@@ -7,8 +7,6 @@ export const ZONE_MAX_AMOUNT = 100_000_000;
 export const ZONE_MAX_DAYS = 365;
 export const ZONE_MAX_POSITION = 1000;
 
-// `name` is the name in the store's default language; `deliveryDays` sorts by the earliest
-// delivery, then the latest.
 export const ZONE_SORTS = [
 	"position",
 	"name",
@@ -17,7 +15,6 @@ export const ZONE_SORTS = [
 	"deliveryDays",
 ] as const;
 
-// A store has a handful of zones, so there is no text search.
 export const zoneListSearch = pagedSearch(ZONE_SORTS, {
 	sort: "position",
 	dir: "asc",

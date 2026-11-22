@@ -4,8 +4,6 @@ import { api, parseResponse } from "#/lib/api";
 import { toQuery } from "#/lib/list";
 import type { PromotionListSearch } from "#/lib/schemas/promotions";
 
-// Every query of the promotions module starts with `promotionsKeys.all`, so one invalidation
-// refreshes the table after a change.
 export const promotionsKeys = {
 	all: ["admin", "promotions"] as const,
 	list: (search: PromotionListSearch) =>

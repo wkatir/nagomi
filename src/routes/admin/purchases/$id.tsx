@@ -17,7 +17,6 @@ export const Route = createFileRoute("/admin/purchases/$id")({
 		},
 		stringify: ({ id }) => ({ id: String(id) }),
 	},
-	// What the receive dialog needs is loaded with the purchase order, so opening it never waits.
 	loader: async ({ context, params }): Promise<LoaderCrumb> => {
 		try {
 			const [purchase] = await Promise.all([

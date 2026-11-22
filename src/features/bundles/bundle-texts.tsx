@@ -123,7 +123,7 @@ export function BundleTexts({
 		>
 			<form.AppForm>
 				<Section
-					title={m.admin_routine_texts()}
+					title={m.admin_bundle_texts()}
 					action={
 						<form.Subscribe selector={(state) => state.isDefaultValue}>
 							{(unchanged) => (

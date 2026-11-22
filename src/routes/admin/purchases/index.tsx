@@ -11,9 +11,7 @@ export const Route = createFileRoute("/admin/purchases/")({
 	validateSearch: purchaseListSearch,
 	search: { middlewares: [stripSearchParams(purchaseSearchDefaults)] },
 	loaderDeps: ({ search }) => search,
-	// The suppliers of the filter are awaited (a short list, kept after the first time); the
-	// table has its own loading state, so its page is only started. prefetchQuery never
-	// rejects; a failure shows in the table.
+	// Only the suppliers of the filter are awaited; prefetchQuery never rejects.
 	loader: async ({ context, deps }) => {
 		void context.queryClient.prefetchQuery(purchasesQuery(deps));
 		await context.queryClient.ensureQueryData(supplierOptionsQuery());

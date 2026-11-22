@@ -52,8 +52,6 @@ const newLot = (item: Purchase["items"][number], quantity: number): Lot => ({
 	code: "",
 });
 
-// Each lot gets a share of the shipping by value, which makes its landed cost. A product that
-// came in two lots takes two rows.
 export function ReceivePurchaseDialog({
 	purchase,
 	onClose,

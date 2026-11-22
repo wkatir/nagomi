@@ -4,7 +4,7 @@ import { variantChoices } from "./variant-choices";
 
 const row = (overrides: Partial<ProductRow>): ProductRow => ({
 	productId: 1,
-	slug: "ampoule",
+	slug: "teclado-sakura",
 	status: "published",
 	brand: "Akko",
 	category: "teclados",

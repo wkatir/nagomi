@@ -10,7 +10,6 @@ import { archivableStatusLabel } from "./status-labels";
 type Row = {
 	id: number;
 	slug: string;
-	// Null when the row has no name in the store's principal language.
 	name: string | null;
 	products: number;
 	status: ArchivableStatus;

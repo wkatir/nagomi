@@ -10,7 +10,6 @@ export const formatPercent = (ratio: number, locale: string) =>
 		maximumFractionDigits: 1,
 	}).format(ratio);
 
-// A margin is null when there was no merchandise.
 export function usePercent() {
 	const { data } = useSuspenseQuery(storeQuery);
 	const locale = intlLocale(getLocale(), data.countryCode);

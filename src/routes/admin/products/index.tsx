@@ -11,8 +11,7 @@ export const Route = createFileRoute("/admin/products/")({
 	validateSearch: productListSearch,
 	search: { middlewares: [stripSearchParams(productSearchDefaults)] },
 	loaderDeps: ({ search }) => search,
-	// Started, not awaited: the table has its own loading state, and paging or filtering
-	// should keep the page on screen. prefetchQuery never rejects; a failure shows in the table.
+	// Not awaited, so paging keeps the page on screen; prefetchQuery never rejects.
 	loader: ({ context, deps }) => {
 		void context.queryClient.prefetchQuery(productsQuery(deps));
 		void context.queryClient.prefetchQuery(productOptionsQuery);

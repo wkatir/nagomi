@@ -8,8 +8,7 @@ import { m } from "#/paraglide/messages";
 export const Route = createFileRoute("/admin/audit/")({
 	validateSearch: auditListSearch,
 	loaderDeps: ({ search }) => search,
-	// Started, not awaited: the log has its own loading state, and a filter change should
-	// keep the page on screen.
+	// Not awaited, so a filter change keeps the page on screen.
 	loader: ({ context, deps }) => {
 		void context.queryClient.prefetchInfiniteQuery(auditFeedQuery(deps));
 		void context.queryClient.prefetchQuery(auditActorsQuery);

@@ -1,12 +1,10 @@
 import type { z } from "zod";
 import { m } from "#/paraglide/messages";
 
-// The API's limits for a purchase order's lines.
 export const MAX_LINES = 100;
 export const MAX_QUANTITY = 100_000;
 const MAX_UNIT_COST = 100_000_000;
 
-// `id` is the line of a draft that is kept; a new line has none.
 export type PurchaseLine = {
 	id: number | null;
 	variantId: number;

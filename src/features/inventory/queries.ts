@@ -72,7 +72,7 @@ export const movementsQuery = (filters: MovementFilters) =>
 					}),
 				}),
 			),
-		getNextPageParam: (last) => last.nextCursor ?? undefined,
+		getNextPageParam: (last) => last.nextCursor,
 	});
 
 export const reorderQuery = (search: ReorderSearch) =>

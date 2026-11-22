@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { Button } from "#/components/ui/button";
 import { m } from "#/paraglide/messages";
 
-// `quantity` is a node because each form brings its own field, typed to that form.
+// A node because each form brings its own field, typed to that form.
 export function OrderLineRow({
 	label,
 	hint,

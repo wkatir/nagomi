@@ -10,8 +10,7 @@ export const Route = createFileRoute("/admin/inventory/reorder")({
 	validateSearch: reorderSearch,
 	search: { middlewares: [stripSearchParams(reorderSearchDefaults)] },
 	loaderDeps: ({ search }) => search,
-	// Started, not awaited: the suggestions have their own loading state, and changing the
-	// weeks should keep the page on screen. prefetchQuery never rejects; a failure shows there.
+	// Not awaited, so changing the weeks keeps the page on screen; prefetchQuery never rejects.
 	loader: ({ context, deps }) => {
 		void context.queryClient.prefetchQuery(reorderQuery(deps));
 	},

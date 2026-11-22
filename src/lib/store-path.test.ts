@@ -6,10 +6,10 @@ describe("isStorePath", () => {
 		for (const path of [
 			"/",
 			"/products",
-			"/products?category=sunscreen",
-			"/products?concern=oily-acne&concern=pores#list",
-			"/brands/skin1004",
-			"/routines",
+			"/products?category=teclados",
+			"/products?brand=akko&brand=keychron#list",
+			"/brands/keychron",
+			"/sets",
 			"/collections/lo-esencial",
 		])
 			expect(isStorePath(path)).toBe(true);
@@ -28,8 +28,8 @@ describe("isStorePath", () => {
 	});
 
 	test("refuses spaces, control and non-ASCII characters and long paths", () => {
-		expect(isStorePath("/products?q=sun screen")).toBe(false);
-		expect(isStorePath("/productos/protección")).toBe(false);
+		expect(isStorePath("/products?q=mouse pad")).toBe(false);
+		expect(isStorePath("/productos/ratón")).toBe(false);
 		expect(isStorePath("/products\n")).toBe(false);
 		expect(isStorePath(`/${"a".repeat(299)}`)).toBe(true);
 		expect(isStorePath(`/${"a".repeat(300)}`)).toBe(false);

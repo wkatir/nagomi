@@ -57,7 +57,6 @@ const blank = {
 	seoDescription: "",
 };
 
-// Made as a draft with no products; they are added on its page, which opens next.
 export function NewCollectionForm() {
 	const navigate = useNavigate();
 	const refresh = useRefresh(collectionsKeys.all);
@@ -162,7 +161,6 @@ export function NewCollectionForm() {
 												name={`translations.${locale}.title`}
 												listeners={{
 													onChange: ({ value }) => {
-														// The address follows the title until the user writes one.
 														if (
 															locale === defaultLocale &&
 															!form.getFieldMeta("slug")?.isDirty

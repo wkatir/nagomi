@@ -17,7 +17,6 @@ export const Route = createFileRoute("/admin/collections/$id")({
 		},
 		stringify: ({ id }) => ({ id: String(id) }),
 	},
-	// The store's principal language is loaded with the collection: the editor needs it to open.
 	loader: async ({ context, params }): Promise<LoaderCrumb> => {
 		try {
 			const [collection, settings] = await Promise.all([

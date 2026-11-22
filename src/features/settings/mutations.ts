@@ -7,7 +7,6 @@ import { m } from "#/paraglide/messages";
 type SettingsApi = ReturnType<typeof api>["admin"]["settings"];
 export type SettingsPatch = InferRequestType<SettingsApi["$patch"]>["json"];
 
-// The storefront shows the name, currency, payment methods and promises too.
 export function useRefreshSettings() {
 	const queryClient = useQueryClient();
 	return () =>
@@ -17,7 +16,7 @@ export function useRefreshSettings() {
 		]);
 }
 
-// A refusal goes back to the form that sent it, to show on its field.
+// No onError: each form shows the refusal on its field.
 export function useSaveSettings() {
 	const refresh = useRefreshSettings();
 	return useMutation({

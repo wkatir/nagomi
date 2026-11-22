@@ -84,11 +84,11 @@ function expectValidJsonLd(data: JsonLd) {
 
 describe("URLs", () => {
 	test("Spanish has no prefix and English lives under /en", () => {
-		expect(localizedUrl(origin, "/products/oil", "es")).toBe(
-			`${origin}/products/oil`,
+		expect(localizedUrl(origin, "/products/keyboard", "es")).toBe(
+			`${origin}/products/keyboard`,
 		);
-		expect(localizedUrl(origin, "/products/oil", "en")).toBe(
-			`${origin}/en/products/oil`,
+		expect(localizedUrl(origin, "/products/keyboard", "en")).toBe(
+			`${origin}/en/products/keyboard`,
 		);
 		// The English home is /en/, where /en redirects.
 		expect(localizedUrl(origin, "/", "en")).toBe(`${origin}/en/`);
@@ -167,7 +167,7 @@ describe("store head", () => {
 			url: `${origin}/media/${width}x${height}.webp`,
 			width,
 			height,
-			alt: "Oil",
+			alt: "Keyboard",
 		});
 		expect(
 			shareImage([photo(175, 529), photo(1600, 2000), photo(800, 800)]),
@@ -177,15 +177,19 @@ describe("store head", () => {
 
 	test("page meta overrides title and description", () => {
 		expect(
-			pageMeta({ title: "Oil", storeName: "Nagomi", description: "Clean." }),
+			pageMeta({
+				title: "Keyboard",
+				storeName: "Nagomi",
+				description: "Mechanical.",
+			}),
 		).toEqual([
-			{ title: "Oil | Nagomi" },
-			{ property: "og:title", content: "Oil" },
-			{ name: "description", content: "Clean." },
-			{ property: "og:description", content: "Clean." },
+			{ title: "Keyboard | Nagomi" },
+			{ property: "og:title", content: "Keyboard" },
+			{ name: "description", content: "Mechanical." },
+			{ property: "og:description", content: "Mechanical." },
 		]);
 		expect(
-			pageMeta({ title: "Oil", storeName: "Nagomi", description: null }),
+			pageMeta({ title: "Keyboard", storeName: "Nagomi", description: null }),
 		).toHaveLength(2);
 	});
 });
@@ -193,9 +197,9 @@ describe("store head", () => {
 describe("JSON-LD", () => {
 	test("organization contact comes from the store; empty fields are left out", () => {
 		const json = expectValidJsonLd(
-			organizationJsonLd(origin, store, "Beauty and personal care."),
+			organizationJsonLd(origin, store, "Computer peripherals."),
 		);
-		expect(json.description).toBe("Beauty and personal care.");
+		expect(json.description).toBe("Computer peripherals.");
 		expect(json.legalName).toBe("Nagomi, S.A. de C.V.");
 		expect(json.logo).toBe(`${origin}/logo.png`);
 		expect(json.contactPoint.telephone).toBe("+50362862515");
@@ -211,7 +215,7 @@ describe("JSON-LD", () => {
 					whatsappNumber: null,
 					business: { legalName: null, email: null, phone: "+503 2222-3333" },
 				},
-				"Beauty and personal care.",
+				"Computer peripherals.",
 			),
 		);
 		expect("legalName" in bare).toBe(false);
@@ -236,12 +240,12 @@ describe("JSON-LD", () => {
 		) =>
 			expectValidJsonLd(
 				productJsonLd({
-					url: `${origin}/products/oil`,
-					name: "Light Cleansing Oil",
-					brand: "SKIN1004",
+					url: `${origin}/products/keyboard`,
+					name: "Keychron K2 Keyboard",
+					brand: "Keychron",
 					description: null,
 					images: [`${origin}/media/a.webp`],
-					sku: "S1004-OIL-200",
+					sku: "KEY-K2-RGB",
 					price,
 					currency,
 					availability: stockAvailability(availability),
@@ -252,7 +256,7 @@ describe("JSON-LD", () => {
 		expect(inStock.offers.price).toBe("15.51");
 		expect(inStock.offers.priceCurrency).toBe("USD");
 		expect(inStock.offers.availability).toBe("https://schema.org/InStock");
-		expect(inStock.brand).toEqual({ "@type": "Brand", name: "SKIN1004" });
+		expect(inStock.brand).toEqual({ "@type": "Brand", name: "Keychron" });
 		expect("description" in inStock).toBe(false);
 
 		const soldOut = product(1500, "JPY", "sold_out");
@@ -264,12 +268,12 @@ describe("JSON-LD", () => {
 		const json = expectValidJsonLd(
 			collectionPageJsonLd({
 				origin,
-				url: `${origin}/needs/pores`,
-				name: "Poros",
+				url: `${origin}/needs/gaming`,
+				name: "Gaming",
 				description: null,
 				items: [
-					{ name: "SKIN1004 Oil", url: `${origin}/products/oil` },
-					{ name: "Anua Toner", url: `${origin}/products/toner` },
+					{ name: "Keychron Keyboard", url: `${origin}/products/keyboard` },
+					{ name: "Logitech Mouse", url: `${origin}/products/mouse` },
 				],
 			}),
 		);
@@ -283,18 +287,18 @@ describe("JSON-LD", () => {
 			origin,
 			locale: "en",
 			storeName: "Nagomi",
-			title: "Products for pores",
-			description: "Cleansers and toners.",
+			title: "Products for gaming",
+			description: "Keyboards and mice.",
 			trail: {
 				ancestors: ["home", "shop"],
-				current: { name: "Pores", path: "/needs/pores" },
+				current: { name: "Gaming", path: "/needs/gaming" },
 			},
-			items: [{ name: "SKIN1004 Oil", path: "/products/oil" }],
+			items: [{ name: "Keychron Keyboard", path: "/products/keyboard" }],
 		});
-		expect(meta).toContainEqual({ title: "Products for pores | Nagomi" });
+		expect(meta).toContainEqual({ title: "Products for gaming | Nagomi" });
 		expect(meta).toContainEqual({
 			name: "description",
-			content: "Cleansers and toners.",
+			content: "Keyboards and mice.",
 		});
 		const blocks = meta
 			.filter((m) => "script:ld+json" in m)
@@ -303,16 +307,16 @@ describe("JSON-LD", () => {
 			"CollectionPage",
 			"BreadcrumbList",
 		]);
-		expect(blocks[0].url).toBe(`${origin}/en/needs/pores`);
+		expect(blocks[0].url).toBe(`${origin}/en/needs/gaming`);
 		expect(blocks[0].mainEntity.itemListElement[0].url).toBe(
-			`${origin}/en/products/oil`,
+			`${origin}/en/products/keyboard`,
 		);
 		expect(
 			blocks[1].itemListElement.map((i: { item: string }) => i.item),
 		).toEqual([
 			`${origin}/en/`,
 			`${origin}/en/products`,
-			`${origin}/en/needs/pores`,
+			`${origin}/en/needs/gaming`,
 		]);
 	});
 

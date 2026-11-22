@@ -1,7 +1,7 @@
 import { SKU_REGEX } from "#/lib/enums";
 import { PRODUCT_LIMITS } from "#/lib/schemas/products";
 import { m } from "#/paraglide/messages";
-// The same check the API runs on a barcode, whose check digit a person can get wrong.
+// GTIN check digit, the same check the API runs.
 import { InvalidGtinError, normalizeGtin } from "#/server/domain/gtin";
 
 export type VariantValues = {
@@ -22,14 +22,11 @@ export const emptyVariant: VariantValues = {
 	reorderPoint: "",
 };
 
-// Largest price and reorder point the API takes.
 const MAX_AMOUNT = 100_000_000;
 const MAX_REORDER = 100_000;
 
 type Rules = {
-	// Text to minor units.
 	parseAmount: (text: string) => number | null;
-	// An active variant of a published product always has a price.
 	priceRequired: boolean;
 };
 
@@ -38,8 +35,6 @@ export type VariantIssue = { field: keyof VariantValues; message: string };
 const isCount = (text: string, max: number) =>
 	/^\d+$/.test(text) && Number(text) <= max;
 
-// What a person can be told without asking the API, which checks the same and more (a SKU
-// already taken).
 export function variantIssues(
 	value: VariantValues,
 	rules: Rules,

@@ -36,7 +36,6 @@ const fieldOf = (path: string) =>
 		? FIELD_OF[path as keyof typeof FIELD_OF]
 		: lineFieldOf(path);
 
-// Only a draft: once placed, its lines are fixed and deliveries are received against them.
 export function EditPurchaseDialog({
 	purchase,
 	onClose,

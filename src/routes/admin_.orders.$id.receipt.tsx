@@ -16,7 +16,7 @@ import { paymentLabel } from "#/lib/payment";
 import { storeQuery } from "#/lib/queries";
 import { m } from "#/paraglide/messages";
 
-// A printable page, outside the back-office frame. The order API checks the staff session.
+// Outside the back-office frame; the order API checks the staff session.
 export const Route = createFileRoute("/admin_/orders/$id/receipt")({
 	ssr: false,
 	staticData: { noindex: true },

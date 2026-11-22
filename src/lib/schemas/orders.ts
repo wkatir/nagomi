@@ -7,15 +7,12 @@ import {
 import { pagedSearch } from "#/lib/list";
 import { dayRange, fromAfterTo, fromNotAfterTo } from "./dates";
 
-// Shared by the lists and the CSV exports.
 const filterShape = {
-	// Order code, customer name or phone (digits).
 	q: z.string().trim().min(1).max(80).optional(),
 	status: z.enum(ORDER_STATUSES).optional(),
 	paymentStatus: z.enum(ORDER_PAYMENT_STATUSES).optional(),
 	channel: z.enum(ORDER_CHANNELS).optional(),
 	customerId: z.coerce.number().int().positive().optional(),
-	// Days of created_at.
 	...dayRange,
 };
 

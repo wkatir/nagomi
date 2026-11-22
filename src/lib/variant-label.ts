@@ -1,4 +1,3 @@
-// A product not yet named in the store's language is shown by its SKU.
 export function variantLabel(variant: {
 	brand: string;
 	name: string | null;

@@ -3,8 +3,6 @@ import { api, parseResponse } from "#/lib/api";
 import { toQuery } from "#/lib/list";
 import type { OrderListSearch } from "#/lib/schemas/orders";
 
-// Every query of the orders module starts with `ordersKeys.all`, so one invalidation
-// refreshes the lists and the open order after a change.
 const ordersKeys = {
 	all: ["admin", "orders"] as const,
 	list: (search: OrderListSearch) =>

@@ -16,8 +16,6 @@ export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
 export const SHIPPING_METHODS = ["pickup", "own_delivery", "courier"] as const;
 export type ShippingMethod = (typeof SHIPPING_METHODS)[number];
 
-// pending (stock taken, awaiting payment) -> paid -> shipped -> delivered (final); cash on
-// delivery goes pending -> shipped. Cancelled only from pending or paid.
 export const ORDER_STATUSES = [
 	"pending",
 	"paid",
@@ -101,8 +99,6 @@ export type PromotionType = (typeof PROMOTION_TYPES)[number];
 export const PROMOTION_STATUSES = ["active", "inactive", "archived"] as const;
 export type PromotionStatus = (typeof PROMOTION_STATUSES)[number];
 
-// draft -> ordered -> partially_received -> received; draft, ordered and
-// partially_received can be cancelled (for partially_received: the rest will not come).
 export const PURCHASE_ORDER_STATUSES = [
 	"draft",
 	"ordered",

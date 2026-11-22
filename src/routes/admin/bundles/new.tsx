@@ -5,8 +5,7 @@ import { storeQuery } from "#/lib/queries";
 import { m } from "#/paraglide/messages";
 
 export const Route = createFileRoute("/admin/bundles/new")({
-	staticData: { crumb: m.admin_routine_new },
-	// The form reads the store's principal language: it is small and kept.
+	staticData: { crumb: m.admin_bundle_new },
 	loader: ({ context }) => context.queryClient.ensureQueryData(storeQuery),
 	component: NewBundle,
 });
@@ -14,7 +13,7 @@ export const Route = createFileRoute("/admin/bundles/new")({
 function NewBundle() {
 	return (
 		<>
-			<PageHeader title={m.admin_routine_new()} />
+			<PageHeader title={m.admin_bundle_new()} />
 			<NewBundleForm />
 		</>
 	);

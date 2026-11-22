@@ -19,7 +19,6 @@ import {
 import { m } from "#/paraglide/messages";
 import { useRefreshAfterOrderChange } from "./mutations";
 
-// A delivery that failed is recorded by cancelling the order, not typed here.
 const reasonSchema = z.enum(RETURN_REASONS);
 type Reason = z.infer<typeof reasonSchema>;
 
@@ -78,7 +77,6 @@ const schema = z
 			});
 	});
 
-// The money is given back separately, with a refund.
 export function ReturnOrderDialog({
 	detail,
 	onClose,

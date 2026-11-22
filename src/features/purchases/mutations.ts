@@ -5,8 +5,7 @@ import { errorMessage } from "#/lib/errors";
 import { invalidateCatalog } from "#/lib/queries";
 import { m } from "#/paraglide/messages";
 
-// A purchase change can add stock and a cost, so every admin query and the store's catalog
-// refresh.
+// A purchase change can add stock and a cost, so all admin queries and the catalog refresh.
 export function useRefreshAfterPurchaseChange() {
 	const queryClient = useQueryClient();
 	return () =>

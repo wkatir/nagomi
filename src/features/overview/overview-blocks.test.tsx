@@ -135,7 +135,6 @@ client.setQueryData(["store"], {
 	timeZone: "America/El_Salvador",
 });
 
-// Its links need a router.
 async function render(d: AdminDashboard, queryClient = client) {
 	const router = createRouter({
 		routeTree: createRootRoute({

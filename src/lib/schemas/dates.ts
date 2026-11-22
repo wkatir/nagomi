@@ -3,8 +3,6 @@ import { isCalendarDate } from "#/lib/dates";
 
 export const calendarDate = z.string().refine(isCalendarDate, "Invalid date");
 
-// Local days of the store, both included. The schema that uses it ends with
-// `.refine(fromNotAfterTo, fromAfterTo)`.
 export const dayRange = {
 	from: calendarDate.optional(),
 	to: calendarDate.optional(),

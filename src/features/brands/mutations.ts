@@ -6,7 +6,6 @@ import {
 } from "../merchandising/status-change";
 import { brandsKeys } from "./queries";
 
-// Archiving a brand with a published product is refused (`in_use`).
 export const useBrandStatus = () =>
 	useStatusChange<ArchivableStatus>({
 		root: brandsKeys.all,

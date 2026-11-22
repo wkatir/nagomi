@@ -42,7 +42,6 @@ export function PurchasesTable({
 		...purchasesQuery(search),
 		placeholderData: keepPreviousData,
 	});
-	// Archived suppliers keep their purchase orders: they can be filtered by too.
 	const { data: suppliers } = useSuspenseQuery(supplierOptionsQuery());
 	const columns = usePurchaseColumns();
 	const table = useDataTable({

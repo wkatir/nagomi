@@ -9,6 +9,7 @@ import { FieldError } from "#/components/ui/field";
 import { api, parseResponse } from "#/lib/api";
 import { authClient } from "#/lib/auth-client";
 import { invalidateCart } from "#/lib/cart";
+import { errorMessage } from "#/lib/errors";
 import { m } from "#/paraglide/messages";
 import { getLocale } from "#/paraglide/runtime";
 
@@ -48,15 +49,15 @@ export function AuthForm({ mode }: { mode: "sign-in" | "sign-up" }) {
 			await navigate({ to: "/account" });
 		},
 	});
-	const errorText = (code: string) =>
-		code === "USER_ALREADY_EXISTS" ||
-		code === "USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL"
+	const errorText = (error: Error) =>
+		error.message === "USER_ALREADY_EXISTS" ||
+		error.message === "USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL"
 			? m.account_error_email_taken()
-			: code === "INVALID_EMAIL_OR_PASSWORD"
+			: error.message === "INVALID_EMAIL_OR_PASSWORD"
 				? m.account_error_credentials()
-				: code === "PASSWORD_TOO_SHORT"
+				: error.message === "PASSWORD_TOO_SHORT"
 					? m.account_error_password_short()
-					: m.account_error_generic();
+					: errorMessage(error);
 	const errors = tried
 		? {
 				name: signUp && !name.trim() ? m.checkout_error_name_required() : null,
@@ -168,9 +169,7 @@ export function AuthForm({ mode }: { mode: "sign-in" | "sign-up" }) {
 							</ConsentField>
 						</fieldset>
 					)}
-					{submit.isError && (
-						<FieldError>{errorText(submit.error.message)}</FieldError>
-					)}
+					{submit.isError && <FieldError>{errorText(submit.error)}</FieldError>}
 					<StoreButton
 						size="lg"
 						fullWidth

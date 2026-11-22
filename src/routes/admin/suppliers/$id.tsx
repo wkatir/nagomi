@@ -19,7 +19,6 @@ export const Route = createFileRoute("/admin/suppliers/$id")({
 		},
 		stringify: ({ id }) => ({ id: String(id) }),
 	},
-	// The products it sells are loaded with the supplier, so the page never shows half.
 	loader: async ({ context, params }): Promise<LoaderCrumb> => {
 		try {
 			const [supplier] = await Promise.all([

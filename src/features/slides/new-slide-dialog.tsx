@@ -19,7 +19,6 @@ import { m } from "#/paraglide/messages";
 import { useRefreshSlides } from "./mutations";
 import type { SlideText } from "./texts";
 
-// Only what the API requires; the rest is added on the slide's page.
 export function NewSlideDialog({ onClose }: { onClose: () => void }) {
 	const navigate = useNavigate();
 	const refresh = useRefreshSlides();

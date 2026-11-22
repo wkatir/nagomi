@@ -63,7 +63,6 @@ describe("CustomersTable", () => {
 		expect(html).toContain("Ana Pérez");
 		expect(html).toContain("+50371234567 · ana@example.com");
 		expect(html).toContain("$42.00");
-		// Without a name the phone names the customer, and is not said twice.
 		expect(html).toContain(">+50372345678</a>");
 		expect(html).not.toContain("+50372345678 ·");
 		expect(html).toContain(m.admin_customer_no_orders());
@@ -80,7 +79,6 @@ describe("CustomersTable", () => {
 			m.admin_customer_col_since(),
 		])
 			expect(html).toContain(label);
-		// Newest first by default: the creation column is the one sorted, descending.
 		expect(html.match(/aria-sort="descending"/g)).toHaveLength(1);
 		const sorted = /<th[^>]*aria-sort="descending"[^>]*>.*?<\/th>/.exec(html);
 		expect(sorted?.[0]).toContain(m.admin_customer_col_since());

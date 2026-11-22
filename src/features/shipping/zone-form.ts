@@ -18,8 +18,6 @@ type ZoneText = { name: string; description: string };
 const whole = (text: string, max: number) =>
 	/^\d+$/.test(text) && Number(text) <= max;
 
-// A name can be changed but not removed: the default language's is always required, and so
-// is that of any language that already has one (`stored`).
 export function zoneSchema({
 	amount,
 	creating,

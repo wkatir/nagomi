@@ -8,12 +8,12 @@ import { productSearchDefaults } from "./search";
 
 const row = (change: Partial<ProductRow>): ProductRow => ({
 	id: 1,
-	slug: "oil",
+	slug: "teclado-akko",
 	status: "published",
 	createdAt: "2026-01-01T00:00:00Z",
-	name: "Aceite",
+	name: "Teclado Akko",
 	brand: "Marca Uno",
-	category: "Limpiador",
+	category: "Accesorios",
 	variantCount: 2,
 	priceFrom: 1500,
 	priceTo: 2500,
@@ -42,9 +42,9 @@ describe("ProductsTable", () => {
 		row({}),
 		row({
 			id: 2,
-			slug: "keyboard",
+			slug: "raton-pulsar",
 			status: "draft",
-			name: "Suero",
+			name: "Ratón Pulsar",
 			brand: "Marca Dos",
 			variantCount: 0,
 			priceFrom: null,
@@ -55,7 +55,7 @@ describe("ProductsTable", () => {
 		row({
 			id: 3,
 			status: "archived",
-			name: "Crema",
+			name: "Alfombrilla",
 			variantCount: 1,
 			priceFrom: 900,
 			priceTo: 900,
@@ -65,16 +65,15 @@ describe("ProductsTable", () => {
 	test("a row per product: its name linking to its page, brand and category", () => {
 		for (const id of [1, 2, 3])
 			expect(html).toContain(`href="/admin/products/${id}"`);
-		expect(html).toContain("Aceite");
-		expect(html).toContain("Suero");
+		expect(html).toContain("Teclado Akko");
+		expect(html).toContain("Ratón Pulsar");
 		expect(html).toContain("Marca Dos");
-		expect(html).toContain("Limpiador");
+		expect(html).toContain("Accesorios");
 	});
 
 	test("shows the price range and the variants of each, or that it has none", () => {
 		expect(html).toContain("$15.00 - $25.00");
 		expect(html).toContain(m.admin_product_sizes_n({ count: 2 }));
-		// A single price is not a range.
 		expect(html).toContain("$9.00");
 		expect(html).not.toContain("$9.00 -");
 		expect(html).toContain(m.admin_product_sizes_n({ count: 1 }));

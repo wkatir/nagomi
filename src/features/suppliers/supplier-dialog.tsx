@@ -88,7 +88,6 @@ export function SupplierDialog({
 		onSuccess: async (saved) => {
 			await refresh();
 			onClose();
-			// A new supplier opens on its page, where its products are added.
 			if (!supplier)
 				await navigate({
 					to: "/admin/suppliers/$id",

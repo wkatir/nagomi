@@ -19,7 +19,6 @@ import { m } from "#/paraglide/messages";
 import { useVariantStatus } from "./mutations";
 import { type Size, VariantDialog } from "./variant-dialog";
 
-// A variant no longer sold is archived, never deleted.
 export function VariantsCard({ product }: { product: AdminProduct }) {
 	const money = useMoney();
 	const [editing, setEditing] = useState<Size | "new" | null>(null);

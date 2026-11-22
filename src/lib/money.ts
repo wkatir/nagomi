@@ -38,8 +38,6 @@ export function formatMoney(
 	}).format(amount / 10 ** digits);
 }
 
-// Without float math; more decimals than the currency has, signs, exponents or grouping
-// give null.
 export function parseMoney(input: string, currency: string): number | null {
 	const digits = minorDigits(currency);
 	const match = /^(\d+)(?:[.,](\d*))?$/.exec(input.trim());

@@ -17,7 +17,7 @@ export const mediaFilesQuery = infiniteQueryOptions({
 				query: toQuery({ cursor: pageParam, limit: 24 }),
 			}),
 		),
-	getNextPageParam: (last) => last.nextCursor ?? undefined,
+	getNextPageParam: (last) => last.nextCursor,
 });
 
 export const mediaFileQuery = (id: number) =>
@@ -29,7 +29,6 @@ export const mediaFileQuery = (id: number) =>
 			),
 	});
 
-// Uploading a file already stored answers the row it has.
 export async function uploadMedia(file: File): Promise<MediaFile> {
 	const body = new FormData();
 	body.set("file", file);

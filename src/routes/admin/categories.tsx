@@ -13,9 +13,7 @@ export const Route = createFileRoute("/admin/categories")({
 	validateSearch: categoryListSearch,
 	search: { middlewares: [stripSearchParams(defaults)] },
 	loaderDeps: ({ search }) => search,
-	// The table has its own loading state, and paging or filtering should keep the page on
-	// screen: its query is started, not awaited (prefetchQuery never rejects; a failure shows in
-	// the table). The settings the dialog needs are small and kept.
+	// The table is not awaited, so paging keeps the page on screen; prefetchQuery never rejects.
 	loader: async ({ context, deps }) => {
 		void context.queryClient.prefetchQuery(categoriesQuery(deps));
 		await context.queryClient.ensureQueryData(storeQuery);

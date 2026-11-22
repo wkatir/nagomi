@@ -12,7 +12,6 @@ export const PURCHASE_SORTS = [
 	"orderedOn",
 ] as const;
 
-// `q` is a reference or a supplier; the days are days of creation.
 export const purchaseListSearch = pagedSearch(PURCHASE_SORTS, {
 	sort: "createdAt",
 	dir: "desc",

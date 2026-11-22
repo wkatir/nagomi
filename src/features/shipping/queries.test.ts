@@ -8,7 +8,6 @@ import type { AdminEnv } from "#/server/auth";
 const env: { DB?: ReturnType<typeof d1> } = {};
 mock.module("cloudflare:workers", () => ({ env }));
 const { shippingRouter } = await import("#/server/routes/admin/shipping");
-// The admin API in-process, where the browser would reach it.
 const app = new Hono<AdminEnv>().basePath("/api").route(
 	"/admin",
 	new Hono<AdminEnv>()

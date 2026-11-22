@@ -32,7 +32,7 @@ const inStock = (n: number) => n % 3 === 0;
 beforeEach(() => {
 	const db = migratedDatabase();
 	const rows: string[] = [
-		`insert into store_settings (id, name, currency, default_locale, whatsapp_number, legal_name, tax_id_label, tax_id, address, time_zone, country_code, order_code_prefix, max_quantity_per_line, low_stock_threshold) values (1, 'Store', 'USD', 'es', '50360000000', 'Store, S.A.S.', 'NIT', '0614-010101-101-1', 'San Salvador', 'America/El_Salvador', 'SV', 'ECL', 20, 5);`,
+		`insert into store_settings (id, name, currency, default_locale, whatsapp_number, legal_name, tax_id_label, tax_id, address, time_zone, country_code, order_code_prefix, max_quantity_per_line, low_stock_threshold) values (1, 'Store', 'USD', 'es', '50360000000', 'Store, S.A.S.', 'NIT', '0614-010101-101-1', 'San Salvador', 'America/El_Salvador', 'SV', 'NAG', 20, 5);`,
 		"insert into brands (slug, name, search_key) values ('b', 'Brand', 'brand b');",
 		"insert into categories (slug, icon, sort_order) values ('teclados', 'keyboard', 1), ('ratones', 'mouse', 2);",
 		"insert into category_translations (category_id, locale, name) values (1, 'es', 'Teclados'), (2, 'es', 'Ratones');",

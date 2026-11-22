@@ -16,8 +16,8 @@ const parse = (text: string) => parseMoney(text, "USD");
 const line = (change: Partial<PurchaseLine> = {}): PurchaseLine => ({
 	id: null,
 	variantId: 1,
-	sku: "OIL-50",
-	label: "Brand Aceite 50 ml",
+	sku: "RAT-050",
+	label: "Brand Ratón inalámbrico",
 	quantity: "10",
 	unitCost: "7.00",
 	...change,
@@ -132,7 +132,7 @@ describe("toRequestItems", () => {
 
 	test("fails on a cost that was not checked", () => {
 		expect(() => toRequestItems([line({ unitCost: "" })], parse)).toThrow(
-			"Unchecked cost of OIL-50",
+			"Unchecked cost of RAT-050",
 		);
 	});
 });
