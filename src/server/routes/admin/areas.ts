@@ -13,6 +13,8 @@ export const ADMIN_AREAS = {
 	"/promotions": "merchandising",
 	"/orders": "orders",
 	"/followups": "orders",
+	"/reviews": "customers",
+	"/stock-alerts": "inventory",
 	"/customers": "customers",
 	"/shipping-zones": "shipping",
 	"/inventory": "inventory",

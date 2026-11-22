@@ -21,6 +21,7 @@ const entry = (
 	extra: Partial<CatalogEntry> = {},
 ): CatalogEntry => ({
 	id: nextId++,
+	rating: { average: null, count: 0 },
 	slug,
 	name: slug,
 	tagline: null,

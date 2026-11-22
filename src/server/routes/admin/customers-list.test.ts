@@ -69,7 +69,7 @@ type Line = { quantity: number; unitPrice: number; returned?: number };
 let nextOrder = 0;
 function order(o: {
 	customerId: number;
-	status: "pending" | "confirmed" | "delivered" | "cancelled";
+	status: "pending" | "paid" | "delivered" | "cancelled";
 	createdAt: string;
 	lines: Line[];
 	discount?: number;
@@ -81,7 +81,7 @@ function order(o: {
 	const discount = o.discount ?? 0;
 	const shipping = o.shipping ?? 0;
 	db.exec(
-		`insert into orders (id, code, idempotency_key, request_hash, locale, channel, status, subtotal, discount, discount_reason, shipping, total, search_key, customer_id, created_at) values (${id}, 'O-${id}', 'k${id}', 'h', 'es', 'whatsapp', '${o.status}', ${subtotal}, ${discount}, ${discount > 0 ? "'promo'" : "NULL"}, ${shipping}, ${subtotal - discount + shipping}, 'o-${id}', ${o.customerId}, '${o.createdAt}')`,
+		`insert into orders (id, code, idempotency_key, request_hash, locale, channel, status, payment_method, shipping_method, confirmation_message, customer_name, customer_email, customer_phone, subtotal, discount, discount_reason, shipping, total, search_key, customer_id, created_at) values (${id}, 'O-${id}', 'k${id}', 'h', 'es', 'whatsapp', '${o.status}', 'bank_transfer', 'pickup', 'm', 'Cliente', 'cliente@example.com', '+50371234567', ${subtotal}, ${discount}, ${discount > 0 ? "'promo'" : "NULL"}, ${shipping}, ${subtotal - discount + shipping}, 'o-${id}', ${o.customerId}, '${o.createdAt}')`,
 	);
 	o.lines.forEach((line, n) => {
 		db.exec(
@@ -151,7 +151,7 @@ insert into lots (variant_id, receipt_line_id, unit_cost_e4) values (1, 1, 70000
 		phone: "+50375678901",
 		createdAt: "2026-09-05T12:00:00Z",
 	});
-	// Ana: a delivered order with a discount and shipping, a confirmed one, and two that
+	// Ana: a delivered order with a discount and shipping, a paid one, and two that
 	// are not sales (cancelled, pending).
 	order({
 		customerId: 1,
@@ -164,7 +164,7 @@ insert into lots (variant_id, receipt_line_id, unit_cost_e4) values (1, 1, 70000
 	});
 	order({
 		customerId: 1,
-		status: "confirmed",
+		status: "paid",
 		createdAt: "2026-10-10T12:00:00Z",
 		lines: [{ quantity: 1, unitPrice: 1000 }],
 	});
@@ -207,10 +207,10 @@ insert into lots (variant_id, receipt_line_id, unit_cost_e4) values (1, 1, 70000
 		lines: [{ quantity: 1, unitPrice: 1300 }],
 		shipping: 1000,
 	});
-	// Carla has no orders. The customer without a name has one big confirmed order.
+	// Carla has no orders. The customer without a name has one big paid order.
 	order({
 		customerId: 5,
-		status: "confirmed",
+		status: "paid",
 		createdAt: "2026-10-20T12:00:00Z",
 		lines: [{ quantity: 1, unitPrice: 7000 }],
 		shipping: 300,
@@ -228,7 +228,7 @@ describe("GET /customers", () => {
 			pageCount: 1,
 		});
 		const byId = Object.fromEntries(page.items.map((c) => [c.id, c]));
-		// 3000 - 300 + 500, and the confirmed order of 1000; cancelled and pending do not count.
+		// 3000 - 300 + 500, and the paid order of 1000; cancelled and pending do not count.
 		expect(byId[1]).toMatchObject({
 			orders: 2,
 			lifetimeValue: 4200,

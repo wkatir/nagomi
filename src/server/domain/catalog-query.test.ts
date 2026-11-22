@@ -44,6 +44,7 @@ function entry(
 ): CatalogEntry {
 	const e: CatalogEntry = {
 		id: nextId++,
+		rating: { average: null, count: 0 },
 		tagline: null,
 		shortSpecs: null,
 		isFeatured: false,

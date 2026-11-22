@@ -1,7 +1,7 @@
 import type { Database } from "bun:sqlite";
 import { beforeEach, describe, expect, mock, test } from "bun:test";
 import { Hono } from "hono";
-import { d1, migratedDatabase } from "#/db/test-database";
+import { d1, migratedDatabase, orderSql } from "#/db/test-database";
 import type { AdminEnv } from "#/server/auth";
 import { searchKey } from "../../domain/search";
 
@@ -51,46 +51,36 @@ function order(o: {
 	name?: string;
 	customerId?: number;
 	channel?: "whatsapp" | "instagram" | "in_person";
-	status?: "pending" | "confirmed" | "delivered" | "cancelled";
+	status?: "pending" | "shipped" | "delivered" | "cancelled";
+	method?: "bank_transfer" | "cash_on_delivery";
 	total: number;
 	createdAt: string;
-	paid?: number;
 	refunded?: number;
 }) {
 	const id = ++nextId;
-	const status = o.status ?? "pending";
-	const stamp = status === "pending" ? "NULL" : `'${o.createdAt}'`;
 	db.exec(
-		`insert into orders (id, code, idempotency_key, request_hash, locale, channel, status, subtotal, total, search_key, customer_name, customer_id, created_at, confirmed_at, delivered_at, cancelled_at, cancel_reason, payment_method) values (${id}, '${o.code}', 'k${id}', 'h', 'es', '${o.channel ?? "whatsapp"}', 'pending', ${o.total}, ${o.total}, '${searchKey(o.code, o.name)}', ${o.name ? `'${o.name}'` : "NULL"}, ${o.customerId ?? "NULL"}, '${o.createdAt}', NULL, NULL, NULL, NULL, NULL)`,
+		orderSql({
+			id,
+			code: o.code,
+			name: o.name ?? "Cliente",
+			customerId: o.customerId ?? null,
+			channel: o.channel ?? "whatsapp",
+			status: o.status ?? "pending",
+			method: o.method ?? "bank_transfer",
+			createdAt: o.createdAt,
+			paidAt: o.createdAt,
+			shippedAt: o.createdAt,
+			deliveredAt: o.createdAt,
+			cancelledAt: o.createdAt,
+			searchKey: searchKey(o.code, o.name),
+			lines: [
+				{ variantId: 1, quantity: 1, unitPrice: o.total, sku: "OIL-001" },
+			],
+		}),
 	);
-	db.exec(
-		`insert into order_items (order_id, variant_id, quantity, unit_price, sku, brand_name, product_name) values (${id}, 1, 1, ${o.total}, 'OIL-001', 'Brand', 'Aceite')`,
-	);
-	if (status !== "pending") {
-		db.exec(
-			`update orders set status = 'confirmed', confirmed_at = ${stamp}, payment_method = 'cash', shipping_method = 'pickup', delivery_estimate_from = '2099-01-01', delivery_estimate_to = '2099-01-01', confirmation_message = 'm' where id = ${id}`,
-		);
-	}
-	if (status === "delivered") {
-		db.exec(
-			`update orders set status = 'fulfilled', fulfilled_at = '${o.createdAt}' where id = ${id}`,
-		);
-		db.exec(
-			`update orders set status = 'delivered', delivered_at = '${o.createdAt}' where id = ${id}`,
-		);
-	}
-	if (status === "cancelled") {
-		db.exec(
-			`update orders set status = 'cancelled', cancelled_at = '${o.createdAt}', cancel_reason = 'test' where id = ${id}`,
-		);
-	}
-	if (o.paid)
-		db.exec(
-			`insert into payments (order_id, kind, method, amount, status, recorded_by) values (${id}, 'payment', 'cash', ${o.paid}, 'confirmed', 'u')`,
-		);
 	if (o.refunded)
 		db.exec(
-			`insert into payments (order_id, kind, method, amount, status, recorded_by) values (${id}, 'refund', 'cash', ${o.refunded}, 'confirmed', 'u')`,
+			`insert into payments (order_id, kind, method, amount, status, recorded_by) values (${id}, 'refund', 'bank_transfer', ${o.refunded}, 'confirmed', 'u')`,
 		);
 }
 
@@ -125,7 +115,8 @@ insert into inventory_movements (lot_id, kind, quantity, created_by) values (1, 
 		code: "ECL-2",
 		name: "Beto",
 		channel: "instagram",
-		status: "confirmed",
+		status: "shipped",
+		method: "cash_on_delivery",
 		total: 3000,
 		createdAt: "2026-10-02T03:00:00Z",
 	});
@@ -136,7 +127,6 @@ insert into inventory_movements (lot_id, kind, quantity, created_by) values (1, 
 		status: "delivered",
 		total: 4500,
 		createdAt: "2026-10-03T12:00:00Z",
-		paid: 4500,
 	});
 	order({
 		code: "ECL-4",
@@ -152,7 +142,7 @@ insert into inventory_movements (lot_id, kind, quantity, created_by) values (1, 
 		status: "delivered",
 		total: 2000,
 		createdAt: "2026-10-04T12:00:00Z",
-		paid: 1200,
+		refunded: 800,
 	});
 });
 
@@ -185,6 +175,7 @@ describe("GET /orders", () => {
 				"channel",
 				"code",
 				"createdAt",
+				"customerEmail",
 				"customerName",
 				"customerPhone",
 				"id",
@@ -281,16 +272,16 @@ describe("GET /orders", () => {
 		]);
 		expect(await sorted("status", "asc")).toEqual([
 			"ECL-4",
-			"ECL-2",
 			"ECL-3",
 			"ECL-5",
 			"ECL-1",
+			"ECL-2",
 		]);
 		expect(await sorted("status", "desc")).toEqual([
+			"ECL-2",
 			"ECL-1",
 			"ECL-5",
 			"ECL-3",
-			"ECL-2",
 			"ECL-4",
 		]);
 		expect(await sorted("createdAt", "asc")).toEqual([

@@ -455,6 +455,7 @@ export const storeCatalog = new Hono()
 			);
 			return c.json({
 				slug: entry.slug,
+				rating: entry.rating,
 				name: text.name,
 				tagline: text.tagline,
 				shortSpecs: text.shortSpecs,

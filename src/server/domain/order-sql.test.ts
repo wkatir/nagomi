@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/bun-sqlite";
 import * as schema from "#/db/schema";
-import { migratedDatabase } from "#/db/test-database";
+import { migratedDatabase, orderSql } from "#/db/test-database";
 import { ORDER_PAYMENT_STATUSES } from "#/lib/enums";
 import { paymentStatusIs, promotionCodeOfOrder } from "./order-sql";
 import { amountOwed, paymentSummary } from "./payments";
@@ -13,11 +13,13 @@ describe("promotionCodeOfOrder", () => {
 	test("is the code the order was placed with, whatever its discount reason", () => {
 		const raw = migratedDatabase();
 		raw.exec(`
+INSERT INTO brands (slug, name, search_key) VALUES ('b', 'Brand', 'brand');
+INSERT INTO categories (slug, icon, sort_order) VALUES ('c', 'package', 1);
+INSERT INTO products (slug, brand_id, category_id) VALUES ('p', 1, 1);
+INSERT INTO variants (product_id, sku, price, search_key) VALUES (1, 'SKU-001', 1700, 'sku1');
 INSERT INTO promotions (code, type, value, status) VALUES ('HOLA10', 'percentage', 10, 'active');
-INSERT INTO orders (code, idempotency_key, request_hash, locale, channel, subtotal, discount, discount_reason, total, search_key, promotion_id) VALUES ('O-1', 'k1', 'h', 'es', 'whatsapp', 3400, 340, 'HOLA10', 3060, 'o-1', 1);
-INSERT INTO orders (code, idempotency_key, request_hash, locale, channel, subtotal, total, search_key) VALUES ('O-2', 'k2', 'h', 'es', 'whatsapp', 1700, 1700, 'o-2');
--- Confirmed with another discount and the admin's reason: the order keeps its code.
-UPDATE orders SET status = 'confirmed', confirmed_at = '2026-10-16T00:00:00Z', discount = 500, discount_reason = 'Cliente frecuente', total = 2900 WHERE id = 1;
+${orderSql({ id: 1, lines: [{ variantId: 1, quantity: 2, unitPrice: 1700 }], discount: 340, discountReason: "HOLA10", promotionId: 1, takeStock: false })}
+${orderSql({ id: 2, lines: [{ variantId: 1, quantity: 1, unitPrice: 1700 }], takeStock: false })}
 `);
 		const db = drizzle(raw, { schema });
 		const codeOf = (id: number) =>
@@ -64,8 +66,8 @@ INSERT INTO lots (variant_id, receipt_line_id, unit_cost_e4) VALUES (1, 1, 70000
 		for (let id = 1; id <= 400; id++) {
 			const status = pick([
 				"pending",
-				"confirmed",
-				"fulfilled",
+				"paid",
+				"shipped",
 				"delivered",
 				"cancelled",
 			] as const);
@@ -83,7 +85,7 @@ INSERT INTO lots (variant_id, receipt_line_id, unit_cost_e4) VALUES (1, 1, 70000
 			]);
 			const shipping = pick([0, 0, 350, 500]);
 			raw.exec(
-				`INSERT INTO orders (id, code, idempotency_key, request_hash, locale, channel, status, subtotal, discount, discount_reason, shipping, total, search_key) VALUES (${id}, 'O-${id}', 'k${id}', 'h', 'es', 'whatsapp', '${status}', ${subtotal}, ${discount}, ${discount > 0 ? "'promo'" : "NULL"}, ${shipping}, ${subtotal - discount + shipping}, 'o-${id}')`,
+				`INSERT INTO orders (id, code, idempotency_key, request_hash, customer_name, customer_email, customer_phone, locale, channel, status, payment_method, subtotal, discount, discount_reason, shipping, total, shipping_method, confirmation_message, search_key) VALUES (${id}, 'O-${id}', 'k${id}', 'h', 'Cliente', 'c@example.com', '+50371234567', 'es', 'web', '${status}', 'cash', ${subtotal}, ${discount}, ${discount > 0 ? "'promo'" : "NULL"}, ${shipping}, ${subtotal - discount + shipping}, 'pickup', 'm', 'o-${id}')`,
 			);
 			const owedLines = lines.map((line, n) => {
 				raw.exec(

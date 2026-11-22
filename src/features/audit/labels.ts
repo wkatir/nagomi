@@ -25,6 +25,7 @@ export const auditEntityLabel = {
 	purchase_order: m.admin_audit_entity_purchase_order,
 	purchase_receipt: m.admin_audit_entity_purchase_receipt,
 	return: m.admin_audit_entity_return,
+	review: m.admin_audit_entity_review,
 	shipping_zone: m.admin_audit_entity_shipping_zone,
 	store_promise: m.admin_audit_entity_store_promise,
 	store_settings: m.admin_audit_entity_store_settings,

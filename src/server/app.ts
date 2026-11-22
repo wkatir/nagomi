@@ -9,6 +9,8 @@ import { MAX_IMAGE_BYTES } from "./domain/images";
 import { account } from "./routes/account";
 import { admin } from "./routes/admin";
 import { IMAGE_UPLOAD_PATHS } from "./routes/admin/media";
+import { engagement } from "./routes/engagement";
+import { shop } from "./routes/shop";
 import { storeCatalog } from "./routes/store-catalog";
 import { storefront } from "./routes/storefront";
 
@@ -34,12 +36,19 @@ export const api = new Hono()
 			: tooLarge(c, next),
 	)
 	.use("/orders/*", publicBodyLimit)
-	.use("/promotions/*", publicBodyLimit)
+	.use("/cart/*", publicBodyLimit)
+	.use("/checkout", publicBodyLimit)
+	.use("/payments/*", publicBodyLimit)
+	.use("/stock-alerts", publicBodyLimit)
 	.use("/account/*", publicBodyLimit)
 	// Their handlers rate limit by the client IP.
 	.use("/orders/*", requireClientIp)
-	.use("/promotions/*", requireClientIp)
+	.use("/cart/coupon", requireClientIp)
+	.use("/checkout", requireClientIp)
+	.use("/stock-alerts", requireClientIp)
 	.route("/", storefront)
+	.route("/", shop)
+	.route("/", engagement)
 	.route("/", storeCatalog)
 	.get("/sign-in-methods", (c) => c.json(authMethods))
 	.route("/account", account)

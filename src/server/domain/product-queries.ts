@@ -5,7 +5,6 @@ import type { Locale } from "#/lib/enums";
 import type { ProductListSearch } from "#/lib/schemas/products";
 import { qualified } from "./d1";
 import { mediaUrl } from "./images";
-import { holdsStock, type StockClock } from "./inventory";
 import { pageWindow, sortBy, toPaged } from "./list-query";
 import { productSearch } from "./product-search";
 
@@ -15,8 +14,6 @@ const {
 	categoryTranslations,
 	inventoryMovements,
 	lots,
-	orderItems,
-	orders,
 	productTranslations,
 	products,
 	variants,
@@ -39,7 +36,7 @@ export const productFilter = (db: Db, filter: ProductFilter) =>
 
 export async function pagedProducts(
 	db: Db,
-	clock: StockClock & { defaultLocale: Locale },
+	clock: { defaultLocale: Locale },
 	query: ProductListSearch,
 ) {
 	// The sellable units of stock.ts, in SQL.
@@ -65,27 +62,15 @@ export async function pagedProducts(
 		.innerJoin(inventoryMovements, eq(inventoryMovements.lotId, lots.id))
 		.groupBy(lots.variantId)
 		.as("on_hand");
-	const held = db
-		.select({
-			variantId: orderItems.variantId,
-			units: sql<number>`sum(${orderItems.quantity})`.as("held_units"),
-		})
-		.from(orderItems)
-		.innerJoin(orders, eq(orders.id, orderItems.orderId))
-		.where(holdsStock(clock.holdStart))
-		.groupBy(orderItems.variantId)
-		.as("held");
 	const sellable = db
 		.select({
 			productId: variants.productId,
-			units:
-				sql<number>`sum(max(0, coalesce(${onHand.units}, 0) - coalesce(${held.units}, 0)))`.as(
-					"sellable_units",
-				),
+			units: sql<number>`sum(max(0, coalesce(${onHand.units}, 0)))`.as(
+				"sellable_units",
+			),
 		})
 		.from(variants)
 		.leftJoin(onHand, eq(onHand.variantId, variants.id))
-		.leftJoin(held, eq(held.variantId, variants.id))
 		.where(eq(variants.status, "active"))
 		.groupBy(variants.productId)
 		.as("sellable");

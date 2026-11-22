@@ -40,14 +40,16 @@ const promotionFields = z.object({
 		.toUpperCase()
 		.regex(PROMOTION_CODE, "3 to 32 letters, digits, - or _"),
 	type: z.enum(PROMOTION_TYPES),
-	// percentage: whole percent 1-100; fixed: minor units.
+	// percentage: whole percent 1-50; fixed: minor units.
 	value: money,
 	minSubtotal: money.nullable(),
 	// Local days of the store, both included; null leaves that side open.
 	startsOn: calendarDate.nullable(),
 	endsOn: calendarDate.nullable(),
 	usageLimit: limit,
-	perCustomerLimit: limit,
+	// Once per customer email, or no limit per customer.
+	perCustomerLimit: z.literal(1).nullable(),
+	firstOrderOnly: z.boolean(),
 	status: z.enum(PROMOTION_STATUSES),
 });
 // The table checks, applied to the promotion as it would be stored.
@@ -58,17 +60,24 @@ const promotionState = z
 		startsOn: z.string().nullable(),
 		endsOn: z.string().nullable(),
 	})
-	.refine((p) => p.type !== "percentage" || p.value <= 100, {
-		message: "A percentage is at most 100",
+	.refine((p) => p.type !== "percentage" || p.value <= 50, {
+		message: "A percentage is at most 50",
 		path: ["value"],
 	})
-	.refine((p) => !p.startsOn || !p.endsOn || p.startsOn <= p.endsOn, {
-		message: "endsOn is before startsOn",
+	.refine((p) => !p.startsOn || !p.endsOn || p.startsOn < p.endsOn, {
+		message: "endsOn is not after startsOn",
 		path: ["endsOn"],
 	});
 // Fixed once an order used the code (also a trigger): orders keep a discount derived
 // from them.
-const TERMS = ["code", "type", "value", "minSubtotal"] as const;
+const TERMS = [
+	"code",
+	"type",
+	"value",
+	"minSubtotal",
+	"perCustomerLimit",
+	"firstOrderOnly",
+] as const;
 
 async function written(db: Db, id: number) {
 	const promotion = await promotionDetail(db, id);
@@ -114,6 +123,7 @@ export const promotionsRouter = new Hono<AdminEnv>()
 					endsOn: true,
 					usageLimit: true,
 					perCustomerLimit: true,
+					firstOrderOnly: true,
 					status: true,
 				})
 				.extend({ translations: translations(promotionText) }),

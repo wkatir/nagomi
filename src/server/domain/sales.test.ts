@@ -48,7 +48,7 @@ const line = (
 });
 
 // Order 1: delivered, 3.00 shipping; every unit came back (one SAC restocked, the rest
-// written off). Order 4: delivered, 3.00 shipping. Order 5: fulfilled with a 10.00
+// written off). Order 4: delivered, 3.00 shipping. Order 5: shipped with a 10.00
 // discount and one of two SAC returned. Lot costs: SAC 8.00, LCO 16.0745, PSE 11.00.
 const orders: SoldOrder[] = [
 	{
@@ -72,7 +72,7 @@ const orders: SoldOrder[] = [
 	{
 		id: 5,
 		day: "2026-09-08",
-		status: "fulfilled",
+		status: "shipped",
 		subtotal: 5300,
 		discount: 1000,
 		shipping: 0,
@@ -117,7 +117,7 @@ describe("orderSale", () => {
 
 	test("refuses orders that are not sales", () => {
 		expect(() =>
-			orderSale({ ...(orders[1] as SoldOrder), status: "confirmed" }),
+			orderSale({ ...(orders[1] as SoldOrder), status: "paid" }),
 		).toThrow();
 	});
 });

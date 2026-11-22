@@ -79,12 +79,15 @@ function promotion(p: {
 let nextOrder = 0;
 const orderWith = (
 	promotionId: number,
-	status: "pending" | "confirmed" | "cancelled",
+	status: "pending" | "paid" | "cancelled",
 	createdAt: string,
 ) => {
 	const id = ++nextOrder;
 	db.exec(
-		`insert into orders (id, code, idempotency_key, request_hash, locale, channel, status, subtotal, total, search_key, promotion_id, created_at) values (${id}, 'O-${id}', 'k${id}', 'h', 'es', 'whatsapp', '${status}', 1000, 1000, 'o-${id}', ${promotionId}, '${createdAt}')`,
+		`insert into orders (id, code, idempotency_key, request_hash, locale, channel, status, payment_method, shipping_method, confirmation_message, customer_name, customer_email, customer_phone, subtotal, total, search_key, promotion_id, created_at) values (${id}, 'O-${id}', 'k${id}', 'h', 'es', 'web', '${status}', 'card', 'pickup', 'm', 'Ana', 'ana${id}@example.com', '+50371234567', 1000, 1000, 'o-${id}', ${promotionId}, '${createdAt}')`,
+	);
+	db.exec(
+		`insert into promotion_redemptions (promotion_id, order_id, email, created_at, released_at) values (${promotionId}, ${id}, 'ana${id}@example.com', '${createdAt}', ${status === "cancelled" ? `'${createdAt}'` : "NULL"})`,
 	);
 };
 
@@ -155,9 +158,9 @@ insert into promotion_translations (promotion_id, locale, description) values (1
 `);
 	// SPRING10: one order that counts and a cancelled one. WELCOME: two. OLD20: only a
 	// cancelled one, which still fixes its terms.
-	orderWith(1, "confirmed", "2026-03-02T12:00:00Z");
+	orderWith(1, "paid", "2026-03-02T12:00:00Z");
 	orderWith(1, "cancelled", "2026-03-03T12:00:00Z");
-	orderWith(3, "confirmed", "2026-03-04T12:00:00Z");
+	orderWith(3, "paid", "2026-03-04T12:00:00Z");
 	orderWith(3, "pending", "2026-03-05T12:00:00Z");
 	orderWith(4, "cancelled", "2026-01-05T12:00:00Z");
 });
@@ -389,8 +392,9 @@ describe("POST /promotions", () => {
 		});
 	});
 
-	test("a percentage may be a hundred and a fixed amount may exceed it", async () => {
-		expect((await create({ code: "ALL", value: 100 })).status).toBe(201);
+	test("a percentage may be fifty and a fixed amount may exceed it", async () => {
+		expect((await create({ code: "HALF", value: 50 })).status).toBe(201);
+		expect((await create({ code: "MORE", value: 51 })).status).toBe(400);
 		expect(
 			(await create({ code: "BIG", type: "fixed", value: 150 })).status,
 		).toBe(201);
@@ -433,7 +437,6 @@ describe("PATCH /promotions/:id", () => {
 			startsOn: "2026-03-05",
 			endsOn: null,
 			usageLimit: 50,
-			perCustomerLimit: 2,
 			status: "inactive",
 			translations: {
 				es: { description: "Primavera" },
@@ -456,7 +459,7 @@ describe("PATCH /promotions/:id", () => {
 			starts_on: "2026-03-05",
 			ends_on: null,
 			usage_limit: 50,
-			per_customer_limit: 2,
+			per_customer_limit: null,
 			status: "inactive",
 		});
 		expect(texts(1)).toEqual([

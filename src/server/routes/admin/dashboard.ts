@@ -1,9 +1,10 @@
-import { and, eq, lt, sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { z } from "zod";
 import { getDb, schema } from "#/db";
 import { addDays, storeToday } from "#/lib/dates";
 import { validate } from "#/server/validate";
+import { orderFollowups } from "../../domain/followups";
 import { loadBookings, loadSales } from "../../domain/report-data";
 import { periods } from "../../domain/reports";
 import {
@@ -12,7 +13,6 @@ import {
 	salesTotals,
 } from "../../domain/sales";
 import { getSettings } from "../../domain/settings";
-import { pendingHoldStart } from "../../domain/stock";
 import { lossesReport, reorderVariant, stockReport } from "./reports";
 
 const { orders } = schema;
@@ -38,11 +38,11 @@ export const dashboardRouter = new Hono().get(
 			to: today,
 			timeZone,
 		};
-		const pendingCount = (where?: ReturnType<typeof and>) =>
+		const pendingCount = () =>
 			db
 				.select({ count: sql<number>`count(*)` })
 				.from(orders)
-				.where(and(eq(orders.status, "pending"), where));
+				.where(eq(orders.status, "pending"));
 		const [sales, bookings, losses, stock, [pending], [overdue]] =
 			await Promise.all([
 				loadSales(db, range),
@@ -50,9 +50,11 @@ export const dashboardRouter = new Hono().get(
 				lossesReport(db, settings, { from: range.from, to: range.to }),
 				stockReport(db, settings),
 				pendingCount(),
-				// Consumer law: confirm by the next calendar day, so a pending order placed
-				// before yesterday is late (and no longer holds stock).
-				pendingCount(lt(orders.createdAt, pendingHoldStart(today, timeZone))),
+				// Card and transfer orders past the payment deadline (store_settings).
+				db
+					.select({ count: sql<number>`count(*)` })
+					.from(orderFollowups)
+					.where(eq(orderFollowups.action, "collect_payment")),
 			]);
 		if (!pending || !overdue) throw new Error("Aggregate returned no row");
 		const byDay = salesByOrderKey(sales, (s) => s.day);

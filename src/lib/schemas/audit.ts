@@ -21,6 +21,7 @@ export const AUDIT_ENTITY_TYPES = [
 	"purchase_order",
 	"purchase_receipt",
 	"return",
+	"review",
 	"shipping_zone",
 	"store_promise",
 	"store_settings",

@@ -272,7 +272,7 @@ describe("PATCH /settings", () => {
 	describe("the currency", () => {
 		const order = () =>
 			db.exec(
-				"insert into orders (code, idempotency_key, request_hash, locale, channel, status, subtotal, total, search_key) values ('EC-1', 'k', 'h', 'es', 'whatsapp', 'pending', 1000, 1000, 'ec-1')",
+				"insert into orders (code, idempotency_key, request_hash, locale, channel, status, payment_method, shipping_method, confirmation_message, customer_name, customer_email, customer_phone, subtotal, total, search_key) values ('EC-1', 'k', 'h', 'es', 'whatsapp', 'pending', 'bank_transfer', 'pickup', 'm', 'Ana', 'ana@example.com', '+50371234567', 1000, 1000, 'ec-1')",
 			);
 
 		test("changes while nothing has been sold or bought", async () => {

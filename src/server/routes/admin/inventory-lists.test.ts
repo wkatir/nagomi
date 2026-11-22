@@ -152,9 +152,8 @@ insert into variants (product_id, sku, search_key, status) values (1, 'OIL-200',
 insert into inventory_movements (lot_id, kind, quantity, reason, note, created_by, created_at) values (2, 'waste', -2, 'damaged', 'Dropped', 'admin', '2026-10-10T15:00:00Z');
 insert into inventory_movements (lot_id, kind, quantity, reason, created_by, created_at) values (5, 'waste', -3, 'lost_theft', 'admin', '2026-10-12T15:00:00Z');
 insert into inventory_movements (lot_id, kind, quantity, reason, created_by, created_at) values (1, 'adjustment', -1, 'count_difference', 'admin', '2026-10-14T15:00:00Z');
-insert into orders (id, code, idempotency_key, request_hash, locale, channel, status, subtotal, total, search_key, created_at) values (1, 'ECL-1', 'k1', 'h', 'es', 'whatsapp', 'pending', 1400, 1400, 'ecl-1', '2026-10-15T12:00:00Z');
+insert into orders (id, code, idempotency_key, request_hash, locale, channel, status, payment_method, shipping_method, confirmation_message, customer_name, customer_email, customer_phone, subtotal, total, search_key, created_at) values (1, 'ECL-1', 'k1', 'h', 'es', 'web', 'pending', 'bank_transfer', 'pickup', 'm', 'Ana', 'ana@example.com', '+50371234567', 1400, 1400, 'ecl-1', '2026-10-15T12:00:00Z');
 insert into order_items (order_id, variant_id, quantity, unit_price, sku, brand_name, product_name) values (1, ${OIL_50}, 2, 700, 'OIL-001', 'Brand', 'Aceite');
-update orders set status = 'confirmed', confirmed_at = '2026-10-15T12:00:00Z', payment_method = 'cash', shipping_method = 'pickup', delivery_estimate_from = '2099-01-01', delivery_estimate_to = '2099-01-01', confirmation_message = 'm' where id = 1;
 insert into inventory_movements (lot_id, kind, quantity, order_item_id, created_by, created_at) values (1, 'sale', -2, 1, 'admin', '2026-10-16T03:00:00Z');
 `);
 });

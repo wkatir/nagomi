@@ -11,16 +11,11 @@ import type {
 	FacetDimensions,
 	Named,
 } from "./catalog-query";
+import { ratingOf } from "./catalog-query";
 import { groupBy } from "./group-by";
 import { mediaUrl } from "./images";
-import { holdsStock } from "./inventory";
 import { searchKey } from "./search";
-import {
-	lineMax,
-	pendingHoldStart,
-	sellableUnits,
-	unitsAvailability,
-} from "./stock";
+import { lineMax, sellableUnits, unitsAvailability } from "./stock";
 
 const {
 	brands,
@@ -34,10 +29,9 @@ const {
 	inventoryMovements,
 	lots,
 	mediaFiles,
-	orderItems,
-	orders,
 	productImages,
 	productImageTranslations,
+	productReviews,
 	products,
 	productTranslations,
 	variants,
@@ -53,12 +47,10 @@ export function catalogContext(
 	},
 	locale: Locale,
 ): CatalogContext {
-	const today = storeToday(settings.timeZone);
 	return {
 		locale,
 		fallback: settings.defaultLocale,
-		today,
-		holdStart: pendingHoldStart(today, settings.timeZone),
+		today: storeToday(settings.timeZone),
 		maxQuantityPerLine: settings.maxQuantityPerLine,
 	};
 }
@@ -104,13 +96,13 @@ export async function loadCatalog(db: Db, context: CatalogContext) {
 		categoryTexts,
 		sizes,
 		stock,
-		promised,
 		memberships,
 		collectionRows,
 		collectionTexts,
 		photos,
 		alts,
 		bundleRows,
+		ratings,
 	] = await db.batch([
 		// Column names must be unique within a batched select: D1 returns batch rows as
 		// objects keyed by name, so drizzle would misplace a repeated one.
@@ -180,15 +172,6 @@ export async function loadCatalog(db: Db, context: CatalogContext) {
 			.innerJoin(products, eq(products.id, variants.productId))
 			.where(published)
 			.groupBy(lots.variantId),
-		db
-			.select({
-				variantId: orderItems.variantId,
-				committed: sql<number>`coalesce(sum(${orderItems.quantity}), 0)`,
-			})
-			.from(orderItems)
-			.innerJoin(orders, eq(orders.id, orderItems.orderId))
-			.where(holdsStock(context.holdStart))
-			.groupBy(orderItems.variantId),
 		db
 			.select({
 				productId: collectionProducts.productId,
@@ -272,6 +255,15 @@ export async function loadCatalog(db: Db, context: CatalogContext) {
 				asc(bundles.id),
 				asc(bundleItems.position),
 			),
+		db
+			.select({
+				productId: productReviews.productId,
+				reviews: sql<number>`count(*)`.as("review_count"),
+				ratingSum: sql<number>`sum(${productReviews.rating})`.as("rating_sum"),
+			})
+			.from(productReviews)
+			.where(eq(productReviews.status, "approved"))
+			.groupBy(productReviews.productId),
 	]);
 
 	const named = <T extends { locale: Locale }>(
@@ -292,7 +284,9 @@ export async function loadCatalog(db: Db, context: CatalogContext) {
 			(t) => t.title,
 		);
 	const onHand = new Map(stock.map((s) => [s.variantId, s.onHand]));
-	const committed = new Map(promised.map((s) => [s.variantId, s.committed]));
+	const ratingByProduct = new Map(
+		ratings.map((r) => [r.productId, ratingOf(r.ratingSum, r.reviews)]),
+	);
 	const sizesOf = groupBy(sizes, (v) => v.productId);
 	const membershipsOf = groupBy(memberships, (m) => m.productId);
 	const photosOf = groupBy(photos, (p) => p.productId);
@@ -324,10 +318,7 @@ export async function loadCatalog(db: Db, context: CatalogContext) {
 	const entries = rows.flatMap((p): CatalogEntry[] => {
 		const productSizes = sizesOf.get(p.id) ?? [];
 		const variantsForSale = productSizes.map((v): CatalogVariant => {
-			const sellable = sellableUnits(
-				onHand.get(v.id) ?? 0,
-				committed.get(v.id) ?? 0,
-			);
+			const sellable = sellableUnits(onHand.get(v.id) ?? 0);
 			return {
 				sku: v.sku,
 				gtin: v.gtin,
@@ -372,6 +363,7 @@ export async function loadCatalog(db: Db, context: CatalogContext) {
 		return [
 			{
 				id: p.id,
+				rating: ratingByProduct.get(p.id) ?? ratingOf(0, 0),
 				slug: p.slug,
 				name: text.name,
 				tagline: text.tagline,

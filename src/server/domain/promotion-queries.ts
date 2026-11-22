@@ -11,12 +11,12 @@ import type { PromotionUsage } from "./promotions";
 const { promotions, promotionTranslations } = schema;
 
 // The triggers count usage the same way.
-const promotionUsage = sql<number>`(select count(*) from orders o where o.promotion_id = ${qualified(promotions.id)} and o.status <> 'cancelled')`;
+const promotionUsage = sql<number>`(select count(*) from promotion_redemptions r where r.promotion_id = ${qualified(promotions.id)} and r.released_at is null)`;
 
-// Cancelled orders included: once any order used the code, its code, type, value and
-// minimum are fixed (the API and a trigger refuse to change them).
+// Released ones included: once any order used the code, its code and terms are fixed (the
+// API and a trigger refuse to change them).
 export const promotionTermsLocked =
-	sql<boolean>`exists (select 1 from orders o where o.promotion_id = ${qualified(promotions.id)})`.mapWith(
+	sql<boolean>`exists (select 1 from promotion_redemptions r where r.promotion_id = ${qualified(promotions.id)})`.mapWith(
 		Boolean,
 	);
 
@@ -91,14 +91,16 @@ export async function pagedPromotions(db: Db, query: PromotionListSearch) {
 	return toPaged(await withTexts(db, rows), counted.total, query);
 }
 
-const customerUsage = (phone: string) =>
-	sql<number>`(select count(*) from orders o where o.promotion_id = ${qualified(promotions.id)} and o.status <> 'cancelled' and (o.customer_phone = ${phone} or o.customer_id = (select id from customers where phone_e164 = ${phone})))`;
+const customerUsage = (email: string) =>
+	sql<number>`(select count(*) from promotion_redemptions r where r.promotion_id = ${qualified(promotions.id)} and r.released_at is null and r.email = ${email})`;
+const priorOrders = (email: string) =>
+	sql<number>`(select count(*) from orders o where o.customer_email = ${email} and o.status <> 'cancelled')`;
 
-// `code` is already normalized.
+// `code` is already normalized, `email` lower case.
 export async function promotionByCode(
 	db: Db,
 	code: string,
-	phone: string | null,
+	email: string | null,
 	locales: { locale: Locale; fallback: Locale },
 ) {
 	const [[row], texts] = await db.batch([
@@ -106,7 +108,8 @@ export async function promotionByCode(
 			.select({
 				promotion: promotions,
 				orders: promotionUsage,
-				customerOrders: phone ? customerUsage(phone) : sql<null>`null`,
+				customerOrders: email ? customerUsage(email) : sql<null>`null`,
+				priorOrders: email ? priorOrders(email) : sql<null>`null`,
 			})
 			.from(promotions)
 			.where(eq(promotions.code, code)),
@@ -134,6 +137,7 @@ export async function promotionByCode(
 	const usage: PromotionUsage = {
 		orders: row.orders,
 		customerOrders: row.customerOrders,
+		priorOrders: row.priorOrders,
 	};
 	return {
 		promotion: row.promotion,

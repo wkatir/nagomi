@@ -20,6 +20,11 @@ const {
 	orderItems,
 	orderStatusHistory,
 	orders,
+	productReviews,
+	productTranslations,
+	products,
+	variants,
+	wishlistItems,
 } = schema;
 
 export type AccountEnv = { Variables: { customerId: number } };
@@ -100,6 +105,21 @@ const addressPatch = z
 	.refine(placeIsKnown, unknownPlace);
 
 const addressId = z.object({ id: z.coerce.number().int().positive() });
+const productSlug = z.object({ slug: z.string().trim().min(1).max(80) });
+const reviewInput = z.object({
+	rating: z.number().int().min(1).max(5),
+	title: z.string().trim().min(1).max(120),
+	body: z.string().trim().min(1).max(2000),
+});
+
+async function publishedProduct(slug: string) {
+	return (
+		(await getDb().query.products.findFirst({
+			columns: { id: true },
+			where: and(eq(products.slug, slug), eq(products.status, "published")),
+		})) ?? null
+	);
+}
 const orderCode = z.object({ code: z.string().trim().min(1).max(40) });
 
 const addressColumns = {
@@ -354,7 +374,14 @@ export const account = new Hono<AccountEnv>()
 				shipping: true,
 				total: true,
 				shippingZoneName: true,
-				shipTo: true,
+				paymentMethod: true,
+				shipDepartment: true,
+				shipMunicipality: true,
+				shipAddressLine: true,
+				shipReference: true,
+				courier: true,
+				trackingCode: true,
+				taxIncluded: true,
 				deliveryEstimateFrom: true,
 				deliveryEstimateTo: true,
 				createdAt: true,
@@ -390,4 +417,129 @@ export const account = new Hono<AccountEnv>()
 		]);
 		const { id: _, ...head } = order;
 		return c.json({ ...head, lines, statusHistory: history });
+	})
+	// Products of a delivered order, each with the customer's review if written.
+	.get(
+		"/reviews",
+		validate("query", z.object({ locale: z.enum(LOCALES) })),
+		async (c) => {
+			const db = getDb();
+			const { locale } = c.req.valid("query");
+			const rows = await db
+				.selectDistinct({
+					productId: products.id,
+					slug: products.slug,
+					name: productTranslations.name,
+				})
+				.from(orders)
+				.innerJoin(orderItems, eq(orderItems.orderId, orders.id))
+				.innerJoin(variants, eq(variants.id, orderItems.variantId))
+				.innerJoin(products, eq(products.id, variants.productId))
+				.innerJoin(
+					productTranslations,
+					and(
+						eq(productTranslations.productId, products.id),
+						eq(productTranslations.locale, locale),
+					),
+				)
+				.where(
+					and(
+						eq(orders.customerId, c.var.customerId),
+						eq(orders.status, "delivered"),
+					),
+				)
+				.orderBy(asc(productTranslations.name));
+			const reviews = await db
+				.select({
+					productId: productReviews.productId,
+					rating: productReviews.rating,
+					title: productReviews.title,
+					body: productReviews.body,
+					status: productReviews.status,
+					updatedAt: productReviews.updatedAt,
+				})
+				.from(productReviews)
+				.where(eq(productReviews.customerId, c.var.customerId));
+			return c.json(
+				rows.map((r) => ({
+					...r,
+					review: reviews.find((x) => x.productId === r.productId) ?? null,
+				})),
+			);
+		},
+	)
+	// Writing or editing a review sends it back to moderation. Only a customer with a
+	// delivered order of the product may (trigger product_reviews_requires_delivered_order).
+	.put(
+		"/reviews/:slug",
+		validate("param", productSlug),
+		validate("json", reviewInput),
+		async (c) => {
+			const db = getDb();
+			const product = await publishedProduct(c.req.valid("param").slug);
+			if (!product) return c.json({ error: "not_found" }, 404);
+			const input = c.req.valid("json");
+			const [saved] = await db
+				.insert(productReviews)
+				.values({
+					productId: product.id,
+					customerId: c.var.customerId,
+					...input,
+				})
+				.onConflictDoUpdate({
+					target: [productReviews.customerId, productReviews.productId],
+					set: {
+						...input,
+						status: "pending",
+						moderatedAt: null,
+						updatedAt: sql`(strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))`,
+					},
+				})
+				.returning({
+					rating: productReviews.rating,
+					title: productReviews.title,
+					body: productReviews.body,
+					status: productReviews.status,
+				});
+			return c.json(saved);
+		},
+	)
+	.get("/wishlist", async (c) =>
+		c.json(
+			await getDb()
+				.select({
+					slug: products.slug,
+					createdAt: wishlistItems.createdAt,
+				})
+				.from(wishlistItems)
+				.innerJoin(products, eq(products.id, wishlistItems.productId))
+				.where(eq(wishlistItems.customerId, c.var.customerId))
+				.orderBy(desc(wishlistItems.createdAt)),
+		),
+	)
+	.put("/wishlist/:slug", validate("param", productSlug), async (c) => {
+		const product = await publishedProduct(c.req.valid("param").slug);
+		if (!product) return c.json({ error: "not_found" }, 404);
+		await getDb()
+			.insert(wishlistItems)
+			.values({ customerId: c.var.customerId, productId: product.id })
+			.onConflictDoNothing();
+		return c.json({ ok: true });
+	})
+	.delete("/wishlist/:slug", validate("param", productSlug), async (c) => {
+		const db = getDb();
+		const product = await db.query.products.findFirst({
+			columns: { id: true },
+			where: eq(products.slug, c.req.valid("param").slug),
+		});
+		if (product)
+			await db
+				.delete(wishlistItems)
+				.where(
+					and(
+						eq(wishlistItems.customerId, c.var.customerId),
+						eq(wishlistItems.productId, product.id),
+					),
+				);
+		return c.json({ ok: true });
 	});

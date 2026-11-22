@@ -18,7 +18,7 @@ import { groupBy } from "./group-by";
 import { pageWindow, sortBy, toPaged } from "./list-query";
 import { orderLines } from "./order-queries";
 import { keptValue, owedOf, paidSum } from "./order-sql";
-import { SOLD_STATUSES } from "./order-state";
+import { COMMITTED_STATUSES } from "./order-state";
 import { pageOf } from "./paging";
 import { amountOwed, paymentSummary } from "./payments";
 import { searchMatch } from "./search-sql";
@@ -98,7 +98,7 @@ async function lifetimeTotals(db: Db, customerIds: number[]) {
 		.where(
 			and(
 				inList(orders.customerId, customerIds),
-				inArray(orders.status, [...SOLD_STATUSES]),
+				inArray(orders.status, [...COMMITTED_STATUSES]),
 			),
 		);
 	const lines =
@@ -183,7 +183,7 @@ async function withTotals(db: Db, rows: CustomerRow[]) {
 
 // lifetimeTotals in SQL, for the sorts; customers-list.test.ts checks both agree.
 const soldList = sql.raw(
-	SOLD_STATUSES.map((status) => `'${status}'`).join(", "),
+	COMMITTED_STATUSES.map((status) => `'${status}'`).join(", "),
 );
 const bookedOf = sql`o.customer_id = ${qualified(customers.id)} and o.status in (${soldList})`;
 
@@ -308,8 +308,8 @@ export async function customerDetail(db: Db, id: number) {
 				shipping: orders.shipping,
 				total: orders.total,
 				createdAt: orders.createdAt,
-				confirmedAt: orders.confirmedAt,
-				fulfilledAt: orders.fulfilledAt,
+				paidAt: orders.paidAt,
+				shippedAt: orders.shippedAt,
 				deliveredAt: orders.deliveredAt,
 				cancelledAt: orders.cancelledAt,
 				paid: paidSum("payment"),

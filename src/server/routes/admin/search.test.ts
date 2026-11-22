@@ -58,8 +58,8 @@ beforeEach(() => {
 	db.exec(`
 insert into store_settings (id, name, currency, default_locale, time_zone, country_code, order_code_prefix, max_quantity_per_line, low_stock_threshold) values (1, 'Store', 'USD', 'es', 'America/El_Salvador', 'SV', 'ECL', 20, 5);
 insert into customers (name, phone_e164, search_key) values ('Ángela Pérez', '+50371234567', 'angela perez 50371234567');
-insert into orders (code, idempotency_key, request_hash, locale, channel, subtotal, total, search_key, customer_id) values ('ECL-1', 'k1', 'h', 'es', 'whatsapp', 1000, 1000, 'ecl-1', 1);
-insert into orders (code, idempotency_key, request_hash, locale, channel, subtotal, total, search_key, customer_name) values ('ECL-2', 'k2', 'h', 'es', 'whatsapp', 500, 500, 'ecl-2 maria', 'Maria');
+insert into orders (code, idempotency_key, request_hash, locale, channel, payment_method, shipping_method, confirmation_message, customer_email, customer_phone, subtotal, total, search_key, customer_id, customer_name) values ('ECL-1', 'k1', 'h', 'es', 'whatsapp', 'bank_transfer', 'pickup', 'm', 'angela@example.com', '+50371234567', 1000, 1000, 'ecl-1', 1, 'Ángela Pérez');
+insert into orders (code, idempotency_key, request_hash, locale, channel, payment_method, shipping_method, confirmation_message, customer_email, customer_phone, subtotal, total, search_key, customer_name) values ('ECL-2', 'k2', 'h', 'es', 'whatsapp', 'bank_transfer', 'pickup', 'm', 'maria@example.com', '+50379990000', 500, 500, 'ecl-2 maria', 'Maria');
 insert into brands (slug, name, search_key) values ('skin1004', 'SKIN1004', 'skin1004 skin1004'), ('face-republic', 'Face Republic', 'face republic face-republic');
 insert into categories (slug, icon, sort_order) values ('cleanser', 'package', 1);
 insert into category_translations (category_id, locale, name) values (1, 'es', 'Limpiador');
@@ -137,7 +137,7 @@ describe("GET /search", () => {
 	test("answers at most five of each kind, the newest orders first", async () => {
 		for (let n = 3; n <= 9; n++)
 			db.exec(
-				`insert into orders (code, idempotency_key, request_hash, locale, channel, subtotal, total, search_key, customer_name, created_at) values ('ECL-${n}', 'k${n}', 'h', 'es', 'whatsapp', 1, 1, 'ecl-${n} zeta', 'Zeta', '2026-10-0${n}T10:00:00Z')`,
+				`insert into orders (code, idempotency_key, request_hash, locale, channel, payment_method, shipping_method, confirmation_message, customer_email, customer_phone, subtotal, total, search_key, customer_name, created_at) values ('ECL-${n}', 'k${n}', 'h', 'es', 'whatsapp', 'bank_transfer', 'pickup', 'm', 'zeta@example.com', '+50379990000', 1, 1, 'ecl-${n} zeta', 'Zeta', '2026-10-0${n}T10:00:00Z')`,
 			);
 		for (let n = 1; n <= 7; n++)
 			db.exec(

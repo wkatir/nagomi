@@ -1,7 +1,7 @@
 import type { Database } from "bun:sqlite";
 import { beforeEach, describe, expect, mock, test } from "bun:test";
 import { Hono } from "hono";
-import { d1, migratedDatabase } from "#/db/test-database";
+import { d1, migratedDatabase, orderSql } from "#/db/test-database";
 import { addDays, storeToday, toDbTimestamp } from "#/lib/dates";
 import type { AdminEnv } from "#/server/auth";
 
@@ -74,22 +74,21 @@ type Sku = keyof typeof SIZES;
 function sale(day: string, units = 1, sku: Sku = "OIL-001", shipping = 0) {
 	const [variantId, price] = SIZES[sku];
 	const id = ++nextOrder;
-	const subtotal = units * price;
 	db.exec(
-		`insert into orders (id, code, idempotency_key, request_hash, search_key, locale, channel, subtotal, shipping, total, created_at) values (${id}, 'E-${id}', 'key-${id}', 'hash', 'e-${id}', 'es', 'whatsapp', ${subtotal}, ${shipping}, ${subtotal + shipping}, '${noon(day)}')`,
-	);
-	db.exec(
-		`insert into order_items (order_id, variant_id, quantity, unit_price, sku, brand_name, product_name) values (${id}, ${variantId}, ${units}, ${price}, '${sku}', 'SKIN1004', 'Aceite')`,
-	);
-	db.exec(
-		`update orders set status = 'confirmed', confirmed_at = '${noon(day)}', payment_method = 'cash', shipping_method = 'pickup', delivery_estimate_from = '2099-01-01', delivery_estimate_to = '2099-01-01', confirmation_message = 'ok' where id = ${id}`,
-	);
-	db.exec(
-		`update orders set status = 'fulfilled', fulfilled_at = '${noon(day)}' where id = ${id}`,
+		orderSql({
+			id,
+			code: `E-${id}`,
+			status: "shipped",
+			shipping,
+			createdAt: noon(day),
+			paidAt: noon(day),
+			shippedAt: noon(day),
+			lines: [{ variantId, quantity: units, unitPrice: price, sku }],
+		}),
 	);
 }
 
-// Ten units of the other sizes, so orders for them can be confirmed.
+// Ten units of the other sizes, so orders for them can be placed.
 function stockOtherSizes() {
 	for (const sku of [
 		"SKB-001",
@@ -112,10 +111,12 @@ insert into inventory_movements (lot_id, kind, quantity, created_by) values (las
 function pending(createdAt: string) {
 	const id = ++nextOrder;
 	db.exec(
-		`insert into orders (id, code, idempotency_key, request_hash, search_key, locale, channel, subtotal, total, created_at) values (${id}, 'E-${id}', 'key-${id}', 'hash', 'e-${id}', 'es', 'whatsapp', 1500, 1500, '${createdAt}')`,
-	);
-	db.exec(
-		`insert into order_items (order_id, variant_id, quantity, unit_price, sku, brand_name, product_name) values (${id}, 1, 1, 1500, 'OIL-001', 'SKIN1004', 'Aceite')`,
+		orderSql({
+			id,
+			code: `E-${id}`,
+			createdAt,
+			lines: [{ variantId: 1, quantity: 1, unitPrice: 1500, sku: "OIL-001" }],
+		}),
 	);
 }
 
@@ -123,7 +124,7 @@ beforeEach(() => {
 	nextOrder = 0;
 	db = migratedDatabase();
 	db.exec(`
-insert into store_settings (id, name, currency, default_locale, time_zone, country_code, order_code_prefix, max_quantity_per_line, low_stock_threshold) values (1, 'Store', 'USD', 'es', '${TIME_ZONE}', 'SV', 'ECL', 20, 5);
+insert into store_settings (id, name, currency, default_locale, time_zone, country_code, order_code_prefix, max_quantity_per_line, low_stock_threshold, followup_pending_payment_hours) values (1, 'Store', 'USD', 'es', '${TIME_ZONE}', 'SV', 'ECL', 20, 5, 48);
 insert into brands (slug, name, search_key) values ('skin1004', 'SKIN1004', 'skin1004');
 insert into categories (slug, icon, sort_order) values ('cleanser', 'package', 1);
 insert into products (slug, brand_id, category_id) values ('oil', 1, 1);
@@ -173,7 +174,7 @@ describe("GET /dashboard", () => {
 		expect(d.bookings).toEqual({ orders: 0, value: 0 });
 	});
 
-	test("puts each sale on the local day it was fulfilled", async () => {
+	test("puts each sale on the local day it was shipped", async () => {
 		sale(today, 2, "OIL-001", 300);
 		sale(addDays(today, -2), 1);
 		const d = await dashboard();
@@ -229,7 +230,7 @@ describe("GET /dashboard", () => {
 		]);
 	});
 
-	test("counts the orders waiting to be confirmed and the ones that are late", async () => {
+	test("counts the orders waiting for payment and the ones past the payment deadline", async () => {
 		pending(toDbTimestamp(new Date()));
 		pending(noon(addDays(today, -3)));
 		const d = await dashboard();
@@ -237,7 +238,7 @@ describe("GET /dashboard", () => {
 		expect(d.overduePendingOrders).toBe(1);
 	});
 
-	test("books the orders confirmed in the window at what they owe", async () => {
+	test("books the orders placed in the window at what they owe", async () => {
 		sale(today, 2);
 		sale(addDays(today, -40));
 		expect((await dashboard()).bookings).toEqual({ orders: 1, value: 3000 });

@@ -38,7 +38,6 @@ import {
 	salesTotals,
 } from "../../domain/sales";
 import { getSettings, type StoreSettings } from "../../domain/settings";
-import { pendingHoldStart } from "../../domain/stock";
 
 type Range = { from: string; to: string };
 
@@ -154,7 +153,7 @@ export async function reorderReport(
 			to: asOf,
 			timeZone: settings.timeZone,
 		}),
-		loadReplenishment(db, pendingHoldStart(asOf, settings.timeZone)),
+		loadReplenishment(db),
 	]);
 	const salesOf = groupBy(
 		sales.flatMap((s) => s.lines),
@@ -200,7 +199,7 @@ export async function reorderReport(
 							firstReceivedOn:
 								replenishment.firstReceivedOn.get(v.variantId) ?? null,
 							lots: lotsOf.get(v.variantId) ?? [],
-							committed: replenishment.committed.get(v.variantId) ?? 0,
+							committed: 0,
 							latestUnitCostE4:
 								replenishment.latestUnitCostE4.get(v.variantId) ?? null,
 							leadTimeDays,

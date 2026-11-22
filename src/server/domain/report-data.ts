@@ -4,7 +4,7 @@ import * as schema from "#/db/schema";
 import { addDays, localDate, startOfLocalDay } from "#/lib/dates";
 import { qualified } from "./d1";
 import { groupBy } from "./group-by";
-import { committedByVariant, latestLandedCostE4, lotStock } from "./inventory";
+import { latestLandedCostE4, lotStock } from "./inventory";
 import { returnedOfLine } from "./order-sql";
 import { SHIPPED_STATUSES, SOLD_STATUSES } from "./order-state";
 import { amountOwed } from "./payments";
@@ -63,7 +63,7 @@ export async function loadSales(
 ): Promise<OrderSale[]> {
 	const sold = and(
 		inArray(orders.status, [...SHIPPED_STATUSES]),
-		between(orders.fulfilledAt, range),
+		between(orders.shippedAt, range),
 	);
 	const [heads, lines] = await db.batch([
 		db
@@ -73,11 +73,11 @@ export async function loadSales(
 				subtotal: orders.subtotal,
 				discount: orders.discount,
 				shipping: orders.shipping,
-				fulfilledAt: orders.fulfilledAt,
+				shippedAt: orders.shippedAt,
 			})
 			.from(orders)
 			.where(sold)
-			.orderBy(asc(orders.fulfilledAt), asc(orders.id)),
+			.orderBy(asc(orders.shippedAt), asc(orders.id)),
 		db
 			.select({
 				orderId: orderItems.orderId,
@@ -103,11 +103,11 @@ export async function loadSales(
 	]);
 	const byOrder = groupBy(lines, (l) => l.orderId);
 	return heads.map((o): OrderSale => {
-		if (o.fulfilledAt === null)
-			throw new Error(`Order ${o.id} is ${o.status} without fulfilled_at`);
+		if (o.shippedAt === null)
+			throw new Error(`Order ${o.id} is ${o.status} without shipped_at`);
 		const order: SoldOrder = {
 			...o,
-			day: localDate(new Date(o.fulfilledAt), range.timeZone),
+			day: localDate(new Date(o.shippedAt), range.timeZone),
 			lines: linesOf(byOrder, o.id),
 		};
 		return orderSale(order);
@@ -118,7 +118,7 @@ export async function loadSales(
 export async function loadBookings(db: Db, range: LocalRange) {
 	const booked = and(
 		inArray(orders.status, [...SOLD_STATUSES]),
-		between(orders.confirmedAt, range),
+		between(orders.createdAt, range),
 	);
 	const [heads, lines] = await db.batch([
 		db
@@ -255,8 +255,8 @@ type VariantSupplier = {
 	source: "preferred" | "only_supplier";
 };
 
-export async function loadReplenishment(db: Db, holdStart: string) {
-	const [received, latest, committed, sources] = await Promise.all([
+export async function loadReplenishment(db: Db) {
+	const [received, latest, sources] = await Promise.all([
 		db
 			.select({
 				variantId: lots.variantId,
@@ -273,7 +273,6 @@ export async function loadReplenishment(db: Db, holdStart: string) {
 			)
 			.groupBy(lots.variantId),
 		latestLandedCostE4(db),
-		committedByVariant(db, holdStart),
 		db
 			.select({
 				variantId: supplierItems.variantId,
@@ -308,7 +307,6 @@ export async function loadReplenishment(db: Db, holdStart: string) {
 			received.map((r) => [r.variantId, r.firstReceivedOn]),
 		),
 		latestUnitCostE4: latest,
-		committed: new Map(committed.map((r) => [r.variantId, r.committed])),
 		supplier,
 	};
 }

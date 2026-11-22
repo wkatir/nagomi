@@ -8,6 +8,7 @@ import { categoriesRouter } from "./categories";
 import { collectionsRouter } from "./collections";
 import { customersRouter } from "./customers";
 import { dashboardRouter } from "./dashboard";
+import { reviewsRouter, stockAlertsRouter } from "./engagement";
 import { exportsRouter } from "./exports";
 import { followupsRouter } from "./followups";
 import { homeSlidesRouter } from "./home-slides";
@@ -43,6 +44,8 @@ export const admin = staff
 	.route("/inventory", inventoryRouter)
 	.route("/orders", ordersRouter)
 	.route("/followups", followupsRouter)
+	.route("/reviews", reviewsRouter)
+	.route("/stock-alerts", stockAlertsRouter)
 	.route("/customers", customersRouter)
 	.route("/reports", reportsRouter)
 	.route("/search", searchRouter)

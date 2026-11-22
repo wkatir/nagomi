@@ -14,6 +14,7 @@ const filterShape = {
 	status: z.enum(ORDER_STATUSES).optional(),
 	paymentStatus: z.enum(ORDER_PAYMENT_STATUSES).optional(),
 	channel: z.enum(ORDER_CHANNELS).optional(),
+	customerId: z.coerce.number().int().positive().optional(),
 	// Days of created_at.
 	...dayRange,
 };
@@ -38,6 +39,7 @@ export const orderListSearch = pagedSearch(ORDER_SORTS, {
 		status: filterShape.status,
 		paymentStatus: filterShape.paymentStatus,
 		channel: filterShape.channel,
+		customerId: filterShape.customerId,
 		...dayRange,
 	})
 	.refine(fromNotAfterTo, fromAfterTo);

@@ -65,10 +65,17 @@ describe("mapDbError", () => {
 		expect(
 			mapDbError(
 				new Error(
-					"D1_ERROR: order_exceeds_stock: SQLITE_CONSTRAINT (extended: SQLITE_CONSTRAINT_TRIGGER)",
+					"D1_ERROR: lot_balance_negative: SQLITE_CONSTRAINT (extended: SQLITE_CONSTRAINT_TRIGGER)",
 				),
 			)?.error,
-		).toBe("insufficient_stock");
+		).toBe("stock_changed");
+		expect(
+			mapDbError(
+				new Error(
+					"UNIQUE constraint failed: promotion_redemptions.promotion_id, promotion_redemptions.customer_key",
+				),
+			)?.error,
+		).toBe("promotion_limit_reached");
 	});
 
 	test("leaves everything else alone", () => {

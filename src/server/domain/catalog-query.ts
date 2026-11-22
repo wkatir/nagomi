@@ -34,8 +34,17 @@ export type CatalogVariant = {
 	maxQuantity: number;
 };
 
+// Approved reviews: the average to one decimal, null without any.
+export type Rating = { average: number | null; count: number };
+
+export const ratingOf = (sum: number, count: number): Rating => ({
+	average: count === 0 ? null : Math.round((sum * 10) / count) / 10,
+	count,
+});
+
 export type CatalogEntry = {
 	id: number;
+	rating: Rating;
 	slug: string;
 	name: string;
 	tagline: string | null;
@@ -58,6 +67,7 @@ export type CatalogEntry = {
 
 export type ProductCard = {
 	slug: string;
+	rating: Rating;
 	name: string;
 	tagline: string | null;
 	shortSpecs: string | null;
@@ -91,6 +101,7 @@ export function toCard(e: CatalogEntry): ProductCard {
 	const first = shownVariant(e);
 	return {
 		slug: e.slug,
+		rating: e.rating,
 		name: e.name,
 		tagline: e.tagline,
 		shortSpecs: e.shortSpecs,

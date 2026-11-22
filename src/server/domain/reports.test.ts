@@ -167,7 +167,7 @@ describe("returnsSummary", () => {
 			},
 			{
 				returnId: 2,
-				reason: "delivery_failed",
+				reason: "other",
 				disposition: "restock",
 				quantity: 2,
 				unitPrice: 1900,
@@ -182,7 +182,7 @@ describe("returnsSummary", () => {
 			writtenOff: { units: 1, cost: 1607 },
 			byReason: [
 				{ reason: "withdrawal", returns: 1, units: 2, value: 4100 },
-				{ reason: "delivery_failed", returns: 1, units: 2, value: 3800 },
+				{ reason: "other", returns: 1, units: 2, value: 3800 },
 			],
 		});
 	});

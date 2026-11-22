@@ -4,7 +4,7 @@ import { schema } from "#/db";
 import type { Locale } from "#/db/schema";
 import { inList } from "./d1";
 import { mediaUrl } from "./images";
-import { committedByVariant, onHandByVariant } from "./inventory";
+import { onHandByVariant } from "./inventory";
 import { productPhotoColumns } from "./product-photos";
 import { lineMax, sellableUnits, unitsAvailability } from "./stock";
 
@@ -25,13 +25,11 @@ const {
 	variants,
 } = schema;
 
-// `fallback` is the store default locale; `holdStart` the first instant a pending order
-// still holds stock (stock.ts).
+// `fallback` is the store default locale.
 export type CatalogContext = {
 	locale: Locale;
 	fallback: Locale;
 	today: string;
-	holdStart: string;
 	maxQuantityPerLine: number;
 };
 
@@ -48,7 +46,7 @@ export function pickLocale<T extends { locale: Locale }>(
 
 export async function listCatalog(
 	db: Db,
-	{ locale, fallback, holdStart, maxQuantityPerLine }: CatalogContext,
+	{ locale, fallback, maxQuantityPerLine }: CatalogContext,
 	filter?: { slugs?: string[]; variantIds?: number[]; skus?: string[] },
 ) {
 	const rows = await db
@@ -93,7 +91,7 @@ export async function listCatalog(
 	const productIds = [...new Set(rows.map((r) => r.productId))];
 	const categoryIds = [...new Set(rows.map((r) => r.categoryId))];
 	const variantIds = rows.map((r) => r.variantId);
-	const [texts, categoryTexts, images, stock, promised] = await Promise.all([
+	const [texts, categoryTexts, images, stock] = await Promise.all([
 		db
 			.select()
 			.from(productTranslations)
@@ -114,7 +112,6 @@ export async function listCatalog(
 			)
 			.orderBy(asc(productImages.position), asc(productImages.id)),
 		onHandByVariant(db, variantIds),
-		committedByVariant(db, holdStart, variantIds),
 	]);
 	const alts =
 		images.length === 0
@@ -130,12 +127,8 @@ export async function listCatalog(
 					);
 
 	const onHand = new Map(stock.map((s) => [s.variantId, s.onHand]));
-	const committed = new Map(promised.map((s) => [s.variantId, s.committed]));
 	const list = rows.map((r) => {
-		const sellable = sellableUnits(
-			onHand.get(r.variantId) ?? 0,
-			committed.get(r.variantId) ?? 0,
-		);
+		const sellable = sellableUnits(onHand.get(r.variantId) ?? 0);
 		const text = pickLocale(
 			texts.filter((t) => t.productId === r.productId),
 			locale,
@@ -301,6 +294,7 @@ export async function listBundles(
 		);
 		return [
 			{
+				id: r.id,
 				slug: r.slug,
 				isFeatured: r.isFeatured,
 				name: text.name,

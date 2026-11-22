@@ -1,7 +1,7 @@
 import type { Database } from "bun:sqlite";
 import { beforeEach, describe, expect, mock, test } from "bun:test";
 import { Hono } from "hono";
-import { d1, migratedDatabase } from "#/db/test-database";
+import { d1, migratedDatabase, orderSql } from "#/db/test-database";
 
 let session: { user: { id: string; role?: string; banned?: boolean } } | null =
 	null;
@@ -50,7 +50,8 @@ insert into users (id, name, email, role) values ('u-ana', 'Ana', 'ana@example.c
 insert into customers (id, auth_user_id, name, email, phone_e164, search_key) values (1, 'u-ana', 'Ana', 'ana@example.com', '+50371234567', 'ana'), (2, 'u-beto', 'Beto', 'beto@example.com', null, 'beto');
 insert into pages (id, slug, is_published) values (1, 'privacy', 1), (2, 'terms', 1);
 insert into page_versions (page_id, locale, version, title, body_markdown) values (1, 'es', 1, 'Privacidad', 'x'), (2, 'es', 1, 'Términos', 'x');
-insert into orders (id, code, idempotency_key, request_hash, customer_id, search_key, locale, channel, subtotal, total, created_at) values (1, 'NAG-1', 'k1', 'h', 1, 'x', 'es', 'whatsapp', 0, 0, '2026-11-01T10:00:00Z'), (2, 'NAG-2', 'k2', 'h', 2, 'x', 'es', 'whatsapp', 0, 0, '2026-11-02T10:00:00Z');
+${orderSql({ id: 1, code: "NAG-1", customerId: 1, createdAt: "2026-11-01T10:00:00Z", lines: [] })}
+${orderSql({ id: 2, code: "NAG-2", customerId: 2, createdAt: "2026-11-02T10:00:00Z", lines: [] })}
 `);
 	env.DB = d1(db);
 	as("u-ana");
@@ -314,5 +315,67 @@ describe("orders", () => {
 	test("orders are read-only here", async () => {
 		expect((await send("POST", "/orders", {})).status).toBe(404);
 		expect((await send("DELETE", "/orders/NAG-1")).status).toBe(404);
+	});
+});
+
+describe("reviews and wishlist", () => {
+	beforeEach(() => {
+		db.exec(`
+insert into brands (slug, name, search_key) values ('b', 'Brand', 'brand');
+insert into categories (slug, icon, sort_order) values ('c', 'package', 1);
+insert into products (slug, brand_id, category_id) values ('kb', 1, 1), ('mouse', 1, 1);
+insert into product_translations (product_id, locale, name, search_key) values (1, 'es', 'Teclado', 'teclado'), (2, 'es', 'Mouse', 'mouse');
+insert into variants (product_id, sku, price, search_key) values (1, 'TEC-001', 1000, 'tec'), (2, 'RAT-001', 1000, 'rat');
+update products set status = 'published';
+insert into suppliers (name, search_key) values ('S', 's');
+insert into purchase_orders (supplier_id, reference, status, ordered_on) values (1, 'PO', 'ordered', '2026-01-01');
+insert into purchase_order_items (purchase_order_id, variant_id, quantity, unit_cost) values (1, 1, 5, 500);
+insert into purchase_receipts (purchase_order_id, received_on, created_by) values (1, '2026-01-02', 'u');
+insert into purchase_receipt_lines (receipt_id, purchase_order_item_id, quantity, allocated_shipping_e4) values (1, 1, 5, 0);
+insert into lots (variant_id, receipt_line_id, unit_cost_e4) values (1, 1, 50000);
+insert into inventory_movements (lot_id, kind, quantity, created_by) values (1, 'receive', 5, 'u');
+${orderSql({ id: 3, customerId: 1, status: "delivered", lines: [{ variantId: 1, quantity: 1, unitPrice: 1000 }] })}
+${orderSql({ id: 4, customerId: 2, status: "shipped", lines: [{ variantId: 1, quantity: 1, unitPrice: 1000 }] })}
+`);
+	});
+	const review = { rating: 5, title: "Muy bueno", body: "Llegó rápido." };
+
+	test("only the products of a delivered order can be reviewed, once, and an edit goes back to moderation", async () => {
+		const list = await json<{ slug: string; review: unknown }[]>(
+			await send("GET", "/reviews?locale=es"),
+		);
+		expect(list.map((p) => [p.slug, p.review])).toEqual([["kb", null]]);
+		const saved = await send("PUT", "/reviews/kb", review);
+		expect(saved.status).toBe(200);
+		expect(await json<unknown>(saved)).toEqual({
+			...review,
+			status: "pending",
+		});
+		db.exec("update product_reviews set status = 'approved'");
+		await send("PUT", "/reviews/kb", { ...review, rating: 4 });
+		expect(
+			db.query("select rating, status from product_reviews").all(),
+		).toEqual([{ rating: 4, status: "pending" }]);
+		const refused = await send("PUT", "/reviews/mouse", review);
+		expect(refused.status).toBe(409);
+		expect(await json<unknown>(refused)).toMatchObject({
+			error: "review_requires_delivered_order",
+		});
+	});
+
+	test("an order not yet delivered gives no right to review", async () => {
+		as("u-beto");
+		const res = await send("PUT", "/reviews/kb", review);
+		expect(res.status).toBe(409);
+	});
+
+	test("the wishlist adds a product once and removes it", async () => {
+		expect((await send("PUT", "/wishlist/kb")).status).toBe(200);
+		expect((await send("PUT", "/wishlist/kb")).status).toBe(200);
+		expect((await send("PUT", "/wishlist/nope")).status).toBe(404);
+		const list = await json<{ slug: string }[]>(await send("GET", "/wishlist"));
+		expect(list.map((w) => w.slug)).toEqual(["kb"]);
+		await send("DELETE", "/wishlist/kb");
+		expect(await json<unknown[]>(await send("GET", "/wishlist"))).toEqual([]);
 	});
 });

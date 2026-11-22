@@ -217,7 +217,7 @@ insert into inventory_movements (lot_id, kind, quantity, created_by) values (1, 
 		expect((await rename("OIL-031")).status).toBe(200);
 		expect(one("select sku from variants where id = 1").sku).toBe("OIL-031");
 		db.exec(`
-insert into orders (code, idempotency_key, request_hash, locale, channel, status, subtotal, total, search_key) values ('ECL-1', 'k1', 'h', 'es', 'whatsapp', 'pending', 1500, 1500, 'ecl-1');
+insert into orders (code, idempotency_key, request_hash, locale, channel, status, payment_method, shipping_method, confirmation_message, customer_name, customer_email, customer_phone, subtotal, total, search_key) values ('ECL-1', 'k1', 'h', 'es', 'whatsapp', 'pending', 'bank_transfer', 'pickup', 'm', 'Ana', 'ana@example.com', '+50371234567', 1500, 1500, 'ecl-1');
 insert into order_items (order_id, variant_id, quantity, unit_price, sku, brand_name, product_name) values (1, 1, 1, 1500, 'OIL-031', 'Brand', 'Aceite');
 `);
 		const locked = await rename("OIL-032");

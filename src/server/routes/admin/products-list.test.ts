@@ -71,26 +71,6 @@ function lot(variantId: number, units: number) {
 	);
 }
 
-let orderCount = 0;
-function order(
-	status: "pending" | "cancelled",
-	createdAt: string | null,
-	lines: [number, number][],
-) {
-	const id = ++orderCount;
-	db.exec(
-		`insert into orders (id, code, idempotency_key, request_hash, locale, channel, status, subtotal, total, search_key${createdAt ? ", created_at" : ""}) values (${id}, 'ECL-${id}', 'k${id}', 'h', 'es', 'whatsapp', 'pending', 100, 100, 'ecl-${id}'${createdAt ? `, '${createdAt}'` : ""})`,
-	);
-	for (const [variantId, quantity] of lines)
-		db.exec(
-			`insert into order_items (order_id, variant_id, quantity, unit_price, sku, brand_name, product_name) values (${id}, ${variantId}, ${quantity}, 100, 'X', 'B', 'P')`,
-		);
-	if (status === "cancelled")
-		db.exec(
-			`update orders set status = 'cancelled', cancelled_at = '2026-01-01T00:00:00Z', cancel_reason = 'test' where id = ${id}`,
-		);
-}
-
 const KEY_A = `${"a".repeat(64)}.jpg`;
 const KEY_B = `${"b".repeat(64)}.jpg`;
 const KEY_C = `${"c".repeat(64)}.jpg`;
@@ -98,7 +78,6 @@ const KEY_C = `${"c".repeat(64)}.jpg`;
 beforeEach(() => {
 	orderItemOf.clear();
 	receiptLines = 0;
-	orderCount = 0;
 	db = migratedDatabase();
 	db.exec(`
 insert into store_settings (id, name, currency, default_locale, time_zone, country_code, order_code_prefix, max_quantity_per_line, low_stock_threshold) values (1, 'Store', 'USD', 'es', 'America/El_Salvador', 'SV', 'ECL', 20, 5);
@@ -136,22 +115,14 @@ insert into product_images (product_id, media_file_id, kind, position) values (1
 insert into product_images (product_id, media_file_id, kind, position) values (1, 2, 'detail', 1);
 insert into product_images (product_id, media_file_id, kind, position, status) values (1, 3, 'lifestyle', 0, 'archived');
 `);
-	// OIL-001: 50 units, 8 held by a pending order. OIL-002: 15 units in two lots. The archived
-	// variant's 100 units do not count.
+	// OIL-001: 50 units. OIL-002: 15 units in two lots. The archived variant's 100 units do not
+	// count.
 	lot(1, 50);
 	lot(2, 10);
 	lot(2, 5);
 	lot(3, 100);
-	// TON-001 (variant 5): 20 units, 30 promised: never below zero.
 	lot(5, 20);
 	env.DB = d1(db);
-	order("pending", null, [
-		[1, 8],
-		[5, 30],
-	]);
-	// Held only while recent (pending past its deadline) or confirmed; cancelled hold none.
-	order("pending", "2020-01-01T00:00:00Z", [[2, 100]]);
-	order("cancelled", null, [[2, 100]]);
 });
 
 describe("GET /products/list", () => {
@@ -177,9 +148,8 @@ describe("GET /products/list", () => {
 			variantCount: 2,
 			priceFrom: 1500,
 			priceTo: 2500,
-			// 50 - 8 held, and 15: the archived variant, an order past its deadline and a
-			// cancelled one add or take nothing.
-			stock: 57,
+			// 50 and 15: the archived variant adds nothing.
+			stock: 65,
 			photoUrl: `/media/${KEY_B}`,
 		});
 		expect(cream).toMatchObject({
@@ -201,7 +171,7 @@ describe("GET /products/list", () => {
 			stock: 0,
 		});
 		// Without a name in the default language, the slug stands in.
-		expect(toner).toMatchObject({ name: "toner", priceFrom: 1200, stock: 0 });
+		expect(toner).toMatchObject({ name: "toner", priceFrom: 1200, stock: 20 });
 		expect(Object.keys(oil).sort()).toEqual(
 			[
 				"brand",
@@ -237,7 +207,7 @@ describe("GET /products/list", () => {
 		// Keyboard has no price, oil and cream start at the same one.
 		expect(await sorted("priceFrom", "asc")).toEqual([3, 4, 1, 2]);
 		expect(await sorted("priceFrom", "desc")).toEqual([2, 1, 4, 3]);
-		// Only oil has units; the rest, one of them promised beyond its stock, have none.
+		// Oil has the most units, then the toner; the rest have none.
 		expect(await sorted("stock", "asc")).toEqual([2, 3, 4, 1]);
 		expect(await sorted("stock", "desc")).toEqual([1, 4, 3, 2]);
 	});
@@ -328,7 +298,7 @@ describe("GET /products (one row per variant)", () => {
 			"OIL-002",
 			"OIL-003",
 		]);
-		expect(all.find((v) => v.sku === "OIL-001")?.available).toBe(42);
+		expect(all.find((v) => v.sku === "OIL-001")?.available).toBe(50);
 		expect((await get("status=draft")).map((v) => v.sku)).toEqual(["CRM-001"]);
 		expect((await get("q=aceite")).map((v) => v.sku)).toEqual([
 			"OIL-001",

@@ -8,7 +8,6 @@ import {
 	PRODUCT_STATUSES,
 	type ProductStatus,
 } from "#/db/schema";
-import { storeToday } from "#/lib/dates";
 import { LOCALES, PRODUCT_BADGES, SKU_REGEX } from "#/lib/enums";
 import { PRODUCT_LIMITS, productListSearch } from "#/lib/schemas/products";
 import { type AdminEnv, seesCosts } from "#/server/auth";
@@ -18,11 +17,7 @@ import { statusAudit } from "../../domain/audit-actions";
 import { inList, qualified } from "../../domain/d1";
 import { InvalidGtinError, normalizeGtin } from "../../domain/gtin";
 import { mediaUrl } from "../../domain/images";
-import {
-	committedByVariant,
-	latestLandedCostE4,
-	stockByVariant,
-} from "../../domain/inventory";
+import { latestLandedCostE4, stockByVariant } from "../../domain/inventory";
 import { productPhotoColumns } from "../../domain/product-photos";
 import { pagedProducts, productFilter } from "../../domain/product-queries";
 import {
@@ -34,7 +29,7 @@ import { e4ToMinor } from "../../domain/receiving";
 import { searchKey, withoutSearchKey } from "../../domain/search";
 import { getSettings, readSettings } from "../../domain/settings";
 import { canMoveStatus } from "../../domain/status";
-import { pendingHoldStart, sellableUnits } from "../../domain/stock";
+import { sellableUnits } from "../../domain/stock";
 import {
 	optionalText,
 	requiredText,
@@ -300,7 +295,7 @@ export const productsRouter = new Hono<AdminEnv>()
 		const query = listQuery.safeParse(c.req.query());
 		if (!query.success) return invalidRequest(c, query.error);
 		const filter = query.data;
-		const { defaultLocale, timeZone } = await getSettings(db);
+		const { defaultLocale } = await getSettings(db);
 		const rows = await db
 			.select({
 				productId: products.id,
@@ -332,24 +327,19 @@ export const productsRouter = new Hono<AdminEnv>()
 			)
 			.where(productFilter(db, filter))
 			.orderBy(asc(brands.name), asc(products.slug), asc(variants.id));
-		const today = storeToday(timeZone);
-		const [stock, promised, landed] = await Promise.all([
+		const [stock, landed] = await Promise.all([
 			stockByVariant(db),
-			committedByVariant(db, pendingHoldStart(today, timeZone)),
 			latestLandedCostE4(db),
 		]);
-		const committed = new Map(promised.map((p) => [p.variantId, p.committed]));
 		return c.json(
 			rows.map((r) => {
 				const units = stock.get(r.variantId);
 				const cost = landed.get(r.variantId);
 				const onHand = units?.onHand ?? 0;
-				const held = committed.get(r.variantId) ?? 0;
 				return {
 					...r,
 					onHand,
-					committed: held,
-					available: sellableUnits(onHand, held),
+					available: sellableUnits(onHand),
 					latestUnitCost:
 						cost === undefined || !seesCosts(c) ? null : e4ToMinor(cost),
 				};
@@ -358,14 +348,9 @@ export const productsRouter = new Hono<AdminEnv>()
 	})
 	.get("/list", validate("query", productListSearch), async (c) => {
 		const db = getDb();
-		const { defaultLocale, timeZone } = await getSettings(db);
-		const today = storeToday(timeZone);
+		const { defaultLocale } = await getSettings(db);
 		return c.json(
-			await pagedProducts(
-				db,
-				{ today, holdStart: pendingHoldStart(today, timeZone), defaultLocale },
-				c.req.valid("query"),
-			),
+			await pagedProducts(db, { defaultLocale }, c.req.valid("query")),
 		);
 	})
 	.get("/:id", validate("param", idParam), async (c) => {

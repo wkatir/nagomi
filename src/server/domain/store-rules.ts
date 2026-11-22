@@ -8,7 +8,6 @@ export const REQUIRED_SETTINGS = [
 
 // Consumer law requires the seller's legal identity to be shown before the purchase.
 const CHECKOUT_REQUIRED = [
-	"whatsappNumber",
 	"legalName",
 	"taxIdLabel",
 	"taxId",

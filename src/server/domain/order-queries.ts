@@ -4,7 +4,7 @@ import type { Db } from "#/db";
 import { schema } from "#/db";
 import type { OrderStatus, ReturnDisposition, ReturnReason } from "#/db/schema";
 import type { OrderListSearch, orderFilters } from "#/lib/schemas/orders";
-import { inList, withinLocalDays } from "./d1";
+import { inList, qualified, withinLocalDays } from "./d1";
 import { groupBy } from "./group-by";
 import { pageWindow, sortBy, toPaged } from "./list-query";
 import {
@@ -37,14 +37,14 @@ const CURSOR = /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z)_(\d+)$/;
 
 type OrderFilters = z.infer<typeof orderFilters>;
 
-const customerName = sql<
-	string | null
->`coalesce(${orders.customerName}, ${customers.name})`;
+const customerName = orders.customerName;
 
 function filterWhere(filters: OrderFilters, timeZone: string) {
 	const conditions: (SQL | undefined)[] = [];
 	if (filters.status) conditions.push(eq(orders.status, filters.status));
 	if (filters.channel) conditions.push(eq(orders.channel, filters.channel));
+	if (filters.customerId)
+		conditions.push(eq(orders.customerId, filters.customerId));
 	if (filters.paymentStatus)
 		conditions.push(paymentStatusIs(filters.paymentStatus));
 	conditions.push(withinLocalDays(orders.createdAt, filters, timeZone));
@@ -69,22 +69,28 @@ const listColumns = {
 	total: orders.total,
 	shippingMethod: orders.shippingMethod,
 	shippingZoneName: orders.shippingZoneName,
-	shipTo: orders.shipTo,
+	shipDepartment: orders.shipDepartment,
+	shipMunicipality: orders.shipMunicipality,
+	shipAddressLine: orders.shipAddressLine,
+	shipReference: orders.shipReference,
+	courier: orders.courier,
+	trackingCode: orders.trackingCode,
+	taxIncluded: orders.taxIncluded,
+	cancelledBy: orders.cancelledBy,
 	deliveryEstimateFrom: orders.deliveryEstimateFrom,
 	deliveryEstimateTo: orders.deliveryEstimateTo,
 	confirmationMessage: orders.confirmationMessage,
 	cancelReason: orders.cancelReason,
 	notes: orders.notes,
 	createdAt: orders.createdAt,
-	confirmedAt: orders.confirmedAt,
-	fulfilledAt: orders.fulfilledAt,
+	paidAt: orders.paidAt,
+	shippedAt: orders.shippedAt,
 	deliveredAt: orders.deliveredAt,
 	cancelledAt: orders.cancelledAt,
 	customerId: orders.customerId,
 	customerName,
-	customerPhone: sql<
-		string | null
-	>`coalesce(${customers.phoneE164}, ${orders.customerPhone})`,
+	customerEmail: orders.customerEmail,
+	customerPhone: orders.customerPhone,
 	promotionId: orders.promotionId,
 	promotionCode: promotionCodeOfOrder,
 	paid: paidSum("payment"),
@@ -104,6 +110,9 @@ export function orderLines(db: Db, orderIds: number[]) {
 			quantity: orderItems.quantity,
 			unitPrice: orderItems.unitPrice,
 			returned: returnedOfLine,
+			bundleName: sql<
+				string | null
+			>`(select ob.name from order_bundles ob where ob.id = ${qualified(orderItems.orderBundleId)})`,
 		})
 		.from(orderItems)
 		.where(inList(orderItems.orderId, orderIds))
@@ -202,8 +211,9 @@ export async function pagedOrders(
 				shipping: orders.shipping,
 				total: orders.total,
 				createdAt: orders.createdAt,
-				customerName: customerName.as("customer_name"),
-				customerPhone: listColumns.customerPhone.as("customer_phone"),
+				customerName: orders.customerName,
+				customerEmail: orders.customerEmail,
+				customerPhone: orders.customerPhone,
 				paid: listColumns.paid.as("paid"),
 				refunded: listColumns.refunded.as("refunded"),
 			})
@@ -239,7 +249,6 @@ export async function orderDetail(db: Db, id: number) {
 	const [head] = await db
 		.select({
 			...listColumns,
-			customerEmail: customers.email,
 			customerNotes: customers.notes,
 			shippingZoneId: orders.shippingZoneId,
 			idempotencyKey: orders.idempotencyKey,

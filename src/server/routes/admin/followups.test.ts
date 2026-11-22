@@ -1,7 +1,7 @@
 import type { Database } from "bun:sqlite";
 import { beforeEach, expect, mock, test } from "bun:test";
 import { Hono } from "hono";
-import { d1, migratedDatabase } from "#/db/test-database";
+import { d1, migratedDatabase, orderSql } from "#/db/test-database";
 import type { AdminEnv } from "#/server/auth";
 
 const env: { DB?: ReturnType<typeof d1>; BETTER_AUTH_URL: string } = {
@@ -18,7 +18,20 @@ beforeEach(() => {
 	db.exec(`
 insert into store_settings (id, name, currency, default_locale, followup_pending_payment_hours, followup_paid_unshipped_hours, followup_shipped_undelivered_hours) values (1, 'Nagomi', 'USD', 'es', 48, 24, 96);
 insert into customers (id, name, email, search_key) values (1, 'Ana', 'ana@example.com', 'ana');
-insert into orders (id, code, idempotency_key, request_hash, customer_id, customer_name, search_key, locale, channel, subtotal, total, created_at) values (1, 'NAG-1', 'k1', 'h', 1, 'Ana', 'x', 'es', 'whatsapp', 0, 0, strftime('%Y-%m-%dT%H:%M:%SZ', 'now', '-72 hours')), (2, 'NAG-2', 'k2', 'h', null, 'Beto', 'x', 'es', 'whatsapp', 0, 0, strftime('%Y-%m-%dT%H:%M:%SZ', 'now', '-50 hours')), (3, 'NAG-3', 'k3', 'h', null, 'Carla', 'x', 'es', 'whatsapp', 0, 0, strftime('%Y-%m-%dT%H:%M:%SZ', 'now', '-2 hours'));
+`);
+	const ago = (hours: number) =>
+		new Date(Date.now() - hours * 3_600_000)
+			.toISOString()
+			.replace(/\.\d{3}Z$/, "Z");
+	const line = [{ variantId: 1, quantity: 1, unitPrice: 0 }];
+	db.exec(`
+insert into brands (slug, name, search_key) values ('b', 'Brand', 'b');
+insert into categories (slug, icon, sort_order) values ('c', 'package', 1);
+insert into products (slug, brand_id, category_id) values ('p', 1, 1);
+insert into variants (product_id, sku, search_key) values (1, 'SKU-1', 's');
+${orderSql({ id: 1, code: "NAG-1", customerId: 1, name: "Ana", email: "ana@example.com", createdAt: ago(72), lines: line, takeStock: false })}
+${orderSql({ id: 2, code: "NAG-2", name: "Beto", email: "beto@example.com", createdAt: ago(50), lines: line, takeStock: false })}
+${orderSql({ id: 3, code: "NAG-3", name: "Carla", createdAt: ago(2), lines: line, takeStock: false })}
 `);
 	env.DB = d1(db);
 });
@@ -46,7 +59,7 @@ test("lists the orders past their follow-up deadline, the most overdue first", a
 		]),
 	).toEqual([
 		["NAG-1", "Ana", "ana@example.com", "pending", 48],
-		["NAG-2", "Beto", null, "pending", 48],
+		["NAG-2", "Beto", "beto@example.com", "pending", 48],
 	]);
 	expect(Math.round(orders[0].hoursOverdue)).toBe(24);
 });

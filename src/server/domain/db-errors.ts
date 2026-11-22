@@ -2,14 +2,18 @@
 // drizzle/0001_integrity_triggers.sql) and unique keys a request can collide with. Anything
 // else stays a 500.
 export const DB_ERRORS = {
+	// Another order took the units between reading the lots and writing this one.
 	lot_balance_negative: "stock_changed",
-	// Backstop of the stock rule (orders_confirm_within_stock): the API refuses first, with what is left.
-	order_exceeds_stock: "insufficient_stock",
 	// Reachable by concurrent requests on the same order: the loser's batch rolls back.
-	order_not_confirmed: "invalid_transition",
+	order_not_pending: "invalid_transition",
+	order_not_cancelled: "invalid_transition",
+	cancellation_exceeds_sale: "invalid_transition",
 	sale_exceeds_order_line: "invalid_transition",
-	order_units_not_returned: "invalid_transition",
+	order_units_not_taken: "invalid_transition",
 	invalid_order_transition: "invalid_transition",
+	order_not_paid: "order_not_paid",
+	order_is_final: "invalid_transition",
+	order_status_data_missing: "invalid_transition",
 	order_terms_locked: "invalid_transition",
 	order_items_locked: "invalid_transition",
 	invalid_purchase_order_transition: "invalid_transition",
@@ -28,11 +32,15 @@ export const DB_ERRORS = {
 	// Checked again when the order is written, for concurrent orders.
 	promotion_inactive: "promotion_unavailable",
 	promotion_usage_limit: "promotion_limit_reached",
-	promotion_customer_limit: "promotion_limit_reached",
+	promotion_first_order_only: "promotion_first_order_only",
 	// The code's terms changed between reading it and writing the order.
 	promotion_discount_mismatch: "promotion_changed",
+	promotion_redemption_mismatch: "promotion_changed",
 	promotion_terms_locked: "promotion_in_use",
-	order_promotion_locked: "invalid_transition",
+	review_requires_delivered_order: "review_requires_delivered_order",
+	review_identity_locked: "invalid_transition",
+	stock_alert_locked: "invalid_transition",
+	cart_item_unavailable: "product_unavailable",
 	collection_product_archived: "reference_unavailable",
 	bundle_requires_two_items: "bundle_requires_two_items",
 	bundle_item_unavailable: "bundle_item_unavailable",
@@ -55,6 +63,10 @@ const UNIQUE_KEYS = {
 	"purchase_orders.supplier_id, purchase_orders.reference":
 		"duplicate_reference",
 	"customers.phone_e164": "duplicate_phone",
+	"promotion_redemptions.promotion_id, promotion_redemptions.customer_key":
+		"promotion_limit_reached",
+	"product_reviews.customer_id, product_reviews.product_id": "review_exists",
+	"stock_alerts.variant_id, stock_alerts.email": "stock_alert_exists",
 	"customers.email": "duplicate_email",
 	"customers.auth_user_id": "customer_account_locked",
 	"users.email": "duplicate_email",
