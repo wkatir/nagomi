@@ -1,12 +1,17 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
+import { MapPin, Plus } from "lucide-react";
 import { useState } from "react";
+import { AccountShell } from "#/components/store/account/account-shell";
 import { AddressForm } from "#/components/store/account/address-form";
 import { OrderHistory } from "#/components/store/account/order-history";
+import {
+	ConsentField,
+	PhoneField,
+	TextField,
+} from "#/components/store/form-fields";
 import { StoreButton } from "#/components/store/ui/store-button";
-import { Checkbox } from "#/components/ui/checkbox";
-import { Field, FieldError, FieldLabel } from "#/components/ui/field";
-import { Input } from "#/components/ui/input";
+import { FieldError } from "#/components/ui/field";
 import { Spinner } from "#/components/ui/spinner";
 import { api, parseResponse } from "#/lib/api";
 import { authClient } from "#/lib/auth-client";
@@ -29,8 +34,6 @@ export const Route = createFileRoute("/_store/account/")({
 	component: AccountPage,
 });
 
-const input = "h-(--control-lg) md:type-body";
-
 const profileQuery = {
 	queryKey: ["account", "profile"],
 	queryFn: () => parseResponse(api().account.profile.$get()),
@@ -43,100 +46,62 @@ const addressesQuery = {
 
 function AccountPage() {
 	const session = authClient.useSession();
-	if (session.isPending)
-		return (
-			<div className="container-page py-16">
-				<Spinner aria-label={m.loading()} className="text-muted-foreground" />
-			</div>
-		);
-	if (!session.data)
-		return (
-			<div className="mx-auto max-w-md px-4 py-16">
-				<h1 className="type-h2">{m.account_title()}</h1>
-				<p className="mt-4 text-foreground-secondary">
-					{m.account_signed_out()}
-				</p>
-				<div className="mt-8 flex flex-wrap gap-3">
-					<StoreButton asChild size="lg">
-						<Link to="/account/sign-in">{m.account_sign_in()}</Link>
-					</StoreButton>
-					<StoreButton asChild size="lg" variant="outline">
-						<Link to="/account/sign-up">{m.account_sign_up()}</Link>
-					</StoreButton>
-				</div>
-			</div>
-		);
-	return <Account />;
+	const firstName = session.data?.user.name.split(" ")[0] ?? "";
+	return (
+		<AccountShell
+			title={m.account_greeting({ name: firstName })}
+			description={m.account_intro()}
+		>
+			<AccountSections />
+		</AccountShell>
+	);
 }
 
-function Account() {
-	const navigate = useNavigate();
-	const queryClient = useQueryClient();
+function AccountSections() {
 	const profile = useQuery(profileQuery);
-	const signOut = useMutation({
-		mutationFn: async () => {
-			const { error } = await authClient.signOut();
-			if (error) throw new Error(error.message ?? "sign_out_failed");
-		},
-		onSuccess: async () => {
-			queryClient.removeQueries({ queryKey: ["account"] });
-			queryClient.removeQueries({ queryKey: ["cart"] });
-			await navigate({ to: "/" });
-		},
-	});
-
 	return (
-		<div className="container-page grid gap-section-sm py-section-sm">
-			<div className="flex flex-wrap items-end justify-between gap-4">
-				<div>
-					<h1 className="type-h1">{m.account_title()}</h1>
-					{profile.data && (
-						<p className="mt-2 text-foreground-secondary">
-							{profile.data.email}
-						</p>
-					)}
-				</div>
-				<div className="flex flex-wrap gap-3">
-					<StoreButton asChild variant="outline">
-						<Link to="/account/wishlist">{m.wishlist_title()}</Link>
-					</StoreButton>
-					<StoreButton asChild variant="outline">
-						<Link to="/account/reviews">{m.reviews_mine_title()}</Link>
-					</StoreButton>
-					<StoreButton
-						variant="outline"
-						pending={signOut.isPending}
-						onClick={() => signOut.mutate()}
-					>
-						{m.account_sign_out()}
-					</StoreButton>
-				</div>
-			</div>
-			{profile.isPending ? (
-				<Spinner aria-label={m.loading()} className="text-muted-foreground" />
-			) : profile.isError ? (
-				<FieldError>{errorMessage(profile.error)}</FieldError>
-			) : (
-				<>
-					<ProfileSection
-						key={`${profile.data.name}-${profile.data.phone}`}
-						name={profile.data.name ?? ""}
-						phone={profile.data.phone ?? ""}
-					/>
-					<ConsentsSection
-						key={`${profile.data.consents.marketingEmail}-${profile.data.consents.marketingWhatsapp}`}
-						email={profile.data.consents.marketingEmail === true}
-						whatsapp={profile.data.consents.marketingWhatsapp === true}
-					/>
-				</>
-			)}
-			<AddressesSection />
+		<div className="grid gap-10">
 			<OrderHistory />
+			<section aria-labelledby="profile-title">
+				<h2 id="profile-title" className="type-h2">
+					{m.account_profile()}
+				</h2>
+				{profile.isPending ? (
+					<Spinner aria-label={m.loading()} className="mt-4" />
+				) : profile.isError ? (
+					<FieldError className="mt-4">
+						{errorMessage(profile.error)}
+					</FieldError>
+				) : (
+					<div className="mt-3 grid gap-4 xl:grid-cols-2">
+						<ProfileForm
+							key={`${profile.data.name}-${profile.data.phone}`}
+							name={profile.data.name ?? ""}
+							email={profile.data.email ?? ""}
+							phone={profile.data.phone ? profile.data.phone.slice(4) : ""}
+						/>
+						<ConsentsForm
+							key={`${profile.data.consents.marketingEmail}-${profile.data.consents.marketingWhatsapp}`}
+							email={profile.data.consents.marketingEmail === true}
+							whatsapp={profile.data.consents.marketingWhatsapp === true}
+						/>
+					</div>
+				)}
+			</section>
+			<AddressesSection />
 		</div>
 	);
 }
 
-function ProfileSection({ name, phone }: { name: string; phone: string }) {
+function ProfileForm({
+	name,
+	email,
+	phone,
+}: {
+	name: string;
+	email: string;
+	phone: string;
+}) {
 	const queryClient = useQueryClient();
 	const [nameValue, setName] = useState(name);
 	const [phoneValue, setPhone] = useState(phone);
@@ -144,61 +109,69 @@ function ProfileSection({ name, phone }: { name: string; phone: string }) {
 		mutationFn: () =>
 			parseResponse(
 				api().account.profile.$patch({
-					json: { name: nameValue, phone: phoneValue.trim() || null },
+					json: {
+						name: nameValue.trim(),
+						phone: phoneValue.trim()
+							? `+503${phoneValue.replace(/\D/g, "")}`
+							: null,
+					},
 				}),
 			),
-		onSuccess: () => queryClient.invalidateQueries({ queryKey: ["account"] }),
+		onSuccess: () =>
+			queryClient.invalidateQueries({ queryKey: ["account", "profile"] }),
 	});
 	return (
-		<section aria-labelledby="profile-title" className="max-w-xl border p-6">
-			<h2 id="profile-title" className="type-h3">
-				{m.account_profile()}
-			</h2>
-			<form
-				className="mt-5 grid gap-4"
-				onSubmit={(e) => {
-					e.preventDefault();
-					save.mutate();
-				}}
+		<form
+			className="panel grid content-start gap-4 p-5"
+			onSubmit={(e) => {
+				e.preventDefault();
+				save.mutate();
+			}}
+		>
+			<h3 className="type-h3">{m.account_personal_data()}</h3>
+			<TextField
+				id="profile-name"
+				label={m.account_name()}
+				value={nameValue}
+				onChange={setName}
+				required
+				maxLength={80}
+				autoComplete="name"
+			/>
+			<TextField
+				id="profile-email"
+				label={m.account_email()}
+				value={email}
+				onChange={() => {}}
+				readOnly
+				hint={m.account_email_fixed()}
+				className="[&_input]:text-muted-foreground"
+			/>
+			<PhoneField
+				id="profile-phone"
+				label={m.checkout_phone()}
+				value={phoneValue}
+				onChange={setPhone}
+			/>
+			{save.isError && <FieldError>{errorMessage(save.error)}</FieldError>}
+			{save.isSuccess && (
+				<output className="block type-small text-success">
+					{m.account_saved()}
+				</output>
+			)}
+			<StoreButton
+				type="submit"
+				variant="outline"
+				pending={save.isPending}
+				className="justify-self-start"
 			>
-				<Field className="gap-1.5">
-					<FieldLabel htmlFor="profile-name">{m.account_name()}</FieldLabel>
-					<Input
-						id="profile-name"
-						value={nameValue}
-						onChange={(e) => setName(e.target.value)}
-						required
-						maxLength={80}
-						autoComplete="name"
-						className={input}
-					/>
-				</Field>
-				<Field className="gap-1.5">
-					<FieldLabel htmlFor="profile-phone">{m.account_phone()}</FieldLabel>
-					<Input
-						id="profile-phone"
-						type="tel"
-						value={phoneValue}
-						onChange={(e) => setPhone(e.target.value)}
-						maxLength={30}
-						autoComplete="tel"
-						placeholder="7123 4567"
-						className={input}
-					/>
-				</Field>
-				{save.isError && <FieldError>{errorMessage(save.error)}</FieldError>}
-				{save.isSuccess && (
-					<p className="type-small text-success">{m.account_saved()}</p>
-				)}
-				<StoreButton type="submit" pending={save.isPending} className="w-fit">
-					{m.account_save()}
-				</StoreButton>
-			</form>
-		</section>
+				{m.account_save()}
+			</StoreButton>
+		</form>
 	);
 }
 
-function ConsentsSection({
+function ConsentsForm({
 	email,
 	whatsapp,
 }: {
@@ -219,46 +192,48 @@ function ConsentsSection({
 			queryClient.invalidateQueries({ queryKey: ["account", "profile"] }),
 	});
 	return (
-		<section aria-labelledby="consents-title" className="max-w-xl border p-6">
-			<h2 id="consents-title" className="type-h3">
-				{m.account_consents()}
-			</h2>
-			<div className="mt-5 grid gap-3">
-				<Field orientation="horizontal" className="items-start gap-2.5">
-					<Checkbox
-						id="marketing-email"
-						checked={marketingEmail}
-						onCheckedChange={(checked) => setEmail(checked === true)}
-						className="tap-area mt-0.5 rounded-sm"
-					/>
-					<FieldLabel htmlFor="marketing-email" className="font-normal">
-						{m.cart_consent_marketing_email()}
-					</FieldLabel>
-				</Field>
-				<Field orientation="horizontal" className="items-start gap-2.5">
-					<Checkbox
-						id="marketing-whatsapp"
-						checked={marketingWhatsapp}
-						onCheckedChange={(checked) => setWhatsapp(checked === true)}
-						className="tap-area mt-0.5 rounded-sm"
-					/>
-					<FieldLabel htmlFor="marketing-whatsapp" className="font-normal">
-						{m.cart_consent_marketing_whatsapp()}
-					</FieldLabel>
-				</Field>
-				{save.isError && <FieldError>{errorMessage(save.error)}</FieldError>}
-				{save.isSuccess && (
-					<p className="type-small text-success">{m.account_saved()}</p>
-				)}
-				<StoreButton
-					pending={save.isPending}
-					onClick={() => save.mutate()}
-					className="w-fit"
-				>
-					{m.account_save()}
-				</StoreButton>
+		<form
+			className="panel grid content-start gap-4 p-5"
+			onSubmit={(e) => {
+				e.preventDefault();
+				save.mutate();
+			}}
+		>
+			<div>
+				<h3 className="type-h3">{m.account_consents()}</h3>
+				<p className="mt-1 type-meta text-muted-foreground">
+					{m.account_consents_body()}
+				</p>
 			</div>
-		</section>
+			<ConsentField
+				id="marketing-email"
+				checked={marketingEmail}
+				onChange={setEmail}
+			>
+				{m.cart_consent_marketing_email()}
+			</ConsentField>
+			<ConsentField
+				id="marketing-whatsapp"
+				checked={marketingWhatsapp}
+				onChange={setWhatsapp}
+			>
+				{m.cart_consent_marketing_whatsapp()}
+			</ConsentField>
+			{save.isError && <FieldError>{errorMessage(save.error)}</FieldError>}
+			{save.isSuccess && (
+				<output className="block type-small text-success">
+					{m.account_saved()}
+				</output>
+			)}
+			<StoreButton
+				type="submit"
+				variant="outline"
+				pending={save.isPending}
+				className="justify-self-start"
+			>
+				{m.account_save()}
+			</StoreButton>
+		</form>
 	);
 }
 
@@ -286,10 +261,23 @@ function AddressesSection() {
 	});
 	const error = archive.error ?? makeDefault.error;
 	return (
-		<section aria-labelledby="addresses-title" className="max-w-3xl">
-			<h2 id="addresses-title" className="type-h3">
-				{m.account_addresses()}
-			</h2>
+		<section aria-labelledby="addresses-title">
+			<div className="flex flex-wrap items-center justify-between gap-3">
+				<h2 id="addresses-title" className="type-h2">
+					{m.account_addresses()}
+				</h2>
+				{!adding && (
+					<StoreButton
+						variant="outline"
+						size="sm"
+						onClick={() => setAdding(true)}
+						className="gap-1.5"
+					>
+						<Plus aria-hidden className="size-4" />
+						{m.account_add_address()}
+					</StoreButton>
+				)}
+			</div>
 			{addresses.isPending ? (
 				<Spinner aria-label={m.loading()} className="mt-4" />
 			) : addresses.isError ? (
@@ -297,31 +285,38 @@ function AddressesSection() {
 					{errorMessage(addresses.error)}
 				</FieldError>
 			) : addresses.data.length === 0 ? (
-				<p className="mt-4 text-muted-foreground">{m.account_no_addresses()}</p>
+				<p className="panel mt-3 flex items-center gap-3 p-5 type-small text-muted-foreground">
+					<MapPin aria-hidden className="size-5" />
+					{m.account_no_addresses()}
+				</p>
 			) : (
-				<ul className="mt-5 grid gap-4 md:grid-cols-2">
+				<ul className="mt-3 grid gap-3 md:grid-cols-2">
 					{addresses.data.map((a) => (
-						<li key={a.id} className="grid gap-1 border p-5 type-small">
-							<p className="font-medium">
+						<li
+							key={a.id}
+							className="panel grid content-start gap-1 p-5 type-small"
+						>
+							<p className="flex flex-wrap items-center gap-2 font-medium">
 								{a.recipientName}
 								{a.isDefault && (
-									<span className="ml-2 type-meta text-muted-foreground">
+									<span className="rounded-full bg-accent px-2 py-0.5 type-meta font-normal text-brand">
 										{m.account_default_address()}
 									</span>
 								)}
 							</p>
-							<p>{a.addressLine}</p>
-							<p>
+							<p className="text-foreground-secondary">{a.addressLine}</p>
+							<p className="text-foreground-secondary">
 								{a.municipality}, {a.department}
 							</p>
 							{a.reference && (
 								<p className="text-muted-foreground">{a.reference}</p>
 							)}
-							<p className="text-muted-foreground">{a.phone}</p>
+							<p className="text-muted-foreground tabular-nums">{a.phone}</p>
 							<div className="mt-3 flex flex-wrap gap-2">
 								{!a.isDefault && (
 									<StoreButton
 										variant="outline"
+										size="sm"
 										pending={
 											makeDefault.isPending && makeDefault.variables === a.id
 										}
@@ -332,8 +327,12 @@ function AddressesSection() {
 								)}
 								<StoreButton
 									variant="outline"
+									size="sm"
 									pending={archive.isPending && archive.variables === a.id}
 									onClick={() => archive.mutate(a.id)}
+									aria-label={m.account_archive_address_named({
+										name: a.recipientName,
+									})}
 								>
 									{m.account_archive_address()}
 								</StoreButton>
@@ -343,23 +342,15 @@ function AddressesSection() {
 				</ul>
 			)}
 			{error && <FieldError className="mt-3">{errorMessage(error)}</FieldError>}
-			{adding ? (
+			{adding && (
 				<AddressForm
-					className="mt-6"
+					className="mt-4"
 					onDone={() => {
 						setAdding(false);
 						refresh();
 					}}
 					onCancel={() => setAdding(false)}
 				/>
-			) : (
-				<StoreButton
-					variant="outline"
-					className="mt-6"
-					onClick={() => setAdding(true)}
-				>
-					{m.account_add_address()}
-				</StoreButton>
 			)}
 		</section>
 	);

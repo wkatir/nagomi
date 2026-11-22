@@ -1,20 +1,17 @@
 import { useMutation } from "@tanstack/react-query";
 import { cn } from "cn";
 import { useState } from "react";
-import { StoreButton } from "#/components/store/ui/store-button";
-import { Checkbox } from "#/components/ui/checkbox";
-import { Field, FieldError, FieldLabel } from "#/components/ui/field";
-import { Input } from "#/components/ui/input";
 import {
-	NativeSelect,
-	NativeSelectOption,
-} from "#/components/ui/native-select";
+	ConsentField,
+	LocationFields,
+	PhoneField,
+	TextField,
+} from "#/components/store/form-fields";
+import { StoreButton } from "#/components/store/ui/store-button";
+import { FieldError } from "#/components/ui/field";
 import { api, parseResponse } from "#/lib/api";
 import { errorMessage } from "#/lib/errors";
-import { SV_LOCATIONS } from "#/lib/sv-locations";
 import { m } from "#/paraglide/messages";
-
-const input = "h-(--control-lg) md:type-body";
 
 export function AddressForm({
 	onDone,
@@ -32,150 +29,116 @@ export function AddressForm({
 	const [reference, setReference] = useState("");
 	const [phone, setPhone] = useState("");
 	const [isDefault, setIsDefault] = useState(false);
-	const municipalities =
-		SV_LOCATIONS.find((l) => l.department === department)?.municipalities ?? [];
+	const [tried, setTried] = useState(false);
 	const save = useMutation({
 		mutationFn: () =>
 			parseResponse(
 				api().account.addresses.$post({
 					json: {
-						recipientName,
+						recipientName: recipientName.trim(),
 						department,
 						municipality,
-						addressLine,
+						addressLine: addressLine.trim(),
 						reference: reference.trim() || null,
-						phone,
+						phone: `+503${phone.replace(/\D/g, "")}`,
 						isDefault,
 					},
 				}),
 			),
 		onSuccess: onDone,
 	});
+	const errors = tried
+		? {
+				recipientName: recipientName.trim()
+					? null
+					: m.checkout_error_name_required(),
+				department: department ? null : m.checkout_error_department_required(),
+				municipality: municipality
+					? null
+					: m.checkout_error_municipality_required(),
+				addressLine: addressLine.trim()
+					? null
+					: m.checkout_error_address_line_required(),
+				phone: /^\d{8}$/.test(phone.replace(/\D/g, ""))
+					? null
+					: m.checkout_error_phone_invalid(),
+			}
+		: {};
 	return (
 		<form
-			className={cn("grid max-w-xl gap-4 border p-6", className)}
+			noValidate
+			className={cn("panel grid gap-4 p-5", className)}
 			onSubmit={(e) => {
 				e.preventDefault();
-				save.mutate();
+				setTried(true);
+				const ok =
+					recipientName.trim() &&
+					department &&
+					municipality &&
+					addressLine.trim() &&
+					/^\d{8}$/.test(phone.replace(/\D/g, ""));
+				if (ok) save.mutate();
 			}}
 		>
-			<Field className="gap-1.5">
-				<FieldLabel htmlFor="address-recipient">
-					{m.account_recipient()}
-				</FieldLabel>
-				<Input
+			<h3 className="type-h3">{m.account_add_address()}</h3>
+			<div className="grid gap-4 sm:grid-cols-2">
+				<TextField
 					id="address-recipient"
+					label={m.account_recipient()}
 					value={recipientName}
-					onChange={(e) => setRecipientName(e.target.value)}
-					required
+					onChange={setRecipientName}
 					maxLength={80}
 					autoComplete="name"
-					className={input}
+					error={errors.recipientName}
 				/>
-			</Field>
-			<div className="grid gap-4 md:grid-cols-2">
-				<Field className="gap-1.5">
-					<FieldLabel htmlFor="address-department">
-						{m.account_department()}
-					</FieldLabel>
-					<NativeSelect
-						id="address-department"
-						value={department}
-						required
-						onChange={(e) => {
-							setDepartment(e.target.value);
-							setMunicipality("");
-						}}
-						className={input}
-					>
-						<NativeSelectOption value="">
-							{m.account_choose()}
-						</NativeSelectOption>
-						{SV_LOCATIONS.map((l) => (
-							<NativeSelectOption key={l.department} value={l.department}>
-								{l.department}
-							</NativeSelectOption>
-						))}
-					</NativeSelect>
-				</Field>
-				<Field className="gap-1.5">
-					<FieldLabel htmlFor="address-municipality">
-						{m.account_municipality()}
-					</FieldLabel>
-					<NativeSelect
-						id="address-municipality"
-						value={municipality}
-						required
-						disabled={municipalities.length === 0}
-						onChange={(e) => setMunicipality(e.target.value)}
-						className={input}
-					>
-						<NativeSelectOption value="">
-							{m.account_choose()}
-						</NativeSelectOption>
-						{municipalities.map((name) => (
-							<NativeSelectOption key={name} value={name}>
-								{name}
-							</NativeSelectOption>
-						))}
-					</NativeSelect>
-				</Field>
-			</div>
-			<Field className="gap-1.5">
-				<FieldLabel htmlFor="address-line">
-					{m.account_address_line()}
-				</FieldLabel>
-				<Input
-					id="address-line"
-					value={addressLine}
-					onChange={(e) => setAddressLine(e.target.value)}
-					required
-					maxLength={200}
-					autoComplete="street-address"
-					className={input}
-				/>
-			</Field>
-			<Field className="gap-1.5">
-				<FieldLabel htmlFor="address-reference">
-					{m.account_reference()}
-				</FieldLabel>
-				<Input
-					id="address-reference"
-					value={reference}
-					onChange={(e) => setReference(e.target.value)}
-					maxLength={200}
-					className={input}
-				/>
-			</Field>
-			<Field className="gap-1.5">
-				<FieldLabel htmlFor="address-phone">{m.account_phone()}</FieldLabel>
-				<Input
+				<PhoneField
 					id="address-phone"
-					type="tel"
+					label={m.checkout_phone()}
 					value={phone}
-					onChange={(e) => setPhone(e.target.value)}
-					required
-					maxLength={30}
-					autoComplete="tel"
-					placeholder="7123 4567"
-					className={input}
+					onChange={setPhone}
+					error={errors.phone}
 				/>
-			</Field>
-			<Field orientation="horizontal" className="items-start gap-2.5">
-				<Checkbox
-					id="address-default"
-					checked={isDefault}
-					onCheckedChange={(checked) => setIsDefault(checked === true)}
-					className="tap-area mt-0.5 rounded-sm"
-				/>
-				<FieldLabel htmlFor="address-default" className="font-normal">
-					{m.account_make_default()}
-				</FieldLabel>
-			</Field>
+			</div>
+			<LocationFields
+				idPrefix="address"
+				department={department}
+				municipality={municipality}
+				onDepartment={setDepartment}
+				onMunicipality={setMunicipality}
+				errors={{
+					department: errors.department,
+					municipality: errors.municipality,
+				}}
+			/>
+			<TextField
+				id="address-line"
+				label={m.checkout_address_line()}
+				hint={m.checkout_address_line_hint()}
+				value={addressLine}
+				onChange={setAddressLine}
+				maxLength={200}
+				autoComplete="street-address"
+				error={errors.addressLine}
+			/>
+			<TextField
+				id="address-reference"
+				label={m.checkout_reference()}
+				hint={m.checkout_reference_hint()}
+				value={reference}
+				onChange={setReference}
+				maxLength={200}
+			/>
+			<ConsentField
+				id="address-default"
+				checked={isDefault}
+				onChange={setIsDefault}
+			>
+				{m.account_make_default()}
+			</ConsentField>
 			{save.isError && <FieldError>{errorMessage(save.error)}</FieldError>}
 			<div className="flex flex-wrap gap-3">
 				<StoreButton type="submit" pending={save.isPending}>
-					{m.account_save()}
+					{m.account_save_address()}
 				</StoreButton>
 				<StoreButton type="button" variant="outline" onClick={onCancel}>
 					{m.account_cancel()}

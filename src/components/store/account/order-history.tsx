@@ -1,22 +1,17 @@
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
+import { cn } from "cn";
+import { ChevronDown, Package } from "lucide-react";
 import { useState } from "react";
+import { OrderStatusBadge, OrderTimeline } from "#/components/store/order-view";
 import { StoreButton } from "#/components/store/ui/store-button";
 import { FieldError } from "#/components/ui/field";
 import { Spinner } from "#/components/ui/spinner";
 import { useMoney } from "#/hooks/use-money";
 import { useStoreDate } from "#/hooks/use-store-date";
 import { api, parseResponse } from "#/lib/api";
-import type { OrderStatus } from "#/lib/enums";
 import { errorMessage } from "#/lib/errors";
 import { m } from "#/paraglide/messages";
-
-const statusLabel: Record<OrderStatus, () => string> = {
-	pending: m.account_order_status_pending,
-	paid: m.account_order_status_paid,
-	shipped: m.account_order_status_shipped,
-	delivered: m.account_order_status_delivered,
-	cancelled: m.account_order_status_cancelled,
-};
 
 export function OrderHistory() {
 	const money = useMoney();
@@ -27,8 +22,12 @@ export function OrderHistory() {
 		queryFn: () => parseResponse(api().account.orders.$get()),
 	});
 	return (
-		<section aria-labelledby="orders-title" className="max-w-3xl">
-			<h2 id="orders-title" className="type-h3">
+		<section
+			id="orders"
+			aria-labelledby="orders-title"
+			className="scroll-mt-[calc(var(--header-height)+1rem)]"
+		>
+			<h2 id="orders-title" className="type-h2">
 				{m.account_orders()}
 			</h2>
 			{orders.isPending ? (
@@ -36,40 +35,61 @@ export function OrderHistory() {
 			) : orders.isError ? (
 				<FieldError className="mt-4">{errorMessage(orders.error)}</FieldError>
 			) : orders.data.length === 0 ? (
-				<p className="mt-4 text-muted-foreground">{m.account_no_orders()}</p>
+				<div className="panel mt-3 flex flex-wrap items-center justify-between gap-3 p-5">
+					<p className="flex items-center gap-3 type-small text-muted-foreground">
+						<Package aria-hidden className="size-5" />
+						{m.account_no_orders()}
+					</p>
+					<StoreButton asChild variant="outline" size="sm">
+						<Link to="/products">{m.home_cta_shop()}</Link>
+					</StoreButton>
+				</div>
 			) : (
-				<ul className="mt-5 grid gap-3">
-					{orders.data.map((order) => (
-						<li key={order.code} className="border p-5 type-small">
-							<div className="flex flex-wrap items-center justify-between gap-3">
-								<div>
-									<p className="font-medium">{order.code}</p>
-									<p className="text-muted-foreground">
-										{formatDate(order.createdAt)} ·{" "}
-										{m.account_order_items({ count: order.items })} ·{" "}
-										{money(order.total)}
-									</p>
-								</div>
-								<div className="flex items-center gap-3">
-									<span className="font-medium">
-										{statusLabel[order.status]()}
-									</span>
+				<ul className="mt-3 grid gap-3">
+					{orders.data.map((order) => {
+						const expanded = open === order.code;
+						return (
+							<li key={order.code} className="panel p-4 md:p-5">
+								<div className="flex flex-wrap items-center justify-between gap-3">
+									<div className="min-w-0">
+										<p className="flex flex-wrap items-center gap-2">
+											<span className="type-small font-semibold tabular-nums">
+												{order.code}
+											</span>
+											<OrderStatusBadge status={order.status} />
+										</p>
+										<p className="mt-1 type-meta text-muted-foreground">
+											{formatDate(order.createdAt, { dateStyle: "medium" })} ·{" "}
+											{m.account_order_items({ count: order.items })} ·{" "}
+											<span className="tabular-nums">{money(order.total)}</span>
+										</p>
+									</div>
 									<StoreButton
 										variant="outline"
-										aria-expanded={open === order.code}
-										onClick={() =>
-											setOpen(open === order.code ? null : order.code)
-										}
+										size="sm"
+										aria-expanded={expanded}
+										aria-controls={`order-${order.code}`}
+										onClick={() => setOpen(expanded ? null : order.code)}
+										className="gap-1.5"
 									>
-										{open === order.code
-											? m.account_order_hide()
-											: m.account_order_show()}
+										{expanded ? m.account_order_hide() : m.account_order_show()}
+										<ChevronDown
+											aria-hidden
+											className={cn(
+												"size-4 transition-transform",
+												expanded && "rotate-180",
+											)}
+										/>
 									</StoreButton>
 								</div>
-							</div>
-							{open === order.code && <OrderDetail code={order.code} />}
-						</li>
-					))}
+								{expanded && (
+									<div id={`order-${order.code}`}>
+										<OrderDetail code={order.code} />
+									</div>
+								)}
+							</li>
+						);
+					})}
 				</ul>
 			)}
 		</section>
@@ -78,7 +98,6 @@ export function OrderHistory() {
 
 function OrderDetail({ code }: { code: string }) {
 	const money = useMoney();
-	const formatDate = useStoreDate();
 	const order = useQuery({
 		queryKey: ["account", "orders", code],
 		queryFn: () =>
@@ -90,14 +109,25 @@ function OrderDetail({ code }: { code: string }) {
 		return (
 			<FieldError className="mt-4">{errorMessage(order.error)}</FieldError>
 		);
+	const o = order.data;
 	return (
-		<div className="mt-4 grid gap-4 border-t pt-4">
-			<ul className="grid gap-1">
-				{order.data.lines.map((line) => (
+		<div className="mt-4 grid gap-5 border-t pt-4">
+			<OrderTimeline
+				status={o.status}
+				paymentMethod={o.paymentMethod}
+				history={o.statusHistory}
+			/>
+			<ul className="grid gap-1.5 type-small">
+				{o.lines.map((line) => (
 					<li key={line.sku} className="flex justify-between gap-4">
 						<span>
 							{line.quantity} × {line.brandName} {line.productName}
-							{line.optionLabel && ` · ${line.optionLabel}`}
+							{line.optionLabel && (
+								<span className="text-muted-foreground">
+									{" "}
+									· {line.optionLabel}
+								</span>
+							)}
 						</span>
 						<span className="tabular-nums">
 							{money(line.unitPrice * line.quantity)}
@@ -105,15 +135,18 @@ function OrderDetail({ code }: { code: string }) {
 					</li>
 				))}
 			</ul>
-			<div>
-				<p className="font-medium">{m.account_order_history()}</p>
-				<ol className="mt-1 grid gap-1 text-muted-foreground">
-					{order.data.statusHistory.map((step) => (
-						<li key={`${step.to}-${step.at}`}>
-							{formatDate(step.at)} · {statusLabel[step.to]()}
-						</li>
-					))}
-				</ol>
+			<div className="flex flex-wrap items-center justify-between gap-3 border-t pt-3">
+				<p className="type-small">
+					{m.cart_total()}:{" "}
+					<span className="font-semibold tabular-nums">{money(o.total)}</span>
+				</p>
+				<Link
+					to="/pedido/$code"
+					params={{ code: o.code }}
+					className="type-small text-brand underline-offset-4 hover:underline"
+				>
+					{m.account_order_track()}
+				</Link>
 			</div>
 		</div>
 	);
