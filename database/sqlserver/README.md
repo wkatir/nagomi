@@ -21,7 +21,7 @@ Ejecute los scripts en este orden, cada uno completo (contienen separadores `GO`
 | 4 | `04_carga_inicial.sql` | Carga configuración, roles, categorías, marcas, los 19 productos, 3 combos, zonas y municipios, 6 clientes ficticios, cupones y 11 pedidos de demostración en distintos estados creados con los procedimientos, reseñas, lista de deseos y un carrito de invitado fusionado. |
 | 5 | `05_consultas_reportes.sql` | Consultas de control y reportes (solo lectura). |
 
-Todos los scripts son repetibles: si se ejecutan dos veces no duplican nada ni fallan porque algo ya existe. Las tablas se crean con `IF OBJECT_ID(...) IS NULL`, los índices con `IF NOT EXISTS (sys.indexes)`, los triggers, procedimientos, vista y función con `CREATE OR ALTER`, y los datos con `VALUES ... WHERE NOT EXISTS`. Los pedidos de demostración solo se crean si la tabla `Pedido` está vacía.
+Todos los scripts son repetibles: si se ejecutan dos veces no duplican nada ni fallan porque algo ya existe. Las tablas se crean con `IF OBJECT_ID(...) IS NULL`, las columnas agregadas después (`Cupon.SoloPrimeraCompra`, `Cupon.MontoMinimo`) con `IF COL_LENGTH(...) IS NULL`, la lista de claves de `Configuracion` se rehace solo si todavía no tiene los tres plazos de seguimiento, los índices con `IF NOT EXISTS (sys.indexes)`, los triggers, procedimientos, vista y función con `CREATE OR ALTER`, y los datos con `VALUES ... WHERE NOT EXISTS`. Los pedidos de demostración solo se crean si la tabla `Pedido` está vacía.
 
 La excepción es `sp_CambioMasivoPrecios`: un cambio de precios es una operación de una sola vez. Ejecutarlo dos veces con 5 % sube el precio dos veces; cada ejecución queda en `HistorialPrecio`.
 
@@ -29,12 +29,14 @@ La excepción es `sp_CambioMasivoPrecios`: un cambio de precios es una operació
 
 - **IVA incluido.** Los precios del catálogo ya incluyen el 13 % de IVA. En cada pedido se cumple `Total = Subtotal - Descuento + Envio`, que es lo que paga el cliente, e `Iva = ROUND(Total * TasaIva / (100 + TasaIva), 2)` es la parte del total que corresponde al impuesto. Ambas reglas son `CHECK` de la tabla `Pedido`, y la tasa se copia en el pedido para que un cambio futuro del IVA no altere pedidos anteriores.
 - **Envío gratis** cuando `Subtotal - Descuento` llega a `EnvioGratisDesde` (US$50.00), es decir, con lo que el cliente realmente paga en artículos.
-- **Valores de negocio en configuración, no en código:** IVA, umbral de stock bajo, envío gratis, límite de contra entrega, días para cliente inactivo, compras para cliente frecuente y horas de seguimiento viven en `Configuracion`. El costo y el plazo de cada zona viven en `ZonaEnvio`.
+- **Valores de negocio en configuración, no en código:** IVA, umbral de stock bajo, envío gratis, límite de contra entrega, días para cliente inactivo, compras para cliente frecuente y los tres plazos de seguimiento viven en `Configuracion`. El costo y el plazo de cada zona viven en `ZonaEnvio`.
 - **La zona de envío sale del municipio** de la dirección (`Municipio.IdZonaEnvio`), no de lo que elija el cliente.
 - **Stock:** se descuenta al crear el pedido (estado Pendiente) y vuelve al inventario si se cancela. Cada movimiento queda en `MovimientoInventario`, y la consulta 15 comprueba que el stock cuadre con la bitácora.
 - **Contra entrega** se cobra al entregar: el pedido pasa de Pendiente a Enviado sin pasar por Pagado, y para marcarlo Entregado debe existir el pago en efectivo registrado.
 - **Compra como invitado:** el carrito puede no tener cliente (`IdCliente` nulo). Para convertirlo en pedido, el invitado se registra con `sp_RegistrarCliente` (no necesita contraseña) y su carrito se le asigna con `sp_FusionarCarrito`.
 - **Combos:** una línea de carrito o de pedido es un producto o un combo. El stock se descuenta por cada artículo del combo.
+- **Cupones:** cada cupón tiene porcentaje, vigencia, usos máximos, monto mínimo de subtotal (`MontoMinimo`) y si es solo para la primera compra (`SoloPrimeraCompra`). El monto mínimo se compara con el subtotal antes del descuento. Primera compra significa que el cliente no tiene ningún pedido que no esté cancelado.
+- **Plazos de seguimiento por estado:** un pedido requiere seguimiento cuando pasa más horas de las configuradas en su estado actual, contadas desde la entrada a ese estado en `HistorialEstadoPedido`.
 - **Roles** en `Rol` (Cliente, AtencionCliente, Administrador) y cuentas en `Usuario`. Solo se guarda el hash de la clave; los usuarios de demostración no tienen clave.
 
 ## Reglas de negocio y dónde se hacen cumplir
@@ -64,6 +66,8 @@ La excepción es `sp_CambioMasivoPrecios`: un cambio de precios es una operació
 | La venta se registra completa o no se registra | Una transacción con `TRY/CATCH`, `ROLLBACK` y `THROW` | `sp_CrearPedidoDesdeCarrito` |
 | El cupón tiene código único, de 1 % a 50 %, con vigencia válida y usos limitados | `UNIQUE` y `CHECK` sobre porcentaje, fechas y usos | `UQ_Cupon_Codigo`, `CK_Cupon_Porcentaje`, `CK_Cupon_Vigencia`, `CK_Cupon_Usos` |
 | El cupón solo se aplica vigente, con usos disponibles y una vez por cliente | Validación y `UPDATE` condicional con `@@ROWCOUNT`; al cancelar se libera el uso | `sp_CrearPedidoDesdeCarrito`, `tr_Pedido_Cancelacion` |
+| Un cupón de primera compra solo se acepta si el cliente no tiene pedidos que no estén cancelados | Columna `SoloPrimeraCompra` y validación (error 50311) | `Cupon.SoloPrimeraCompra`, `sp_CrearPedidoDesdeCarrito` |
+| Un cupón con monto mínimo solo se acepta si el subtotal lo alcanza | Columna `MontoMinimo` con `CHECK (MontoMinimo >= 0)` y validación (error 50312) | `CK_Cupon_MontoMinimo`, `sp_CrearPedidoDesdeCarrito` |
 | IVA incluido y totales consistentes | `CHECK (Total = Subtotal - Descuento + Envio)` y `CHECK (Iva = ROUND(Total * TasaIva / (100 + TasaIva), 2))` | `CK_Pedido_Total`, `CK_Pedido_Iva` |
 | Envío por zona y gratis desde US$50 | Costo de `ZonaEnvio` y umbral de `Configuracion` | `sp_CrearPedidoDesdeCarrito` |
 | La dirección del pedido es del cliente y la zona corresponde a su municipio | Trigger sobre pedidos nuevos | `tr_Pedido_ValidarNuevo` |
@@ -80,6 +84,7 @@ La excepción es `sp_CambioMasivoPrecios`: un cambio de precios es una operació
 | Calificación de 1 a 5 y una reseña por cliente y producto | `CHECK` y `UNIQUE` | `CK_Resena_Calificacion`, `UQ_Resena_Cliente_Producto` |
 | Solo reseña quien recibió el producto en un pedido entregado (suelto o en combo) | Trigger | `tr_Resena_ValidarCompra` |
 | Un producto una sola vez por lista de deseos | Llave compuesta | `PK_ListaDeseos` |
+| Los plazos de seguimiento son configurables: 48 h en Pendiente sin pago, 24 h en Pagado sin enviar y 96 h en Enviado sin entregar | Claves cerradas y valores no negativos en `Configuracion`; reporte 12 por estado | `CK_Configuracion_Clave`, `CK_Configuracion_Valor`, `05_consultas_reportes.sql` |
 | Cada movimiento de inventario tiene el signo correcto y las ventas y devoluciones apuntan a un pedido | `CHECK` | `CK_MovimientoInventario_Signo`, `CK_MovimientoInventario_Pedido` |
 
 ## Procedimientos
@@ -126,13 +131,33 @@ UPDATE dbo.Pedido SET Total = 1 WHERE IdPedido = 1;                           --
 
 Para probar la máquina de estados, intente cancelar con `sp_CambiarEstadoPedido` un pedido `Entregado`: el trigger responde que un pedido entregado ya no se modifica.
 
+## Cupones de demostración
+
+| Código | Descuento | Condición | Vigencia |
+|---|---|---|---|
+| `BIENVENIDA10` | 10 % | Solo en la primera compra | Desde 30 días antes de la carga hasta 365 días después |
+| `SETUP15` | 15 % | Subtotal desde US$80 | Del 1 de noviembre al 31 de diciembre de 2026 |
+| `VERANO20` | 20 % | Hasta 200 usos | Vencido: del 1 de junio al 31 de agosto de 2026 |
+
+Prueba de las condiciones de cupón (con un carrito, cliente y dirección válidos): `BIENVENIDA10` en un cliente que ya compró responde el error 50311, `SETUP15` con un subtotal menor que US$80 responde el error 50312 y `VERANO20` responde que el cupón no está vigente.
+
+## Plazos de seguimiento
+
+| Estado | Clave en `Configuracion` | Horas | Se cuenta desde |
+|---|---|---|---|
+| Pendiente (sin pago) | `HorasPendientePago` | 48 | La entrada a Pendiente en `HistorialEstadoPedido` (creación del pedido) |
+| Pagado (sin enviar) | `HorasPagadoSinEnviar` | 24 | La entrada a Pagado |
+| Enviado (sin entregar) | `HorasEnviadoSinEntregar` | 96 | La entrada a Enviado |
+
+Un pedido contra entrega pasa de Pendiente a Enviado, así que su plazo en Pendiente es el de preparar el envío.
+
 ## Datos de demostración
 
 Los clientes usan correos `@example.com` y teléfonos ficticios. Con la carga inicial los reportes muestran:
 
 - Los cuatro segmentos: Ana López y José Hernández frecuentes, Carmen Rivas y Sofía Flores ocasionales, Luis Martínez inactivo (última compra hace 120 días) y Diego Castillo nuevo.
-- Pedidos en los cinco estados, con pago con tarjeta, transferencia y contra entrega, dos cupones aplicados y una cancelación con su devolución de stock.
-- Un pedido contra entrega Pendiente desde hace más de 48 horas para el reporte de seguimiento.
+- Pedidos en los cinco estados, con pago con tarjeta, transferencia y contra entrega, dos cupones aplicados (`BIENVENIDA10` en la primera compra de Sofía Flores y `SETUP15` en un pedido de Ana López de más de US$80) y una cancelación con su devolución de stock. Si la carga se ejecuta fuera de la vigencia de `SETUP15`, ese pedido se crea sin cupón.
+- Un pedido vencido en cada plazo para el reporte de seguimiento: contra entrega Pendiente desde hace más de 48 horas, Pagado desde hace más de 24 horas y contra entrega Enviado desde hace más de 96 horas.
 - RAT-003 retirado por agotado y productos con existencias bajas, entre ellos ALF-003, ACC-003 y TEC-003.
 
 ## Reportes de `05_consultas_reportes.sql`
@@ -148,8 +173,8 @@ Los clientes usan correos `@example.com` y teléfonos ficticios. Con la carga in
 9. Clientes con segmentación Nuevo, Ocasional, Frecuente o Inactivo (`LEFT JOIN`).
 10. Pedidos por estado.
 11. Horas promedio entre estados.
-12. Seguimiento de pedidos Pendiente o Pagado con más de 48 horas sin avanzar.
-13. Cupones vigentes.
+12. Seguimiento de pedidos que superan el plazo de su estado: Pendiente más de 48 horas, Pagado más de 24 y Enviado más de 96, con las horas de retraso.
+13. Cupones vigentes, con monto mínimo y si son solo para la primera compra.
 14. Productos mejor calificados.
 15. Control de inventario: productos cuyo stock no cuadra con la bitácora (debe salir vacío).
 16. Historial de precios reciente.

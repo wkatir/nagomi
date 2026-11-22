@@ -21,12 +21,24 @@ BEGIN
         Clave       VARCHAR(40)   NOT NULL CONSTRAINT PK_Configuracion PRIMARY KEY,
         Valor       DECIMAL(12,2) NOT NULL,
         Descripcion NVARCHAR(200) NOT NULL,
-        CONSTRAINT CK_Configuracion_Clave CHECK (Clave IN (
-            'IvaPorcentaje', 'UmbralStockBajo', 'EnvioGratisDesde', 'LimiteContraEntrega',
-            'DiasClienteInactivo', 'ComprasClienteFrecuente', 'HorasSeguimientoPedido')),
         CONSTRAINT CK_Configuracion_Valor CHECK (Valor >= 0),
         CONSTRAINT CK_Configuracion_Iva CHECK (Clave <> 'IvaPorcentaje' OR Valor BETWEEN 0 AND 30)
     );
+END
+GO
+
+IF NOT EXISTS (SELECT 1 FROM sys.check_constraints
+               WHERE name = 'CK_Configuracion_Clave' AND definition LIKE '%HorasEnviadoSinEntregar%')
+BEGIN
+    DELETE FROM dbo.Configuracion WHERE Clave = 'HorasSeguimientoPedido';
+    IF EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = 'CK_Configuracion_Clave')
+    BEGIN
+        ALTER TABLE dbo.Configuracion DROP CONSTRAINT CK_Configuracion_Clave;
+    END
+    ALTER TABLE dbo.Configuracion ADD CONSTRAINT CK_Configuracion_Clave CHECK (Clave IN (
+        'IvaPorcentaje', 'UmbralStockBajo', 'EnvioGratisDesde', 'LimiteContraEntrega',
+        'DiasClienteInactivo', 'ComprasClienteFrecuente',
+        'HorasPendientePago', 'HorasPagadoSinEnviar', 'HorasEnviadoSinEntregar'));
 END
 GO
 
@@ -281,6 +293,8 @@ BEGIN
         FechaFin    DATETIME2(0)  NOT NULL,
         UsoMaximo   INT           NULL,
         Usos        INT           NOT NULL CONSTRAINT DF_Cupon_Usos DEFAULT 0,
+        SoloPrimeraCompra BIT     NOT NULL CONSTRAINT DF_Cupon_SoloPrimeraCompra DEFAULT 0,
+        MontoMinimo DECIMAL(10,2) NOT NULL CONSTRAINT DF_Cupon_MontoMinimo DEFAULT 0,
         Activo      BIT           NOT NULL CONSTRAINT DF_Cupon_Activo DEFAULT 1,
         -- Código en mayúsculas, solo letras y números
         CONSTRAINT CK_Cupon_Codigo CHECK (Codigo COLLATE Latin1_General_BIN2 NOT LIKE '%[^A-Z0-9]%'),
@@ -289,8 +303,20 @@ BEGIN
         CONSTRAINT CK_Cupon_Vigencia CHECK (FechaInicio < FechaFin),
         CONSTRAINT CK_Cupon_UsoMaximo CHECK (UsoMaximo IS NULL OR UsoMaximo > 0),
         -- Nunca se usa más veces de las permitidas
-        CONSTRAINT CK_Cupon_Usos CHECK (Usos >= 0 AND (UsoMaximo IS NULL OR Usos <= UsoMaximo))
+        CONSTRAINT CK_Cupon_Usos CHECK (Usos >= 0 AND (UsoMaximo IS NULL OR Usos <= UsoMaximo)),
+        CONSTRAINT CK_Cupon_MontoMinimo CHECK (MontoMinimo >= 0)
     );
+END
+GO
+
+IF COL_LENGTH('dbo.Cupon', 'SoloPrimeraCompra') IS NULL
+BEGIN
+    ALTER TABLE dbo.Cupon ADD SoloPrimeraCompra BIT NOT NULL CONSTRAINT DF_Cupon_SoloPrimeraCompra DEFAULT 0;
+END
+IF COL_LENGTH('dbo.Cupon', 'MontoMinimo') IS NULL
+BEGIN
+    ALTER TABLE dbo.Cupon ADD MontoMinimo DECIMAL(10,2) NOT NULL CONSTRAINT DF_Cupon_MontoMinimo DEFAULT 0
+        CONSTRAINT CK_Cupon_MontoMinimo CHECK (MontoMinimo >= 0);
 END
 GO
 

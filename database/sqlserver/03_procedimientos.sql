@@ -237,6 +237,8 @@ BEGIN
             @CostoZona        DECIMAL(10,2),
             @IdCupon          INT,
             @PorcentajeCupon  DECIMAL(5,2),
+            @SoloPrimeraCompra BIT,
+            @MontoMinimo      DECIMAL(10,2),
             @Subtotal         DECIMAL(12,2),
             @Descuento        DECIMAL(12,2) = 0,
             @Envio            DECIMAL(12,2),
@@ -303,10 +305,11 @@ BEGIN
 
         SET @Subtotal = (SELECT SUM(Cantidad * PrecioUnitario) FROM @Lineas);
 
-        -- 3. Cupón: vigente, con usos disponibles y una sola vez por cliente
+        -- 3. Cupón: vigente, con usos disponibles, una sola vez por cliente, con su monto mínimo y, si aplica, solo en la primera compra
         IF @CodigoCupon IS NOT NULL
         BEGIN
-            SELECT @IdCupon = IdCupon, @PorcentajeCupon = Porcentaje
+            SELECT @IdCupon = IdCupon, @PorcentajeCupon = Porcentaje,
+                   @SoloPrimeraCompra = SoloPrimeraCompra, @MontoMinimo = MontoMinimo
             FROM dbo.Cupon WITH (UPDLOCK, HOLDLOCK)
             WHERE Codigo = @CodigoCupon AND Activo = 1 AND @Ahora >= FechaInicio AND @Ahora < FechaFin;
 
@@ -315,6 +318,11 @@ BEGIN
             IF EXISTS (SELECT 1 FROM dbo.Pedido
                        WHERE IdCliente = @IdCliente AND IdCupon = @IdCupon AND Estado <> 'Cancelado')
                 THROW 50308, N'El cliente ya usó este cupón.', 1;
+            IF @SoloPrimeraCompra = 1
+               AND EXISTS (SELECT 1 FROM dbo.Pedido WHERE IdCliente = @IdCliente AND Estado <> 'Cancelado')
+                THROW 50311, N'Este cupón es solo para la primera compra.', 1;
+            IF @Subtotal < @MontoMinimo
+                THROW 50312, N'El subtotal no alcanza el monto mínimo del cupón.', 1;
 
             UPDATE dbo.Cupon
             SET Usos = Usos + 1

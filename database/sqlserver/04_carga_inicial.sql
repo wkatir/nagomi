@@ -20,7 +20,9 @@ FROM (VALUES
     ('LimiteContraEntrega',    150.00, N'Total máximo de un pedido pagado contra entrega (US$)'),
     ('DiasClienteInactivo',     90.00, N'Días sin comprar para considerar inactivo a un cliente'),
     ('ComprasClienteFrecuente',  3.00, N'Compras a partir de las cuales un cliente es frecuente'),
-    ('HorasSeguimientoPedido',  48.00, N'Horas sin avanzar de estado para dar seguimiento a un pedido'))
+    ('HorasPendientePago',      48.00, N'Horas en Pendiente sin pago para dar seguimiento a un pedido'),
+    ('HorasPagadoSinEnviar',    24.00, N'Horas en Pagado sin enviar para dar seguimiento a un pedido'),
+    ('HorasEnviadoSinEntregar', 96.00, N'Horas en Enviado sin entregar para dar seguimiento a un pedido'))
 AS v(Clave, Valor, Descripcion)
 WHERE NOT EXISTS (SELECT 1 FROM dbo.Configuracion c WHERE c.Clave = v.Clave);
 GO
@@ -205,18 +207,20 @@ JOIN dbo.Rol r ON r.Nombre = 'Cliente'
 WHERE NOT EXISTS (SELECT 1 FROM dbo.Usuario u WHERE u.Correo = c.Correo);
 GO
 
--- CUPONES (vigencia relativa a la fecha de carga) ---------------------------
+-- CUPONES (la bienvenida tiene vigencia relativa a la fecha de carga; las promociones, fechas fijas) ---
 
-DECLARE @Hoy DATE = CAST(SYSDATETIME() AS DATE);
+DECLARE @Hoy DATETIME2(0) = CAST(CAST(SYSDATETIME() AS DATE) AS DATETIME2(0));
 
-INSERT INTO dbo.Cupon (Codigo, Descripcion, Porcentaje, FechaInicio, FechaFin, UsoMaximo)
-SELECT v.Codigo, v.Descripcion, v.Porcentaje, DATEADD(DAY, v.DiaInicio, @Hoy), DATEADD(DAY, v.DiaFin, @Hoy), v.UsoMaximo
+INSERT INTO dbo.Cupon (Codigo, Descripcion, Porcentaje, FechaInicio, FechaFin, UsoMaximo, SoloPrimeraCompra, MontoMinimo)
+SELECT v.Codigo, v.Descripcion, v.Porcentaje, v.FechaInicio, v.FechaFin, v.UsoMaximo, v.SoloPrimeraCompra, v.MontoMinimo
 FROM (VALUES
-    ('NAGOMI10',  N'Bienvenida: 10 % en tu compra',       10.00, -30, 365, NULL),
-    ('SAKURA15',  N'Temporada Sakura: 15 %',              15.00,  -7,  60, 100),
-    ('BUENFIN25', N'Promoción vencida de demostración',   25.00, -60, -30, 200),
-    ('FUJI20',    N'Promoción futura de demostración',    20.00,  30,  60,  50))
-AS v(Codigo, Descripcion, Porcentaje, DiaInicio, DiaFin, UsoMaximo)
+    ('BIENVENIDA10', N'Bienvenida: 10 % en tu primera compra', 10.00,
+        DATEADD(DAY, -30, @Hoy), DATEADD(DAY, 365, @Hoy), NULL, 1, 0.00),
+    ('SETUP15',      N'15 % en compras desde US$80',           15.00,
+        CAST('2026-11-01T00:00:00' AS DATETIME2(0)), CAST('2026-12-31T23:59:59' AS DATETIME2(0)), NULL, 0, 80.00),
+    ('VERANO20',     N'Promoción de verano (vencida)',         20.00,
+        CAST('2026-06-01T00:00:00' AS DATETIME2(0)), CAST('2026-08-31T23:59:59' AS DATETIME2(0)), 200, 0, 0.00))
+AS v(Codigo, Descripcion, Porcentaje, FechaInicio, FechaFin, UsoMaximo, SoloPrimeraCompra, MontoMinimo)
 WHERE NOT EXISTS (SELECT 1 FROM dbo.Cupon c WHERE c.Codigo = v.Codigo);
 GO
 
@@ -238,10 +242,18 @@ BEGIN
         ( 5, N'jose.hernandez@example.com', 'ContraEntrega', NULL,        20, 'Entregado'),
         ( 6, N'ana.lopez@example.com',      'Tarjeta',       NULL,        12, 'Entregado'),
         ( 7, N'carmen.rivas@example.com',   'Tarjeta',       NULL,         5, 'Cancelado'),
-        ( 8, N'jose.hernandez@example.com', 'ContraEntrega', NULL,         3, 'Pendiente'),
-        ( 9, N'jose.hernandez@example.com', 'ContraEntrega', NULL,         2, 'Enviado'),
-        (10, N'sofia.flores@example.com',   'Transferencia', 'SAKURA15',   1, 'Pagado'),
-        (11, N'ana.lopez@example.com',      'Tarjeta',       'NAGOMI10',   0, 'Pendiente');
+        ( 8, N'jose.hernandez@example.com', 'ContraEntrega', NULL,           5, 'Enviado'),
+        ( 9, N'jose.hernandez@example.com', 'ContraEntrega', NULL,           3, 'Pendiente'),
+        (10, N'sofia.flores@example.com',   'Transferencia', 'BIENVENIDA10', 1, 'Pagado'),
+        (11, N'ana.lopez@example.com',      'Tarjeta',       'SETUP15',      0, 'Pendiente');
+
+    UPDATE d
+    SET d.Cupon = NULL
+    FROM @Demo d
+    WHERE d.Cupon IS NOT NULL
+      AND NOT EXISTS (SELECT 1 FROM dbo.Cupon cu
+                      WHERE cu.Codigo = d.Cupon AND cu.Activo = 1
+                        AND SYSDATETIME() >= cu.FechaInicio AND SYSDATETIME() < cu.FechaFin);
 
     DECLARE @DemoLinea TABLE (Num INT, Sku VARCHAR(7) NULL, Combo VARCHAR(40) NULL, Cantidad INT);
 
@@ -256,7 +268,7 @@ BEGIN
         ( 8, 'ILU-002', NULL, 1),
         ( 9, 'ACC-001', NULL, 1), ( 9, 'ACC-004', NULL, 1),
         (10, 'TEC-002', NULL, 1), (10, 'ALF-002', NULL, 1),
-        (11, 'ILU-003', NULL, 2);
+        (11, 'ILU-003', NULL, 2), (11, 'TEC-004', NULL, 2);
 
     DECLARE @IdAdmin INT = (SELECT IdUsuario FROM dbo.Usuario WHERE Correo = N'admin.nagomi@example.com'),
             @IdSoporte INT = (SELECT IdUsuario FROM dbo.Usuario WHERE Correo = N'soporte.nagomi@example.com'),

@@ -14,7 +14,9 @@ DECLARE @Desde            DATE         = DATEADD(DAY, -180, CAST(SYSDATETIME() A
         @UmbralStock      INT          = CAST(dbo.fn_Configuracion('UmbralStockBajo') AS INT),
         @DiasInactivo     INT          = CAST(dbo.fn_Configuracion('DiasClienteInactivo') AS INT),
         @ComprasFrecuente INT          = CAST(dbo.fn_Configuracion('ComprasClienteFrecuente') AS INT),
-        @HorasSeguimiento INT          = CAST(dbo.fn_Configuracion('HorasSeguimientoPedido') AS INT),
+        @HorasPendiente   INT          = CAST(dbo.fn_Configuracion('HorasPendientePago') AS INT),
+        @HorasPagado      INT          = CAST(dbo.fn_Configuracion('HorasPagadoSinEnviar') AS INT),
+        @HorasEnviado     INT          = CAST(dbo.fn_Configuracion('HorasEnviadoSinEntregar') AS INT),
         @MinResenas       INT          = 1,
         @Ahora            DATETIME2(0) = SYSDATETIME();
 
@@ -183,30 +185,37 @@ WHERE EstadoAnterior IS NOT NULL
 GROUP BY EstadoAnterior, EstadoNuevo
 ORDER BY HorasPromedio;
 
--- 12. Seguimiento: pedidos Pendiente o Pagado que llevan más de las horas configuradas sin avanzar
+-- 12. Seguimiento: pedidos que superan el plazo de su estado (Pendiente sin pago, Pagado sin enviar, Enviado sin entregar),
+--     contado desde que el historial registró la entrada a ese estado
 SELECT pe.IdPedido,
        c.Nombre,
        c.Telefono,
        pe.Estado,
        pe.MetodoPago,
        pe.Total,
-       u.UltimoCambio,
-       DATEDIFF(HOUR, u.UltimoCambio, @Ahora) AS HorasEnEstado
+       u.DesdeEstado,
+       DATEDIFF(HOUR, u.DesdeEstado, @Ahora)                AS HorasEnEstado,
+       l.HorasLimite,
+       DATEDIFF(HOUR, u.DesdeEstado, @Ahora) - l.HorasLimite AS HorasDeRetraso
 FROM dbo.Pedido pe
 JOIN dbo.Cliente c ON c.IdCliente = pe.IdCliente
+JOIN (VALUES ('Pendiente', @HorasPendiente, 1),
+             ('Pagado',    @HorasPagado,    2),
+             ('Enviado',   @HorasEnviado,   3)) AS l(Estado, HorasLimite, Orden) ON l.Estado = pe.Estado
 CROSS APPLY (
-    SELECT MAX(h.Fecha) AS UltimoCambio
+    SELECT MAX(h.Fecha) AS DesdeEstado
     FROM dbo.HistorialEstadoPedido h
-    WHERE h.IdPedido = pe.IdPedido
+    WHERE h.IdPedido = pe.IdPedido AND h.EstadoNuevo = pe.Estado
 ) u
-WHERE pe.Estado IN ('Pendiente', 'Pagado')
-  AND DATEDIFF(HOUR, u.UltimoCambio, @Ahora) > @HorasSeguimiento
-ORDER BY HorasEnEstado DESC;
+WHERE DATEDIFF(HOUR, u.DesdeEstado, @Ahora) > l.HorasLimite
+ORDER BY l.Orden, HorasDeRetraso DESC;
 
 -- 13. Cupones vigentes hoy, con usos disponibles
 SELECT cu.Codigo,
        cu.Descripcion,
        cu.Porcentaje,
+       cu.MontoMinimo,
+       cu.SoloPrimeraCompra,
        cu.FechaInicio,
        cu.FechaFin,
        cu.Usos,
