@@ -28,6 +28,9 @@ const dashboard: AdminDashboard = {
 		orders: 3,
 		units: 5,
 		revenue: 9500,
+		tax: 1093,
+		netRevenue: 8407,
+		averageTicket: 3167,
 		merchandise: 9000,
 		shipping: 500,
 		costOfGoodsSold: 3500,
@@ -35,6 +38,7 @@ const dashboard: AdminDashboard = {
 		margin: 0.6111,
 	},
 	bookings: { orders: 5, value: 12000 },
+	newCustomers: 2,
 	losses: {
 		returns: {
 			returns: 0,
@@ -69,13 +73,59 @@ const dashboard: AdminDashboard = {
 			costOfGoodsSold: 1500,
 			grossProfit: 3000,
 			margin: 0.6667,
+			unitsPerDay: 1.5,
 		},
 	],
 	stock: {
 		onHand: 40,
 		value: 28000,
 		lowStock: 2,
+		outOfStock: 1,
+		threshold: 5,
 	},
+	lowStock: [
+		{
+			variantId: 7,
+			sku: "RAT-003",
+			brand: "Pulsar",
+			name: "Mouse Tate",
+			onHand: 0,
+			reorderPoint: 5,
+			daysOfCover: null,
+		},
+		{
+			variantId: 8,
+			sku: "ACC-003",
+			brand: "Nagomi",
+			name: "Cable",
+			onHand: 2,
+			reorderPoint: 5,
+			daysOfCover: 12,
+		},
+	],
+	followups: {
+		counts: { collect_payment: 1, ship: 0, confirm_delivery: 0 },
+		items: [
+			{
+				orderId: 9,
+				code: "NAG-AAA111",
+				customerId: 1,
+				customerName: "Ana Pérez",
+				customerEmail: "ana@example.com",
+				customerPhone: "+50371234567",
+				paymentMethod: "bank_transfer",
+				total: 3000,
+				status: "pending",
+				action: "collect_payment",
+				since: "2026-10-20T12:00:00Z",
+				deadlineHours: 48,
+				dueAt: "2026-10-22T12:00:00Z",
+				hoursOverdue: 30,
+			},
+		],
+	},
+	pendingReviews: 3,
+	pendingStockAlerts: 2,
 };
 
 const client = new QueryClient();
@@ -102,88 +152,86 @@ async function render(d: AdminDashboard, queryClient = client) {
 }
 
 describe("OverviewBlocks", () => {
-	test("each figure links to the screen where it can be acted on, with the days it sums up", async () => {
+	test("each figure links to the report that explains it, with the days it sums up", async () => {
 		const days = "from=2026-10-23&amp;to=2026-10-24";
 		expect(linkedStats(await render(dashboard))).toEqual([
 			[
 				`/admin/reports?${days}`,
-				m.admin_kpi_revenue(),
+				m.admin_kpi_sales_with_tax(),
 				money(9500),
-				m.admin_overview_sales_note({ count: 3 }),
+				m.admin_kpi_net_note({ amount: money(8407) }),
+			],
+			[
+				`/admin/reports/fulfillment?${days}`,
+				m.admin_report_orders(),
+				"3",
+				m.admin_kpi_orders_note({ count: 5 }),
+			],
+			[
+				`/admin/reports?${days}`,
+				m.admin_kpi_avg_ticket(),
+				money(3167),
+				m.admin_kpi_avg_ticket_note(),
+			],
+			[
+				`/admin/reports/customers?${days}`,
+				m.admin_kpi_new_customers(),
+				"2",
+				m.admin_kpi_new_customers_note(),
 			],
 			[
 				`/admin/reports/products?${days}`,
-				m.admin_kpi_gross_profit(),
-				money(5500),
-				m.admin_report_margin_n({ percent: formatPercent(0.6111, locale) }),
-			],
-			[
-				"/admin/orders?status=pending",
-				m.admin_kpi_pending(),
-				"4",
-				m.admin_overview_pending_note(),
-			],
-			[
-				"/admin/orders?status=pending&amp;sort=createdAt&amp;dir=asc",
-				m.admin_overview_overdue(),
-				"1",
-				m.admin_overview_overdue_note(),
-			],
-			[
-				"/admin/orders",
-				m.admin_overview_booked(),
-				"5",
-				m.admin_overview_booked_note({ amount: money(12000) }),
-			],
-			[
-				`/admin/reports/losses?${days}`,
-				m.admin_overview_losses(),
-				money(2800),
-				m.admin_overview_losses_note(),
-			],
-			[
-				"/admin/reports/reorder",
-				m.admin_overview_below_reorder(),
-				"2",
-				m.admin_overview_below_reorder_note(),
-			],
-			[
-				"/admin/reports/stock",
-				m.admin_overview_stock(),
-				money(28000),
-				m.admin_overview_stock_note({ count: 40 }),
+				m.admin_kpi_gross_margin(),
+				formatPercent(0.6111, locale),
+				m.admin_kpi_gross_margin_note({ amount: money(5500) }),
 			],
 		]);
 	});
 
-	test("charts the sales and the profit of each day, and tables them too", async () => {
-		const html = await render(dashboard);
-		const table = rows(html);
+	test("charts the sales of each day and tables the figures", async () => {
+		const table = rows(await render(dashboard));
 		const day = (date: string) => formatPeriod(date, "day", locale);
-		// Sales first, then profit: the tables of the two charts.
-		expect(table).toEqual([
-			[m.admin_report_period(), m.admin_kpi_revenue()],
+		expect(table.slice(0, 3)).toEqual([
+			[m.admin_report_period(), m.admin_kpi_sales_with_tax()],
 			[day("2026-10-23"), money(3000)],
 			[day("2026-10-24"), money(6500)],
-			[m.admin_report_period(), m.admin_kpi_gross_profit()],
-			[day("2026-10-23"), money(1800)],
-			[day("2026-10-24"), money(3700)],
 		]);
+		expect(table).toContainEqual([
+			"Akko Teclado Sakura | TEC-002",
+			"3",
+			money(4500),
+			"1.5",
+		]);
+		expect(table).toContainEqual([
+			"Pulsar Mouse Tate | RAT-003",
+			m.admin_stock_out(),
+			"5",
+			"—",
+		]);
+		expect(table).toContainEqual(["Nagomi Cable | ACC-003", "2", "5", "12"]);
 	});
 
-	test("lists the best sellers", async () => {
+	test("lists what waits for the team and the orders past their deadline", async () => {
 		const html = await render(dashboard);
-		expect(html).toContain(`Akko Teclado Sakura`);
-		expect(html).toContain(money(4500));
-		expect(html).toContain(m.admin_units({ count: 3 }));
-		expect(html).not.toContain(m.admin_no_sales());
+		for (const label of [
+			m.admin_overview_pending_payment(),
+			m.admin_overview_pending_reviews(),
+			m.admin_overview_stock_alerts(),
+			m.admin_stock_out_title(),
+		])
+			expect(html).toContain(label);
+		expect(html).toContain('href="/admin/reviews"');
+		expect(html).toContain('href="/admin/stock-alerts"');
+		expect(html).toContain("NAG-AAA111");
+		expect(html).toContain(m.admin_followup_digest_note({ count: 1 }));
 	});
 
 	test("says so when nothing sold", async () => {
 		const html = await render({
 			...dashboard,
 			topProducts: [],
-			sales: { ...dashboard.sales, margin: null },
+			lowStock: [],
+			sales: { ...dashboard.sales, margin: null, averageTicket: null },
 			byDay: dashboard.byDay.map((x) => ({
 				...x,
 				revenue: 0,
@@ -191,8 +239,8 @@ describe("OverviewBlocks", () => {
 			})),
 		});
 		expect(html).toContain(m.admin_no_sales());
-		expect(html).toContain(m.admin_kpi_no_fulfilled());
-		expect(html.split(m.admin_report_chart_empty()).length - 1).toBe(2);
+		expect(html).toContain(m.admin_overview_low_stock_none());
+		expect(html).toContain(m.admin_report_chart_empty());
 	});
 });
 
@@ -206,10 +254,11 @@ describe("OverviewSkeleton", () => {
 		expect(html).toContain("aria-busy");
 		for (const title of [
 			m.admin_sales_by_day(),
-			m.admin_overview_profit_by_day(),
+			m.admin_overview_attention(),
 			m.admin_top_products(),
+			m.admin_overview_low_stock(),
 		])
 			expect(html).toContain(title);
-		expect(html.split("h-[5.5rem]").length - 1).toBe(8);
+		expect(html.split("h-[5.5rem]").length - 1).toBe(5);
 	});
 });
