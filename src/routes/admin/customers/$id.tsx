@@ -5,18 +5,11 @@ import { customerLabel } from "#/features/customers/columns";
 import { CustomerDetail } from "#/features/customers/customer-detail";
 import { customerQuery } from "#/features/customers/queries";
 import { isNotFound } from "#/lib/api";
-import type { LoaderCrumb } from "#/lib/route-data";
+import { idParams, type LoaderCrumb } from "#/lib/route-data";
 import { m } from "#/paraglide/messages";
 
 export const Route = createFileRoute("/admin/customers/$id")({
-	params: {
-		parse: ({ id }) => {
-			const parsed = Number(id);
-			if (!Number.isInteger(parsed) || parsed < 1) throw notFound();
-			return { id: parsed };
-		},
-		stringify: ({ id }) => ({ id: String(id) }),
-	},
+	params: idParams,
 	loader: async ({ context, params }): Promise<LoaderCrumb> => {
 		try {
 			const detail = await context.queryClient.ensureQueryData(

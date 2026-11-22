@@ -5,18 +5,11 @@ import { BundleEditor } from "#/features/bundles/bundle-editor";
 import { bundleQuery } from "#/features/bundles/queries";
 import { isNotFound } from "#/lib/api";
 import { storeQuery } from "#/lib/queries";
-import type { LoaderCrumb } from "#/lib/route-data";
+import { idParams, type LoaderCrumb } from "#/lib/route-data";
 import { m } from "#/paraglide/messages";
 
 export const Route = createFileRoute("/admin/bundles/$id")({
-	params: {
-		parse: ({ id }) => {
-			const parsed = Number(id);
-			if (!Number.isInteger(parsed) || parsed < 1) throw notFound();
-			return { id: parsed };
-		},
-		stringify: ({ id }) => ({ id: String(id) }),
-	},
+	params: idParams,
 	loader: async ({ context, params }): Promise<LoaderCrumb> => {
 		try {
 			const [bundle, settings] = await Promise.all([

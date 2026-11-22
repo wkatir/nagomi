@@ -5,18 +5,11 @@ import { CollectionEditor } from "#/features/collections/collection-editor";
 import { collectionQuery } from "#/features/collections/queries";
 import { isNotFound } from "#/lib/api";
 import { storeQuery } from "#/lib/queries";
-import type { LoaderCrumb } from "#/lib/route-data";
+import { idParams, type LoaderCrumb } from "#/lib/route-data";
 import { m } from "#/paraglide/messages";
 
 export const Route = createFileRoute("/admin/collections/$id")({
-	params: {
-		parse: ({ id }) => {
-			const parsed = Number(id);
-			if (!Number.isInteger(parsed) || parsed < 1) throw notFound();
-			return { id: parsed };
-		},
-		stringify: ({ id }) => ({ id: String(id) }),
-	},
+	params: idParams,
 	loader: async ({ context, params }): Promise<LoaderCrumb> => {
 		try {
 			const [collection, settings] = await Promise.all([

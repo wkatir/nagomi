@@ -5,18 +5,11 @@ import { PurchaseDetail } from "#/features/purchases/purchase-detail";
 import { purchaseQuery } from "#/features/purchases/queries";
 import { isNotFound } from "#/lib/api";
 import { adminSettingsQuery } from "#/lib/queries";
-import type { LoaderCrumb } from "#/lib/route-data";
+import { idParams, type LoaderCrumb } from "#/lib/route-data";
 import { m } from "#/paraglide/messages";
 
 export const Route = createFileRoute("/admin/purchases/$id")({
-	params: {
-		parse: ({ id }) => {
-			const parsed = Number(id);
-			if (!Number.isInteger(parsed) || parsed < 1) throw notFound();
-			return { id: parsed };
-		},
-		stringify: ({ id }) => ({ id: String(id) }),
-	},
+	params: idParams,
 	loader: async ({ context, params }): Promise<LoaderCrumb> => {
 		try {
 			const [purchase] = await Promise.all([
