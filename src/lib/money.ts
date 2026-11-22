@@ -54,3 +54,5 @@ export const moneyInput = (amount: number, currency: string) => {
 	const digits = minorDigits(currency);
 	return (amount / 10 ** digits).toFixed(digits);
 };
+
+export const basisPointsLabel = (bp: number) => `${bp / 100} %`;

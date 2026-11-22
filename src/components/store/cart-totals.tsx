@@ -9,9 +9,8 @@ import { useMoney } from "#/hooks/use-money";
 import { apiErrorOf } from "#/lib/api";
 import { type Cart, useCartActions } from "#/lib/cart";
 import { errorMessage, promotionReasonMessage } from "#/lib/errors";
+import { basisPointsLabel } from "#/lib/money";
 import { m } from "#/paraglide/messages";
-
-const percent = (bp: number) => `${bp / 100} %`;
 
 export function CartTotals({
 	cart,
@@ -59,7 +58,7 @@ export function CartTotals({
 			<div className="type-meta text-muted-foreground">
 				<dt>
 					{m.cart_iva_included({
-						rate: percent(cart.taxRateBp),
+						rate: basisPointsLabel(cart.taxRateBp),
 						amount: money(cart.taxIncluded),
 					})}
 				</dt>

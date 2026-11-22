@@ -12,6 +12,7 @@ import { orderQuery } from "#/features/orders/queries";
 import { useMoney } from "#/hooks/use-money";
 import { useStoreDate } from "#/hooks/use-store-date";
 import { errorMessage } from "#/lib/errors";
+import { basisPointsLabel } from "#/lib/money";
 import { paymentLabel } from "#/lib/payment";
 import { storeQuery } from "#/lib/queries";
 import { m } from "#/paraglide/messages";
@@ -153,7 +154,7 @@ function Receipt() {
 				</dd>
 				<dt className="text-muted-foreground">
 					{m.admin_order_iva_included({
-						rate: s.taxRateBp === null ? "" : `${s.taxRateBp / 100} %`,
+						rate: s.taxRateBp === null ? "" : basisPointsLabel(s.taxRateBp),
 					})}
 				</dt>
 				<dd className="text-right text-muted-foreground tabular-nums">
