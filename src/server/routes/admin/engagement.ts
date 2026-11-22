@@ -39,10 +39,16 @@ export const reviewsRouter = new Hono<AdminEnv>()
 						updatedAt: productReviews.updatedAt,
 						moderatedAt: productReviews.moderatedAt,
 						productSlug: products.slug,
-						productName: productTranslations.name,
-						customerId: customers.id,
-						customerName: customers.name,
-						customerEmail: customers.email,
+						productName: sql<string | null>`${productTranslations.name}`.as(
+							"product_name",
+						),
+						customerId: sql<number>`${customers.id}`.as("customer_id"),
+						customerName: sql<string | null>`${customers.name}`.as(
+							"customer_name",
+						),
+						customerEmail: sql<string | null>`${customers.email}`.as(
+							"customer_email",
+						),
 					})
 					.from(productReviews)
 					.innerJoin(products, eq(products.id, productReviews.productId))
