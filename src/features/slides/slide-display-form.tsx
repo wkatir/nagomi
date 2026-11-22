@@ -103,15 +103,7 @@ function DisplayForm({ slide }: { slide: Slide }) {
 					event.preventDefault();
 					form.handleSubmit();
 				}}
-				footer={
-					<form.Subscribe selector={(state) => state.isDefaultValue}>
-						{(unchanged) => (
-							<form.SubmitButton disabled={unchanged}>
-								{m.admin_save()}
-							</form.SubmitButton>
-						)}
-					</form.Subscribe>
-				}
+				footer={<form.SaveButton>{m.admin_save()}</form.SaveButton>}
 			>
 				<div className="grid gap-4 sm:grid-cols-2">
 					<form.AppField name="desktopMediaId">

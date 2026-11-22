@@ -129,17 +129,9 @@ export function CollectionTexts({
 				<Section
 					title={m.admin_collection_texts()}
 					action={
-						<form.Subscribe selector={(state) => state.isDefaultValue}>
-							{(unchanged) => (
-								<form.SubmitButton
-									size="sm"
-									variant="outline"
-									disabled={unchanged}
-								>
-									{m.admin_save()}
-								</form.SubmitButton>
-							)}
-						</form.Subscribe>
+						<form.SaveButton size="sm" variant="outline">
+							{m.admin_save()}
+						</form.SaveButton>
 					}
 				>
 					<div className="grid gap-3 p-admin-card">

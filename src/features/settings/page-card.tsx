@@ -113,13 +113,7 @@ function TextForm({
 				</form.AppField>
 				<form.FormError />
 				<div className="flex justify-end">
-					<form.Subscribe selector={(state) => state.isDefaultValue}>
-						{(unchanged) => (
-							<form.SubmitButton disabled={unchanged}>
-								{m.admin_save()}
-							</form.SubmitButton>
-						)}
-					</form.Subscribe>
+					<form.SaveButton>{m.admin_save()}</form.SaveButton>
 				</div>
 			</form>
 			{text && (

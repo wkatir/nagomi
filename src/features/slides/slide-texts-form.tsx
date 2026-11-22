@@ -77,15 +77,7 @@ function TextsForm({ slide }: { slide: Slide }) {
 					event.preventDefault();
 					form.handleSubmit();
 				}}
-				footer={
-					<form.Subscribe selector={(state) => state.isDefaultValue}>
-						{(unchanged) => (
-							<form.SubmitButton disabled={unchanged}>
-								{m.admin_save()}
-							</form.SubmitButton>
-						)}
-					</form.Subscribe>
-				}
+				footer={<form.SaveButton>{m.admin_save()}</form.SaveButton>}
 			>
 				<form.Subscribe selector={(state) => state.fieldMeta}>
 					{(fieldMeta) => (

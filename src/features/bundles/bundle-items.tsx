@@ -115,17 +115,9 @@ export function BundleItems({ bundle }: { bundle: BundleDetail }) {
 				<Section
 					title={m.admin_bundle_items()}
 					action={
-						<form.Subscribe selector={(state) => state.isDefaultValue}>
-							{(unchanged) => (
-								<form.SubmitButton
-									size="sm"
-									variant="outline"
-									disabled={unchanged}
-								>
-									{m.admin_bundle_save_items()}
-								</form.SubmitButton>
-							)}
-						</form.Subscribe>
+						<form.SaveButton size="sm" variant="outline">
+							{m.admin_bundle_save_items()}
+						</form.SaveButton>
 					}
 				>
 					<div className="grid gap-4 p-admin-card">

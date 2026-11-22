@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
-import { FormError, SubmitButton } from "#/components/admin/form/fields";
-import { useFormContext } from "#/components/admin/form/form-context";
+import { FormError, SaveButton } from "#/components/admin/form/fields";
 import { m } from "#/paraglide/messages";
 
 export function SectionForm({
@@ -24,16 +23,11 @@ export function SectionForm({
 }
 
 export function SectionFooter() {
-	const form = useFormContext();
 	return (
 		<div className="grid gap-3 border-t p-admin-card">
 			<FormError />
 			<div className="flex justify-end">
-				<form.Subscribe selector={(state) => state.isDefaultValue}>
-					{(unchanged) => (
-						<SubmitButton disabled={unchanged}>{m.admin_save()}</SubmitButton>
-					)}
-				</form.Subscribe>
+				<SaveButton>{m.admin_save()}</SaveButton>
 			</div>
 		</div>
 	);

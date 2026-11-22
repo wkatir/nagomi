@@ -108,17 +108,9 @@ export function CollectionProducts({
 				<Section
 					title={m.admin_collection_products()}
 					action={
-						<form.Subscribe selector={(state) => state.isDefaultValue}>
-							{(unchanged) => (
-								<form.SubmitButton
-									size="sm"
-									variant="outline"
-									disabled={unchanged}
-								>
-									{m.admin_collection_save_products()}
-								</form.SubmitButton>
-							)}
-						</form.Subscribe>
+						<form.SaveButton size="sm" variant="outline">
+							{m.admin_collection_save_products()}
+						</form.SaveButton>
 					}
 				>
 					<div className="grid gap-4 p-admin-card">

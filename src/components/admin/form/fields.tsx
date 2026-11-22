@@ -196,6 +196,22 @@ export function SubmitButton({
 	);
 }
 
+export function SaveButton({
+	children,
+	...props
+}: Omit<ComponentProps<typeof Button>, "type" | "disabled">) {
+	const form = useFormContext();
+	return (
+		<form.Subscribe selector={(state) => state.isDefaultValue}>
+			{(unchanged) => (
+				<SubmitButton {...props} disabled={unchanged}>
+					{children}
+				</SubmitButton>
+			)}
+		</form.Subscribe>
+	);
+}
+
 // The schema issues that belong to no field (a sale with no lines) are the form's, so they are
 // worked out again at every submit; on a field they would stay and stop the next submit until
 // that field itself changed.

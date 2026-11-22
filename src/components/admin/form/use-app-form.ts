@@ -6,6 +6,7 @@ import {
 	DateField,
 	FormError,
 	MoneyField,
+	SaveButton,
 	SelectField,
 	SubmitButton,
 	SwitchField,
@@ -34,5 +35,5 @@ export const { useAppForm } = createFormHook({
 		SwitchField,
 		DateField,
 	},
-	formComponents: { SubmitButton, FormError },
+	formComponents: { SubmitButton, SaveButton, FormError },
 });
