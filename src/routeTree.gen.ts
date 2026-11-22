@@ -76,6 +76,8 @@ import { Route as AdminPurchasesIdRouteImport } from './routes/admin/purchases/$
 import { Route as AdminPurchasesNewRouteImport } from './routes/admin/purchases/new'
 import { Route as AdminReportsIndexRouteImport } from './routes/admin/reports/index'
 import { Route as AdminReportsBrandsRouteImport } from './routes/admin/reports/brands'
+import { Route as AdminReportsCustomersRouteImport } from './routes/admin/reports/customers'
+import { Route as AdminReportsFulfillmentRouteImport } from './routes/admin/reports/fulfillment'
 import { Route as AdminReportsLossesRouteImport } from './routes/admin/reports/losses'
 import { Route as AdminReportsProductsRouteImport } from './routes/admin/reports/products'
 import { Route as AdminReportsReorderRouteImport } from './routes/admin/reports/reorder'
@@ -427,6 +429,16 @@ const AdminReportsBrandsRoute = AdminReportsBrandsRouteImport.update({
   path: '/brands',
   getParentRoute: () => AdminReportsRouteRoute,
 } as any)
+const AdminReportsCustomersRoute = AdminReportsCustomersRouteImport.update({
+  id: '/customers',
+  path: '/customers',
+  getParentRoute: () => AdminReportsRouteRoute,
+} as any)
+const AdminReportsFulfillmentRoute = AdminReportsFulfillmentRouteImport.update({
+  id: '/fulfillment',
+  path: '/fulfillment',
+  getParentRoute: () => AdminReportsRouteRoute,
+} as any)
 const AdminReportsLossesRoute = AdminReportsLossesRouteImport.update({
   id: '/losses',
   path: '/losses',
@@ -561,6 +573,8 @@ export interface FileRoutesByFullPath {
   '/admin/purchases/$id': typeof AdminPurchasesIdRoute
   '/admin/purchases/new': typeof AdminPurchasesNewRoute
   '/admin/reports/brands': typeof AdminReportsBrandsRoute
+  '/admin/reports/customers': typeof AdminReportsCustomersRoute
+  '/admin/reports/fulfillment': typeof AdminReportsFulfillmentRoute
   '/admin/reports/losses': typeof AdminReportsLossesRoute
   '/admin/reports/products': typeof AdminReportsProductsRoute
   '/admin/reports/reorder': typeof AdminReportsReorderRoute
@@ -629,6 +643,8 @@ export interface FileRoutesByTo {
   '/admin/purchases/$id': typeof AdminPurchasesIdRoute
   '/admin/purchases/new': typeof AdminPurchasesNewRoute
   '/admin/reports/brands': typeof AdminReportsBrandsRoute
+  '/admin/reports/customers': typeof AdminReportsCustomersRoute
+  '/admin/reports/fulfillment': typeof AdminReportsFulfillmentRoute
   '/admin/reports/losses': typeof AdminReportsLossesRoute
   '/admin/reports/products': typeof AdminReportsProductsRoute
   '/admin/reports/reorder': typeof AdminReportsReorderRoute
@@ -715,6 +731,8 @@ export interface FileRoutesById {
   '/admin/purchases/$id': typeof AdminPurchasesIdRoute
   '/admin/purchases/new': typeof AdminPurchasesNewRoute
   '/admin/reports/brands': typeof AdminReportsBrandsRoute
+  '/admin/reports/customers': typeof AdminReportsCustomersRoute
+  '/admin/reports/fulfillment': typeof AdminReportsFulfillmentRoute
   '/admin/reports/losses': typeof AdminReportsLossesRoute
   '/admin/reports/products': typeof AdminReportsProductsRoute
   '/admin/reports/reorder': typeof AdminReportsReorderRoute
@@ -801,6 +819,8 @@ export interface FileRouteTypes {
     | '/admin/purchases/$id'
     | '/admin/purchases/new'
     | '/admin/reports/brands'
+    | '/admin/reports/customers'
+    | '/admin/reports/fulfillment'
     | '/admin/reports/losses'
     | '/admin/reports/products'
     | '/admin/reports/reorder'
@@ -869,6 +889,8 @@ export interface FileRouteTypes {
     | '/admin/purchases/$id'
     | '/admin/purchases/new'
     | '/admin/reports/brands'
+    | '/admin/reports/customers'
+    | '/admin/reports/fulfillment'
     | '/admin/reports/losses'
     | '/admin/reports/products'
     | '/admin/reports/reorder'
@@ -954,6 +976,8 @@ export interface FileRouteTypes {
     | '/admin/purchases/$id'
     | '/admin/purchases/new'
     | '/admin/reports/brands'
+    | '/admin/reports/customers'
+    | '/admin/reports/fulfillment'
     | '/admin/reports/losses'
     | '/admin/reports/products'
     | '/admin/reports/reorder'
@@ -1466,6 +1490,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminReportsBrandsRouteImport
       parentRoute: typeof AdminReportsRouteRoute
     }
+    '/admin/reports/customers': {
+      id: '/admin/reports/customers'
+      path: '/customers'
+      fullPath: '/admin/reports/customers'
+      preLoaderRoute: typeof AdminReportsCustomersRouteImport
+      parentRoute: typeof AdminReportsRouteRoute
+    }
+    '/admin/reports/fulfillment': {
+      id: '/admin/reports/fulfillment'
+      path: '/fulfillment'
+      fullPath: '/admin/reports/fulfillment'
+      preLoaderRoute: typeof AdminReportsFulfillmentRouteImport
+      parentRoute: typeof AdminReportsRouteRoute
+    }
     '/admin/reports/losses': {
       id: '/admin/reports/losses'
       path: '/losses'
@@ -1768,6 +1806,8 @@ const AdminPurchasesRouteRouteWithChildren =
 
 interface AdminReportsRouteRouteChildren {
   AdminReportsBrandsRoute: typeof AdminReportsBrandsRoute
+  AdminReportsCustomersRoute: typeof AdminReportsCustomersRoute
+  AdminReportsFulfillmentRoute: typeof AdminReportsFulfillmentRoute
   AdminReportsLossesRoute: typeof AdminReportsLossesRoute
   AdminReportsProductsRoute: typeof AdminReportsProductsRoute
   AdminReportsReorderRoute: typeof AdminReportsReorderRoute
@@ -1777,6 +1817,8 @@ interface AdminReportsRouteRouteChildren {
 
 const AdminReportsRouteRouteChildren: AdminReportsRouteRouteChildren = {
   AdminReportsBrandsRoute: AdminReportsBrandsRoute,
+  AdminReportsCustomersRoute: AdminReportsCustomersRoute,
+  AdminReportsFulfillmentRoute: AdminReportsFulfillmentRoute,
   AdminReportsLossesRoute: AdminReportsLossesRoute,
   AdminReportsProductsRoute: AdminReportsProductsRoute,
   AdminReportsReorderRoute: AdminReportsReorderRoute,

@@ -36,10 +36,12 @@ export function DateRangeFilter({
 	const format = useCalendarDate();
 	const label =
 		value.from && value.to
-			? `${format(value.from)} - ${format(value.to)}`
+			? `${format(value.from, "medium")} – ${format(value.to, "medium")}`
 			: m.admin_filter_dates();
 
 	const today = storeToday(store.timeZone);
+	const monthStart = `${today.slice(0, 8)}01`;
+	const lastMonthEnd = addDays(monthStart, -1);
 	const shortcuts: { label: string; days: Days }[] = [
 		{ label: m.admin_range_today(), days: { from: today, to: today } },
 		{
@@ -52,7 +54,11 @@ export function DateRangeFilter({
 		},
 		{
 			label: m.admin_range_this_month(),
-			days: { from: `${today.slice(0, 8)}01`, to: today },
+			days: { from: monthStart, to: today },
+		},
+		{
+			label: m.admin_range_last_month(),
+			days: { from: `${lastMonthEnd.slice(0, 8)}01`, to: lastMonthEnd },
 		},
 	];
 	const apply = (days: Days) => {
@@ -111,21 +117,26 @@ export function DateRangeFilter({
 							</Button>
 						)}
 					</div>
-					<Calendar
-						mode="range"
-						locale={pickerLocale[locale]}
-						selected={selected}
-						defaultMonth={selected?.from ?? pickerDate(today)}
-						numberOfMonths={2}
-						onSelect={(range) => {
-							if (range?.from && range.to)
-								return apply({
-									from: fromPickerDate(range.from),
-									to: fromPickerDate(range.to),
-								});
-							setDraft(range);
-						}}
-					/>
+					<div className="grid">
+						<p className="type-meta px-3 pt-3 text-muted-foreground">
+							{m.admin_range_custom()}
+						</p>
+						<Calendar
+							mode="range"
+							locale={pickerLocale[locale]}
+							selected={selected}
+							defaultMonth={selected?.from ?? pickerDate(today)}
+							numberOfMonths={2}
+							onSelect={(range) => {
+								if (range?.from && range.to)
+									return apply({
+										from: fromPickerDate(range.from),
+										to: fromPickerDate(range.to),
+									});
+								setDraft(range);
+							}}
+						/>
+					</div>
 				</div>
 			</PopoverContent>
 		</Popover>

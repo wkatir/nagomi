@@ -13,6 +13,14 @@ export type ProductsReport = InferResponseType<
 export type BrandsReport = InferResponseType<ReportsApi["brands"]["$get"], 200>;
 export type LossesReport = InferResponseType<ReportsApi["losses"]["$get"], 200>;
 export type StockReport = InferResponseType<ReportsApi["stock"]["$get"], 200>;
+export type CustomersReport = InferResponseType<
+	ReportsApi["customers"]["$get"],
+	200
+>;
+export type FulfillmentReport = InferResponseType<
+	ReportsApi["fulfillment"]["$get"],
+	200
+>;
 export type ReorderReport = InferResponseType<
 	ReportsApi["reorder"]["$get"],
 	200
@@ -53,10 +61,26 @@ export const lossesReportQuery = (range: ReportRange) =>
 			parseResponse(api().admin.reports.losses.$get({ query: range })),
 	});
 
-export const stockReportQuery = queryOptions({
-	queryKey: [...reportKeys.all, "stock"],
-	queryFn: () => parseResponse(api().admin.reports.stock.$get({ query: {} })),
-});
+export const stockReportQuery = (range: ReportRange) =>
+	queryOptions({
+		queryKey: [...reportKeys.all, "stock", range],
+		queryFn: () =>
+			parseResponse(api().admin.reports.stock.$get({ query: range })),
+	});
+
+export const customersReportQuery = (range: ReportRange) =>
+	queryOptions({
+		queryKey: [...reportKeys.all, "customers", range],
+		queryFn: () =>
+			parseResponse(api().admin.reports.customers.$get({ query: range })),
+	});
+
+export const fulfillmentReportQuery = (range: ReportRange) =>
+	queryOptions({
+		queryKey: [...reportKeys.all, "fulfillment", range],
+		queryFn: () =>
+			parseResponse(api().admin.reports.fulfillment.$get({ query: range })),
+	});
 
 export const reorderReportQuery = (weeks: {
 	lookbackWeeks: number;

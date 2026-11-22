@@ -46,14 +46,19 @@ export function ReportState<T>({
 }
 
 export function ReportToolbar({
+	question,
 	csv,
 	children,
 }: {
+	question: string;
 	csv: string;
 	children?: ReactNode;
 }) {
 	return (
 		<div className="mb-4 flex flex-wrap items-center gap-2">
+			<p className="type-ui w-full font-bold text-primary sm:mr-2 sm:w-auto">
+				{question}
+			</p>
 			{children}
 			<Button variant="outline" size="sm" className="ml-auto" asChild>
 				<a href={csv} download>

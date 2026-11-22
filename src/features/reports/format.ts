@@ -17,3 +17,14 @@ export function usePercent() {
 	return (ratio: number | null) =>
 		ratio === null ? m.admin_report_na() : formatPercent(ratio, locale);
 }
+
+export function useDecimal() {
+	const { data } = useSuspenseQuery(storeQuery);
+	const format = new Intl.NumberFormat(
+		intlLocale(getLocale(), data.countryCode),
+		{
+			maximumFractionDigits: 2,
+		},
+	);
+	return (value: number) => format.format(value);
+}

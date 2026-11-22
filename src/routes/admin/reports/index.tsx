@@ -25,7 +25,6 @@ export const Route = createFileRoute("/admin/reports/")({
 	validateSearch: salesSearch,
 	search: { middlewares: [stripSearchParams(salesSearch.parse({}))] },
 	loaderDeps: ({ search }) => search,
-	// Started, not awaited: the report has its own loading state.
 	loader: async ({ context, deps }) => {
 		const store = await context.queryClient.ensureQueryData(storeQuery);
 		void context.queryClient.prefetchQuery(
@@ -46,6 +45,7 @@ function SalesReportPage() {
 	return (
 		<>
 			<ReportToolbar
+				question={m.admin_report_q_sales()}
 				csv={reportCsvHref("sales", {
 					...range,
 					granularity: search.granularity,

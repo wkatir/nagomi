@@ -64,11 +64,17 @@ describe("ReportState", () => {
 });
 
 describe("ReportToolbar", () => {
-	test("puts the CSV link after the controls", () => {
+	test("asks its question first and puts the CSV link after the controls", () => {
 		const html = renderToStaticMarkup(
-			<ReportToolbar csv="/api/admin/exports/reports/sales.csv?from=a">
+			<ReportToolbar
+				question="How much did we sell?"
+				csv="/api/admin/exports/reports/sales.csv?from=a"
+			>
 				<span>controls</span>
 			</ReportToolbar>,
+		);
+		expect(html.indexOf("How much did we sell?")).toBeLessThan(
+			html.indexOf("controls"),
 		);
 		expect(html.indexOf("controls")).toBeLessThan(html.indexOf("<a "));
 		expect(html).toContain(
