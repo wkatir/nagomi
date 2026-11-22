@@ -6,7 +6,7 @@ import { ARCHIVABLE_STATUSES } from "#/db/schema";
 import { CATEGORY_ICONS } from "#/lib/enums";
 import { categoryListSearch } from "#/lib/schemas/categories";
 import type { AdminEnv } from "#/server/auth";
-import { idParam, validate } from "#/server/validate";
+import { idParam, patchOf, validate } from "#/server/validate";
 import { audit } from "../../domain/audit";
 import { statusAudit } from "../../domain/audit-actions";
 import { categoryOptions, pagedCategories } from "../../domain/catalog-lists";
@@ -122,12 +122,7 @@ export const categoriesRouter = new Hono<AdminEnv>()
 	.patch(
 		"/:id",
 		validate("param", idParam),
-		validate(
-			"json",
-			categoryFields
-				.partial()
-				.refine((v) => Object.keys(v).length > 0, "Nothing to change"),
-		),
+		validate("json", patchOf(categoryFields)),
 		async (c) => {
 			const db = getDb();
 			const { id } = c.req.valid("param");

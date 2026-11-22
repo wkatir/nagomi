@@ -6,7 +6,7 @@ import { now, PRODUCT_STATUSES, type ProductStatus } from "#/db/schema";
 import { calendarDate } from "#/lib/schemas/dates";
 import { isStorePath } from "#/lib/store-path";
 import type { AdminEnv } from "#/server/auth";
-import { idParam, invalidRequest, validate } from "#/server/validate";
+import { idParam, invalidRequest, patchOf, validate } from "#/server/validate";
 import { audit } from "../../domain/audit";
 import { statusAudit } from "../../domain/audit-actions";
 import { inList, nonEmpty } from "../../domain/d1";
@@ -188,10 +188,7 @@ export const homeSlidesRouter = new Hono<AdminEnv>()
 		validate("param", idParam),
 		validate(
 			"json",
-			slideFields
-				.extend({ status: z.enum(PRODUCT_STATUSES) })
-				.partial()
-				.refine((v) => Object.keys(v).length > 0, "Nothing to change"),
+			patchOf(slideFields.extend({ status: z.enum(PRODUCT_STATUSES) })),
 		),
 		async (c) => {
 			const db = getDb();

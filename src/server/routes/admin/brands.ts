@@ -5,7 +5,7 @@ import { getDb, schema } from "#/db";
 import { ARCHIVABLE_STATUSES } from "#/db/schema";
 import { brandListSearch } from "#/lib/schemas/brands";
 import type { AdminEnv } from "#/server/auth";
-import { idParam, validate } from "#/server/validate";
+import { idParam, patchOf, validate } from "#/server/validate";
 import { audit } from "../../domain/audit";
 import { statusAudit } from "../../domain/audit-actions";
 import { brandOptions, pagedBrands } from "../../domain/catalog-lists";
@@ -86,10 +86,7 @@ export const brandsRouter = new Hono<AdminEnv>()
 		validate("param", idParam),
 		validate(
 			"json",
-			brandFields
-				.extend({ status: z.enum(ARCHIVABLE_STATUSES) })
-				.partial()
-				.refine((v) => Object.keys(v).length > 0, "Nothing to change"),
+			patchOf(brandFields.extend({ status: z.enum(ARCHIVABLE_STATUSES) })),
 		),
 		async (c) => {
 			const db = getDb();

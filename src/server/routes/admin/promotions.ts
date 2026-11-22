@@ -11,7 +11,7 @@ import {
 	promotionListSearch,
 } from "#/lib/schemas/promotions";
 import type { AdminEnv } from "#/server/auth";
-import { idParam, invalidRequest, validate } from "#/server/validate";
+import { idParam, invalidRequest, patchOf, validate } from "#/server/validate";
 import { audit } from "../../domain/audit";
 import { statusAudit } from "../../domain/audit-actions";
 import {
@@ -170,10 +170,11 @@ export const promotionsRouter = new Hono<AdminEnv>()
 		validate("param", idParam),
 		validate(
 			"json",
-			promotionFields
-				.partial()
-				.extend({ translations: translations(promotionText).optional() })
-				.refine((v) => Object.keys(v).length > 0, "Nothing to change"),
+			patchOf(
+				promotionFields.extend({
+					translations: translations(promotionText).optional(),
+				}),
+			),
 		),
 		async (c) => {
 			const db = getDb();

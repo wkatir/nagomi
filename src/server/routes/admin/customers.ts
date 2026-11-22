@@ -3,28 +3,24 @@ import { Hono } from "hono";
 import { z } from "zod";
 import { getDb, schema } from "#/db";
 import { customerListSearch } from "#/lib/schemas/customers";
-import { SV_PHONE_REGEX } from "#/lib/sv-locations";
 import type { AdminEnv } from "#/server/auth";
-import { idParam, validate } from "#/server/validate";
+import { idParam, patchOf, validate } from "#/server/validate";
 import { audit } from "../../domain/audit";
 import { customerDetail, pagedCustomers } from "../../domain/customer-queries";
-import { normalizePhone } from "../../domain/phone";
+import { salvadoranE164 } from "../../domain/phone";
 import { phoneDigits, searchKey } from "../../domain/search";
 import { getSettings } from "../../domain/settings";
 
 const { customers } = schema;
 
-const editInput = z
-	.object({
+const editInput = patchOf(
+	z.object({
 		name: z.string().trim().min(1).max(80),
 		phone: z.string().trim().min(1).max(30).nullable(),
 		email: z.string().trim().toLowerCase().pipe(z.email().max(120)).nullable(),
 		notes: z.string().trim().max(1000).nullable(),
-	})
-	.partial()
-	.refine((v) => Object.values(v).some((x) => x !== undefined), {
-		message: "Nothing to change",
-	});
+	}),
+);
 
 export const customersRouter = new Hono<AdminEnv>()
 	.get("/", validate("query", customerListSearch), async (c) =>
@@ -52,8 +48,8 @@ export const customersRouter = new Hono<AdminEnv>()
 			if (input.phone === null) phoneE164 = null;
 			else if (input.phone !== undefined) {
 				const { countryCode } = await getSettings(db);
-				phoneE164 = normalizePhone(input.phone, countryCode);
-				if (!SV_PHONE_REGEX.test(phoneE164))
+				phoneE164 = salvadoranE164(input.phone, countryCode);
+				if (phoneE164 === null)
 					return c.json({ error: "phone_not_salvadoran" }, 422);
 			}
 			const changes = {

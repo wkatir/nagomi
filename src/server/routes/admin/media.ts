@@ -13,7 +13,7 @@ import {
 } from "#/db/schema";
 import type { AdminEnv } from "#/server/auth";
 import { multipartForm } from "#/server/form";
-import { idParam, invalidRequest, validate } from "#/server/validate";
+import { idParam, invalidRequest, patchOf, validate } from "#/server/validate";
 import { audit } from "../../domain/audit";
 import { statusAudit } from "../../domain/audit-actions";
 import { inList } from "../../domain/d1";
@@ -233,15 +233,14 @@ export const mediaRouter = new Hono<AdminEnv>()
 		validate("param", idParam),
 		validate(
 			"json",
-			z
-				.object({
+			patchOf(
+				z.object({
 					kind: z.enum(IMAGE_KINDS),
 					variantId: z.number().int().positive().nullable(),
 					status: z.enum(ARCHIVABLE_STATUSES),
 					alt: z.partialRecord(z.enum(LOCALES), altText.nullable()),
-				})
-				.partial()
-				.refine((v) => Object.keys(v).length > 0, "Nothing to change"),
+				}),
+			),
 		),
 		async (c) => {
 			const db = getDb();

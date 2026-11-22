@@ -6,12 +6,12 @@ import { getDb, schema } from "#/db";
 import { auth } from "#/lib/auth";
 import { LOCALES } from "#/lib/enums";
 import { CUSTOMER_ROLE } from "#/lib/roles";
-import { isSvMunicipality, SV_PHONE_REGEX } from "#/lib/sv-locations";
+import { isSvMunicipality } from "#/lib/sv-locations";
 import { checkoutPageVersions } from "../domain/pages";
-import { normalizePhone } from "../domain/phone";
+import { salvadoranE164 } from "../domain/phone";
 import { phoneDigits, searchKey } from "../domain/search";
 import { getSettings } from "../domain/settings";
-import { validate } from "../validate";
+import { patchOf, validate } from "../validate";
 
 const {
 	customerAddresses,
@@ -49,19 +49,15 @@ const phoneInput = z.string().trim().min(1).max(30);
 
 async function salvadoranPhone(input: string) {
 	const { countryCode } = await getSettings(getDb());
-	const phone = normalizePhone(input, countryCode);
-	return SV_PHONE_REGEX.test(phone) ? phone : null;
+	return salvadoranE164(input, countryCode);
 }
 
-const profilePatch = z
-	.object({
+const profilePatch = patchOf(
+	z.object({
 		name: z.string().trim().min(1).max(80),
 		phone: phoneInput.nullable(),
-	})
-	.partial()
-	.refine((v) => Object.values(v).some((x) => x !== undefined), {
-		message: "Nothing to change",
-	});
+	}),
+);
 
 const consentsInput = z.object({
 	locale: z.enum(LOCALES),
@@ -90,12 +86,7 @@ const unknownPlace = {
 const addressInput = z
 	.object({ ...addressShape, isDefault: z.boolean().default(false) })
 	.refine(placeIsKnown, unknownPlace);
-const addressPatch = z
-	.object(addressShape)
-	.partial()
-	.refine((v) => Object.values(v).some((x) => x !== undefined), {
-		message: "Nothing to change",
-	})
+const addressPatch = patchOf(z.object(addressShape))
 	.refine(
 		(v) => (v.department === undefined) === (v.municipality === undefined),
 		{

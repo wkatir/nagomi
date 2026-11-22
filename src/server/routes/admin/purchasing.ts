@@ -8,7 +8,7 @@ import { calendarDate } from "#/lib/schemas/dates";
 import { reorderSearch } from "#/lib/schemas/inventory";
 import { purchaseListSearch } from "#/lib/schemas/purchasing";
 import type { AdminEnv } from "#/server/auth";
-import { idParam, validate } from "#/server/validate";
+import { idParam, patchOf, validate } from "#/server/validate";
 import { audit } from "../../domain/audit";
 import { inList, insertIfExists, qualified } from "../../domain/d1";
 import { pagedPurchases, purchaseDetail } from "../../domain/purchase-queries";
@@ -61,8 +61,8 @@ const reorderDraftInput = z.object({
 	variantIds: z.array(z.number().int().positive()).min(1).max(100),
 });
 
-const editInput = z
-	.object({
+const editInput = patchOf(
+	z.object({
 		reference: z.string().trim().min(1).max(40),
 		notes: notesText,
 		taxIncluded: z.boolean().nullable(),
@@ -77,9 +77,8 @@ const editInput = z
 			)
 			.min(1)
 			.max(100),
-	})
-	.partial()
-	.refine((v) => Object.keys(v).length > 0, { message: "Nothing to change" });
+	}),
+);
 
 const receiveInput = z.object({
 	receivedOn: calendarDate,

@@ -5,7 +5,7 @@ import { getDb, schema } from "#/db";
 import { ARCHIVABLE_STATUSES, now } from "#/db/schema";
 import { supplierListSearch } from "#/lib/schemas/suppliers";
 import type { AdminEnv } from "#/server/auth";
-import { idParam, validate } from "#/server/validate";
+import { idParam, patchOf, validate } from "#/server/validate";
 import { audit } from "../../domain/audit";
 import { statusAudit } from "../../domain/audit-actions";
 import { insertIfExists } from "../../domain/d1";
@@ -210,10 +210,7 @@ export const suppliersRouter = new Hono<AdminEnv>()
 		validate("param", itemParam),
 		validate(
 			"json",
-			itemFields
-				.extend({ status: z.enum(ARCHIVABLE_STATUSES) })
-				.partial()
-				.refine((v) => Object.keys(v).length > 0, "Nothing to change"),
+			patchOf(itemFields.extend({ status: z.enum(ARCHIVABLE_STATUSES) })),
 		),
 		async (c) => {
 			const db = getDb();
@@ -348,10 +345,7 @@ export const suppliersRouter = new Hono<AdminEnv>()
 		validate("param", idParam),
 		validate(
 			"json",
-			supplierFields
-				.extend({ status: z.enum(ARCHIVABLE_STATUSES) })
-				.partial()
-				.refine((v) => Object.keys(v).length > 0, "Nothing to change"),
+			patchOf(supplierFields.extend({ status: z.enum(ARCHIVABLE_STATUSES) })),
 		),
 		async (c) => {
 			const db = getDb();

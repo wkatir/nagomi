@@ -11,7 +11,7 @@ import {
 import { LOCALES, PRODUCT_BADGES, SKU_REGEX } from "#/lib/enums";
 import { PRODUCT_LIMITS, productListSearch } from "#/lib/schemas/products";
 import { type AdminEnv, seesCosts } from "#/server/auth";
-import { idParam, invalidRequest, validate } from "#/server/validate";
+import { idParam, invalidRequest, patchOf, validate } from "#/server/validate";
 import { audit } from "../../domain/audit";
 import { statusAudit } from "../../domain/audit-actions";
 import { inList, qualified } from "../../domain/d1";
@@ -516,10 +516,7 @@ export const productsRouter = new Hono<AdminEnv>()
 		validate("param", idParam),
 		validate(
 			"json",
-			productFields
-				.extend({ status: z.enum(PRODUCT_STATUSES) })
-				.partial()
-				.refine((v) => Object.keys(v).length > 0, "Nothing to change"),
+			patchOf(productFields.extend({ status: z.enum(PRODUCT_STATUSES) })),
 		),
 		async (c) => {
 			const db = getDb();
@@ -698,10 +695,7 @@ export const productsRouter = new Hono<AdminEnv>()
 		validate("param", idParam),
 		validate(
 			"json",
-			variantFields
-				.extend({ archiveWithStock: z.literal(true) })
-				.partial()
-				.refine((v) => Object.keys(v).length > 0, "Nothing to change"),
+			patchOf(variantFields.extend({ archiveWithStock: z.literal(true) })),
 		),
 		async (c) => {
 			const db = getDb();

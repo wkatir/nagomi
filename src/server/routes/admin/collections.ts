@@ -5,7 +5,7 @@ import { type Db, getDb, schema } from "#/db";
 import { now, PRODUCT_STATUSES, type ProductStatus } from "#/db/schema";
 import { collectionListSearch } from "#/lib/schemas/collections";
 import type { AdminEnv } from "#/server/auth";
-import { idParam, validate } from "#/server/validate";
+import { idParam, patchOf, validate } from "#/server/validate";
 import { audit } from "../../domain/audit";
 import { statusAudit } from "../../domain/audit-actions";
 import {
@@ -220,10 +220,7 @@ export const collectionsRouter = new Hono<AdminEnv>()
 		validate("param", idParam),
 		validate(
 			"json",
-			collectionFields
-				.extend({ status: z.enum(PRODUCT_STATUSES) })
-				.partial()
-				.refine((v) => Object.keys(v).length > 0, "Nothing to change"),
+			patchOf(collectionFields.extend({ status: z.enum(PRODUCT_STATUSES) })),
 		),
 		async (c) => {
 			const db = getDb();

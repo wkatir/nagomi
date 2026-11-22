@@ -29,3 +29,13 @@ export const validate = <
 export const idParam = z.object({ id: z.coerce.number().int().positive() });
 
 export const localeQuery = z.object({ locale: z.enum(LOCALES) });
+
+export const patchOf = <Shape extends z.ZodRawShape>(
+	schema: z.ZodObject<Shape>,
+) =>
+	schema
+		.partial()
+		.refine(
+			(v) => Object.values(v).some((x) => x !== undefined),
+			"Nothing to change",
+		);

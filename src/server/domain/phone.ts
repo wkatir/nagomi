@@ -5,6 +5,7 @@ import {
 	ParseError,
 	parsePhoneNumberWithError,
 } from "libphonenumber-js/max";
+import { SV_PHONE_REGEX } from "#/lib/sv-locations";
 
 export class InvalidPhoneError extends Error {
 	constructor(readonly input: string) {
@@ -35,3 +36,8 @@ export const isWhatsappNumber = (digits: string) =>
 
 export const displayPhone = (e164: string) =>
 	parsePhoneNumberWithError(e164).formatInternational();
+
+export function salvadoranE164(input: string, defaultCountry: string) {
+	const phone = normalizePhone(input, defaultCountry);
+	return SV_PHONE_REGEX.test(phone) ? phone : null;
+}

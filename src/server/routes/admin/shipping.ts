@@ -11,7 +11,7 @@ import {
 } from "#/lib/schemas/shipping";
 import { SV_MUNICIPALITIES } from "#/lib/sv-locations";
 import type { AdminEnv } from "#/server/auth";
-import { idParam, invalidRequest, validate } from "#/server/validate";
+import { idParam, invalidRequest, patchOf, validate } from "#/server/validate";
 import { audit } from "../../domain/audit";
 import { statusAudit } from "../../domain/audit-actions";
 import { nonEmpty } from "../../domain/d1";
@@ -156,13 +156,12 @@ export const shippingRouter = new Hono<AdminEnv>()
 		validate("param", idParam),
 		validate(
 			"json",
-			zoneFields
-				.partial()
-				.extend({
+			patchOf(
+				zoneFields.extend({
 					translations: translations(zoneText).optional(),
 					municipalities: municipalities.optional(),
-				})
-				.refine((v) => Object.keys(v).length > 0, "Nothing to change"),
+				}),
+			),
 		),
 		async (c) => {
 			const db = getDb();

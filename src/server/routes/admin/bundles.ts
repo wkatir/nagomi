@@ -9,7 +9,7 @@ import {
 	bundleListSearch,
 } from "#/lib/schemas/bundles";
 import type { AdminEnv } from "#/server/auth";
-import { idParam, validate } from "#/server/validate";
+import { idParam, patchOf, validate } from "#/server/validate";
 import { audit } from "../../domain/audit";
 import { statusAudit } from "../../domain/audit-actions";
 import { bundleRefusal } from "../../domain/bundles";
@@ -226,16 +226,15 @@ export const bundlesRouter = new Hono<AdminEnv>()
 		validate("param", idParam),
 		validate(
 			"json",
-			z
-				.object({
+			patchOf(
+				z.object({
 					slug,
 					price,
 					isFeatured: z.boolean(),
 					position: z.number().int().min(0).max(1000),
 					status: z.enum(PRODUCT_STATUSES),
-				})
-				.partial()
-				.refine((v) => Object.keys(v).length > 0, "Nothing to change"),
+				}),
+			),
 		),
 		async (c) => {
 			const db = getDb();
