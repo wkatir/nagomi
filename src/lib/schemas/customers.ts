@@ -1,4 +1,5 @@
-import type { z } from "zod";
+import { z } from "zod";
+import { CUSTOMER_SEGMENTS } from "#/lib/enums";
 import { pagedSearch } from "#/lib/list";
 
 // `name` ignores case and accents; `orders`, `spent` and `lastOrder` count the booked orders
@@ -15,8 +16,11 @@ export const CUSTOMER_SORTS = [
 export const customerListSearch = pagedSearch(CUSTOMER_SORTS, {
 	sort: "createdAt",
 	dir: "desc",
-});
+}).extend({ segment: z.enum(CUSTOMER_SEGMENTS).optional() });
 export type CustomerListSearch = z.infer<typeof customerListSearch>;
 
 // Shared by the list and the CSV export.
-export const customerFilters = customerListSearch.pick({ q: true });
+export const customerFilters = customerListSearch.pick({
+	q: true,
+	segment: true,
+});

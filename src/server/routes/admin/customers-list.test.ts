@@ -5,7 +5,9 @@ import { d1, migratedDatabase } from "#/db/test-database";
 import type { AdminEnv } from "#/server/auth";
 import { searchKey } from "../../domain/search";
 
-const env: { DB?: ReturnType<typeof d1> } = {};
+const env: { DB?: ReturnType<typeof d1>; BETTER_AUTH_URL: string } = {
+	BETTER_AUTH_URL: "http://localhost",
+};
 mock.module("cloudflare:workers", () => ({ env }));
 const { apiError } = await import("#/server/api-error");
 const { customersRouter } = await import("./customers");
@@ -110,17 +112,17 @@ beforeEach(() => {
 		.all() as { name: string }[];
 	for (const { name } of triggers) db.exec(`drop trigger "${name}"`);
 	db.exec(`
-insert into store_settings (id, name, currency, default_locale, time_zone, country_code, order_code_prefix, max_quantity_per_line, expiry_warning_days) values (1, 'Store', 'USD', 'es', 'America/El_Salvador', 'SV', 'ECL', 20, 180);
+insert into store_settings (id, name, currency, default_locale, time_zone, country_code, order_code_prefix, max_quantity_per_line, low_stock_threshold, frequent_customer_min_orders, inactive_customer_days) values (1, 'Store', 'USD', 'es', 'America/El_Salvador', 'SV', 'ECL', 20, 5, 3, 90);
 insert into brands (slug, name, search_key) values ('b', 'Brand', 'brand b');
-insert into categories (slug, routine_step) values ('cleanser', 1);
+insert into categories (slug, icon) values ('teclados', 'keyboard');
 insert into products (slug, brand_id, category_id) values ('oil', 1, 1);
-insert into variants (product_id, sku, price, search_key) values (1, 'SKU1', 1000, 'sku1'), (1, 'SKU2', 1000, 'sku2'), (1, 'SKU3', 1000, 'sku3');
+insert into variants (product_id, sku, price, search_key) values (1, 'SKU-001', 1000, 'sku-001'), (1, 'SKU-002', 1000, 'sku-002'), (1, 'SKU-003', 1000, 'sku-003');
 insert into suppliers (name, search_key) values ('Supplier', 'supplier');
 insert into purchase_orders (supplier_id, reference, status, ordered_on) values (1, 'PO-1', 'ordered', '2026-01-01');
 insert into purchase_order_items (purchase_order_id, variant_id, quantity, unit_cost) values (1, 1, 50, 700);
 insert into purchase_receipts (purchase_order_id, received_on, created_by) values (1, '2026-01-02', 'u');
 insert into purchase_receipt_lines (receipt_id, purchase_order_item_id, quantity, allocated_shipping_e4) values (1, 1, 50, 0);
-insert into lots (variant_id, receipt_line_id, expires_on, unit_cost_e4) values (1, 1, '2099-12-31', 70000);
+insert into lots (variant_id, receipt_line_id, unit_cost_e4) values (1, 1, 70000);
 `);
 	env.DB = d1(db);
 	customer({
@@ -252,6 +254,7 @@ describe("GET /customers", () => {
 				"createdAt",
 				"email",
 				"firstOrderAt",
+				"hasAccount",
 				"id",
 				"lastOrderAt",
 				"lifetimeValue",
@@ -260,6 +263,7 @@ describe("GET /customers", () => {
 				"notes",
 				"orders",
 				"phoneE164",
+				"segment",
 			].sort(),
 		);
 	});
@@ -332,6 +336,51 @@ describe("GET /customers", () => {
 		expect(both.total).toBe(1);
 	});
 
+	test("segments each customer by purchases and the thresholds in the settings, and filters by segment", async () => {
+		db.exec("update store_settings set inactive_customer_days = 100000");
+		const segments = async (query = "") =>
+			Object.fromEntries(
+				(await list(query)).items.map((c) => [
+					c.id,
+					(c as Row & { segment: string }).segment,
+				]),
+			);
+		expect(await segments()).toEqual({
+			1: "occasional",
+			2: "occasional",
+			3: "occasional",
+			4: "new",
+			5: "occasional",
+		});
+		db.exec("update store_settings set frequent_customer_min_orders = 2");
+		expect(ids(await list("segment=frequent"))).toEqual([3, 1]);
+		expect(ids(await list("segment=new"))).toEqual([4]);
+		db.exec("update store_settings set inactive_customer_days = 1");
+		expect(ids(await list("segment=inactive"))).toEqual([5, 3, 2, 1]);
+		expect(ids(await list("segment=inactive&q=beto"))).toEqual([3]);
+		expect((await app.request("/customers?segment=vip")).status).toBe(400);
+	});
+
+	test("says whether the customer has an account", async () => {
+		db.exec(
+			"insert into users (id, name, email, role) values ('u1', 'Beto', 'beto@example.com', 'customer'); update customers set auth_user_id = 'u1' where id = 3",
+		);
+		const page = await list();
+		expect(
+			page.items.map((c) => [
+				c.id,
+				(c as Row & { hasAccount: boolean }).hasAccount,
+			]),
+		).toEqual([
+			[5, false],
+			[4, false],
+			[3, true],
+			[2, false],
+			[1, false],
+		]);
+		expect(JSON.stringify(page)).not.toContain("authUserId");
+	});
+
 	test("refuses an unknown sort, a page size it does not offer and an empty search", async () => {
 		for (const query of [
 			"sort=password",
@@ -356,12 +405,12 @@ insert into pages (slug) values ('privacy');
 insert into page_versions (page_id, locale, version, title, body_markdown) values (1, 'es', 1, 'Privacidad', 'x');
 insert into customer_consents (customer_id, purpose, granted, page_version_id, channel) values (1, 'marketing_whatsapp', 1, 1, 'web'), (1, 'marketing_whatsapp', 0, 1, 'whatsapp'), (2, 'marketing_whatsapp', 1, 1, 'web');
 `);
-		const first = await listCustomers(getDb(), undefined, null, 2);
+		const first = await listCustomers(getDb(), {}, null, 2);
 		expect(first.customers.map((c) => c.id)).toEqual([5, 4]);
 		expect(first.nextCursor).toBe(4);
-		const second = await listCustomers(getDb(), undefined, first.nextCursor, 2);
+		const second = await listCustomers(getDb(), {}, first.nextCursor, 2);
 		expect(second.customers.map((c) => c.id)).toEqual([3, 2]);
-		const last = await listCustomers(getDb(), undefined, second.nextCursor, 2);
+		const last = await listCustomers(getDb(), {}, second.nextCursor, 2);
 		expect(last.customers.map((c) => c.id)).toEqual([1]);
 		expect(last.nextCursor).toBeNull();
 		// The latest row per purpose is the current choice: Ana withdrew hers.
@@ -376,7 +425,7 @@ insert into customer_consents (customer_id, purpose, granted, page_version_id, c
 			orders: 2,
 			lifetimeValue: 4200,
 		});
-		const found = await listCustomers(getDb(), "carla", null, 10);
+		const found = await listCustomers(getDb(), { q: "carla" }, null, 10);
 		expect(found.customers.map((c) => c.id)).toEqual([4]);
 	});
 });
@@ -412,6 +461,28 @@ insert into customer_consents (customer_id, purpose, granted, page_version_id, c
 			orders: { code: string; status: string }[];
 		};
 		expect(ana.orders.map((o) => o.code)).toEqual(["O-4", "O-3", "O-2", "O-1"]);
+	});
+
+	test("includes the addresses, the default first, archived ones marked, and the segment", async () => {
+		db.exec(`
+insert into customer_addresses (customer_id, recipient_name, department, municipality, address_line, phone_e164, is_default, status) values (2, 'Álvaro', 'San Salvador', 'San Salvador Centro', 'Calle Arce 1', '+50372345678', 0, 'archived'), (2, 'Álvaro', 'La Libertad', 'La Libertad Sur', 'Santa Tecla, 4a Av. Norte', '+50372345678', 1, 'active');
+`);
+		const detail = (await (await app.request("/customers/2")).json()) as {
+			customer: { segment: string; purchaseCount: number; hasAccount: boolean };
+			addresses: { municipality: string; isDefault: boolean; status: string }[];
+		};
+		expect(detail.customer).toMatchObject({
+			purchaseCount: 1,
+			hasAccount: false,
+		});
+		expect(detail.addresses).toMatchObject([
+			{ municipality: "La Libertad Sur", isDefault: true, status: "active" },
+			{
+				municipality: "San Salvador Centro",
+				isDefault: false,
+				status: "archived",
+			},
+		]);
 	});
 
 	test("a customer without orders has empty totals", async () => {
@@ -537,6 +608,21 @@ describe("PATCH /customers/:id", () => {
 		expect(db.query("select count(*) as n from audit_events").get()).toEqual({
 			n: 0,
 		});
+	});
+
+	test("refuses an email another customer has, whatever its case, and a phone from outside El Salvador", async () => {
+		const taken = await patch(1, { email: "BETO@example.com" });
+		expect(taken.status).toBe(409);
+		expect((await taken.json()) as unknown).toEqual({
+			error: "duplicate_email",
+		});
+		const foreign = await patch(1, { phone: "+52 55 1234 5678" });
+		expect(foreign.status).toBe(422);
+		expect((await foreign.json()) as unknown).toEqual({
+			error: "phone_not_salvadoran",
+		});
+		expect((await patch(1, { phone: null })).status).toBe(200);
+		expect(stored(1).phone_e164).toBeNull();
 	});
 
 	test("answers 404 for a customer that does not exist", async () => {

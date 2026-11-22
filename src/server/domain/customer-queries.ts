@@ -1,5 +1,17 @@
-import { and, asc, count, desc, eq, inArray, lt, sql } from "drizzle-orm";
+import {
+	and,
+	asc,
+	count,
+	desc,
+	eq,
+	getTableColumns,
+	inArray,
+	lt,
+	sql,
+} from "drizzle-orm";
+import { integer, sqliteView, text } from "drizzle-orm/sqlite-core";
 import { type Db, schema } from "#/db";
+import { CUSTOMER_SEGMENTS, type CustomerSegment } from "#/lib/enums";
 import type { CustomerListSearch } from "#/lib/schemas/customers";
 import { inList, qualified } from "./d1";
 import { groupBy } from "./group-by";
@@ -11,10 +23,32 @@ import { pageOf } from "./paging";
 import { amountOwed, paymentSummary } from "./payments";
 import { searchMatch } from "./search-sql";
 
-const { customerConsents, customers, orders, pages, pageVersions } = schema;
+const {
+	customerAddresses,
+	customerConsents,
+	customers,
+	orders,
+	pages,
+	pageVersions,
+} = schema;
 
-const searchWhere = (q: string | undefined) =>
-	q ? searchMatch(q, [customers.searchKey]) : undefined;
+export const customerSegments = sqliteView("customer_segments", {
+	customerId: integer("customer_id").notNull(),
+	orderCount: integer("order_count").notNull(),
+	lastOrderAt: text("last_order_at"),
+	segment: text("segment", { enum: CUSTOMER_SEGMENTS }),
+}).existing();
+
+const listWhere = (q: string | undefined, segment?: CustomerSegment) =>
+	and(
+		q ? searchMatch(q, [customers.searchKey]) : undefined,
+		segment ? eq(customerSegments.segment, segment) : undefined,
+	);
+
+const customerColumns = {
+	...getTableColumns(customers),
+	segment: customerSegments.segment,
+};
 
 type Totals = {
 	orders: number;
@@ -127,15 +161,22 @@ async function currentConsents(db: Db, customerIds: number[]) {
 		.orderBy(asc(customerConsents.customerId), asc(customerConsents.purpose));
 }
 
-type CustomerRow = typeof customers.$inferSelect;
+type CustomerRow = typeof customers.$inferSelect & {
+	segment: CustomerSegment | null;
+};
+
+const profileOf = ({ searchKey: _, authUserId, ...r }: CustomerRow) => ({
+	...r,
+	hasAccount: authUserId !== null,
+});
 
 async function withTotals(db: Db, rows: CustomerRow[]) {
 	const totals = await lifetimeTotals(
 		db,
 		rows.map((r) => r.id),
 	);
-	return rows.map(({ searchKey: _, ...r }) => ({
-		...r,
+	return rows.map((r) => ({
+		...profileOf(r),
 		...totalsOf(totals, r.id),
 	}));
 }
@@ -158,33 +199,45 @@ const sortColumns = {
 };
 
 export async function pagedCustomers(db: Db, query: CustomerListSearch) {
-	const where = searchWhere(query.q);
+	const where = listWhere(query.q, query.segment);
 	const { limit, offset } = pageWindow(query);
 	const [rows, [counted]] = await db.batch([
 		db
-			.select()
+			.select(customerColumns)
 			.from(customers)
+			.innerJoin(
+				customerSegments,
+				eq(customerSegments.customerId, customers.id),
+			)
 			.where(where)
 			.orderBy(...sortBy(sortColumns, query.sort, query.dir, customers.id))
 			.limit(limit)
 			.offset(offset),
-		db.select({ total: count() }).from(customers).where(where),
+		db
+			.select({ total: count() })
+			.from(customers)
+			.innerJoin(
+				customerSegments,
+				eq(customerSegments.customerId, customers.id),
+			)
+			.where(where),
 	]);
 	return toPaged(await withTotals(db, rows), counted.total, query);
 }
 
 export async function listCustomers(
 	db: Db,
-	q: string | undefined,
+	filters: { q?: string; segment?: CustomerSegment },
 	cursor: number | null,
 	limit: number,
 ) {
 	const rows = await db
-		.select()
+		.select(customerColumns)
 		.from(customers)
+		.innerJoin(customerSegments, eq(customerSegments.customerId, customers.id))
 		.where(
 			and(
-				searchWhere(q),
+				listWhere(filters.q, filters.segment),
 				cursor === null ? undefined : lt(customers.id, cursor),
 			),
 		)
@@ -211,11 +264,17 @@ export async function listCustomers(
 }
 
 export async function customerDetail(db: Db, id: number) {
-	const customer = await db.query.customers.findFirst({
-		where: eq(customers.id, id),
-	});
+	const [customer] = await db
+		.select({
+			...customerColumns,
+			purchaseCount: customerSegments.orderCount,
+			lastPurchaseAt: customerSegments.lastOrderAt,
+		})
+		.from(customers)
+		.innerJoin(customerSegments, eq(customerSegments.customerId, customers.id))
+		.where(eq(customers.id, id));
 	if (!customer) return null;
-	const [totals, current, history, orderRows] = await Promise.all([
+	const [totals, current, history, orderRows, addresses] = await Promise.all([
 		lifetimeTotals(db, [id]),
 		currentConsents(db, [id]),
 		db
@@ -259,6 +318,21 @@ export async function customerDetail(db: Db, id: number) {
 			.from(orders)
 			.where(eq(orders.customerId, id))
 			.orderBy(desc(orders.createdAt), desc(orders.id)),
+		db
+			.select({
+				id: customerAddresses.id,
+				recipientName: customerAddresses.recipientName,
+				department: customerAddresses.department,
+				municipality: customerAddresses.municipality,
+				addressLine: customerAddresses.addressLine,
+				reference: customerAddresses.reference,
+				phoneE164: customerAddresses.phoneE164,
+				isDefault: customerAddresses.isDefault,
+				status: customerAddresses.status,
+			})
+			.from(customerAddresses)
+			.where(eq(customerAddresses.customerId, id))
+			.orderBy(desc(customerAddresses.isDefault), asc(customerAddresses.id)),
 	]);
 	const lines =
 		orderRows.length === 0
@@ -268,9 +342,9 @@ export async function customerDetail(db: Db, id: number) {
 					orderRows.map((o) => o.id),
 				);
 	const linesOf = groupBy(lines, (l) => l.orderId);
-	const { searchKey: _, ...profile } = customer;
 	return {
-		customer: profile,
+		customer: profileOf(customer),
+		addresses,
 		totals: totalsOf(totals, id),
 		consents: current.map(({ customerId: _, ...x }) => x),
 		consentHistory: history,

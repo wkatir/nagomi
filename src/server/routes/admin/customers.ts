@@ -3,6 +3,7 @@ import { Hono } from "hono";
 import { z } from "zod";
 import { getDb, schema } from "#/db";
 import { customerListSearch } from "#/lib/schemas/customers";
+import { SV_PHONE_REGEX } from "#/lib/sv-locations";
 import type { AdminEnv } from "#/server/auth";
 import { idParam, validate } from "#/server/validate";
 import { audit } from "../../domain/audit";
@@ -16,7 +17,7 @@ const { customers } = schema;
 const editInput = z
 	.object({
 		name: z.string().trim().min(1).max(80),
-		phone: z.string().trim().min(1).max(30),
+		phone: z.string().trim().min(1).max(30).nullable(),
 		email: z.string().trim().toLowerCase().pipe(z.email().max(120)).nullable(),
 		notes: z.string().trim().max(1000).nullable(),
 	})
@@ -34,7 +35,8 @@ export const customersRouter = new Hono<AdminEnv>()
 		if (!detail) return c.json({ error: "not_found" }, 404);
 		return c.json(detail);
 	})
-	// A phone another customer has fails the unique index: 409 duplicate_phone.
+	// A phone or an email another customer has fails the unique index: 409 duplicate_phone
+	// or duplicate_email.
 	.patch(
 		"/:id",
 		validate("param", idParam),
@@ -47,10 +49,13 @@ export const customersRouter = new Hono<AdminEnv>()
 				where: eq(customers.id, id),
 			});
 			if (!customer) return c.json({ error: "not_found" }, 404);
-			let phoneE164: string | undefined;
-			if (input.phone !== undefined) {
+			let phoneE164: string | null | undefined;
+			if (input.phone === null) phoneE164 = null;
+			else if (input.phone !== undefined) {
 				const { countryCode } = await getSettings(db);
 				phoneE164 = normalizePhone(input.phone, countryCode);
+				if (!SV_PHONE_REGEX.test(phoneE164))
+					return c.json({ error: "phone_not_salvadoran" }, 422);
 			}
 			const changes = {
 				...(input.name !== undefined ? { name: input.name } : {}),

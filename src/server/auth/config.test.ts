@@ -38,8 +38,8 @@ describe("signInMethods", () => {
 		expect(signInMethods(undefined)).toEqual({ google: false, password: true });
 	});
 
-	test("Google replaces the password once it is configured", () => {
-		expect(signInMethods({})).toEqual({ google: true, password: false });
+	test("Google is added for staff once it is configured, and customers keep the password", () => {
+		expect(signInMethods({})).toEqual({ google: true, password: true });
 	});
 });
 

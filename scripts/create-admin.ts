@@ -1,6 +1,6 @@
-// Public sign-up is disabled, so this is the only way to create the first admin.
+// Public sign-up only creates customers, so this is the only way to create staff.
 //
-//   bun run admin:create -- --email you@example.com --name "Your Name" [--remote] [--google-only]
+//   bun run admin:create -- --email you@example.com --name "Your Name" [--role admin|support] [--remote] [--google-only]
 //
 // The password is read from ADMIN_PASSWORD; without it a random one is generated and
 // printed once. With --google-only no password is stored.
@@ -11,7 +11,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { parseArgs } from "node:util";
 import { hashPassword } from "better-auth/crypto";
-import { ADMIN_ROLE } from "../src/lib/roles";
+import { ADMIN_ROLE, STAFF_ROLES } from "../src/lib/roles";
 import { authOptions } from "../src/server/auth/options";
 
 const { minPasswordLength, maxPasswordLength } = authOptions.emailAndPassword;
@@ -22,6 +22,7 @@ const { values } = parseArgs({
 	options: {
 		email: { type: "string" },
 		name: { type: "string" },
+		role: { type: "string", default: ADMIN_ROLE },
 		remote: { type: "boolean", default: false },
 		"google-only": { type: "boolean", default: false },
 	},
@@ -29,8 +30,9 @@ const { values } = parseArgs({
 
 const email = values.email?.trim().toLowerCase();
 const name = values.name?.trim();
-if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) || !name) {
-	console.error('Usage: bun run admin:create -- --email you@example.com --name "Your Name" [--remote]');
+const role = STAFF_ROLES.find((r) => r === values.role);
+if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) || !name || !role) {
+	console.error(`Usage: bun run admin:create -- --email you@example.com --name "Your Name" [--role ${STAFF_ROLES.join("|")}] [--remote] [--google-only]`);
 	process.exit(1);
 }
 
@@ -52,7 +54,7 @@ const quote = (value: string) => `'${value.replaceAll("'", "''")}'`;
 const userId = randomUUID();
 const now = Date.now();
 const userSql = `INSERT INTO users (id, name, email, email_verified, role, created_at, updated_at)
-VALUES (${quote(userId)}, ${quote(name)}, ${quote(email)}, 1, ${quote(ADMIN_ROLE)}, ${now}, ${now});`;
+VALUES (${quote(userId)}, ${quote(name)}, ${quote(email)}, 1, ${quote(role)}, ${now}, ${now});`;
 const passwordSql = async () => `INSERT INTO accounts (id, account_id, provider_id, user_id, password, created_at, updated_at)
 VALUES (${quote(randomUUID())}, ${quote(userId)}, 'credential', ${quote(userId)}, ${quote(await hashPassword(password))}, ${now}, ${now});`;
 const sql = googleOnly ? userSql : `${userSql}
@@ -67,7 +69,7 @@ try {
 		shell: process.platform === "win32",
 	});
 	if (result.status !== 0) {
-		console.error("Could not create the admin. If the email already exists, use another one.");
+		console.error(`Could not create the ${role}. If the email already exists, use another one.`);
 		process.exit(result.status ?? 1);
 	}
 } finally {

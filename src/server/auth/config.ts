@@ -21,12 +21,11 @@ export function googleProvider(env: GoogleEnv) {
 	};
 }
 
-// Password sign-in is off once Google is configured: admins use their Google account, and
-// a password attempt costs a scrypt hash, which is heavy for a Worker. Without Google (local
-// development, a fresh install) it is the only way in.
+// Customers sign up and sign in with a password; Google is an extra way in for staff whose
+// account already exists.
 export const signInMethods = (google: object | undefined) => ({
 	google: google !== undefined,
-	password: google === undefined,
+	password: true,
 });
 
 // Sessions travel in a Secure cookie, which a plain-http origin would lose. Only a local

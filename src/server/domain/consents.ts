@@ -7,6 +7,7 @@ export type CheckoutPage = (typeof CHECKOUT_PAGES)[number];
 export type CheckoutConsentInput = {
 	privacyNotice: true;
 	terms: true;
+	marketingEmail: boolean;
 	marketingWhatsapp: boolean;
 };
 
@@ -22,6 +23,11 @@ export function checkoutConsents(
 			pageVersionId: versions.privacy,
 		},
 		{ purpose: "terms", granted: input.terms, pageVersionId: versions.terms },
+		{
+			purpose: "marketing_email",
+			granted: input.marketingEmail,
+			pageVersionId: versions.privacy,
+		},
 		{
 			purpose: "marketing_whatsapp",
 			granted: input.marketingWhatsapp,

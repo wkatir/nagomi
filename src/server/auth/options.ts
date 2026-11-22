@@ -1,16 +1,15 @@
 import type { BetterAuthOptions } from "better-auth";
 import { admin } from "better-auth/plugins";
-import { ADMIN_ROLE } from "#/lib/roles";
+import { ADMIN_ROLE, CUSTOMER_ROLE } from "#/lib/roles";
 
 // Shared by the Worker (src/lib/auth.ts) and the schema generator (scripts/auth.config.ts),
 // so the generated tables always match the runtime configuration.
 export const authOptions = {
-	appName: "Eclalune",
+	appName: "Nagomi",
 	emailAndPassword: {
 		enabled: true,
-		// Accounts come from scripts/create-admin.ts.
-		disableSignUp: true,
-		minPasswordLength: 12,
+		disableSignUp: false,
+		minPasswordLength: 10,
 		maxPasswordLength: 128,
 	},
 	session: {
@@ -23,6 +22,7 @@ export const authOptions = {
 		storage: "database",
 		customRules: {
 			"/sign-in/email": { window: 60, max: 5 },
+			"/sign-up/email": { window: 60, max: 3 },
 			// Read-only, and the back office calls it on every page it opens: counting it
 			// would write to D1 for nothing.
 			"/get-session": false,
@@ -44,5 +44,5 @@ export const authOptions = {
 		"/admin/stop-impersonating",
 	],
 	onAPIError: { errorURL: "/admin/login" },
-	plugins: [admin({ adminRoles: [ADMIN_ROLE] })],
+	plugins: [admin({ adminRoles: [ADMIN_ROLE], defaultRole: CUSTOMER_ROLE })],
 } satisfies BetterAuthOptions;
