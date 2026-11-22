@@ -23,7 +23,6 @@ export const Route = createFileRoute("/admin/reports/reorder")({
 		lookbackWeeks: search.lookbackWeeks,
 		targetWeeks: search.targetWeeks,
 	}),
-	// Started, not awaited: the report has its own loading state.
 	loader: ({ context, deps }) => {
 		void context.queryClient.prefetchQuery(reorderReportQuery(deps));
 	},
@@ -40,7 +39,10 @@ function ReorderReportPage() {
 	});
 	return (
 		<>
-			<ReportToolbar csv={reportCsvHref("reorder", weeks)}>
+			<ReportToolbar
+				question={m.admin_report_q_reorder()}
+				csv={reportCsvHref("reorder", weeks)}
+			>
 				<ReportSelect
 					label={m.admin_report_lookback()}
 					value={lookbackWeeks}

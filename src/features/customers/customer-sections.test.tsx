@@ -20,6 +20,7 @@ const detail = (over: Partial<AdminCustomer> = {}): AdminCustomer => ({
 		segment: "occasional",
 	},
 	addresses: [],
+	reviews: [],
 	totals: {
 		orders: 2,
 		lifetimeValue: 4200,

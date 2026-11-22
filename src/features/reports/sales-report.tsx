@@ -1,5 +1,6 @@
 import { ChartCard } from "#/components/admin/chart-card";
 import {
+	overTimeKind,
 	useCompactMoney,
 	usePeriodLabel,
 } from "#/components/admin/chart-format";
@@ -35,7 +36,6 @@ export function SalesReportView({
 	const percent = usePercent();
 	const { totals, periods } = report;
 
-	// A week is shown by its days, cut by the range when the range cuts it.
 	const periodText = (p: Period) =>
 		granularity === "week" && p.from !== p.to
 			? `${day(p.from)} - ${day(p.to)}`
@@ -49,11 +49,25 @@ export function SalesReportView({
 
 	return (
 		<>
-			<StatGrid>
+			<StatGrid className="lg:grid-cols-5">
 				<StatCard
-					label={m.admin_kpi_revenue()}
+					label={m.admin_kpi_sales_with_tax()}
 					value={money(totals.revenue)}
 					note={m.admin_report_orders_n({ count: totals.orders })}
+				/>
+				<StatCard
+					label={m.admin_kpi_sales_net()}
+					value={money(totals.netRevenue)}
+					note={m.admin_kpi_tax_note({ amount: money(totals.tax) })}
+				/>
+				<StatCard
+					label={m.admin_kpi_avg_ticket()}
+					value={
+						totals.averageTicket === null
+							? m.admin_report_na()
+							: money(totals.averageTicket)
+					}
+					note={m.admin_kpi_avg_ticket_note()}
 				/>
 				<StatCard
 					label={m.admin_kpi_gross_profit()}
@@ -65,14 +79,10 @@ export function SalesReportView({
 					value={String(totals.units)}
 					note={m.admin_report_kept_units()}
 				/>
-				<StatCard
-					label={m.admin_kpi_cogs()}
-					value={money(totals.costOfGoodsSold)}
-					note={m.admin_kpi_cogs_note()}
-				/>
 			</StatGrid>
 			<div className="grid gap-admin-stack lg:grid-cols-2">
 				<ChartCard
+					kind={overTimeKind(periods.length)}
 					title={m.admin_report_sales_chart()}
 					categoryLabel={m.admin_report_period()}
 					seriesLabel={m.admin_kpi_revenue()}
@@ -81,6 +91,7 @@ export function SalesReportView({
 					formatTick={compact}
 				/>
 				<ChartCard
+					kind={overTimeKind(periods.length)}
 					title={m.admin_report_profit_chart()}
 					categoryLabel={m.admin_report_period()}
 					seriesLabel={m.admin_kpi_gross_profit()}
@@ -101,7 +112,13 @@ export function SalesReportView({
 								{m.admin_report_units()}
 							</TableHead>
 							<TableHead className="text-right">
-								{m.admin_kpi_revenue()}
+								{m.admin_kpi_sales_with_tax()}
+							</TableHead>
+							<TableHead className="text-right max-md:hidden">
+								{m.admin_kpi_sales_net()}
+							</TableHead>
+							<TableHead className="text-right max-md:hidden">
+								{m.admin_kpi_avg_ticket()}
 							</TableHead>
 							<TableHead className="text-right max-md:hidden">
 								{m.admin_kpi_cogs()}
@@ -135,6 +152,12 @@ export function SalesReportView({
 									{money(p.revenue)}
 								</TableCell>
 								<TableCell className="text-right tabular-nums max-md:hidden">
+									{money(p.netRevenue)}
+								</TableCell>
+								<TableCell className="text-right tabular-nums max-md:hidden">
+									{p.averageTicket === null ? "" : money(p.averageTicket)}
+								</TableCell>
+								<TableCell className="text-right tabular-nums max-md:hidden">
 									{money(p.costOfGoodsSold)}
 								</TableCell>
 								<TableCell className="text-right tabular-nums">
@@ -157,6 +180,14 @@ export function SalesReportView({
 							</TableCell>
 							<TableCell className="text-right tabular-nums">
 								{money(totals.revenue)}
+							</TableCell>
+							<TableCell className="text-right tabular-nums max-md:hidden">
+								{money(totals.netRevenue)}
+							</TableCell>
+							<TableCell className="text-right tabular-nums max-md:hidden">
+								{totals.averageTicket === null
+									? ""
+									: money(totals.averageTicket)}
 							</TableCell>
 							<TableCell className="text-right tabular-nums max-md:hidden">
 								{money(totals.costOfGoodsSold)}

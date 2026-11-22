@@ -28,6 +28,8 @@ export type SoldOrder = {
 	subtotal: number;
 	discount: number;
 	shipping: number;
+	total: number;
+	taxIncluded: number;
 	lines: SoldLine[];
 };
 
@@ -50,6 +52,7 @@ export type OrderSale = {
 	orderId: number;
 	day: string;
 	revenue: number;
+	tax: number;
 	merchandise: number;
 	shipping: number;
 	costE4: number;
@@ -86,6 +89,15 @@ export function splitByWeight(total: number, weights: number[]): number[] {
 	return parts.map((p) => Number(p.base));
 }
 
+export function keptTax(
+	order: { total: number; taxIncluded: number },
+	revenue: number,
+): number {
+	if (revenue === order.total) return order.taxIncluded;
+	if (order.total === 0) throw new Error("An order without total kept revenue");
+	return Math.round((order.taxIncluded * revenue) / order.total);
+}
+
 // The discount the order keeps is spread over its lines by kept value, so line figures add
 // up to the order's.
 export function orderSale(order: SoldOrder): OrderSale {
@@ -115,6 +127,7 @@ export function orderSale(order: SoldOrder): OrderSale {
 		orderId: order.id,
 		day: order.day,
 		revenue,
+		tax: keptTax(order, revenue),
 		merchandise,
 		shipping,
 		costE4: lines.reduce((n, l) => n + l.costE4, 0),
@@ -126,6 +139,9 @@ type SalesFigures = {
 	orders: number;
 	units: number;
 	revenue: number;
+	tax: number;
+	netRevenue: number;
+	averageTicket: number | null;
 	merchandise: number;
 	shipping: number;
 	costOfGoodsSold: number;
@@ -141,6 +157,7 @@ type Acc = {
 	orders: Set<number>;
 	units: number;
 	revenue: number;
+	tax: number;
 	merchandise: number;
 	shipping: number;
 	costE4: number;
@@ -150,6 +167,7 @@ const emptyAcc = (): Acc => ({
 	orders: new Set(),
 	units: 0,
 	revenue: 0,
+	tax: 0,
 	merchandise: 0,
 	shipping: 0,
 	costE4: 0,
@@ -162,6 +180,10 @@ function figures(acc: Acc): SalesFigures {
 		orders: acc.orders.size,
 		units: acc.units,
 		revenue: acc.revenue,
+		tax: acc.tax,
+		netRevenue: acc.revenue - acc.tax,
+		averageTicket:
+			acc.orders.size === 0 ? null : Math.round(acc.revenue / acc.orders.size),
 		merchandise: acc.merchandise,
 		shipping: acc.shipping,
 		costOfGoodsSold,
@@ -176,6 +198,7 @@ export function salesTotals(sales: OrderSale[]): SalesFigures {
 	for (const s of sales) {
 		acc.orders.add(s.orderId);
 		acc.revenue += s.revenue;
+		acc.tax += s.tax;
 		acc.merchandise += s.merchandise;
 		acc.shipping += s.shipping;
 		acc.costE4 += s.costE4;

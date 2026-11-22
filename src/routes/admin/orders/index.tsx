@@ -1,5 +1,9 @@
 import { createFileRoute, stripSearchParams } from "@tanstack/react-router";
 import { PageHeader } from "#/components/admin/page-header";
+import {
+	FollowupDigestLoader,
+	followupsQuery,
+} from "#/features/orders/followups";
 import { OrdersTable } from "#/features/orders/orders-table";
 import { ordersQuery } from "#/features/orders/queries";
 import { orderSearchDefaults } from "#/features/orders/search";
@@ -14,6 +18,7 @@ export const Route = createFileRoute("/admin/orders/")({
 	// should keep the page on screen. prefetchQuery never rejects; a failure shows in the table.
 	loader: ({ context, deps }) => {
 		void context.queryClient.prefetchQuery(ordersQuery(deps));
+		void context.queryClient.prefetchQuery(followupsQuery);
 	},
 	component: Orders,
 });
@@ -24,6 +29,9 @@ function Orders() {
 	return (
 		<>
 			<PageHeader title={m.admin_nav_orders()} />
+			<div className="mb-admin-section">
+				<FollowupDigestLoader />
+			</div>
 			<OrdersTable
 				search={search}
 				onSearchChange={(change) =>

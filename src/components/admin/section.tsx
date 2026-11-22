@@ -32,6 +32,6 @@ export const Fact = ({ label, value }: { label: string; value: ReactNode }) =>
 	value ? (
 		<div className="grid gap-0.5">
 			<dt className="type-meta text-muted-foreground">{label}</dt>
-			<dd className="type-small break-words whitespace-pre-line">{value}</dd>
+			<dd className="type-small wrap-anywhere whitespace-pre-line">{value}</dd>
 		</div>
 	) : null;

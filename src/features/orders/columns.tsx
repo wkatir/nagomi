@@ -2,12 +2,11 @@ import { Link } from "@tanstack/react-router";
 import { createColumnHelper } from "@tanstack/react-table";
 import { RowActions } from "#/components/admin/data-table/row-actions";
 import type { ListFeatures } from "#/components/admin/data-table/use-data-table";
+import { channelLabel } from "#/components/admin/labels";
 import {
-	channelLabel,
-	orderStatusLabel,
-	paymentStatusLabel,
-} from "#/components/admin/labels";
-import { Badge } from "#/components/ui/badge";
+	OrderStatusBadge,
+	PaymentStatusBadge,
+} from "#/components/admin/tone-badge";
 import { DropdownMenuItem } from "#/components/ui/dropdown-menu";
 import { useMoney } from "#/hooks/use-money";
 import { useStoreDate } from "#/hooks/use-store-date";
@@ -57,19 +56,7 @@ export function useOrderColumns() {
 			header: m.admin_col_status(),
 			cell: ({ getValue }) => {
 				const status = getValue();
-				return (
-					<Badge
-						variant={
-							status === "pending"
-								? "secondary"
-								: status === "cancelled"
-									? "outline"
-									: "default"
-						}
-					>
-						{orderStatusLabel[status]()}
-					</Badge>
-				);
+				return <OrderStatusBadge status={status} />;
 			},
 		}),
 		column.accessor((order) => order.payment.status, {
@@ -77,9 +64,7 @@ export function useOrderColumns() {
 			header: m.admin_col_payment(),
 			enableSorting: false,
 			meta: { hideOnMobile: true },
-			cell: ({ getValue }) => (
-				<Badge variant="outline">{paymentStatusLabel[getValue()]()}</Badge>
-			),
+			cell: ({ getValue }) => <PaymentStatusBadge status={getValue()} />,
 		}),
 		column.accessor("total", {
 			header: m.admin_col_total(),

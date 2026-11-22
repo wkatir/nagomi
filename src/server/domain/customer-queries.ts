@@ -6,13 +6,17 @@ import {
 	eq,
 	getTableColumns,
 	inArray,
+	isNotNull,
 	lt,
 	sql,
 } from "drizzle-orm";
 import { integer, sqliteView, text } from "drizzle-orm/sqlite-core";
 import { type Db, schema } from "#/db";
 import { CUSTOMER_SEGMENTS, type CustomerSegment } from "#/lib/enums";
-import type { CustomerListSearch } from "#/lib/schemas/customers";
+import type {
+	CustomerListSearch,
+	MarketingChannel,
+} from "#/lib/schemas/customers";
 import { inList, qualified } from "./d1";
 import { groupBy } from "./group-by";
 import { pageWindow, sortBy, toPaged } from "./list-query";
@@ -30,6 +34,7 @@ const {
 	orders,
 	pages,
 	pageVersions,
+	productReviews,
 } = schema;
 
 export const customerSegments = sqliteView("customer_segments", {
@@ -39,10 +44,25 @@ export const customerSegments = sqliteView("customer_segments", {
 	segment: text("segment", { enum: CUSTOMER_SEGMENTS }),
 }).existing();
 
-const listWhere = (q: string | undefined, segment?: CustomerSegment) =>
+const optedIn = (channel: MarketingChannel) =>
+	and(
+		channel === "email"
+			? isNotNull(customers.email)
+			: isNotNull(customers.phoneE164),
+		sql`(select c2.granted from customer_consents c2 where c2.customer_id = ${qualified(customers.id)} and c2.purpose = ${`marketing_${channel}`} order by c2.id desc limit 1) = 1`,
+	);
+
+type ListFilters = {
+	q?: string;
+	segment?: CustomerSegment;
+	marketing?: MarketingChannel;
+};
+
+const listWhere = ({ q, segment, marketing }: ListFilters) =>
 	and(
 		q ? searchMatch(q, [customers.searchKey]) : undefined,
 		segment ? eq(customerSegments.segment, segment) : undefined,
+		marketing ? optedIn(marketing) : undefined,
 	);
 
 const customerColumns = {
@@ -199,7 +219,7 @@ const sortColumns = {
 };
 
 export async function pagedCustomers(db: Db, query: CustomerListSearch) {
-	const where = listWhere(query.q, query.segment);
+	const where = listWhere(query);
 	const { limit, offset } = pageWindow(query);
 	const [rows, [counted]] = await db.batch([
 		db
@@ -227,7 +247,7 @@ export async function pagedCustomers(db: Db, query: CustomerListSearch) {
 
 export async function listCustomers(
 	db: Db,
-	filters: { q?: string; segment?: CustomerSegment },
+	filters: ListFilters,
 	cursor: number | null,
 	limit: number,
 ) {
@@ -237,7 +257,7 @@ export async function listCustomers(
 		.innerJoin(customerSegments, eq(customerSegments.customerId, customers.id))
 		.where(
 			and(
-				listWhere(filters.q, filters.segment),
+				listWhere(filters),
 				cursor === null ? undefined : lt(customers.id, cursor),
 			),
 		)
@@ -274,66 +294,82 @@ export async function customerDetail(db: Db, id: number) {
 		.innerJoin(customerSegments, eq(customerSegments.customerId, customers.id))
 		.where(eq(customers.id, id));
 	if (!customer) return null;
-	const [totals, current, history, orderRows, addresses] = await Promise.all([
-		lifetimeTotals(db, [id]),
-		currentConsents(db, [id]),
-		db
-			.select({
-				id: customerConsents.id,
-				orderId: customerConsents.orderId,
-				purpose: customerConsents.purpose,
-				granted: customerConsents.granted,
-				channel: customerConsents.channel,
-				recordedAt: customerConsents.recordedAt,
-				page: pages.slug,
-				locale: pageVersions.locale,
-				version: pageVersions.version,
-			})
-			.from(customerConsents)
-			.innerJoin(
-				pageVersions,
-				eq(pageVersions.id, customerConsents.pageVersionId),
-			)
-			.innerJoin(pages, eq(pages.id, pageVersions.pageId))
-			.where(eq(customerConsents.customerId, id))
-			.orderBy(desc(customerConsents.id)),
-		db
-			.select({
-				id: orders.id,
-				code: orders.code,
-				channel: orders.channel,
-				status: orders.status,
-				subtotal: orders.subtotal,
-				discount: orders.discount,
-				shipping: orders.shipping,
-				total: orders.total,
-				createdAt: orders.createdAt,
-				paidAt: orders.paidAt,
-				shippedAt: orders.shippedAt,
-				deliveredAt: orders.deliveredAt,
-				cancelledAt: orders.cancelledAt,
-				paid: paidSum("payment"),
-				refunded: paidSum("refund"),
-			})
-			.from(orders)
-			.where(eq(orders.customerId, id))
-			.orderBy(desc(orders.createdAt), desc(orders.id)),
-		db
-			.select({
-				id: customerAddresses.id,
-				recipientName: customerAddresses.recipientName,
-				department: customerAddresses.department,
-				municipality: customerAddresses.municipality,
-				addressLine: customerAddresses.addressLine,
-				reference: customerAddresses.reference,
-				phoneE164: customerAddresses.phoneE164,
-				isDefault: customerAddresses.isDefault,
-				status: customerAddresses.status,
-			})
-			.from(customerAddresses)
-			.where(eq(customerAddresses.customerId, id))
-			.orderBy(desc(customerAddresses.isDefault), asc(customerAddresses.id)),
-	]);
+	const [totals, current, history, orderRows, addresses, reviews] =
+		await Promise.all([
+			lifetimeTotals(db, [id]),
+			currentConsents(db, [id]),
+			db
+				.select({
+					id: customerConsents.id,
+					orderId: customerConsents.orderId,
+					purpose: customerConsents.purpose,
+					granted: customerConsents.granted,
+					channel: customerConsents.channel,
+					recordedAt: customerConsents.recordedAt,
+					page: pages.slug,
+					locale: pageVersions.locale,
+					version: pageVersions.version,
+				})
+				.from(customerConsents)
+				.innerJoin(
+					pageVersions,
+					eq(pageVersions.id, customerConsents.pageVersionId),
+				)
+				.innerJoin(pages, eq(pages.id, pageVersions.pageId))
+				.where(eq(customerConsents.customerId, id))
+				.orderBy(desc(customerConsents.id)),
+			db
+				.select({
+					id: orders.id,
+					code: orders.code,
+					channel: orders.channel,
+					status: orders.status,
+					subtotal: orders.subtotal,
+					discount: orders.discount,
+					shipping: orders.shipping,
+					total: orders.total,
+					createdAt: orders.createdAt,
+					paidAt: orders.paidAt,
+					shippedAt: orders.shippedAt,
+					deliveredAt: orders.deliveredAt,
+					cancelledAt: orders.cancelledAt,
+					paid: paidSum("payment"),
+					refunded: paidSum("refund"),
+				})
+				.from(orders)
+				.where(eq(orders.customerId, id))
+				.orderBy(desc(orders.createdAt), desc(orders.id)),
+			db
+				.select({
+					id: customerAddresses.id,
+					recipientName: customerAddresses.recipientName,
+					department: customerAddresses.department,
+					municipality: customerAddresses.municipality,
+					addressLine: customerAddresses.addressLine,
+					reference: customerAddresses.reference,
+					phoneE164: customerAddresses.phoneE164,
+					isDefault: customerAddresses.isDefault,
+					status: customerAddresses.status,
+				})
+				.from(customerAddresses)
+				.where(eq(customerAddresses.customerId, id))
+				.orderBy(desc(customerAddresses.isDefault), asc(customerAddresses.id)),
+			db
+				.select({
+					id: productReviews.id,
+					productId: productReviews.productId,
+					productName: sql<
+						string | null
+					>`(select pt.name from product_translations pt where pt.product_id = ${qualified(productReviews.productId)} and pt.locale = (select s.default_locale from store_settings s where s.id = 1))`,
+					rating: productReviews.rating,
+					title: productReviews.title,
+					status: productReviews.status,
+					createdAt: productReviews.createdAt,
+				})
+				.from(productReviews)
+				.where(eq(productReviews.customerId, id))
+				.orderBy(desc(productReviews.createdAt), desc(productReviews.id)),
+		]);
 	const lines =
 		orderRows.length === 0
 			? []
@@ -345,6 +381,7 @@ export async function customerDetail(db: Db, id: number) {
 	return {
 		customer: profileOf(customer),
 		addresses,
+		reviews,
 		totals: totalsOf(totals, id),
 		consents: current.map(({ customerId: _, ...x }) => x),
 		consentHistory: history,

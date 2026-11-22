@@ -12,7 +12,6 @@ import { m } from "#/paraglide/messages";
 export const Route = createFileRoute("/admin/reports/losses")({
 	staticData: { crumb: m.admin_report_losses },
 	loaderDeps: ({ search }) => search,
-	// Started, not awaited: the report has its own loading state.
 	loader: async ({ context, deps }) => {
 		const store = await context.queryClient.ensureQueryData(storeQuery);
 		void context.queryClient.prefetchQuery(
@@ -32,7 +31,10 @@ function LossesReportPage() {
 	});
 	return (
 		<>
-			<ReportToolbar csv={reportCsvHref("losses", range)}>
+			<ReportToolbar
+				question={m.admin_report_q_losses()}
+				csv={reportCsvHref("losses", range)}
+			>
 				<DateRangeFilter
 					value={range}
 					onChange={(days) =>

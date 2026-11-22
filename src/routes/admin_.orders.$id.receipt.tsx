@@ -4,6 +4,8 @@ import {
 	orderStatusLabel,
 	paymentStatusLabel,
 } from "#/components/admin/labels";
+import "#/components/admin/admin-theme.css";
+import { Logo } from "#/components/brand/wordmark";
 import { Button } from "#/components/ui/button";
 import { Spinner } from "#/components/ui/spinner";
 import { orderQuery } from "#/features/orders/queries";
@@ -36,8 +38,8 @@ function Receipt() {
 	const { order, lines, payment } = detail.data;
 	const s = store.data;
 	return (
-		<main className="mx-auto max-w-2xl p-8 text-sm print:p-0">
-			<div className="mb-6 flex gap-2 print:hidden">
+		<main className="admin-paper mx-auto my-8 max-w-3xl rounded-md p-10 text-sm shadow-[0_1px_3px_rgb(20_22_42/0.12)] print:my-0 print:max-w-none print:rounded-none print:p-0">
+			<div className="mb-8 flex gap-2 print:hidden">
 				<Button onClick={() => window.print()}>
 					{m.admin_order_print_receipt()}
 				</Button>
@@ -47,9 +49,9 @@ function Receipt() {
 					</Link>
 				</Button>
 			</div>
-			<header className="flex justify-between gap-6 border-b pb-4">
-				<div>
-					<p className="text-lg font-bold">{s.name}</p>
+			<header className="flex justify-between gap-6 border-b-2 border-primary pb-5">
+				<div className="grid gap-0.5">
+					<Logo label={s.name} className="mb-2 h-12 text-primary" />
 					<p>{s.business.legalName}</p>
 					<p>
 						{s.business.taxIdLabel} {s.business.taxId}
@@ -57,9 +59,11 @@ function Receipt() {
 					<p>{s.business.address}</p>
 					<p>{s.business.email}</p>
 				</div>
-				<div className="text-right">
-					<p className="font-bold">{m.admin_order_receipt_title()}</p>
-					<p className="text-lg tabular-nums">{order.code}</p>
+				<div className="grid content-start gap-0.5 text-right">
+					<p className="type-meta font-bold tracking-wide text-primary uppercase">
+						{m.admin_order_receipt_title()}
+					</p>
+					<p className="text-xl font-bold tabular-nums">{order.code}</p>
 					<p>
 						{formatDate(order.createdAt, {
 							dateStyle: "long",
@@ -96,39 +100,39 @@ function Receipt() {
 					)}
 				</div>
 			</section>
-			<table className="mt-4 w-full">
+			<table className="mt-6 w-full">
 				<thead>
-					<tr className="border-b text-left">
-						<th className="py-1">SKU</th>
-						<th className="py-1">{m.admin_col_product()}</th>
-						<th className="py-1 text-right">{m.admin_quantity()}</th>
-						<th className="py-1 text-right">{m.admin_col_price()}</th>
-						<th className="py-1 text-right">{m.admin_col_total()}</th>
+					<tr className="border-b-2 text-left text-xs tracking-wide text-muted-foreground uppercase">
+						<th className="py-2">SKU</th>
+						<th className="py-2">{m.admin_col_product()}</th>
+						<th className="py-2 text-right">{m.admin_quantity()}</th>
+						<th className="py-2 text-right">{m.admin_col_price()}</th>
+						<th className="py-2 text-right">{m.admin_col_total()}</th>
 					</tr>
 				</thead>
 				<tbody>
 					{lines.map((l) => (
 						<tr key={l.id} className="border-b">
-							<td className="py-1 tabular-nums">{l.sku}</td>
-							<td className="py-1">
+							<td className="py-2 tabular-nums">{l.sku}</td>
+							<td className="py-2">
 								{l.brandName} {l.name}
 								{l.optionLabel ? ` · ${l.optionLabel}` : ""}
 								{l.bundleName
 									? ` (${m.admin_order_set_label()} ${l.bundleName})`
 									: ""}
 							</td>
-							<td className="py-1 text-right tabular-nums">{l.quantity}</td>
-							<td className="py-1 text-right tabular-nums">
+							<td className="py-2 text-right tabular-nums">{l.quantity}</td>
+							<td className="py-2 text-right tabular-nums">
 								{money(l.unitPrice)}
 							</td>
-							<td className="py-1 text-right tabular-nums">
+							<td className="py-2 text-right tabular-nums">
 								{money(l.quantity * l.unitPrice)}
 							</td>
 						</tr>
 					))}
 				</tbody>
 			</table>
-			<dl className="mt-4 ml-auto grid w-64 grid-cols-2 gap-1">
+			<dl className="mt-6 ml-auto grid w-72 grid-cols-2 gap-y-1.5">
 				<dt>{m.cart_subtotal()}</dt>
 				<dd className="text-right tabular-nums">{money(order.subtotal)}</dd>
 				{order.discount > 0 && (
@@ -141,8 +145,10 @@ function Receipt() {
 				)}
 				<dt>{m.cart_shipping()}</dt>
 				<dd className="text-right tabular-nums">{money(order.shipping)}</dd>
-				<dt className="font-bold">{m.cart_total()}</dt>
-				<dd className="text-right font-bold tabular-nums">
+				<dt className="border-t pt-1.5 text-base font-bold">
+					{m.cart_total()}
+				</dt>
+				<dd className="border-t pt-1.5 text-right text-base font-bold tabular-nums">
 					{money(order.total)}
 				</dd>
 				<dt className="text-muted-foreground">
@@ -156,7 +162,7 @@ function Receipt() {
 				<dt>{m.checkout_payment()}</dt>
 				<dd className="text-right">{paymentLabel[order.paymentMethod]()}</dd>
 			</dl>
-			<p className="mt-8 text-xs text-muted-foreground">
+			<p className="mt-10 border-t pt-4 text-xs text-muted-foreground">
 				{m.admin_order_receipt_note()}
 			</p>
 		</main>

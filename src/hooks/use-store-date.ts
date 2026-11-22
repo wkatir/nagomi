@@ -17,5 +17,6 @@ export function useStoreDate() {
 export function useCalendarDate() {
 	const { data } = useSuspenseQuery(storeQuery);
 	const locale = intlLocale(getLocale(), data.countryCode);
-	return (day: string) => formatCalendarDate(day, locale);
+	return (day: string, dateStyle?: "long" | "medium") =>
+		formatCalendarDate(day, locale, dateStyle);
 }

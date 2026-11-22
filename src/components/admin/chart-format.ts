@@ -47,3 +47,18 @@ export function useCompactMoney() {
 	const locale = intlLocale(getLocale(), data.countryCode);
 	return (amount: number) => formatCompactMoney(amount, data.currency, locale);
 }
+
+export const SHARE_COLORS = [
+	"var(--chart-1)",
+	"var(--chart-2)",
+	"var(--chart-3)",
+	"var(--chart-4)",
+	"var(--chart-5)",
+] as const;
+
+export const MAX_SHARE_PARTS = SHARE_COLORS.length;
+
+const MIN_LINE_POINTS = 7;
+
+export const overTimeKind = (points: number) =>
+	points >= MIN_LINE_POINTS ? ("line" as const) : ("bar" as const);

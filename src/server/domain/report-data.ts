@@ -2,11 +2,17 @@ import { and, asc, eq, gte, inArray, lt, sql } from "drizzle-orm";
 import type { Db } from "#/db";
 import * as schema from "#/db/schema";
 import { addDays, localDate, startOfLocalDay } from "#/lib/dates";
-import { qualified } from "./d1";
+import { customerSegments } from "./customer-queries";
+import { inList, qualified } from "./d1";
 import { groupBy } from "./group-by";
+import type { BoughtOrder, Buyer, PlacedOrder } from "./insights";
 import { latestLandedCostE4, lotStock } from "./inventory";
-import { returnedOfLine } from "./order-sql";
-import { SHIPPED_STATUSES, SOLD_STATUSES } from "./order-state";
+import { keptValue, owedOf, returnedOfLine } from "./order-sql";
+import {
+	COMMITTED_STATUSES,
+	SHIPPED_STATUSES,
+	SOLD_STATUSES,
+} from "./order-state";
 import { amountOwed } from "./payments";
 import type { LossMovement, ReturnedLine } from "./reports";
 import { type OrderSale, orderSale, type SoldOrder } from "./sales";
@@ -16,6 +22,7 @@ import { type OrderSale, orderSale, type SoldOrder } from "./sales";
 
 const {
 	brands,
+	customers,
 	inventoryMovements,
 	lots,
 	orderItems,
@@ -34,7 +41,7 @@ const {
 
 type LocalRange = { from: string; to: string; timeZone: string };
 
-const utcBounds = ({ from, to, timeZone }: LocalRange) => ({
+export const utcBounds = ({ from, to, timeZone }: LocalRange) => ({
 	start: startOfLocalDay(from, timeZone),
 	end: startOfLocalDay(addDays(to, 1), timeZone),
 });
@@ -73,6 +80,8 @@ export async function loadSales(
 				subtotal: orders.subtotal,
 				discount: orders.discount,
 				shipping: orders.shipping,
+				total: orders.total,
+				taxIncluded: orders.taxIncluded,
 				shippedAt: orders.shippedAt,
 			})
 			.from(orders)
@@ -309,4 +318,120 @@ export async function loadReplenishment(db: Db) {
 		latestUnitCostE4: latest,
 		supplier,
 	};
+}
+
+export async function loadFirstSaleDays(db: Db, timeZone: string) {
+	const rows = await db
+		.select({
+			variantId: orderItems.variantId,
+			firstShippedAt: sql<string>`min(${orders.shippedAt})`,
+		})
+		.from(orderItems)
+		.innerJoin(orders, eq(orders.id, orderItems.orderId))
+		.where(inArray(orders.status, [...SHIPPED_STATUSES]))
+		.groupBy(orderItems.variantId);
+	return new Map(
+		rows.map((r) => [
+			r.variantId,
+			localDate(new Date(r.firstShippedAt), timeZone),
+		]),
+	);
+}
+
+export async function loadStockBefore(db: Db, instant: string) {
+	const rows = await db
+		.select({
+			variantId: lots.variantId,
+			units: sql<number>`coalesce(sum(${inventoryMovements.quantity}), 0)`,
+		})
+		.from(inventoryMovements)
+		.innerJoin(lots, eq(lots.id, inventoryMovements.lotId))
+		.where(lt(inventoryMovements.createdAt, instant))
+		.groupBy(lots.variantId);
+	return new Map(rows.map((r) => [r.variantId, r.units]));
+}
+
+const keptOfOrder = keptValue(sql.raw("o.id"));
+const boughtValue = sql<number>`(select ${owedOf("s")} from (select o.status, o.subtotal, o.discount, o.shipping, ${keptOfOrder} as kept from orders o where o.id = ${qualified(orders.id)}) s)`;
+
+export async function loadBoughtOrders(
+	db: Db,
+	range: LocalRange,
+): Promise<BoughtOrder[]> {
+	const rows = await db
+		.select({
+			orderId: orders.id,
+			customerId: orders.customerId,
+			createdAt: orders.createdAt,
+			value: boughtValue,
+		})
+		.from(orders)
+		.where(
+			and(
+				inArray(orders.status, [...COMMITTED_STATUSES]),
+				between(orders.createdAt, range),
+			),
+		)
+		.orderBy(asc(orders.createdAt), asc(orders.id));
+	return rows.map(({ customerId, ...o }) => {
+		if (customerId === null)
+			throw new Error(`Order ${o.orderId} has no customer`);
+		return { ...o, customerId };
+	});
+}
+
+export async function loadBuyers(db: Db, customerIds: number[]) {
+	if (customerIds.length === 0) return new Map<number, Buyer>();
+	const rows = await db
+		.select({
+			customerId: customers.id,
+			name: customers.name,
+			email: customers.email,
+			segment: customerSegments.segment,
+			firstOrderAt: sql<string>`(select min(o.created_at) from orders o where o.customer_id = ${qualified(customers.id)} and o.status in (${sql.raw(COMMITTED_STATUSES.map((s) => `'${s}'`).join(", "))}))`,
+		})
+		.from(customers)
+		.innerJoin(customerSegments, eq(customerSegments.customerId, customers.id))
+		.where(inList(customers.id, customerIds));
+	return new Map(rows.map((r) => [r.customerId, r]));
+}
+
+export function loadSegmentCounts(db: Db) {
+	return db
+		.select({
+			segment: customerSegments.segment,
+			customers: sql<number>`count(*)`,
+		})
+		.from(customerSegments)
+		.groupBy(customerSegments.segment);
+}
+
+export async function loadPlacedOrders(
+	db: Db,
+	range: LocalRange,
+): Promise<PlacedOrder[]> {
+	const rows = await db
+		.select({
+			id: orders.id,
+			code: orders.code,
+			customerName: orders.customerName,
+			status: orders.status,
+			createdAt: orders.createdAt,
+			shippedAt: orders.shippedAt,
+			deliveredAt: orders.deliveredAt,
+			promisedBy: orders.deliveryEstimateTo,
+			returned: sql<number>`exists (select 1 from returns r where r.order_id = ${qualified(orders.id)})`,
+		})
+		.from(orders)
+		.where(between(orders.createdAt, range))
+		.orderBy(asc(orders.createdAt), asc(orders.id));
+	return rows.map((o) => ({
+		...o,
+		createdDay: localDate(new Date(o.createdAt), range.timeZone),
+		deliveredDay:
+			o.deliveredAt === null
+				? null
+				: localDate(new Date(o.deliveredAt), range.timeZone),
+		returned: o.returned === 1,
+	}));
 }

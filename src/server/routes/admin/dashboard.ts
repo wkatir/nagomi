@@ -1,11 +1,18 @@
-import { eq, sql } from "drizzle-orm";
+import { and, eq, gte, inArray, isNotNull, isNull, lt, sql } from "drizzle-orm";
 import { Hono } from "hono";
-import { z } from "zod";
 import { getDb, schema } from "#/db";
-import { addDays, storeToday } from "#/lib/dates";
+import { addDays, daysBetween, storeToday } from "#/lib/dates";
+import { reportDays } from "#/lib/schemas/reports";
 import { validate } from "#/server/validate";
-import { orderFollowups } from "../../domain/followups";
-import { loadBookings, loadSales } from "../../domain/report-data";
+import { overdueOrders } from "../../domain/followups";
+import { daysOnSale, unitsPerDay } from "../../domain/insights";
+import { COMMITTED_STATUSES } from "../../domain/order-state";
+import {
+	loadBookings,
+	loadFirstSaleDays,
+	loadSales,
+	utcBounds,
+} from "../../domain/report-data";
 import { periods } from "../../domain/reports";
 import {
 	salesByOrderKey,
@@ -15,18 +22,16 @@ import {
 import { getSettings } from "../../domain/settings";
 import { lossesReport, reorderVariant, stockReport } from "./reports";
 
-const { orders } = schema;
+const { orders, productReviews, stockAlerts } = schema;
 
-// Computed by the reports module so every figure matches /api/admin/reports for the same
-// range.
+export const DASHBOARD_DEFAULT_DAYS = 30;
+const TOP_PRODUCTS = 5;
+const LOW_STOCK_ROWS = 8;
+const FOLLOWUP_ROWS = 6;
+
 export const dashboardRouter = new Hono().get(
 	"/",
-	validate(
-		"query",
-		z.object({
-			days: z.coerce.number().int().min(1).max(365).default(30),
-		}),
-	),
+	validate("query", reportDays),
 	async (c) => {
 		const db = getDb();
 		const query = c.req.valid("query");
@@ -34,40 +39,78 @@ export const dashboardRouter = new Hono().get(
 		const { timeZone } = settings;
 		const today = storeToday(timeZone);
 		const range = {
-			from: addDays(today, -(query.days - 1)),
-			to: today,
+			from: query.from ?? addDays(today, -(DASHBOARD_DEFAULT_DAYS - 1)),
+			to: query.to ?? today,
 			timeZone,
 		};
-		const pendingCount = () =>
+		const { start, end } = utcBounds(range);
+		const firstOrders = db
+			.select({
+				customerId: orders.customerId,
+				firstAt: sql<string>`min(${orders.createdAt})`.as("first_at"),
+			})
+			.from(orders)
+			.where(
+				and(
+					inArray(orders.status, [...COMMITTED_STATUSES]),
+					isNotNull(orders.customerId),
+				),
+			)
+			.groupBy(orders.customerId)
+			.as("first_orders");
+		const [
+			sales,
+			bookings,
+			losses,
+			stock,
+			firstSales,
+			followups,
+			[pending],
+			[newCustomers],
+			[reviews],
+			[alerts],
+		] = await Promise.all([
+			loadSales(db, range),
+			loadBookings(db, range),
+			lossesReport(db, settings, { from: range.from, to: range.to }),
+			stockReport(db, settings, { from: range.from, to: range.to }),
+			loadFirstSaleDays(db, timeZone),
+			overdueOrders(db),
 			db
 				.select({ count: sql<number>`count(*)` })
 				.from(orders)
-				.where(eq(orders.status, "pending"));
-		const [sales, bookings, losses, stock, [pending], [overdue]] =
-			await Promise.all([
-				loadSales(db, range),
-				loadBookings(db, range),
-				lossesReport(db, settings, { from: range.from, to: range.to }),
-				stockReport(db, settings),
-				pendingCount(),
-				// Card and transfer orders past the payment deadline (store_settings).
-				db
-					.select({ count: sql<number>`count(*)` })
-					.from(orderFollowups)
-					.where(eq(orderFollowups.action, "collect_payment")),
-			]);
-		if (!pending || !overdue) throw new Error("Aggregate returned no row");
+				.where(eq(orders.status, "pending")),
+			db
+				.select({ count: sql<number>`count(*)` })
+				.from(firstOrders)
+				.where(
+					and(gte(firstOrders.firstAt, start), lt(firstOrders.firstAt, end)),
+				),
+			db
+				.select({ count: sql<number>`count(*)` })
+				.from(productReviews)
+				.where(eq(productReviews.status, "pending")),
+			db
+				.select({ count: sql<number>`count(*)` })
+				.from(stockAlerts)
+				.where(isNull(stockAlerts.notifiedAt)),
+		]);
+		if (!pending || !newCustomers || !reviews || !alerts)
+			throw new Error("Aggregate returned no row");
 		const byDay = salesByOrderKey(sales, (s) => s.day);
 		const empty = salesTotals([]);
+		const countOf = (action: (typeof followups)[number]["action"]) =>
+			followups.filter((f) => f.action === action).length;
 		return c.json({
 			from: range.from,
 			to: range.to,
-			days: query.days,
+			days: daysBetween(range.from, range.to) + 1,
 			sales: salesTotals(sales),
 			bookings,
+			newCustomers: newCustomers.count,
 			losses: (({ from: _, to: __, ...l }) => l)(losses),
 			pendingOrders: pending.count,
-			overduePendingOrders: overdue.count,
+			overduePendingOrders: countOf("collect_payment"),
 			byDay: periods(range.from, range.to, "day").map((p) => {
 				const day = byDay.get(p.period) ?? empty;
 				return {
@@ -77,12 +120,46 @@ export const dashboardRouter = new Hono().get(
 					grossProfit: day.grossProfit,
 				};
 			}),
-			topProducts: salesByProduct(sales).slice(0, 5),
+			topProducts: salesByProduct(sales)
+				.slice(0, TOP_PRODUCTS)
+				.map((p) => {
+					const firstSoldOn = firstSales.get(p.variantId);
+					if (firstSoldOn === undefined)
+						throw new Error(`Variant ${p.variantId} sold without a first sale`);
+					return {
+						...p,
+						unitsPerDay: unitsPerDay(p.units, daysOnSale(firstSoldOn, range)),
+					};
+				}),
 			stock: {
-				...stock.totals,
-				lowStock: stock.variants.filter((v) => reorderVariant(v) && v.lowStock)
-					.length,
+				onHand: stock.totals.onHand,
+				value: stock.totals.value,
+				lowStock: stock.totals.lowStock,
+				outOfStock: stock.totals.outOfStock,
+				threshold: settings.lowStockThreshold,
 			},
+			lowStock: stock.variants
+				.filter((v) => reorderVariant(v) && v.lowStock)
+				.slice(0, LOW_STOCK_ROWS)
+				.map((v) => ({
+					variantId: v.variantId,
+					sku: v.sku,
+					brand: v.brand,
+					name: v.name,
+					onHand: v.onHand,
+					reorderPoint: v.reorderPoint ?? settings.lowStockThreshold,
+					daysOfCover: v.daysOfCover,
+				})),
+			followups: {
+				counts: {
+					collect_payment: countOf("collect_payment"),
+					ship: countOf("ship"),
+					confirm_delivery: countOf("confirm_delivery"),
+				},
+				items: followups.slice(0, FOLLOWUP_ROWS),
+			},
+			pendingReviews: reviews.count,
+			pendingStockAlerts: alerts.count,
 		});
 	},
 );

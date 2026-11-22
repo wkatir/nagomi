@@ -18,6 +18,7 @@ import {
 	CustomerConsents,
 	CustomerOrders,
 	CustomerProfile,
+	CustomerReviews,
 	CustomerSummary,
 } from "./customer-sections";
 import { EditCustomerDialog } from "./edit-customer-dialog";
@@ -129,6 +130,7 @@ export function CustomerDetail({ detail }: { detail: AdminCustomer }) {
 			>
 				<CustomerSummary detail={detail} />
 				<CustomerOrders detail={detail} />
+				<CustomerReviews detail={detail} />
 			</DetailColumns>
 			{editing && (
 				<EditCustomerDialog

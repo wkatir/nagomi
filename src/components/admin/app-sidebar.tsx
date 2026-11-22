@@ -36,11 +36,11 @@ export function AppSidebar({
 							<Link to="/admin" aria-label={storeName}>
 								<Wordmark
 									label={storeName}
-									className="text-[22px] group-data-[collapsible=icon]:hidden"
+									className="text-[22px] text-primary group-data-[collapsible=icon]:hidden"
 								/>
 								<LogoMark
 									label={storeName}
-									className="hidden size-6! group-data-[collapsible=icon]:block"
+									className="hidden size-6! text-primary group-data-[collapsible=icon]:block"
 								/>
 							</Link>
 						</SidebarMenuButton>

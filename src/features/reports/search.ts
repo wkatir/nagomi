@@ -22,6 +22,8 @@ type ReportCsv =
 	| "brands"
 	| "losses"
 	| "stock"
+	| "customers"
+	| "fulfillment"
 	| "reorder";
 
 export function reportCsvHref(

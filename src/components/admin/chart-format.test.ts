@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { formatCompactMoney, formatPeriod } from "./chart-format";
+import { formatCompactMoney, formatPeriod, overTimeKind } from "./chart-format";
 
 describe("formatPeriod", () => {
 	test("a day or a week is its first day", () => {
@@ -31,5 +31,14 @@ describe("formatCompactMoney", () => {
 
 	test("keeps the sign of a loss", () => {
 		expect(formatCompactMoney(-123456, "USD", "en-US")).toBe("-$1.2K");
+	});
+});
+
+describe("overTimeKind", () => {
+	test("a line needs enough points to show a change, else bars", () => {
+		expect(overTimeKind(3)).toBe("bar");
+		expect(overTimeKind(6)).toBe("bar");
+		expect(overTimeKind(7)).toBe("line");
+		expect(overTimeKind(30)).toBe("line");
 	});
 });

@@ -113,9 +113,13 @@ export const formatInstant = (
 	);
 
 // A calendar date has no time zone.
-export const formatCalendarDate = (date: string, locale: string) =>
+export const formatCalendarDate = (
+	date: string,
+	locale: string,
+	dateStyle: "long" | "medium" = "long",
+) =>
 	new Intl.DateTimeFormat(locale, {
-		dateStyle: "long",
+		dateStyle,
 		timeZone: "UTC",
 	}).format(parseDate(date));
 

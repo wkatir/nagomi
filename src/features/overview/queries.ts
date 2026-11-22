@@ -1,5 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import type { InferResponseType } from "hono/client";
+import type { ReportRange } from "#/features/reports/search";
 import { api, parseResponse } from "#/lib/api";
 
 export type AdminDashboard = InferResponseType<
@@ -7,12 +8,8 @@ export type AdminDashboard = InferResponseType<
 	200
 >;
 
-// `days` includes today.
-export const dashboardQuery = (days: number) =>
+export const dashboardQuery = (range: ReportRange) =>
 	queryOptions({
-		queryKey: ["admin", "dashboard", days],
-		queryFn: () =>
-			parseResponse(
-				api().admin.dashboard.$get({ query: { days: String(days) } }),
-			),
+		queryKey: ["admin", "dashboard", range],
+		queryFn: () => parseResponse(api().admin.dashboard.$get({ query: range })),
 	});

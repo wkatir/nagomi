@@ -12,8 +12,10 @@ import {
 	TableRow,
 } from "#/components/ui/table";
 import { useMoney } from "#/hooks/use-money";
+import { useCalendarDate } from "#/hooks/use-store-date";
+import type { ProductRank } from "#/lib/schemas/reports";
 import { m } from "#/paraglide/messages";
-import { usePercent } from "./format";
+import { useDecimal, usePercent } from "./format";
 import type { BrandsReport, ProductsReport } from "./queries";
 
 const CHART_ROWS = 10;
@@ -121,24 +123,63 @@ function Totals({ totals }: { totals: ProductsReport["totals"] }) {
 	);
 }
 
-export function ProductsReportView({ report }: { report: ProductsReport }) {
+type ProductRow = ProductsReport["products"][number];
+
+export const rankValue: Record<ProductRank, (p: ProductRow) => number> = {
+	merchandise: (p) => p.merchandise,
+	units: (p) => p.units,
+	unitsPerDay: (p) => p.unitsPerDay,
+};
+
+export const rankLabel: Record<ProductRank, () => string> = {
+	merchandise: m.admin_report_merchandise,
+	units: m.admin_report_units,
+	unitsPerDay: m.admin_report_units_per_day,
+};
+
+export function rankProducts(products: ProductRow[], rank: ProductRank) {
+	const value = rankValue[rank];
+	return [...products].sort(
+		(a, b) =>
+			value(b) - value(a) ||
+			b.merchandise - a.merchandise ||
+			a.sku.localeCompare(b.sku),
+	);
+}
+
+export function ProductsReportView({
+	report,
+	rank,
+}: {
+	report: ProductsReport;
+	rank: ProductRank;
+}) {
 	const money = useMoney();
 	const compact = useCompactMoney();
-	const { totals, products } = report;
+	const formatDay = useCalendarDate();
+	const decimal = useDecimal();
+	const { totals } = report;
+	const products = rankProducts(report.products, rank);
+	const format = rank === "merchandise" ? money : decimal;
 	return (
 		<>
 			<Totals totals={totals} />
 			<ChartCard
-				title={m.admin_report_products_chart({ count: CHART_ROWS })}
-				categoryLabel={m.admin_report_sku()}
-				seriesLabel={m.admin_report_merchandise()}
+				kind="hbar"
+				title={m.admin_report_products_chart_by({
+					count: CHART_ROWS,
+					metric: rankLabel[rank](),
+				})}
+				description={m.admin_report_products_rank_note()}
+				categoryLabel={m.admin_report_product()}
+				seriesLabel={rankLabel[rank]()}
 				points={products.slice(0, CHART_ROWS).map((p) => ({
 					key: String(p.variantId),
 					label: p.sku,
-					value: p.merchandise,
+					value: rankValue[rank](p),
 				}))}
-				formatValue={money}
-				formatTick={compact}
+				formatValue={format}
+				formatTick={rank === "merchandise" ? compact : decimal}
 			/>
 			<Section title={m.admin_report_detail()}>
 				<Table>
@@ -146,13 +187,19 @@ export function ProductsReportView({ report }: { report: ProductsReport }) {
 						<TableRow>
 							<TableHead>{m.admin_report_product()}</TableHead>
 							<FigureHeads />
+							<TableHead className="text-right">
+								{m.admin_report_units_per_day()}
+							</TableHead>
+							<TableHead className="max-md:hidden">
+								{m.admin_report_first_sale()}
+							</TableHead>
 						</TableRow>
 					</TableHeader>
 					<TableBody>
 						{products.length === 0 && (
 							<TableRow>
 								<TableCell
-									colSpan={8}
+									colSpan={10}
 									className="py-10 text-center text-muted-foreground"
 								>
 									{m.admin_report_no_sales()}
@@ -172,6 +219,17 @@ export function ProductsReportView({ report }: { report: ProductsReport }) {
 									</div>
 								</TableCell>
 								<FigureCells row={p} />
+								<TableCell className={numeric}>
+									{decimal(p.unitsPerDay)}
+								</TableCell>
+								<TableCell className="max-md:hidden">
+									<div className="grid">
+										<span>{formatDay(p.firstSoldOn)}</span>
+										<span className="type-meta text-muted-foreground">
+											{m.admin_report_days_on_sale({ count: p.daysOnSale })}
+										</span>
+									</div>
+								</TableCell>
 							</TableRow>
 						))}
 					</TableBody>
@@ -180,6 +238,8 @@ export function ProductsReportView({ report }: { report: ProductsReport }) {
 							<TableRow>
 								<TableCell>{m.admin_report_total()}</TableCell>
 								<FigureCells row={totalsRow(totals, products)} />
+								<TableCell />
+								<TableCell className="max-md:hidden" />
 							</TableRow>
 						</TableFooter>
 					)}

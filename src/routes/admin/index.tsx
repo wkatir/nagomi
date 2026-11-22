@@ -1,59 +1,50 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { createFileRoute, stripSearchParams } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
+import { DateRangeFilter } from "#/components/admin/data-table/date-range-filter";
 import { PageHeader } from "#/components/admin/page-header";
 import { QueryError } from "#/components/admin/query-error";
-import { ToggleGroup, ToggleGroupItem } from "#/components/ui/toggle-group";
 import {
 	OverviewBlocks,
 	OverviewSkeleton,
 } from "#/features/overview/overview-blocks";
 import { dashboardQuery } from "#/features/overview/queries";
-import { DASHBOARD_DAYS, dashboardSearch } from "#/lib/schemas/dashboard";
+import { reportRange } from "#/features/reports/search";
+import { useReportRange } from "#/features/reports/use-report-range";
+import { storeQuery } from "#/lib/queries";
+import { reportDays } from "#/lib/schemas/reports";
 import { m } from "#/paraglide/messages";
 
 export const Route = createFileRoute("/admin/")({
 	staticData: { crumb: m.admin_nav_overview },
-	validateSearch: dashboardSearch,
-	search: { middlewares: [stripSearchParams(dashboardSearch.parse({}))] },
+	validateSearch: reportDays,
 	loaderDeps: ({ search }) => search,
-	// Started, not awaited: the page has its own loading state.
-	loader: ({ context, deps }) => {
-		void context.queryClient.prefetchQuery(dashboardQuery(deps.days));
+	loader: async ({ context, deps }) => {
+		const store = await context.queryClient.ensureQueryData(storeQuery);
+		void context.queryClient.prefetchQuery(
+			dashboardQuery(reportRange(deps, store.timeZone)),
+		);
 	},
 	component: Overview,
 });
 
 function Overview() {
-	const { days } = Route.useSearch();
+	const search = Route.useSearch();
 	const navigate = Route.useNavigate();
+	const range = useReportRange(search);
 	const query = useQuery({
-		...dashboardQuery(days),
+		...dashboardQuery(range),
 		placeholderData: keepPreviousData,
 	});
 
 	return (
 		<>
 			<PageHeader
-				title={m.admin_overview_title({ days })}
+				title={m.admin_overview_heading()}
 				action={
-					<ToggleGroup
-						type="single"
-						variant="outline"
-						size="sm"
-						aria-label={m.admin_overview_window()}
-						value={String(days)}
-						onValueChange={(value) => {
-							const next = DASHBOARD_DAYS.find((d) => String(d) === value);
-							// Choosing the window already on is not a choice.
-							if (next) navigate({ search: { days: next } });
-						}}
-					>
-						{DASHBOARD_DAYS.map((d) => (
-							<ToggleGroupItem key={d} value={String(d)}>
-								{m.admin_overview_days_n({ count: d })}
-							</ToggleGroupItem>
-						))}
-					</ToggleGroup>
+					<DateRangeFilter
+						value={range}
+						onChange={(days) => navigate({ search: days })}
+					/>
 				}
 			/>
 			{query.isPending ? (

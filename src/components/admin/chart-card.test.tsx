@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 import { m } from "#/paraglide/messages";
-import { ChartCard, ChartCardSkeleton } from "./chart-card";
+import { ChartCard, ChartCardSkeleton, ShareChartCard } from "./chart-card";
 
 const card = (values: number[]) =>
 	renderToStaticMarkup(
@@ -68,5 +68,39 @@ describe("ChartCardSkeleton", () => {
 		expect(html).toContain("Sales by day");
 		expect(html).toContain("h-60");
 		expect(html).not.toContain("<table");
+	});
+});
+
+describe("ShareChartCard", () => {
+	const share = (values: number[]) =>
+		renderToStaticMarkup(
+			<ShareChartCard
+				title="Segments"
+				categoryLabel="Segment"
+				seriesLabel="Customers"
+				parts={values.map((value, n) => ({
+					key: `s${n}`,
+					label: `Part ${n + 1}`,
+					value,
+				}))}
+				formatValue={String}
+			/>,
+		);
+
+	test("lists each part with its value and share, and tables them", () => {
+		const html = share([3, 1]);
+		expect(html).toContain("Part 1");
+		expect(html).toContain("75 %");
+		expect(html).toContain("25 %");
+		expect(html).toContain("<caption>Segments</caption>");
+	});
+
+	test("nothing to share is told, not drawn", () => {
+		expect(share([0, 0])).toContain(m.admin_report_chart_empty());
+	});
+
+	test("refuses more than five parts: a pie with more is unreadable", () => {
+		expect(() => share([1, 1, 1, 1, 1, 1])).toThrow();
+		expect(() => share([1, 1, 1, 1, 1])).not.toThrow();
 	});
 });

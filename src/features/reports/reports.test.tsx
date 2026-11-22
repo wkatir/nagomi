@@ -52,6 +52,9 @@ const figures = (
 	orders: 0,
 	units: 0,
 	revenue: 0,
+	tax: 0,
+	netRevenue: 0,
+	averageTicket: null,
 	merchandise: 0,
 	shipping: 0,
 	costOfGoodsSold: 0,
@@ -69,6 +72,9 @@ describe("SalesReportView", () => {
 			orders: 3,
 			units: 5,
 			revenue: 9500,
+			tax: 1093,
+			netRevenue: 8407,
+			averageTicket: 3167,
 			merchandise: 9000,
 			shipping: 500,
 			costOfGoodsSold: 3500,
@@ -85,6 +91,9 @@ describe("SalesReportView", () => {
 					orders: 1,
 					units: 2,
 					revenue: 3200,
+					tax: 368,
+					netRevenue: 2832,
+					averageTicket: 3200,
 					costOfGoodsSold: 1300,
 					grossProfit: 1900,
 					margin: 0.5938,
@@ -104,28 +113,35 @@ describe("SalesReportView", () => {
 	test("shows the totals as figures", () => {
 		expect(stats(html)).toEqual([
 			[
-				m.admin_kpi_revenue(),
+				m.admin_kpi_sales_with_tax(),
 				money(9500),
 				m.admin_report_orders_n({ count: 3 }),
 			],
+			[
+				m.admin_kpi_sales_net(),
+				money(8407),
+				m.admin_kpi_tax_note({ amount: money(1093) }),
+			],
+			[m.admin_kpi_avg_ticket(), money(3167), m.admin_kpi_avg_ticket_note()],
 			[
 				m.admin_kpi_gross_profit(),
 				money(5500),
 				m.admin_report_margin_n({ percent: percent(0.6111) }),
 			],
 			[m.admin_report_units(), "5", m.admin_report_kept_units()],
-			[m.admin_kpi_cogs(), money(3500), m.admin_kpi_cogs_note()],
 		]);
 	});
 
 	test("tables each period by its days, cut by the range and marked, and closes with the totals", () => {
-		const table = rows(html).filter((row) => row.length === 7);
+		const table = rows(html).filter((row) => row.length === 9);
 		expect(table).toEqual([
 			[
 				m.admin_report_period(),
 				m.admin_report_orders(),
 				m.admin_report_units(),
-				m.admin_kpi_revenue(),
+				m.admin_kpi_sales_with_tax(),
+				m.admin_kpi_sales_net(),
+				m.admin_kpi_avg_ticket(),
 				m.admin_kpi_cogs(),
 				m.admin_kpi_gross_profit(),
 				m.admin_report_margin(),
@@ -134,6 +150,8 @@ describe("SalesReportView", () => {
 				`${day("2026-10-01")} - ${day("2026-10-04")} | ${m.admin_report_partial()}`,
 				"1",
 				"2",
+				money(3200),
+				money(2832),
 				money(3200),
 				money(1300),
 				money(1900),
@@ -145,6 +163,8 @@ describe("SalesReportView", () => {
 				"0",
 				money(0),
 				money(0),
+				"",
+				money(0),
 				money(0),
 				m.admin_report_na(),
 			],
@@ -153,6 +173,8 @@ describe("SalesReportView", () => {
 				"3",
 				"5",
 				money(9500),
+				money(8407),
+				money(3167),
 				money(3500),
 				money(5500),
 				percent(0.6111),
@@ -185,7 +207,12 @@ describe("SalesReportView", () => {
 							from: "2026-10-05",
 							to: "2026-10-05",
 							partial: false,
-							...figures({ orders: 1, revenue: 1500 }),
+							...figures({
+								orders: 1,
+								revenue: 1500,
+								netRevenue: 1327,
+								averageTicket: 1500,
+							}),
 						},
 					],
 				}}
@@ -196,6 +223,8 @@ describe("SalesReportView", () => {
 			day("2026-10-05"),
 			"1",
 			"0",
+			money(1500),
+			money(1327),
 			money(1500),
 			money(0),
 			money(0),
@@ -216,6 +245,11 @@ describe("ProductsReportView and BrandsReportView", () => {
 		grossProfit: 3000,
 		margin: 0.6667,
 	};
+	const sale = {
+		firstSoldOn: "2026-10-01",
+		daysOnSale: 31,
+		unitsPerDay: 0.1,
+	};
 	const totals = figures({
 		orders: 3,
 		units: 5,
@@ -229,13 +263,23 @@ describe("ProductsReportView and BrandsReportView", () => {
 		to: "2026-10-31",
 		totals,
 		products: [
-			{ variantId: 1, sku: "OIL", brand: "SKIN1004", name: "Aceite", ...row },
+			{
+				variantId: 1,
+				sku: "OIL",
+				brand: "SKIN1004",
+				name: "Aceite",
+				...row,
+				...sale,
+			},
 			{
 				variantId: 2,
 				sku: "TONER",
 				brand: "COSRX",
 				name: "Tónico",
 				...row,
+				firstSoldOn: "2026-10-22",
+				daysOnSale: 10,
+				unitsPerDay: 0.1,
 				unitsSold: 3,
 				unitsReturned: 2,
 				merchandise: 1500,
@@ -247,7 +291,11 @@ describe("ProductsReportView and BrandsReportView", () => {
 	};
 
 	test("shows the totals as figures", () => {
-		expect(stats(render(<ProductsReportView report={products} />))).toEqual([
+		expect(
+			stats(
+				render(<ProductsReportView report={products} rank="merchandise" />),
+			),
+		).toEqual([
 			[
 				m.admin_report_merchandise(),
 				money(6000),
@@ -264,9 +312,9 @@ describe("ProductsReportView and BrandsReportView", () => {
 	});
 
 	test("tables the products by their figures and closes with the sums of the rows", () => {
-		const table = rows(render(<ProductsReportView report={products} />)).filter(
-			(r) => r.length === 8,
-		);
+		const table = rows(
+			render(<ProductsReportView report={products} rank="merchandise" />),
+		).filter((r) => r.length === 10);
 		expect(table.slice(1)).toEqual([
 			[
 				"SKIN1004 Aceite | OIL",
@@ -277,6 +325,8 @@ describe("ProductsReportView and BrandsReportView", () => {
 				money(1500),
 				money(3000),
 				percent(0.6667),
+				"0.1",
+				`${formatCalendarDate("2026-10-01", locale)} | ${m.admin_report_days_on_sale({ count: 31 })}`,
 			],
 			[
 				"COSRX Tónico | TONER",
@@ -287,8 +337,9 @@ describe("ProductsReportView and BrandsReportView", () => {
 				money(500),
 				money(1000),
 				percent(0.1),
+				"0.1",
+				`${formatCalendarDate("2026-10-22", locale)} | ${m.admin_report_days_on_sale({ count: 10 })}`,
 			],
-			// 4 + 3 sold and 1 + 2 returned, over the totals of the report.
 			[
 				m.admin_report_total(),
 				"3",
@@ -298,7 +349,32 @@ describe("ProductsReportView and BrandsReportView", () => {
 				money(2000),
 				money(4000),
 				percent(0.5),
+				"",
+				"",
 			],
+		]);
+	});
+
+	test("ranks by units per day, so a product that started late is not buried", () => {
+		const [first, second] = products.products;
+		if (!first || !second) throw new Error("fixture");
+		const ranked = rows(
+			render(
+				<ProductsReportView
+					report={{
+						...products,
+						products: [
+							{ ...first, unitsPerDay: 0.1 },
+							{ ...second, unitsPerDay: 0.3 },
+						],
+					}}
+					rank="unitsPerDay"
+				/>,
+			),
+		).filter((r) => r.length === 2);
+		expect(ranked.slice(1)).toEqual([
+			["TONER", "0.3"],
+			["OIL", "0.1"],
 		]);
 	});
 
@@ -311,12 +387,13 @@ describe("ProductsReportView and BrandsReportView", () => {
 				brand: "B",
 				name: "P",
 				...row,
+				...sale,
 				merchandise: 1000 - n,
 			})),
 		};
-		const chart = rows(render(<ProductsReportView report={many} />)).filter(
-			(r) => r.length === 2,
-		);
+		const chart = rows(
+			render(<ProductsReportView report={many} rank="merchandise" />),
+		).filter((r) => r.length === 2);
 		expect(chart.slice(1).map(([sku]) => sku)).toEqual(
 			Array.from({ length: 10 }, (_, n) => `SKU-${n + 1}`),
 		);
@@ -327,6 +404,7 @@ describe("ProductsReportView and BrandsReportView", () => {
 		const html = render(
 			<ProductsReportView
 				report={{ ...products, totals: figures(), products: [] }}
+				rank="merchandise"
 			/>,
 		);
 		expect(html).toContain(m.admin_report_no_sales());
@@ -475,80 +553,126 @@ describe("LossesReportView", () => {
 });
 
 describe("StockReportView", () => {
-	const stock = { onHand: 8, value: 5600 };
+	const variant = {
+		variantStatus: "active" as const,
+		productStatus: "published" as const,
+		outOfStock: false,
+		unitsSold: 5,
+		averageOnHand: 10,
+		rotation: 0.5,
+		daysOfCover: 40,
+	};
 	const report: StockReport = {
+		from: "2026-10-01",
+		to: "2026-10-24",
 		asOf: "2026-10-24",
 		lowStockThreshold: 5,
-		totals: stock,
+		totals: {
+			onHand: 10,
+			value: 7000,
+			unitsSold: 11,
+			rotation: 0.8,
+			daysOfCover: 21,
+			outOfStock: 1,
+			lowStock: 2,
+		},
 		variants: [
 			{
+				...variant,
+				variantId: 2,
+				sku: "RAT-003",
+				brand: "Pulsar",
+				name: "Tate",
+				reorderPoint: null,
+				lowStock: true,
+				outOfStock: true,
+				onHand: 0,
+				value: 0,
+				unitsSold: 6,
+				rotation: null,
+				daysOfCover: null,
+			},
+			{
+				...variant,
 				variantId: 1,
 				sku: "TEC-001",
 				brand: "Royal Kludge",
 				name: "RK75",
-				variantStatus: "active",
-				productStatus: "published",
 				reorderPoint: 10,
 				lowStock: true,
-				...stock,
-			},
-			{
-				variantId: 2,
-				sku: "RAT-001",
-				brand: "Pulsar",
-				name: "X2",
-				variantStatus: "active",
-				productStatus: "published",
-				reorderPoint: null,
-				lowStock: true,
-				...stock,
 				onHand: 2,
 				value: 1400,
+				daysOfCover: 9,
 			},
 			{
+				...variant,
 				variantId: 3,
 				sku: "ALF-001",
 				brand: "Nagomi",
 				name: "Sakura XL",
-				variantStatus: "active",
-				productStatus: "published",
 				reorderPoint: 1,
 				lowStock: false,
-				...stock,
+				onHand: 8,
+				value: 5600,
 			},
 		],
 	};
 	const html = render(<StockReportView report={report} />);
 
-	test("shows the stock on hand and at cost", () => {
-		expect(stats(html)).toEqual([
+	test("answers what to restock: sold out, low and the pace of sales", () => {
+		expect(stats(html).map(([label, value]) => [label, value])).toEqual([
+			[m.admin_report_on_hand(), "10"],
+			[m.admin_report_stock_value(), money(7000)],
+			[m.admin_stock_out_title(), "1"],
+			[m.admin_overview_below_reorder(), "2"],
+			[m.admin_report_rotation(), "0.8"],
+		]);
+		expect(html).toContain(
+			m.admin_report_as_of({ date: formatCalendarDate("2026-10-24", locale) }),
+		);
+	});
+
+	test("tables each variant with its state, sales, turnover and days of cover", () => {
+		const sizes = rows(html).filter((r) => r.length === 8);
+		expect(sizes.slice(1)).toEqual([
 			[
-				m.admin_report_on_hand(),
-				"8",
-				m.admin_report_as_of({
-					date: formatCalendarDate("2026-10-24", locale),
-				}),
+				"Pulsar Tate | RAT-003",
+				m.admin_stock_out(),
+				"0",
+				"5",
+				"6",
+				"—",
+				"—",
+				money(0),
 			],
-			[m.admin_report_stock_value(), money(5600), m.admin_report_at_cost()],
+			[
+				"Royal Kludge RK75 | TEC-001",
+				m.admin_stock_low(),
+				"2",
+				"10",
+				"5",
+				"0.5",
+				"9",
+				money(1400),
+			],
+			[
+				"Nagomi Sakura XL | ALF-001",
+				m.admin_stock_ok(),
+				"8",
+				"1",
+				"5",
+				"0.5",
+				"40",
+				money(5600),
+			],
 		]);
 	});
 
-	test("tables each variant, marking the ones at or below their point or the store's", () => {
-		const sizes = rows(html).filter((r) => r.length === 4);
-		expect(sizes.slice(1)).toEqual([
-			[
-				"Royal Kludge RK75 | TEC-001",
-				"8",
-				money(5600),
-				m.admin_report_below_point({ point: 10 }),
-			],
-			[
-				"Pulsar X2 | RAT-001",
-				"2",
-				money(1400),
-				m.admin_report_below_point({ point: 5 }),
-			],
-			["Nagomi Sakura XL | ALF-001", "8", money(5600), "1"],
+	test("charts the days of cover of what still has stock", () => {
+		const chart = rows(html).filter((r) => r.length === 2);
+		expect(chart.slice(1)).toEqual([
+			["TEC-001", m.admin_report_days_n({ count: 9 })],
+			["ALF-001", m.admin_report_days_n({ count: 40 })],
 		]);
 	});
 

@@ -47,3 +47,9 @@ export const reorderSearch = z.object({
 	lookbackWeeks: z.literal(LOOKBACK_WEEKS).default(8),
 	targetWeeks: z.literal(TARGET_WEEKS).default(4),
 });
+
+export const PRODUCT_RANKS = ["merchandise", "units", "unitsPerDay"] as const;
+export type ProductRank = (typeof PRODUCT_RANKS)[number];
+export const productsSearch = z.object({
+	rank: z.enum(PRODUCT_RANKS).default("merchandise"),
+});
