@@ -1,12 +1,12 @@
 import { cn } from "cn";
 import type { InferResponseType } from "hono/client";
+import { Check, Landmark, X } from "lucide-react";
 import { useMoney } from "#/hooks/use-money";
+import { useCalendarDate, useStoreDate } from "#/hooks/use-store-date";
 import type { api } from "#/lib/api";
-import { formatCalendarDate } from "#/lib/dates";
-import { intlLocale } from "#/lib/intl";
+import type { OrderStatus } from "#/lib/enums";
 import { paymentLabel } from "#/lib/payment";
 import { m } from "#/paraglide/messages";
-import { getLocale } from "#/paraglide/runtime";
 
 export type PublicOrder = InferResponseType<
 	ReturnType<typeof api>["orders"][":code"]["$get"],
@@ -23,44 +23,127 @@ export const orderStatusText = {
 
 const STEPS = ["pending", "paid", "shipped", "delivered"] as const;
 
-// The steps of the order, each with the moment it happened (order_status_history).
-export function OrderTimeline({ order }: { order: PublicOrder }) {
-	const locale = getLocale();
-	const at = (status: string) =>
-		order.history.find((h) => h.to === status)?.at ?? null;
-	const steps =
-		order.status === "cancelled"
-			? [...order.history.map((h) => h.to)]
+const statusTone: Record<OrderStatus, string> = {
+	pending: "bg-warning/10 text-warning",
+	paid: "bg-primary/15 text-primary",
+	shipped: "bg-primary/15 text-primary",
+	delivered: "bg-success/10 text-success",
+	cancelled: "bg-destructive/10 text-destructive",
+};
+
+export function OrderStatusBadge({
+	status,
+	className,
+}: {
+	status: OrderStatus;
+	className?: string;
+}) {
+	return (
+		<span
+			className={cn(
+				"inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 type-meta font-medium",
+				statusTone[status],
+				className,
+			)}
+		>
+			<span aria-hidden className="size-1.5 rounded-full bg-current" />
+			{orderStatusText[status]()}
+		</span>
+	);
+}
+
+export function OrderTimeline({
+	status,
+	paymentMethod,
+	history,
+	className,
+}: {
+	status: OrderStatus;
+	paymentMethod: string;
+	history: readonly { to: OrderStatus; at: string }[];
+	className?: string;
+}) {
+	const formatDate = useStoreDate();
+	const at = (step: OrderStatus) =>
+		history.find((h) => h.to === step)?.at ?? null;
+	const steps: OrderStatus[] =
+		status === "cancelled"
+			? [
+					...history.map((h) => h.to).filter((s) => s !== "cancelled"),
+					"cancelled",
+				]
 			: STEPS.filter(
 					(s) =>
 						!(
 							s === "paid" &&
-							order.paymentMethod === "cash_on_delivery" &&
+							paymentMethod === "cash_on_delivery" &&
 							!at("paid")
 						),
 				);
+	const reached = steps.filter((s) => at(s)).length;
 	return (
-		<ol className="grid gap-3">
-			{steps.map((status) => {
-				const when = at(status);
+		<ol
+			className={cn(
+				"grid gap-4 md:grid-flow-col md:auto-cols-fr md:gap-0",
+				className,
+			)}
+		>
+			{steps.map((step, index) => {
+				const when = at(step);
+				const done = when !== null;
+				const current = done && index === reached - 1;
+				const cancelled = step === "cancelled";
 				return (
-					<li key={status} className="flex items-start gap-3">
+					<li
+						key={step}
+						aria-current={current ? "step" : undefined}
+						className="relative flex gap-3 md:flex-col md:items-center md:gap-2 md:text-center"
+					>
+						{index < steps.length - 1 && (
+							<span
+								aria-hidden
+								className={cn(
+									"absolute top-8 left-[0.9375rem] h-[calc(100%-1rem)] w-px md:top-[0.9375rem] md:left-[calc(50%+1.25rem)] md:h-px md:w-[calc(100%-2.5rem)]",
+									index < reached - 1 ? "bg-primary" : "bg-border",
+								)}
+							/>
+						)}
 						<span
 							aria-hidden
 							className={cn(
-								"mt-1.5 size-2.5 shrink-0 rounded-full",
-								when ? "bg-foreground" : "border border-muted-foreground",
+								"relative z-10 flex size-[1.875rem] shrink-0 items-center justify-center rounded-full border",
+								cancelled
+									? "border-destructive bg-destructive/15 text-destructive"
+									: done
+										? "border-primary bg-primary text-primary-foreground"
+										: "border-input bg-background text-muted-foreground",
+								current && !cancelled && "ring-4 ring-primary/25",
 							)}
-						/>
-						<span>
+						>
+							{cancelled ? (
+								<X className="size-4" />
+							) : done ? (
+								<Check className="size-4" />
+							) : (
+								<span className="type-meta">{index + 1}</span>
+							)}
+						</span>
+						<span className="pt-1 md:pt-0">
 							<span
-								className={cn("font-medium", !when && "text-muted-foreground")}
+								className={cn(
+									"block type-small font-medium",
+									!done && "text-muted-foreground",
+								)}
 							>
-								{orderStatusText[status]()}
+								{orderStatusText[step]()}
+								<span className="sr-only">
+									{" "}
+									{done ? m.order_step_done() : m.order_step_pending()}
+								</span>
 							</span>
 							{when && (
 								<span className="block type-meta text-muted-foreground">
-									{new Date(when).toLocaleString(locale, {
+									{formatDate(when, {
 										dateStyle: "medium",
 										timeStyle: "short",
 									})}
@@ -76,24 +159,20 @@ export function OrderTimeline({ order }: { order: PublicOrder }) {
 
 export function OrderSummary({ order }: { order: PublicOrder }) {
 	const money = useMoney();
-	const locale = getLocale();
-	const intl = intlLocale(locale, "SV");
 	return (
-		<div className="grid gap-6">
-			<ul className="grid gap-2 border-t pt-4">
+		<div className="grid gap-4">
+			<ul className="grid gap-3">
 				{order.items.map((i) => (
 					<li
-						key={`${i.kind}-${i.name}`}
-						className="flex justify-between gap-4"
+						key={`${i.kind}-${i.sku ?? i.name}`}
+						className="flex justify-between gap-4 type-small"
 					>
-						<span>
-							{i.quantity} × {i.name}
-							{i.optionLabel && (
-								<span className="text-muted-foreground">
-									{" "}
-									· {i.optionLabel}
-								</span>
-							)}
+						<span className="min-w-0">
+							<span className="font-medium">{i.name}</span>
+							<span className="block type-meta text-muted-foreground">
+								{m.checkout_line_quantity({ count: i.quantity })}
+								{i.optionLabel && ` · ${i.optionLabel}`}
+							</span>
 							{i.components.length > 0 && (
 								<span className="block type-meta text-muted-foreground">
 									{i.components.map((c) => c.name).join(", ")}
@@ -104,9 +183,9 @@ export function OrderSummary({ order }: { order: PublicOrder }) {
 					</li>
 				))}
 			</ul>
-			<dl className="grid gap-1 border-t pt-4">
+			<dl className="grid gap-2 border-t pt-4 type-small">
 				<div className="flex justify-between">
-					<dt>{m.cart_subtotal()}</dt>
+					<dt className="text-foreground-secondary">{m.cart_subtotal()}</dt>
 					<dd className="tabular-nums">{money(order.subtotal)}</dd>
 				</div>
 				{order.discount > 0 && (
@@ -115,8 +194,8 @@ export function OrderSummary({ order }: { order: PublicOrder }) {
 						<dd className="tabular-nums">−{money(order.discount)}</dd>
 					</div>
 				)}
-				<div className="flex justify-between">
-					<dt>
+				<div className="flex justify-between gap-4">
+					<dt className="text-foreground-secondary">
 						{order.shippingZoneName
 							? m.checkout_shipping_to({ zone: order.shippingZoneName })
 							: m.cart_shipping()}
@@ -127,50 +206,79 @@ export function OrderSummary({ order }: { order: PublicOrder }) {
 							: money(order.shipping)}
 					</dd>
 				</div>
-				<div className="flex justify-between font-bold">
-					<dt>{m.cart_total()}</dt>
-					<dd className="tabular-nums">{money(order.total)}</dd>
+				<div className="mt-1 flex items-baseline justify-between border-t pt-3">
+					<dt className="type-body font-semibold">{m.cart_total()}</dt>
+					<dd className="text-xl font-semibold tabular-nums">
+						{money(order.total)}
+					</dd>
 				</div>
-				<div className="type-small text-muted-foreground">
-					{m.order_iva_included({ amount: money(order.taxIncluded) })}
+				<div className="type-meta text-muted-foreground">
+					<dt className="sr-only">{m.product_tax_included()}</dt>
+					<dd>{m.order_iva_included({ amount: money(order.taxIncluded) })}</dd>
 				</div>
-			</dl>
-			<dl className="grid gap-1 type-small">
-				<div>
-					<dt className="font-medium">{m.checkout_payment()}</dt>
-					<dd>{paymentLabel[order.paymentMethod]()}</dd>
-				</div>
-				{order.address.addressLine && (
-					<div>
-						<dt className="font-medium">{m.checkout_delivery()}</dt>
-						<dd>
-							{[
-								order.address.addressLine,
-								order.address.municipality,
-								order.address.department,
-							].join(", ")}
-							{order.address.reference && ` (${order.address.reference})`}
-						</dd>
-					</div>
-				)}
-				{order.deliveryEstimate && order.status !== "cancelled" && (
-					<div>
-						<dd>
-							{m.order_estimate({
-								from: formatCalendarDate(order.deliveryEstimate.from, intl),
-								to: formatCalendarDate(order.deliveryEstimate.to, intl),
-							})}
-						</dd>
-					</div>
-				)}
-				{order.courier && (
-					<dd>{m.order_courier({ courier: order.courier })}</dd>
-				)}
-				{order.trackingCode && (
-					<dd>{m.order_tracking_code({ code: order.trackingCode })}</dd>
-				)}
 			</dl>
 		</div>
+	);
+}
+
+export function OrderDelivery({ order }: { order: PublicOrder }) {
+	const calendarDate = useCalendarDate();
+	return (
+		<dl className="grid gap-3 type-small">
+			<div>
+				<dt className="type-meta text-muted-foreground">
+					{m.checkout_payment()}
+				</dt>
+				<dd>{paymentLabel[order.paymentMethod]()}</dd>
+			</div>
+			{order.address.addressLine && (
+				<div>
+					<dt className="type-meta text-muted-foreground">
+						{m.checkout_delivery()}
+					</dt>
+					<dd>
+						{[
+							order.address.addressLine,
+							order.address.municipality,
+							order.address.department,
+						].join(", ")}
+						{order.address.reference && (
+							<span className="block text-muted-foreground">
+								{order.address.reference}
+							</span>
+						)}
+					</dd>
+				</div>
+			)}
+			{order.deliveryEstimate && order.status !== "cancelled" && (
+				<div>
+					<dt className="type-meta text-muted-foreground">
+						{m.order_estimate_label()}
+					</dt>
+					<dd>
+						{m.order_estimate_range({
+							from: calendarDate(order.deliveryEstimate.from),
+							to: calendarDate(order.deliveryEstimate.to),
+						})}
+					</dd>
+				</div>
+			)}
+			{order.courier && (
+				<div>
+					<dt className="type-meta text-muted-foreground">
+						{m.order_courier_label()}
+					</dt>
+					<dd>
+						{order.courier}
+						{order.trackingCode && (
+							<span className="block font-medium tabular-nums">
+								{m.order_tracking_code({ code: order.trackingCode })}
+							</span>
+						)}
+					</dd>
+				</div>
+			)}
+		</dl>
 	);
 }
 
@@ -183,24 +291,30 @@ export function BankTransferBox({
 }) {
 	const money = useMoney();
 	return (
-		<section className="grid gap-2 border p-5">
-			<h2 className="type-h4">{m.order_bank_title()}</h2>
-			<dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 type-small">
-				<dt>{m.order_bank_bank()}</dt>
+		<section
+			aria-labelledby="bank-title"
+			className="panel grid gap-3 border-primary/40 p-5"
+		>
+			<h2 id="bank-title" className="flex items-center gap-2 type-h3">
+				<Landmark aria-hidden className="size-5 text-brand" />
+				{m.order_bank_title()}
+			</h2>
+			<dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-1.5 type-small">
+				<dt className="text-muted-foreground">{m.order_bank_bank()}</dt>
 				<dd>{transfer.bank}</dd>
-				<dt>{m.order_bank_type()}</dt>
+				<dt className="text-muted-foreground">{m.order_bank_type()}</dt>
 				<dd>{transfer.accountType}</dd>
-				<dt>{m.order_bank_number()}</dt>
+				<dt className="text-muted-foreground">{m.order_bank_number()}</dt>
 				<dd className="font-medium tabular-nums">{transfer.accountNumber}</dd>
-				<dt>{m.order_bank_holder()}</dt>
+				<dt className="text-muted-foreground">{m.order_bank_holder()}</dt>
 				<dd>{transfer.accountHolder}</dd>
-				<dt>{m.cart_total()}</dt>
-				<dd className="font-medium tabular-nums">{money(total)}</dd>
+				<dt className="text-muted-foreground">{m.cart_total()}</dt>
+				<dd className="font-semibold tabular-nums">{money(total)}</dd>
 			</dl>
-			<p className="type-small">
+			<p className="rounded-lg bg-accent/50 px-3 py-2 type-small">
 				{m.order_bank_reference({ code: transfer.reference })}
 			</p>
-			<p className="type-small text-muted-foreground">
+			<p className="type-meta text-muted-foreground">
 				{m.order_bank_due({ hours: String(transfer.dueHours) })}
 			</p>
 		</section>
