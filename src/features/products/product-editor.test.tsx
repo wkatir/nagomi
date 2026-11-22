@@ -10,11 +10,8 @@ const text = (locale: "es" | "en", name: string) => ({
 	locale,
 	name,
 	tagline: null,
+	shortSpecs: null,
 	description: null,
-	howToUse: null,
-	keyIngredients: null,
-	benefits: null,
-	cautions: null,
 	seoTitle: null,
 	seoDescription: null,
 });
@@ -22,8 +19,8 @@ const text = (locale: "es" | "en", name: string) => ({
 const size = {
 	productId: 1,
 	status: "active" as const,
-	sizeValue: 30,
-	sizeUnit: "ml" as const,
+	optionLabel: "Switches rojos",
+	updatedBy: null,
 	price: 1500,
 	compareAtPrice: 2000,
 	reorderPoint: 4,
@@ -52,22 +49,27 @@ const alt = (es?: string): Record<string, string> => (es ? { es } : {});
 
 const product: AdminProduct = {
 	id: 1,
-	slug: "cleansing-oil",
+	slug: "kuro-60-compact-keyboard",
 	brandId: 1,
 	categoryId: 1,
 	status: "draft",
-	inci: "Aqua",
-	sanitaryRegistration: "NSO-1",
+	warrantyMonths: 12,
+	isFeatured: false,
+	badge: null,
 	createdAt: "2026-01-01T00:00:00Z",
 	updatedAt: "2026-02-03T15:00:00Z",
 	publishMissing: ["photo_alt"],
-	translations: [text("es", "Aceite limpiador")],
+	translations: [text("es", "Teclado Kuro 60%")],
 	variants: [
-		{ ...size, id: 1, sku: "OIL-30" },
-		{ ...size, id: 2, sku: "OIL-OLD", status: "archived" },
+		{ ...size, id: 1, sku: "TEC-003" },
+		{ ...size, id: 2, sku: "TEC-009", status: "archived" },
 	],
-	concernIds: [1],
-	skinTypes: ["dry"],
+	specs: [
+		{
+			position: 1,
+			translations: { es: { label: "Formato", value: "60%" } },
+		},
+	],
 	collectionIds: [],
 	images: [
 		{
@@ -75,7 +77,7 @@ const product: AdminProduct = {
 			id: 1,
 			r2Key: `${"a".repeat(64)}.jpg`,
 			url: `/media/${"a".repeat(64)}.jpg`,
-			alt: alt("Un frasco de aceite"),
+			alt: alt("Teclado negro con luz violeta"),
 		},
 		{
 			...photo,
@@ -101,19 +103,21 @@ describe("ProductEditor", () => {
 	test("names the product, says where it stands and has a card for each part", () => {
 		const html = editor();
 		expect(html).toContain("<h1");
-		expect(html).toContain("Aceite limpiador");
+		expect(html).toContain("Teclado Kuro 60%");
 		expect(html).toContain(m.admin_product_status_draft());
 		for (const title of [
 			m.admin_product_basics(),
 			m.admin_product_texts(),
 			m.admin_product_sizes(),
+			m.admin_product_specs(),
+			m.admin_product_price_history(),
 			m.admin_product_photos(),
 			m.admin_product_status_title(),
 			m.admin_product_organization(),
 		])
 			expect(html).toContain(title);
 		// Each card with a form has its own Save.
-		expect(html.match(new RegExp(`>${m.admin_save()}<`, "g"))).toHaveLength(3);
+		expect(html.match(new RegExp(`>${m.admin_save()}<`, "g"))).toHaveLength(4);
 	});
 
 	test("a draft that lacks something cannot be published, and says what", () => {
@@ -145,7 +149,7 @@ describe("ProductEditor", () => {
 		expect(html).not.toContain(m.admin_product_checklist());
 	});
 
-	test("an archived product offers neither, and cannot take sizes or photos", () => {
+	test("an archived product offers neither, and cannot take variants or photos", () => {
 		const html = editor({ status: "archived" });
 		expect(html).not.toContain(`>${m.admin_product_publish()}<`);
 		expect(html).not.toContain(m.admin_product_unpublish());
@@ -156,27 +160,27 @@ describe("ProductEditor", () => {
 
 	test("a draft's slug can be edited", () => {
 		const html = editor();
-		expect(html).toContain('value="cleansing-oil"');
+		expect(html).toContain('value="kuro-60-compact-keyboard"');
 		expect(html).not.toContain(m.admin_product_slug_locked());
 	});
 
-	test("lists the sizes with their price, stock and a way back for the archived one", () => {
+	test("lists the variants with their price, stock and a way back for the archived one", () => {
 		const html = editor();
-		expect(html).toContain("OIL-30");
-		expect(html).toContain("30 ml");
+		expect(html).toContain("TEC-003");
+		expect(html).toContain("Switches rojos");
 		expect(html).toContain("$15.00");
 		expect(html).toContain("$20.00");
 		expect(html).toContain(m.admin_product_on_hand({ count: 12 }));
 		expect(html).toContain(m.admin_product_reorder_at({ count: 4 }));
 		expect(html).toContain("04006381333931");
-		// The archived size comes last, marked, with Restore instead of Edit.
-		expect(html.indexOf("OIL-OLD")).toBeGreaterThan(html.indexOf("OIL-30"));
+		// The archived variant comes last, marked, with Restore instead of Edit.
+		expect(html.indexOf("TEC-009")).toBeGreaterThan(html.indexOf("TEC-003"));
 		expect(html).toContain(m.admin_product_restore());
 	});
 
 	test("lists the photos in order, the first being the cover, and flags one without a description", () => {
 		const html = editor();
-		expect(html).toContain("Un frasco de aceite");
+		expect(html).toContain("Teclado negro con luz violeta");
 		expect(html).toContain(m.admin_product_photo_cover());
 		expect(html).toContain(m.admin_product_photo_no_alt());
 		expect(html.match(/<img /g)).toHaveLength(2);
@@ -194,14 +198,13 @@ describe("ProductEditor", () => {
 		expect(html.indexOf("Español")).toBeLessThan(html.indexOf("English"));
 	});
 
-	test("organizes the product by brand, category, needs and skin types", () => {
+	test("organizes the product by brand and category, and shows its warranty and specs", () => {
 		const html = editor();
 		expect(html).toContain("Marca Uno");
-		expect(html).toContain("Limpiador");
-		expect(html).toContain("Acné");
-		expect(html).toContain("Sequedad");
-		expect(html).toContain("Seca");
-		expect(html.match(/aria-checked="true"/g)).toHaveLength(2);
+		expect(html).toContain("Teclados");
+		expect(html).toContain('value="12"');
+		expect(html).toContain('value="Formato"');
+		expect(html).toContain('value="60%"');
 	});
 
 	test("a brand archived since the product chose it is still named, as archived", () => {
@@ -215,7 +218,7 @@ describe("ProductEditor", () => {
 describe("NewProductForm", () => {
 	const html = render(<NewProductForm />);
 
-	test("asks for the basics, the text, the first size and the organization", () => {
+	test("asks for the basics, the text, the first variant and the organization", () => {
 		for (const title of [
 			m.admin_product_basics(),
 			m.admin_product_texts(),
@@ -227,11 +230,9 @@ describe("NewProductForm", () => {
 		expect(html).toContain(m.admin_product_sku());
 	});
 
-	test("offers the needs and the skin types to choose from, none chosen", () => {
-		expect(html).toContain("Acné");
-		expect(html).toContain("Sequedad");
-		expect(html).toContain("Sensible");
-		expect(html.match(/role="checkbox"/g)).toHaveLength(2 + 5);
-		expect(html).not.toContain('aria-checked="true"');
+	test("asks for the warranty and a variant option, and nothing about skin", () => {
+		expect(html).toContain(m.admin_product_warranty_months());
+		expect(html).toContain(m.admin_product_option_label());
+		expect(html).not.toContain('role="checkbox"');
 	});
 });

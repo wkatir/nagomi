@@ -15,7 +15,7 @@ import { type AdminOrder, api, parseResponse } from "#/lib/api";
 import { addDays, localDate } from "#/lib/dates";
 import { PAYMENT_METHODS, SHIPPING_METHODS } from "#/lib/enums";
 import { paymentLabel } from "#/lib/payment";
-import { adminSettingsQuery, storeQuery } from "#/lib/queries";
+import { storeQuery } from "#/lib/queries";
 import { calendarDate } from "#/lib/schemas/dates";
 import { m } from "#/paraglide/messages";
 import { useRefreshAfterOrderChange } from "./mutations";
@@ -49,20 +49,19 @@ export function ConfirmOrderDialog({
 	const refresh = useRefreshAfterOrderChange();
 	const money = useMoney();
 	const moneyInput = useMoneyInput();
-	const { data: settings } = useSuspenseQuery(adminSettingsQuery);
 	const { data: store } = useSuspenseQuery(storeQuery);
 	const { data: zones } = useSuspenseQuery(activeZonesQuery);
 	const today = localDate(new Date(), store.timeZone);
-	const methods = settings.acceptedPaymentMethods;
+	const methods = store.paymentMethods;
 
 	// Active zones always have a default-locale name (the API refuses to activate one without it).
 	const zoneName = (zone: (typeof zones)[number]) => {
 		const text = zone.translations.find(
-			(t) => t.locale === settings.defaultLocale,
+			(t) => t.locale === store.defaultLocale,
 		);
 		if (!text)
 			throw new Error(
-				`Shipping zone ${zone.id} has no ${settings.defaultLocale} name`,
+				`Shipping zone ${zone.id} has no ${store.defaultLocale} name`,
 			);
 		return text.name;
 	};

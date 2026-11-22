@@ -17,7 +17,7 @@ import {
 	EmptyHeader,
 	EmptyTitle,
 } from "#/components/ui/empty";
-import { sizeLabel } from "#/lib/size-label";
+import { variantLabel } from "#/lib/variant-label";
 import { m } from "#/paraglide/messages";
 import { useSupplierItemStatus } from "./mutations";
 import {
@@ -69,7 +69,7 @@ export function SupplierItems({ supplier }: { supplier: Supplier }) {
 			) : (
 				<ul>
 					{items.map((item) => {
-						const label = sizeLabel(item);
+						const label = variantLabel(item);
 						const archived = item.status === "archived";
 						const details = [
 							item.sku,

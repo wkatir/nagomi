@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { z } from "zod";
 import { parseMoney } from "#/lib/money";
 import { m } from "#/paraglide/messages";
-import { checkReceipt, hasShortLife, type ReceiptDraft } from "./receive-rules";
+import { checkReceipt, type ReceiptDraft } from "./receive-rules";
 
 const rules = {
 	today: "2026-10-24",
@@ -10,18 +10,16 @@ const rules = {
 	parseMoney: (text: string) => parseMoney(text, "USD"),
 };
 
-// A delivery that follows every rule: 10 of line 1 in one lot and 4 of line 2, both expiring.
+// A delivery that follows every rule: 10 of line 1 in one lot and 4 of line 2.
 const first = {
 	purchaseOrderItemId: 1,
 	remaining: 10,
 	quantity: "10",
-	expiresOn: "2027-05",
 };
 const second = {
 	purchaseOrderItemId: 2,
 	remaining: 4,
 	quantity: "4",
-	expiresOn: "2028-01-31",
 };
 const valid: ReceiptDraft = {
 	receivedOn: "2026-10-24",
@@ -124,46 +122,5 @@ describe("checkReceipt", () => {
 		).toEqual([
 			["lots.1.quantity", m.admin_purchase_over_remaining({ count: 4 })],
 		]);
-	});
-
-	test("refuses an expiry that is neither a day nor a month, or already past on arrival", () => {
-		for (const expiresOn of ["", "2027", "2027-13", "2027-02-30", "soon"])
-			expect(issues({ lots: [{ ...first, expiresOn }, second] })).toEqual([
-				["lots.0.expiresOn", m.error_invalid_expiry()],
-			]);
-		expect(
-			issues({ lots: [first, { ...second, expiresOn: "2026-10-23" }] }),
-		).toEqual([["lots.1.expiresOn", m.error_lot_expired_at_receipt()]]);
-		// A label that prints the month lasts to the end of it; the day it arrived is fine.
-		expect(
-			issues({ lots: [{ ...first, expiresOn: "2026-10" }, second] }),
-		).toEqual([]);
-		expect(
-			issues({ lots: [first, { ...second, expiresOn: "2026-10-24" }] }),
-		).toEqual([]);
-	});
-});
-
-describe("hasShortLife", () => {
-	test("is true for a lot that expires before the day it must outlast, a month by its last day", () => {
-		expect(hasShortLife([{ expiresOn: "2027-03-31" }], "2027-04-01")).toBe(
-			true,
-		);
-		expect(hasShortLife([{ expiresOn: "2027-03" }], "2027-04-01")).toBe(true);
-		expect(hasShortLife([{ expiresOn: "2027-04" }], "2027-04-01")).toBe(false);
-		expect(hasShortLife([{ expiresOn: "2027-04-01" }], "2027-04-01")).toBe(
-			false,
-		);
-	});
-
-	test("ignores an expiry still being typed, and looks at every lot", () => {
-		expect(hasShortLife([{ expiresOn: "2027-0" }], "2027-04-01")).toBe(false);
-		expect(hasShortLife([], "2027-04-01")).toBe(false);
-		expect(
-			hasShortLife(
-				[{ expiresOn: "2028-01-01" }, { expiresOn: "2027-01-01" }],
-				"2027-04-01",
-			),
-		).toBe(true);
 	});
 });

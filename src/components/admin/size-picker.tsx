@@ -15,7 +15,7 @@ import {
 } from "#/components/ui/command";
 import { useDebouncedValue } from "#/hooks/use-debounced-value";
 import { api, parseResponse } from "#/lib/api";
-import { sizeLabel } from "#/lib/size-label";
+import { variantLabel } from "#/lib/variant-label";
 import { m } from "#/paraglide/messages";
 
 export type PickedSize = { variantId: number; sku: string; label: string };
@@ -63,7 +63,7 @@ export function SizePicker({
 					</CommandEmpty>
 					<CommandGroup>
 						{rows.map((row) => {
-							const label = sizeLabel(row);
+							const label = variantLabel(row);
 							const there = picked.has(row.variantId);
 							return (
 								<CommandItem

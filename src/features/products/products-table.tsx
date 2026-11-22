@@ -7,6 +7,7 @@ import { StatusTabs } from "#/components/admin/data-table/status-tabs";
 import { TableToolbar } from "#/components/admin/data-table/table-toolbar";
 import { useDataTable } from "#/components/admin/data-table/use-data-table";
 import { productStatusLabel } from "#/components/admin/labels";
+import { IfWritable } from "#/components/admin/staff-access";
 import { Button } from "#/components/ui/button";
 import {
 	Empty,
@@ -86,22 +87,17 @@ export function ProductsTable({
 							options={choices(options.data?.categories)}
 							onChange={(value) => filter({ categoryId: idOf(value) })}
 						/>
-						<SelectFilter
-							label={m.admin_product_filter_need()}
-							allLabel={m.admin_product_filter_need_all()}
-							value={search.concernId?.toString()}
-							options={choices(options.data?.concerns)}
-							onChange={(value) => filter({ concernId: idOf(value) })}
-						/>
 					</>
 				}
 				actions={
-					<Button size="sm" asChild>
-						<Link to="/admin/products/new">
-							<PlusIcon aria-hidden />
-							{m.admin_product_new()}
-						</Link>
-					</Button>
+					<IfWritable area="catalog">
+						<Button size="sm" asChild>
+							<Link to="/admin/products/new">
+								<PlusIcon aria-hidden />
+								{m.admin_product_new()}
+							</Link>
+						</Button>
+					</IfWritable>
 				}
 			/>
 			<DataTable

@@ -14,6 +14,8 @@ const row = (over: Partial<Row>): Row => ({
 	email: "ana@example.com",
 	notes: null,
 	createdAt: "2026-09-01T12:00:00Z",
+	hasAccount: false,
+	segment: "occasional",
 	orders: 2,
 	lifetimeValue: 4200,
 	netPaid: 3200,

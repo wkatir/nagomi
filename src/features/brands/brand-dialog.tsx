@@ -10,11 +10,12 @@ import {
 	validationLogic,
 } from "#/components/admin/form/use-app-form";
 import { QueryState } from "#/components/admin/page-header";
+import { WritableFor } from "#/components/admin/staff-access";
 import { Button } from "#/components/ui/button";
 import { DialogFooter } from "#/components/ui/dialog";
 import { api, parseResponse } from "#/lib/api";
 import { type Locale, SLUG_REGEX } from "#/lib/enums";
-import { adminSettingsQuery } from "#/lib/queries";
+import { storeQuery } from "#/lib/queries";
 import { m } from "#/paraglide/messages";
 import { slugify } from "../merchandising/slug";
 import { useRefresh } from "../merchandising/status-change";
@@ -88,7 +89,7 @@ export function BrandForm({
 	onClose: () => void;
 }) {
 	const refresh = useRefresh(brandsKeys.all);
-	const { data: settings } = useSuspenseQuery(adminSettingsQuery);
+	const { data: settings } = useSuspenseQuery(storeQuery);
 	const { defaultLocale } = settings;
 	const stored = brand ? brand.translations.map((t) => t.locale) : [];
 	// Set when a first submit created the brand but its texts failed, so the retry does not
@@ -197,80 +198,84 @@ export function BrandForm({
 				form.handleSubmit();
 			}}
 		>
-			<form.AppForm>
-				<div className="grid gap-3 sm:grid-cols-2">
-					<form.AppField
-						name="name"
-						listeners={{
-							onChange: ({ value }) => {
-								if (!brand && !form.getFieldMeta("slug")?.isDirty)
-									form.setFieldValue("slug", slugify(value), {
-										dontUpdateMeta: true,
-									});
-							},
-						}}
-					>
-						{(field) => (
-							<field.TextField label={m.admin_field_name()} maxLength={80} />
-						)}
-					</form.AppField>
-					<form.AppField name="slug">
-						{(field) => (
-							<field.TextField label={m.admin_merch_slug()} maxLength={80} />
-						)}
-					</form.AppField>
-					<form.AppField name="countryCode">
-						{(field) => (
-							<field.TextField
-								label={m.admin_brand_country()}
-								maxLength={2}
-								autoCapitalize="characters"
-							/>
-						)}
-					</form.AppField>
-				</div>
-				<form.Subscribe selector={(state) => invalidLocales(state.fieldMeta)}>
-					{(invalid) => (
-						<LocaleTabs defaultLocale={defaultLocale} invalid={invalid}>
-							{(locale) => (
-								<>
-									<form.AppField name={`translations.${locale}.description`}>
-										{(field) => (
-											<field.TextareaField
-												label={m.admin_field_description()}
-												maxLength={2000}
-											/>
-										)}
-									</form.AppField>
-									<form.AppField name={`translations.${locale}.seoTitle`}>
-										{(field) => (
-											<field.TextField
-												label={m.admin_merch_seo_title()}
-												maxLength={70}
-											/>
-										)}
-									</form.AppField>
-									<form.AppField name={`translations.${locale}.seoDescription`}>
-										{(field) => (
-											<field.TextareaField
-												label={m.admin_merch_seo_description()}
-												maxLength={160}
-											/>
-										)}
-									</form.AppField>
-								</>
+			<WritableFor area="catalog">
+				<form.AppForm>
+					<div className="grid gap-3 sm:grid-cols-2">
+						<form.AppField
+							name="name"
+							listeners={{
+								onChange: ({ value }) => {
+									if (!brand && !form.getFieldMeta("slug")?.isDirty)
+										form.setFieldValue("slug", slugify(value), {
+											dontUpdateMeta: true,
+										});
+								},
+							}}
+						>
+							{(field) => (
+								<field.TextField label={m.admin_field_name()} maxLength={80} />
 							)}
-						</LocaleTabs>
-					)}
-				</form.Subscribe>
-				<form.FormError />
-				<DialogFooter>
-					<Button type="button" variant="outline" onClick={onClose}>
-						{m.admin_cancel()}
-					</Button>
-					<form.SubmitButton>{m.admin_save()}</form.SubmitButton>
-				</DialogFooter>
-			</form.AppForm>
+						</form.AppField>
+						<form.AppField name="slug">
+							{(field) => (
+								<field.TextField label={m.admin_merch_slug()} maxLength={80} />
+							)}
+						</form.AppField>
+						<form.AppField name="countryCode">
+							{(field) => (
+								<field.TextField
+									label={m.admin_brand_country()}
+									maxLength={2}
+									autoCapitalize="characters"
+								/>
+							)}
+						</form.AppField>
+					</div>
+					<form.Subscribe selector={(state) => invalidLocales(state.fieldMeta)}>
+						{(invalid) => (
+							<LocaleTabs defaultLocale={defaultLocale} invalid={invalid}>
+								{(locale) => (
+									<>
+										<form.AppField name={`translations.${locale}.description`}>
+											{(field) => (
+												<field.TextareaField
+													label={m.admin_field_description()}
+													maxLength={2000}
+												/>
+											)}
+										</form.AppField>
+										<form.AppField name={`translations.${locale}.seoTitle`}>
+											{(field) => (
+												<field.TextField
+													label={m.admin_merch_seo_title()}
+													maxLength={70}
+												/>
+											)}
+										</form.AppField>
+										<form.AppField
+											name={`translations.${locale}.seoDescription`}
+										>
+											{(field) => (
+												<field.TextareaField
+													label={m.admin_merch_seo_description()}
+													maxLength={160}
+												/>
+											)}
+										</form.AppField>
+									</>
+								)}
+							</LocaleTabs>
+						)}
+					</form.Subscribe>
+					<form.FormError />
+					<DialogFooter>
+						<Button type="button" variant="outline" onClick={onClose}>
+							{m.admin_cancel()}
+						</Button>
+						<form.SubmitButton>{m.admin_save()}</form.SubmitButton>
+					</DialogFooter>
+				</form.AppForm>
+			</WritableFor>
 		</form>
 	);
 }

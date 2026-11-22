@@ -16,7 +16,10 @@ const detail = (over: Partial<AdminCustomer> = {}): AdminCustomer => ({
 		email: "ana@example.com",
 		notes: "Prefiere WhatsApp",
 		createdAt: "2026-09-01T12:00:00Z",
+		hasAccount: true,
+		segment: "occasional",
 	},
+	addresses: [],
 	totals: {
 		orders: 2,
 		lifetimeValue: 4200,

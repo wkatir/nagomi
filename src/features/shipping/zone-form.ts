@@ -36,7 +36,8 @@ export function zoneSchema({
 			slug: z.string().trim(),
 			method: z.enum(SHIPPING_METHODS),
 			fee: z.string().trim(),
-			freeFrom: z.string().trim(),
+			coversRest: z.boolean(),
+			municipalities: z.array(z.string()),
 			deliveryDaysMin: z.string().trim(),
 			deliveryDaysMax: z.string().trim(),
 			position: z.string().trim(),
@@ -56,11 +57,8 @@ export function zoneSchema({
 			const fee = amount(v.fee);
 			if (fee === null || fee > ZONE_MAX_AMOUNT)
 				issue(["fee"], m.admin_invalid_amount());
-			if (v.freeFrom !== "") {
-				const freeFrom = amount(v.freeFrom);
-				if (freeFrom === null || freeFrom > ZONE_MAX_AMOUNT)
-					issue(["freeFrom"], m.admin_invalid_amount());
-			}
+			if (v.coversRest && v.municipalities.length > 0)
+				issue(["municipalities"], m.error_zone_covers_rest());
 			for (const key of ["deliveryDaysMin", "deliveryDaysMax"] as const)
 				if (!whole(v[key], ZONE_MAX_DAYS))
 					issue([key], m.admin_zone_days_invalid());
@@ -93,7 +91,8 @@ function amountOf(amount: Amount, text: string) {
 export const zoneFields = (v: ZoneValues, amount: Amount) => ({
 	method: v.method,
 	fee: amountOf(amount, v.fee),
-	freeFrom: v.freeFrom === "" ? null : amountOf(amount, v.freeFrom),
+	coversRest: v.coversRest,
+	municipalities: v.coversRest ? [] : v.municipalities,
 	deliveryDaysMin: Number(v.deliveryDaysMin),
 	deliveryDaysMax: Number(v.deliveryDaysMax),
 	position: Number(v.position),

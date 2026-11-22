@@ -1,4 +1,5 @@
 import { MoreHorizontalIcon } from "lucide-react";
+import { useStaffAccess } from "#/components/admin/staff-access";
 import { Button } from "#/components/ui/button";
 import {
 	DropdownMenu,
@@ -19,6 +20,7 @@ export function RowActions({
 	onArchive?: () => void;
 	onRestore?: () => void;
 }) {
+	if (!useStaffAccess().canWrite("catalog")) return null;
 	return (
 		<DropdownMenu modal={false}>
 			<DropdownMenuTrigger asChild>

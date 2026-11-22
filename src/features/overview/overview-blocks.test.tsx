@@ -20,20 +20,6 @@ import type { AdminDashboard } from "./queries";
 const locale = intlLocale(getLocale(), "SV");
 const money = (amount: number) => formatMoney(amount, "USD", locale);
 
-const lot = (lotId: number): AdminDashboard["expiring"][number] => ({
-	lotId,
-	code: lotId === 1 ? null : `L-${lotId}`,
-	variantId: 1,
-	sku: "OIL",
-	brand: "SKIN1004",
-	name: "Aceite",
-	expiresOn: "2026-12-31",
-	expiry: "2026-12-31",
-	daysLeft: 68,
-	available: lotId,
-	value: lotId * 700,
-});
-
 const dashboard: AdminDashboard = {
 	from: "2026-10-23",
 	to: "2026-10-24",
@@ -72,9 +58,9 @@ const dashboard: AdminDashboard = {
 	topProducts: [
 		{
 			variantId: 1,
-			sku: "OIL",
-			brand: "SKIN1004",
-			name: "Aceite",
+			sku: "TEC-002",
+			brand: "Akko",
+			name: "Teclado Sakura",
 			orders: 2,
 			unitsSold: 4,
 			unitsReturned: 1,
@@ -86,16 +72,10 @@ const dashboard: AdminDashboard = {
 		},
 	],
 	stock: {
-		expiryWindowDays: 180,
 		onHand: 40,
 		value: 28000,
-		atRiskUnits: 3,
-		atRiskValue: 2100,
-		expiredUnits: 0,
-		expiredValue: 0,
-		belowReorderPoint: 2,
+		lowStock: 2,
 	},
-	expiring: [lot(1), lot(2)],
 };
 
 const client = new QueryClient();
@@ -191,38 +171,18 @@ describe("OverviewBlocks", () => {
 		]);
 	});
 
-	test("lists the best sellers and the lots about to expire", async () => {
+	test("lists the best sellers", async () => {
 		const html = await render(dashboard);
-		expect(html).toContain(`SKIN1004 Aceite`);
+		expect(html).toContain(`Akko Teclado Sakura`);
 		expect(html).toContain(money(4500));
 		expect(html).toContain(m.admin_units({ count: 3 }));
-		expect(html).toContain(m.admin_batch({ code: "#1" }));
-		expect(html).toContain(m.admin_batch({ code: "L-2" }));
-		// Each lot says its units (lot 2 has 2) and its days left, not the one for the other.
-		expect(html).toContain(m.admin_units({ count: 2 }));
-		expect(html).toContain(m.admin_report_days_left({ count: 68 }));
-		expect(html).not.toContain(m.admin_units({ count: 68 }));
-		expect(html).toContain(m.admin_overview_within_days({ days: 180 }));
-		expect(html).not.toContain(m.admin_nothing_expiring());
 		expect(html).not.toContain(m.admin_no_sales());
-		expect(html).not.toContain(m.admin_overview_more_lots({ count: 1 }));
 	});
 
-	test("shows eight lots and counts the rest", async () => {
-		const html = await render({
-			...dashboard,
-			expiring: Array.from({ length: 10 }, (_, n) => lot(n + 1)),
-		});
-		expect(html).toContain(m.admin_batch({ code: "L-8" }));
-		expect(html).not.toContain(m.admin_batch({ code: "L-9" }));
-		expect(html).toContain(m.admin_overview_more_lots({ count: 2 }));
-	});
-
-	test("says so when nothing sold and nothing expires", async () => {
+	test("says so when nothing sold", async () => {
 		const html = await render({
 			...dashboard,
 			topProducts: [],
-			expiring: [],
 			sales: { ...dashboard.sales, margin: null },
 			byDay: dashboard.byDay.map((x) => ({
 				...x,
@@ -231,7 +191,6 @@ describe("OverviewBlocks", () => {
 			})),
 		});
 		expect(html).toContain(m.admin_no_sales());
-		expect(html).toContain(m.admin_nothing_expiring());
 		expect(html).toContain(m.admin_kpi_no_fulfilled());
 		expect(html.split(m.admin_report_chart_empty()).length - 1).toBe(2);
 	});
@@ -249,7 +208,6 @@ describe("OverviewSkeleton", () => {
 			m.admin_sales_by_day(),
 			m.admin_overview_profit_by_day(),
 			m.admin_top_products(),
-			m.admin_overview_expiring(),
 		])
 			expect(html).toContain(title);
 		expect(html.split("h-[5.5rem]").length - 1).toBe(8);

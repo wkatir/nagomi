@@ -12,7 +12,7 @@ import { Button } from "#/components/ui/button";
 import { DialogFooter } from "#/components/ui/dialog";
 import { useMoney, useMoneyInput } from "#/hooks/use-money";
 import { api, parseResponse } from "#/lib/api";
-import { sizeLabel } from "#/lib/size-label";
+import { variantLabel } from "#/lib/variant-label";
 import { m } from "#/paraglide/messages";
 import { useRefreshAfterPurchaseChange } from "./mutations";
 import { PurchaseLineRow } from "./purchase-line-row";
@@ -97,7 +97,7 @@ export function EditPurchaseDialog({
 					id: item.id,
 					variantId: item.variantId,
 					sku: item.sku,
-					label: sizeLabel(item),
+					label: variantLabel(item),
 					quantity: String(item.quantity),
 					unitCost: moneyInput.toInput(item.unitCost),
 				}),

@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { createColumnHelper } from "@tanstack/react-table";
 import { ImageIcon, MoreHorizontalIcon } from "lucide-react";
 import type { ListFeatures } from "#/components/admin/data-table/use-data-table";
+import { useStaffAccess } from "#/components/admin/staff-access";
 import { Button } from "#/components/ui/button";
 import {
 	DropdownMenu,
@@ -37,6 +38,7 @@ function Thumbnail({ url }: { url: string | null }) {
 function RowActions({ product }: { product: ProductRow }) {
 	const change = useProductStatus();
 	const name = product.name;
+	if (!useStaffAccess().canWrite("catalog")) return null;
 	return (
 		<DropdownMenu modal={false}>
 			<DropdownMenuTrigger asChild>
@@ -119,7 +121,7 @@ export function useProductColumns() {
 			header: m.admin_col_price(),
 			meta: { align: "right" },
 			cell: ({ row }) => {
-				const { sizes, priceFrom, priceTo } = row.original;
+				const { variantCount, priceFrom, priceTo } = row.original;
 				return (
 					<div className="grid tabular-nums">
 						{priceFrom === null || priceTo === null ? (
@@ -134,7 +136,7 @@ export function useProductColumns() {
 							</span>
 						)}
 						<span className="type-meta text-muted-foreground">
-							{m.admin_product_sizes_n({ count: sizes })}
+							{m.admin_product_sizes_n({ count: variantCount })}
 						</span>
 					</div>
 				);

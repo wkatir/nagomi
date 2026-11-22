@@ -6,11 +6,8 @@ import { m } from "#/paraglide/messages";
 export const MAIN_TEXT_FIELDS = [
 	"name",
 	"tagline",
+	"shortSpecs",
 	"description",
-	"howToUse",
-	"keyIngredients",
-	"benefits",
-	"cautions",
 ] as const;
 export const SEO_TEXT_FIELDS = ["seoTitle", "seoDescription"] as const;
 export const TEXT_FIELDS = [...MAIN_TEXT_FIELDS, ...SEO_TEXT_FIELDS] as const;
@@ -19,21 +16,14 @@ export type TextField = (typeof TEXT_FIELDS)[number];
 export const textLabel: Record<TextField, () => string> = {
 	name: m.admin_field_name,
 	tagline: m.admin_field_tagline,
+	shortSpecs: m.admin_field_short_specs,
 	description: m.admin_field_description,
-	howToUse: m.admin_field_how_to_use,
-	keyIngredients: m.admin_field_key_ingredients,
-	benefits: m.admin_field_benefits,
-	cautions: m.admin_field_cautions,
 	seoTitle: m.admin_product_seo_title,
 	seoDescription: m.admin_product_seo_description,
 };
 
 export const textRows: Partial<Record<TextField, number>> = {
 	description: 4,
-	howToUse: 3,
-	keyIngredients: 3,
-	benefits: 3,
-	cautions: 3,
 	seoDescription: 2,
 };
 export type TextValues = Record<TextField, string>;
@@ -44,11 +34,8 @@ type StoredText = Record<TextField, string | null>;
 const emptyText: TextValues = {
 	name: "",
 	tagline: "",
+	shortSpecs: "",
 	description: "",
-	howToUse: "",
-	keyIngredients: "",
-	benefits: "",
-	cautions: "",
 	seoTitle: "",
 	seoDescription: "",
 };
@@ -68,11 +55,8 @@ export function translationValues(
 			? {
 					name: text.name ?? "",
 					tagline: text.tagline ?? "",
+					shortSpecs: text.shortSpecs ?? "",
 					description: text.description ?? "",
-					howToUse: text.howToUse ?? "",
-					keyIngredients: text.keyIngredients ?? "",
-					benefits: text.benefits ?? "",
-					cautions: text.cautions ?? "",
 					seoTitle: text.seoTitle ?? "",
 					seoDescription: text.seoDescription ?? "",
 				}
@@ -94,11 +78,8 @@ export function translationsSchema({
 	const text = z.object({
 		name: z.string().trim().max(PRODUCT_LIMITS.name),
 		tagline: z.string().trim().max(PRODUCT_LIMITS.tagline),
+		shortSpecs: z.string().trim().max(PRODUCT_LIMITS.shortSpecs),
 		description: z.string().trim().max(PRODUCT_LIMITS.description),
-		howToUse: z.string().trim().max(PRODUCT_LIMITS.howToUse),
-		keyIngredients: z.string().trim().max(PRODUCT_LIMITS.keyIngredients),
-		benefits: z.string().trim().max(PRODUCT_LIMITS.benefits),
-		cautions: z.string().trim().max(PRODUCT_LIMITS.cautions),
 		seoTitle: z.string().trim().max(PRODUCT_LIMITS.seoTitle),
 		seoDescription: z.string().trim().max(PRODUCT_LIMITS.seoDescription),
 	});
@@ -124,11 +105,8 @@ export function translationsSchema({
 type TextPayload = {
 	name: string;
 	tagline: string | null;
+	shortSpecs: string | null;
 	description: string | null;
-	howToUse: string | null;
-	keyIngredients: string | null;
-	benefits: string | null;
-	cautions: string | null;
 	seoTitle: string | null;
 	seoDescription: string | null;
 };
@@ -152,11 +130,8 @@ export function translationsPayload(
 		payload[locale] = {
 			name: now.name.trim(),
 			tagline: orNull(now.tagline),
+			shortSpecs: orNull(now.shortSpecs),
 			description: orNull(now.description),
-			howToUse: orNull(now.howToUse),
-			keyIngredients: orNull(now.keyIngredients),
-			benefits: orNull(now.benefits),
-			cautions: orNull(now.cautions),
 			seoTitle: orNull(now.seoTitle),
 			seoDescription: orNull(now.seoDescription),
 		};

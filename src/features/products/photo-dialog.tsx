@@ -19,7 +19,6 @@ import { type AdminProduct, api, parseResponse } from "#/lib/api";
 import { IMAGE_KINDS, LOCALES } from "#/lib/enums";
 import { storeQuery } from "#/lib/queries";
 import { PRODUCT_LIMITS } from "#/lib/schemas/products";
-import { formatSize } from "#/lib/size";
 import { m } from "#/paraglide/messages";
 import { useRefreshAfterProductChange } from "./mutations";
 import { altPatch, altSchema, altValues } from "./photo-form";
@@ -198,8 +197,8 @@ export function PhotoDialog({
 											.map((size) => ({
 												value: String(size.id),
 												label:
-													size.sizeValue !== null && size.sizeUnit !== null
-														? `${formatSize({ value: size.sizeValue, unit: size.sizeUnit })} · ${size.sku}`
+													size.optionLabel !== null
+														? `${size.optionLabel} · ${size.sku}`
 														: size.sku,
 											})),
 									]}

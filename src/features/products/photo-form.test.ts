@@ -45,8 +45,10 @@ describe("altPatch", () => {
 	});
 
 	test("carries the text of a language that changed or was added", () => {
-		expect(altPatch(started, { es: "Un frasco de aceite", en: "" })).toEqual({
-			es: "Un frasco de aceite",
+		expect(
+			altPatch(started, { es: "Un teclado con luz violeta", en: "" }),
+		).toEqual({
+			es: "Un teclado con luz violeta",
 		});
 		expect(altPatch(started, { es: "Un frasco", en: " A bottle " })).toEqual({
 			en: "A bottle",

@@ -4,7 +4,7 @@ import { DetailSkeleton, RecordNotFound } from "#/components/admin/skeletons";
 import { CollectionEditor } from "#/features/collections/collection-editor";
 import { collectionQuery } from "#/features/collections/queries";
 import { isNotFound } from "#/lib/api";
-import { adminSettingsQuery } from "#/lib/queries";
+import { storeQuery } from "#/lib/queries";
 import type { LoaderCrumb } from "#/lib/route-data";
 import { m } from "#/paraglide/messages";
 
@@ -22,7 +22,7 @@ export const Route = createFileRoute("/admin/collections/$id")({
 		try {
 			const [collection, settings] = await Promise.all([
 				context.queryClient.ensureQueryData(collectionQuery(params.id)),
-				context.queryClient.ensureQueryData(adminSettingsQuery),
+				context.queryClient.ensureQueryData(storeQuery),
 			]);
 			const title = collection.translations.find(
 				(t) => t.locale === settings.defaultLocale,

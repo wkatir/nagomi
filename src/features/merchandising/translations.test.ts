@@ -60,18 +60,20 @@ describe("requireInEachLanguage", () => {
 	});
 
 	test("does not ask a language that is not in use, nor one that has it", () => {
-		expect(issues(translations(texts("Sérum"), texts()), ["es"])).toEqual([]);
-		expect(issues(translations(texts(), texts("Serum")), ["en"])).toEqual([]);
+		expect(issues(translations(texts("Teclado"), texts()), ["es"])).toEqual([]);
+		expect(issues(translations(texts(), texts("Keyboard")), ["en"])).toEqual(
+			[],
+		);
 	});
 });
 
 describe("changedTexts", () => {
-	const initial = translations(texts("Sérum"), texts("Serum"));
+	const initial = translations(texts("Teclado"), texts("Keyboard"));
 
 	test("is the languages in use whose texts are not what the entity had", () => {
-		const edited = translations(texts("Sérum"), texts("Serum", "SEO"));
+		const edited = translations(texts("Teclado"), texts("Keyboard", "SEO"));
 		expect(changedTexts(edited, initial, ["es", "en"])).toEqual([
-			["en", texts("Serum", "SEO")],
+			["en", texts("Keyboard", "SEO")],
 		]);
 	});
 
@@ -80,12 +82,12 @@ describe("changedTexts", () => {
 	});
 
 	test("leaves out the languages not in use even when they differ", () => {
-		const edited = translations(texts("Suero"), texts("Serum"));
+		const edited = translations(texts("Teclas"), texts("Keyboard"));
 		expect(changedTexts(edited, initial, ["en"])).toEqual([]);
 	});
 
 	test("keeps the order of the languages in use", () => {
-		const edited = translations(texts("Suero"), texts("Serum 2"));
+		const edited = translations(texts("Teclas"), texts("Keyboard 2"));
 		expect(changedTexts(edited, initial, ["es", "en"]).map(([l]) => l)).toEqual(
 			["es", "en"],
 		);

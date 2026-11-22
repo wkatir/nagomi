@@ -6,6 +6,7 @@ import {
 	shippingMethodLabel,
 	zoneStatusLabel,
 } from "#/components/admin/labels";
+import { useStaffAccess } from "#/components/admin/staff-access";
 import { Badge } from "#/components/ui/badge";
 import { Button } from "#/components/ui/button";
 import { DropdownMenuItem } from "#/components/ui/dropdown-menu";
@@ -47,6 +48,7 @@ function RowMenu({
 }) {
 	const change = useZoneStatus();
 	const archive = zone.status === "active";
+	if (!useStaffAccess().canWrite("shipping")) return null;
 	return (
 		<RowActions label={m.admin_zone_row_actions({ name })}>
 			<DropdownMenuItem onSelect={() => onEdit(zone)}>
@@ -107,16 +109,20 @@ export function useZoneColumns({
 			),
 		}),
 		column.display({
-			id: "freeFrom",
-			header: m.admin_zone_col_free_from(),
-			meta: { align: "right", hideOnMobile: true },
+			id: "coverage",
+			header: m.admin_zone_col_coverage(),
+			meta: { hideOnMobile: true },
 			cell: ({ row }) =>
-				row.original.freeFrom === null ? (
+				row.original.coversRest ? (
 					<span className="text-muted-foreground">
-						{m.admin_zone_never_free()}
+						{m.admin_zone_covers_rest()}
 					</span>
 				) : (
-					<span className="tabular-nums">{money(row.original.freeFrom)}</span>
+					<span className="tabular-nums">
+						{m.admin_zone_municipalities_n({
+							count: row.original.municipalities.length,
+						})}
+					</span>
 				),
 		}),
 		column.accessor(

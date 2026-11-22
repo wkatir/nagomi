@@ -16,7 +16,6 @@ import {
 	RETURN_REASONS,
 	type ReturnDisposition,
 } from "#/lib/enums";
-import { formatSize } from "#/lib/size";
 import { m } from "#/paraglide/messages";
 import { useRefreshAfterOrderChange } from "./mutations";
 
@@ -93,13 +92,10 @@ export function ReturnOrderDialog({
 	const lines: ReturnLine[] = detail.lines
 		.filter((line) => line.quantity > line.returned)
 		.map((line) => {
-			const size =
-				line.sizeValue !== null && line.sizeUnit
-					? formatSize({ value: line.sizeValue, unit: line.sizeUnit })
-					: null;
+			const size = line.optionLabel;
 			const lots = line.lots.map((lot) => ({
 				value: String(lot.lotId),
-				label: `${[lot.code, lot.expiry].filter(Boolean).join(" ")} (${lot.units})`,
+				label: `${lot.code ?? `#${lot.lotId}`} (${lot.units})`,
 			}));
 			return {
 				orderItemId: line.id,

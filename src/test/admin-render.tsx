@@ -7,10 +7,11 @@ import {
 } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+import { StaffAccessProvider } from "#/components/admin/staff-access";
 import { storeQuery } from "#/lib/queries";
 
 const store = {
-	name: "Eclalune",
+	name: "Nagomi",
 	currency: "USD",
 	defaultLocale: "es",
 	countryCode: "SV",
@@ -18,11 +19,15 @@ const store = {
 	whatsappNumber: null,
 	whatsappDisplay: null,
 	freeShippingFrom: null,
+	lowStockThreshold: 5,
 	maxQuantityPerLine: 20,
 	returnWindowDays: null,
 	checkoutOpen: false,
 	paymentMethods: [],
+	paymentOptions: [],
 	promises: { es: [], en: [] },
+	footerPages: [],
+	social: { discord: null, instagram: null, tiktok: null, youtube: null },
 	business: {
 		foundingYear: null,
 		legalName: null,
@@ -36,6 +41,7 @@ const store = {
 
 type Options = {
 	defaultLocale?: "es" | "en";
+	role?: "admin" | "support";
 	// Query results already in the cache, as the route loaders leave them: [key, data].
 	queries?: readonly (readonly [readonly unknown[], unknown])[];
 };
@@ -52,7 +58,9 @@ function clientWith({ defaultLocale = "es", queries = [] }: Options) {
 export function renderAdmin(ui: ReactNode, options: Options = {}) {
 	return renderToStaticMarkup(
 		<QueryClientProvider client={clientWith(options)}>
-			{ui}
+			<StaffAccessProvider user={{ role: options.role ?? "admin" }}>
+				{ui}
+			</StaffAccessProvider>
 		</QueryClientProvider>,
 	);
 }
@@ -67,7 +75,9 @@ export async function renderAdminPage(ui: ReactNode, options: Options = {}) {
 	await router.load();
 	return renderToStaticMarkup(
 		<QueryClientProvider client={clientWith(options)}>
-			<RouterProvider router={router} />
+			<StaffAccessProvider user={{ role: options.role ?? "admin" }}>
+				<RouterProvider router={router} />
+			</StaffAccessProvider>
 		</QueryClientProvider>,
 	);
 }

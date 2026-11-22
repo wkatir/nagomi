@@ -4,9 +4,9 @@ import { slugify } from "./slug";
 
 test.each([
 	["Crème Lab", "creme-lab"],
-	["Protector solar SPF 50+", "protector-solar-spf-50"],
+	["Teclado RK75 + Switches", "teclado-rk75-switches"],
 	["  Ñandú   y  más  ", "nandu-y-mas"],
-	["Rutina de mañana", "rutina-de-manana"],
+	["Set de mañana", "set-de-manana"],
 	["---Dobles--guiones---", "dobles-guiones"],
 	["", ""],
 	["¿¡?!", ""],

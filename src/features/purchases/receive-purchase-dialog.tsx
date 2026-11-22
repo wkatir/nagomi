@@ -1,4 +1,3 @@
-import { useStore } from "@tanstack/react-form";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { XIcon } from "lucide-react";
 import { z } from "zod";
@@ -12,14 +11,13 @@ import { Button } from "#/components/ui/button";
 import { DialogFooter } from "#/components/ui/dialog";
 import { useMoneyInput } from "#/hooks/use-money";
 import { api, parseResponse } from "#/lib/api";
-import { addDays, isCalendarDate, localDate } from "#/lib/dates";
-import { adminSettingsQuery, storeQuery } from "#/lib/queries";
-import { sizeLabel } from "#/lib/size-label";
+import { isCalendarDate, localDate } from "#/lib/dates";
+import { storeQuery } from "#/lib/queries";
+import { variantLabel } from "#/lib/variant-label";
 import { m } from "#/paraglide/messages";
-import { ExpiryField } from "./expiry-field";
 import { useRefreshAfterPurchaseChange } from "./mutations";
 import type { Purchase } from "./queries";
-import { checkReceipt, hasShortLife } from "./receive-rules";
+import { checkReceipt } from "./receive-rules";
 
 type Lot = {
 	key: string;
@@ -29,7 +27,6 @@ type Lot = {
 	remaining: number;
 	quantity: string;
 	code: string;
-	expiresOn: string;
 };
 
 const FIELD_OF = {
@@ -41,19 +38,18 @@ const FIELD_OF = {
 const fieldOf = (path: string) => {
 	if (Object.hasOwn(FIELD_OF, path))
 		return FIELD_OF[path as keyof typeof FIELD_OF];
-	const lot = /^lots\.(\d+)\.(quantity|code|expiresOn)$/.exec(path);
+	const lot = /^lots\.(\d+)\.(quantity|code)$/.exec(path);
 	return lot ? (`lots[${lot[1]}].${lot[2]}` as const) : undefined;
 };
 
 const newLot = (item: Purchase["items"][number], quantity: number): Lot => ({
 	key: crypto.randomUUID(),
 	purchaseOrderItemId: item.id,
-	label: sizeLabel(item),
+	label: variantLabel(item),
 	sku: item.sku,
 	remaining: item.quantity - item.received,
 	quantity: quantity === 0 ? "" : String(quantity),
 	code: "",
-	expiresOn: "",
 });
 
 // Each lot gets a share of the shipping by value, which makes its landed cost. A product that
@@ -67,14 +63,9 @@ export function ReceivePurchaseDialog({
 }) {
 	const refresh = useRefreshAfterPurchaseChange();
 	const moneyInput = useMoneyInput();
-	const { data: settings } = useSuspenseQuery(adminSettingsQuery);
 	const { data: store } = useSuspenseQuery(storeQuery);
 	const today = localDate(new Date(), store.timeZone);
 	const open = purchase.items.filter((item) => item.received < item.quantity);
-	// Lots received with less shelf life than the store minimum are flagged for a swap.
-	const minShelfLifeDays = settings.minShelfLifeDays;
-	const shortLifeBefore =
-		minShelfLifeDays === null ? null : addDays(today, minShelfLifeDays);
 
 	const schema = z
 		.object({
@@ -92,7 +83,6 @@ export function ReceivePurchaseDialog({
 					remaining: z.number(),
 					quantity: z.string(),
 					code: z.string().trim().max(40),
-					expiresOn: z.string(),
 				}),
 			),
 		})
@@ -120,7 +110,6 @@ export function ReceivePurchaseDialog({
 							purchaseOrderItemId: lot.purchaseOrderItemId,
 							quantity: Number(lot.quantity),
 							code: lot.code || undefined,
-							expiresOn: lot.expiresOn,
 						})),
 					},
 				}),
@@ -153,9 +142,6 @@ export function ReceivePurchaseDialog({
 			},
 		},
 	});
-	const lots = useStore(form.store, (state) => state.values.lots);
-	const shortLife =
-		shortLifeBefore !== null && hasShortLife(lots, shortLifeBefore);
 
 	return (
 		<AdminDialog
@@ -224,7 +210,7 @@ export function ReceivePurchaseDialog({
 												<XIcon aria-hidden />
 											</Button>
 										</div>
-										<div className="grid gap-3 sm:grid-cols-3">
+										<div className="grid gap-3 sm:grid-cols-2">
 											<form.AppField name={`lots[${index}].quantity`}>
 												{(field) => (
 													<field.TextField
@@ -240,9 +226,6 @@ export function ReceivePurchaseDialog({
 														maxLength={40}
 													/>
 												)}
-											</form.AppField>
-											<form.AppField name={`lots[${index}].expiresOn`}>
-												{() => <ExpiryField label={m.admin_expiry()} />}
 											</form.AppField>
 										</div>
 									</li>
@@ -263,11 +246,6 @@ export function ReceivePurchaseDialog({
 							</Button>
 						))}
 					</div>
-					{shortLife && minShelfLifeDays !== null && (
-						<p className="type-small text-destructive">
-							{m.admin_po_short_expiry({ days: minShelfLifeDays })}
-						</p>
-					)}
 					<form.AppField name="notes">
 						{(field) => (
 							<field.TextareaField

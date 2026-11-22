@@ -41,9 +41,9 @@ const collection: CollectionDetail = {
 		{
 			productId: 22,
 			position: 2,
-			slug: "serum",
+			slug: "teclado-sakura",
 			status: "draft",
-			name: "Sérum calmante",
+			name: "Teclado Sakura",
 		},
 		{
 			productId: 23,
@@ -65,9 +65,9 @@ describe("CollectionProducts", () => {
 
 	test("lists the products in order, each with its position, name and slug", () => {
 		expect(out.indexOf("Limpiador suave")).toBeLessThan(
-			out.indexOf("Sérum calmante"),
+			out.indexOf("Teclado Sakura"),
 		);
-		expect(out.indexOf("Sérum calmante")).toBeLessThan(out.indexOf("toner"));
+		expect(out.indexOf("Teclado Sakura")).toBeLessThan(out.indexOf("toner"));
 		expect(out).toMatch(/<li[^>]*>.*?>1<.*?Limpiador suave/);
 		expect(out).toMatch(/<li[^>]*>.*?>3<.*?toner/);
 		expect(out).toContain("cleanser");

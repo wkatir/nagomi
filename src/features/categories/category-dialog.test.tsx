@@ -6,22 +6,25 @@ import type { CategoryDetail } from "./queries";
 
 const category: CategoryDetail = {
 	id: 3,
-	slug: "serum",
-	routineStep: 2,
+	slug: "teclados",
+	sortOrder: 1,
+	icon: "keyboard",
 	status: "active",
 	translations: [
 		{
 			categoryId: 3,
 			locale: "es",
-			name: "Sérum",
-			description: "Productos para tratar la piel.",
-			seoTitle: "Sérum facial",
+			name: "Teclados",
+			subtitle: "Mecánicos y custom",
+			description: "Teclados mecánicos para tu escritorio.",
+			seoTitle: "Teclados mecánicos",
 			seoDescription: null,
 		},
 		{
 			categoryId: 3,
 			locale: "en",
-			name: "Serum",
+			name: "Keyboards",
+			subtitle: null,
 			description: null,
 			seoTitle: null,
 			seoDescription: null,
@@ -36,7 +39,7 @@ describe("CategoryForm", () => {
 	test("a new category starts empty, with the principal language first", () => {
 		const out = renderWithSettings(<CategoryForm onClose={() => {}} />);
 		expect(input(out, "slug")).toContain('value=""');
-		expect(input(out, "routineStep")).toContain('value=""');
+		expect(input(out, "sortOrder")).toContain('value="0"');
 		expect(input(out, "translations.es.name")).toContain('value=""');
 		// Only the open language's fields are drawn.
 		expect(input(out, "translations.en.name")).toBeUndefined();
@@ -58,15 +61,19 @@ describe("CategoryForm", () => {
 		const out = renderWithSettings(
 			<CategoryForm category={category} onClose={() => {}} />,
 		);
-		expect(input(out, "slug")).toContain('value="serum"');
-		expect(input(out, "routineStep")).toContain('value="2"');
-		expect(input(out, "translations.es.name")).toContain('value="Sérum"');
-		expect(input(out, "translations.es.seoTitle")).toContain(
-			'value="Sérum facial"',
+		expect(input(out, "slug")).toContain('value="teclados"');
+		expect(input(out, "sortOrder")).toContain('value="1"');
+		expect(input(out, "translations.es.name")).toContain('value="Teclados"');
+		expect(input(out, "translations.es.subtitle")).toContain(
+			'value="Mecánicos y custom"',
 		);
+		expect(input(out, "translations.es.seoTitle")).toContain(
+			'value="Teclados mecánicos"',
+		);
+		expect(out).toMatch(/<option[^>]*value="keyboard"[^>]*selected/);
 		expect(out).toMatch(/<textarea[^>]*name="translations.es.seoDescription"/);
 		expect(out).toMatch(/<textarea[^>]*name="translations.es.description"/);
-		expect(out).toContain("Productos para tratar la piel.");
+		expect(out).toContain("Teclados mecánicos para tu escritorio.");
 	});
 
 	test("has its labels, a way to cancel and a save button", () => {
@@ -76,7 +83,9 @@ describe("CategoryForm", () => {
 			m.admin_merch_seo_title(),
 			m.admin_merch_seo_description(),
 			m.admin_merch_slug(),
-			m.admin_category_step(),
+			m.admin_category_sort_order(),
+			m.admin_category_icon(),
+			m.admin_category_subtitle(),
 			m.admin_cancel(),
 			m.admin_save(),
 		])

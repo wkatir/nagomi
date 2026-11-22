@@ -50,19 +50,25 @@ describe("activeZonesQuery", () => {
 		expect(zones).toEqual([
 			{
 				id: 2,
+				slug: "retiro",
 				method: "pickup",
 				fee: 0,
+				coversRest: false,
 				deliveryDaysMin: 0,
 				deliveryDaysMax: 0,
 				translations: [{ zoneId: 2, locale: "es", name: "Retiro" }],
+				municipalities: [],
 			},
 			{
 				id: 1,
+				slug: "centro",
 				method: "own_delivery",
 				fee: 300,
+				coversRest: false,
 				deliveryDaysMin: 1,
 				deliveryDaysMax: 2,
 				translations: [{ zoneId: 1, locale: "es", name: "Centro" }],
+				municipalities: [],
 			},
 		]);
 	});

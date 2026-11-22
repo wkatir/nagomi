@@ -19,7 +19,6 @@ import { m } from "#/paraglide/messages";
 import type { AdminDashboard } from "./queries";
 
 // The stock report lists them all.
-const EXPIRING_SHOWN = 8;
 
 const SKELETON_ROWS = Array.from({ length: 4 }, (_, n) => `row-${n}`);
 
@@ -45,7 +44,6 @@ export function OverviewBlocks({ d }: { d: AdminDashboard }) {
 	const days = { from: d.from, to: d.to };
 	const points = (value: (x: AdminDashboard["byDay"][number]) => number) =>
 		d.byDay.map((x) => ({ key: x.day, label: day(x.day), value: value(x) }));
-	const lots = d.expiring.slice(0, EXPIRING_SHOWN);
 
 	return (
 		<div className="grid gap-admin-stack">
@@ -115,7 +113,7 @@ export function OverviewBlocks({ d }: { d: AdminDashboard }) {
 							{m.admin_overview_below_reorder()}
 						</Link>
 					}
-					value={String(d.stock.belowReorderPoint)}
+					value={String(d.stock.lowStock)}
 					note={m.admin_overview_below_reorder_note()}
 				/>
 				<StatCard
@@ -183,55 +181,6 @@ export function OverviewBlocks({ d }: { d: AdminDashboard }) {
 						)}
 					</ul>
 				</Section>
-				<Section
-					title={m.admin_overview_expiring()}
-					description={m.admin_overview_within_days({
-						days: d.stock.expiryWindowDays,
-					})}
-					action={
-						<SeeAll>
-							<Link to="/admin/reports/stock">
-								{m.admin_overview_see_all()}
-							</Link>
-						</SeeAll>
-					}
-				>
-					<ul>
-						{lots.map((lot) => (
-							<ListRow key={lot.lotId}>
-								<div className="grid min-w-0">
-									<span className="type-small break-words">
-										{m.admin_batch({ code: lot.code ?? `#${lot.lotId}` })}
-									</span>
-									<span className="type-meta text-muted-foreground">
-										{lot.sku}
-									</span>
-								</div>
-								<div className="grid shrink-0 text-right tabular-nums">
-									<span className="type-small font-bold">
-										{m.admin_units({ count: lot.available })}
-									</span>
-									<span className="type-meta text-muted-foreground">
-										{lot.expiry} ·{" "}
-										{m.admin_report_days_left({ count: lot.daysLeft })}
-									</span>
-								</div>
-							</ListRow>
-						))}
-						{lots.length === 0 && (
-							<li className="type-small p-admin-card text-muted-foreground">
-								{m.admin_nothing_expiring()}
-							</li>
-						)}
-						{d.expiring.length > lots.length && (
-							<li className="type-meta p-admin-card text-muted-foreground">
-								{m.admin_overview_more_lots({
-									count: d.expiring.length - lots.length,
-								})}
-							</li>
-						)}
-					</ul>
-				</Section>
 			</div>
 		</div>
 	);
@@ -259,7 +208,6 @@ export function OverviewSkeleton() {
 			</div>
 			<div className="grid gap-admin-stack lg:grid-cols-2">
 				<ListSkeleton title={m.admin_top_products()} />
-				<ListSkeleton title={m.admin_overview_expiring()} />
 			</div>
 		</div>
 	);

@@ -4,6 +4,7 @@ import {
 	validationLogic,
 } from "#/components/admin/form/use-app-form";
 import { FormCard } from "#/components/admin/form-card";
+import { useMoneyInput } from "#/hooks/use-money";
 import type { AdminSettings } from "#/lib/api";
 import { canonicalTimeZone, isCountryCode } from "#/lib/intl";
 import { m } from "#/paraglide/messages";
@@ -17,9 +18,9 @@ const FIELDS = [
 	"countryCode",
 	"orderCodePrefix",
 	"maxQuantityPerLine",
-	"expiryWarningDays",
-	"minShelfLifeDays",
 	"returnWindowDays",
+	"freeShippingFrom",
+	"lowStockThreshold",
 ] as const;
 const fieldOf = (path: string) => FIELDS.find((field) => field === path);
 const CODE_FIELDS = {
@@ -28,6 +29,7 @@ const CODE_FIELDS = {
 
 function OperationsForm({ settings }: { settings: AdminSettings }) {
 	const save = useSaveSettings();
+	const moneyInput = useMoneyInput();
 
 	const schema = z.object({
 		timeZone: z
@@ -48,9 +50,16 @@ function OperationsForm({ settings }: { settings: AdminSettings }) {
 			.toUpperCase()
 			.regex(/^[A-Z0-9]{1,8}$/, m.admin_settings_prefix_invalid()),
 		maxQuantityPerLine: wholeNumber(1, 999),
-		expiryWarningDays: wholeNumber(1, 3650),
-		minShelfLifeDays: optionalWholeNumber(1, 3650),
 		returnWindowDays: optionalWholeNumber(1, 365),
+		freeShippingFrom: z
+			.string()
+			.trim()
+			.refine(
+				(text) => text === "" || moneyInput.parse(text) !== null,
+				m.admin_invalid_amount(),
+			)
+			.transform((text) => (text === "" ? null : moneyInput.parse(text))),
+		lowStockThreshold: wholeNumber(0, 100_000),
 	});
 
 	const form = useAppForm({
@@ -59,9 +68,12 @@ function OperationsForm({ settings }: { settings: AdminSettings }) {
 			countryCode: settings.countryCode ?? "",
 			orderCodePrefix: settings.orderCodePrefix ?? "",
 			maxQuantityPerLine: numberText(settings.maxQuantityPerLine),
-			expiryWarningDays: numberText(settings.expiryWarningDays),
-			minShelfLifeDays: numberText(settings.minShelfLifeDays),
 			returnWindowDays: numberText(settings.returnWindowDays),
+			freeShippingFrom:
+				settings.freeShippingFrom === null
+					? ""
+					: moneyInput.toInput(settings.freeShippingFrom),
+			lowStockThreshold: numberText(settings.lowStockThreshold),
 		},
 		validationLogic,
 		validators: {
@@ -121,7 +133,7 @@ function OperationsForm({ settings }: { settings: AdminSettings }) {
 							<field.TextField
 								label={m.admin_field_order_code_prefix()}
 								maxLength={8}
-								placeholder="EC"
+								placeholder="NAG"
 								autoComplete="off"
 							/>
 						)}
@@ -134,22 +146,22 @@ function OperationsForm({ settings }: { settings: AdminSettings }) {
 							/>
 						)}
 					</form.AppField>
-					<form.AppField name="expiryWarningDays">
+					<form.AppField name="lowStockThreshold">
 						{(field) => (
 							<field.TextField
-								label={m.admin_field_expiry_warning()}
+								label={m.admin_field_low_stock_threshold()}
 								inputMode="numeric"
 							/>
 						)}
 					</form.AppField>
-					<form.AppField name="minShelfLifeDays">
-						{(field) => (
-							<field.TextField
-								label={m.admin_field_min_shelf_life()}
-								inputMode="numeric"
-							/>
-						)}
-					</form.AppField>
+					<div className="grid gap-1.5">
+						<form.AppField name="freeShippingFrom">
+							{(field) => (
+								<field.MoneyField label={m.admin_field_free_shipping_from()} />
+							)}
+						</form.AppField>
+						<Hint>{m.admin_settings_free_shipping_help()}</Hint>
+					</div>
 					<div className="grid gap-1.5">
 						<form.AppField name="returnWindowDays">
 							{(field) => (
@@ -175,9 +187,9 @@ export function OperationsCard({ settings }: { settings: AdminSettings }) {
 		settings.countryCode,
 		settings.orderCodePrefix,
 		settings.maxQuantityPerLine,
-		settings.expiryWarningDays,
-		settings.minShelfLifeDays,
 		settings.returnWindowDays,
+		settings.freeShippingFrom,
+		settings.lowStockThreshold,
 	];
 	return <OperationsForm key={JSON.stringify(stored)} settings={settings} />;
 }

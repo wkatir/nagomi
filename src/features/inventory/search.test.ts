@@ -28,7 +28,7 @@ describe("the defaults of the lists", () => {
 		expect(lotSearchDefaults).toEqual({
 			page: 1,
 			pageSize: 25,
-			sort: "expiresOn",
+			sort: "receivedAt",
 			dir: "asc",
 		});
 		expect(reorderSearchDefaults).toEqual({ lookbackWeeks: 8, targetWeeks: 4 });
@@ -52,12 +52,11 @@ describe("isStockFiltered and isLotsFiltered", () => {
 	});
 
 	test("the search and the view are", () => {
-		expect(isStockFiltered({ ...stockSearchDefaults, q: "aceite" })).toBe(true);
-		expect(isStockFiltered({ ...stockSearchDefaults, view: "low" })).toBe(true);
-		expect(isLotsFiltered({ ...lotSearchDefaults, q: "l2" })).toBe(true);
-		expect(isLotsFiltered({ ...lotSearchDefaults, view: "expired" })).toBe(
+		expect(isStockFiltered({ ...stockSearchDefaults, q: "teclado" })).toBe(
 			true,
 		);
+		expect(isStockFiltered({ ...stockSearchDefaults, view: "low" })).toBe(true);
+		expect(isLotsFiltered({ ...lotSearchDefaults, q: "l2" })).toBe(true);
 	});
 });
 
@@ -67,7 +66,7 @@ describe("clearing the filters", () => {
 			...stockSearchDefaults,
 			page: 4,
 			sort: "sku",
-			q: "aceite",
+			q: "teclado",
 			view: "out",
 		};
 		expect({ ...stock, ...clearedStockFilters }).toEqual({
@@ -81,13 +80,11 @@ describe("clearing the filters", () => {
 			...lotSearchDefaults,
 			page: 2,
 			q: "l1",
-			view: "expiring",
 		};
 		expect({ ...lots, ...clearedLotFilters }).toEqual({
 			...lotSearchDefaults,
 			page: 1,
 			q: undefined,
-			view: undefined,
 		});
 	});
 });

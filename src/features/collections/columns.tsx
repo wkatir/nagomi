@@ -15,6 +15,7 @@ export const collectionColumns = (actions: {
 	onStatus: (id: number, status: ProductStatus) => void;
 }) => {
 	const shared = lifecycleColumns<CollectionRow>({
+		titleOf: (collection) => collection.title,
 		title: (collection) => (
 			<Link
 				to="/admin/collections/$id"

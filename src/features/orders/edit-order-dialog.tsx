@@ -12,7 +12,6 @@ import { DialogFooter } from "#/components/ui/dialog";
 import { useMoney } from "#/hooks/use-money";
 import { type AdminOrder, api, parseResponse } from "#/lib/api";
 import { storeQuery } from "#/lib/queries";
-import { formatSize } from "#/lib/size";
 import { m } from "#/paraglide/messages";
 import { useRefreshAfterOrderChange } from "./mutations";
 import { OrderLineRow } from "./order-line-row";
@@ -105,13 +104,7 @@ export function EditOrderDialog({
 			lines: detail.lines.map(
 				(line): EditLine => ({
 					variantId: line.variantId,
-					label: [
-						line.brandName,
-						line.name,
-						line.sizeValue !== null && line.sizeUnit
-							? formatSize({ value: line.sizeValue, unit: line.sizeUnit })
-							: null,
-					]
+					label: [line.brandName, line.name, line.optionLabel]
 						.filter(Boolean)
 						.join(" "),
 					price: line.unitPrice,

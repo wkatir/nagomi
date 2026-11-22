@@ -14,8 +14,7 @@ const aceite: Item = {
 	sku: "OIL-50",
 	brand: "Brand",
 	name: "Aceite",
-	sizeValue: 50,
-	sizeUnit: "ml",
+	optionLabel: null,
 	quantity: 20,
 	received: 8,
 	unitCost: 650,
@@ -26,8 +25,7 @@ const crema: Item = {
 	sku: "CRM-30",
 	brand: "Brand",
 	name: "Crema",
-	sizeValue: 30,
-	sizeUnit: "ml",
+	optionLabel: "Negro",
 	quantity: 10,
 	received: 0,
 	unitCost: 400,
@@ -38,8 +36,6 @@ const line: ReceiptLine = {
 	quantity: 8,
 	lotId: 1,
 	lotCode: "L1",
-	expiresOn: "2027-05-31",
-	expiry: "2027-05",
 	landedUnitCost: 669,
 };
 const receipt: Receipt = {
@@ -77,8 +73,8 @@ const purchase: Purchase = {
 describe("PurchaseLines", () => {
 	test("lists each line with what arrived of it, its cost and what it comes to", () => {
 		const out = renderWithStore(<PurchaseLines purchase={purchase} />);
-		expect(out).toContain("Brand Aceite 50 ml");
-		expect(out).toContain("Brand Crema 30 ml");
+		expect(out).toContain("Brand Aceite");
+		expect(out).toContain("Brand Crema Negro");
 		// 20 × 6.50 and 10 × 4.00.
 		expect(out).toContain("$130.00");
 		expect(out).toContain("$40.00");
@@ -120,10 +116,9 @@ describe("PurchaseReceipts", () => {
 		const out = renderWithStore(<PurchaseReceipts purchase={purchase} />);
 		expect(out).toContain(m.admin_purchase_invoice({ ref: "F-77" }));
 		expect(out).toContain(m.admin_purchase_shipping_paid({ amount: "$1.50" }));
-		expect(out).toContain("8 × Brand Aceite 50 ml");
+		expect(out).toContain("8 × Brand Aceite");
 		expect(out).toContain(m.admin_unit_cost({ amount: "$6.69" }));
 		expect(out).toContain(m.admin_batch({ code: "L1" }));
-		expect(out).toContain(m.admin_expires_on({ date: "2027-05" }));
 		expect(out).toContain("One box dented");
 	});
 

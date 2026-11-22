@@ -10,8 +10,6 @@ import { lifecycleBadge, lifecycleStatusLabel } from "./status-labels";
 type Row = {
 	id: number;
 	slug: string;
-	// Null when the row has no title in the store's principal language.
-	title: string | null;
 	position: number;
 	status: ProductStatus;
 };
@@ -19,16 +17,23 @@ type Row = {
 // Column ids are the sorts the API accepts.
 export function lifecycleColumns<R extends Row>({
 	title,
+	titleOf,
+	titleSort = "title",
+	titleHeader = m.admin_field_title,
 	onStatus,
 }: {
 	title: (row: R) => ReactNode;
+	// Null when the row has no title in the store's principal language.
+	titleOf: (row: R) => string | null;
+	titleSort?: string;
+	titleHeader?: () => string;
 	onStatus: (id: number, status: ProductStatus) => void;
 }) {
 	const column = createColumnHelper<ListFeatures, R>();
 	return {
-		title: column.accessor((row) => row.title ?? "", {
-			id: "title",
-			header: m.admin_field_title(),
+		title: column.accessor((row) => titleOf(row) ?? "", {
+			id: titleSort,
+			header: titleHeader(),
 			cell: ({ row }) => title(row.original),
 		}),
 		slug: column.accessor((row) => row.slug, {
@@ -67,10 +72,10 @@ export function lifecycleColumns<R extends Row>({
 			),
 			meta: { align: "right" },
 			cell: ({ row }) => {
-				const { id, title: name, slug, status } = row.original;
+				const { id, slug, status } = row.original;
 				return (
 					<RowActions
-						name={name ?? slug}
+						name={titleOf(row.original) ?? slug}
 						onArchive={
 							status === "archived" ? undefined : () => onStatus(id, "archived")
 						}

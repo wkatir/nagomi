@@ -10,7 +10,7 @@ const DISABLED = ' disabled=""';
 const html = (status: ProductStatus, missing: string[] = [], busy = false) =>
 	renderToStaticMarkup(
 		<LifecycleHeader
-			title="Rutina de mañana"
+			title="Set de escritorio"
 			status={status}
 			missing={missing}
 			busy={busy}
@@ -24,7 +24,7 @@ const button = (out: string, label: string) =>
 describe("LifecycleHeader", () => {
 	test("says what it is and its state", () => {
 		const out = html("published");
-		expect(out).toContain("Rutina de mañana");
+		expect(out).toContain("Set de escritorio");
 		expect(out).toContain(m.admin_merch_status_published());
 	});
 

@@ -15,7 +15,7 @@ export function StockSummary() {
 	const money = useMoney();
 	const query = useQuery(stockSummaryQuery);
 	if (query.isPending)
-		return <StatGridSkeleton count={4} className="mb-admin-section" />;
+		return <StatGridSkeleton count={2} className="mb-admin-section" />;
 	if (query.isError)
 		return (
 			<Alert variant="destructive" className="mb-admin-section">
@@ -38,26 +38,10 @@ export function StockSummary() {
 				})}
 			/>
 			<StatCard
-				label={m.admin_inventory_sum_expiring()}
-				value={m.admin_units({ count: summary.expiringUnits })}
-				note={m.admin_inventory_sum_stock_note({
-					amount: money(summary.expiringValue),
-				})}
-				tone={summary.expiringUnits > 0 ? "warning" : undefined}
-			/>
-			<StatCard
-				label={m.admin_inventory_sum_expired()}
-				value={m.admin_units({ count: summary.expiredUnits })}
-				note={m.admin_inventory_sum_expired_note({
-					amount: money(summary.expiredValue),
-				})}
-				tone={summary.expiredUnits > 0 ? "destructive" : undefined}
-			/>
-			<StatCard
 				label={m.admin_inventory_sum_low()}
-				value={summary.belowReorderPoint}
+				value={summary.lowStock}
 				note={m.admin_inventory_sum_low_note()}
-				tone={summary.belowReorderPoint > 0 ? "warning" : undefined}
+				tone={summary.lowStock > 0 ? "warning" : undefined}
 			/>
 		</StatGrid>
 	);

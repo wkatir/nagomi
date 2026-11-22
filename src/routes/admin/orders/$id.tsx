@@ -5,7 +5,7 @@ import { OrderDetail } from "#/features/orders/order-detail";
 import { orderQuery } from "#/features/orders/queries";
 import { activeZonesQuery } from "#/features/shipping/queries";
 import { isNotFound } from "#/lib/api";
-import { adminSettingsQuery } from "#/lib/queries";
+import { storeQuery } from "#/lib/queries";
 import type { LoaderCrumb } from "#/lib/route-data";
 import { m } from "#/paraglide/messages";
 
@@ -24,7 +24,7 @@ export const Route = createFileRoute("/admin/orders/$id")({
 			const [detail] = await Promise.all([
 				context.queryClient.ensureQueryData(orderQuery(params.id)),
 				context.queryClient.ensureQueryData(activeZonesQuery),
-				context.queryClient.ensureQueryData(adminSettingsQuery),
+				context.queryClient.ensureQueryData(storeQuery),
 			]);
 			return { crumb: detail.order.code };
 		} catch (error) {

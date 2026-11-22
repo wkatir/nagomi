@@ -1,10 +1,10 @@
 import { Link } from "@tanstack/react-router";
 import { createColumnHelper } from "@tanstack/react-table";
 import type { ListFeatures } from "#/components/admin/data-table/use-data-table";
-import { Badge } from "#/components/ui/badge";
 import { Button } from "#/components/ui/button";
 import { useMoney } from "#/hooks/use-money";
-import { sizeLabel } from "#/lib/size-label";
+import { useStoreDate } from "#/hooks/use-store-date";
+import { variantLabel } from "#/lib/variant-label";
 import { m } from "#/paraglide/messages";
 import type { LotRow } from "./queries";
 
@@ -20,36 +20,20 @@ export function useLotColumns({
 	onAdjust: (lot: LotRow) => void;
 }) {
 	const money = useMoney();
+	const formatDate = useStoreDate();
 	return column.columns([
-		column.accessor("expiresOn", {
-			header: m.admin_expiry(),
-			cell: ({ row }) => {
-				const lot = row.original;
-				return (
-					<div className="grid">
-						<span className="tabular-nums">{lot.expiry}</span>
-						{lot.expired ? (
-							<Badge variant="destructive" className="w-fit">
-								{m.admin_lot_expired()}
-							</Badge>
-						) : (
-							<span
-								data-soon={lot.expiringSoon}
-								className="type-meta text-muted-foreground data-[soon=true]:text-warning"
-							>
-								{m.admin_days_left({ count: lot.daysLeft })}
-							</span>
-						)}
-					</div>
-				);
-			},
+		column.accessor("receivedAt", {
+			header: m.admin_lot_col_received(),
+			cell: ({ getValue }) => (
+				<span className="tabular-nums">{formatDate(getValue())}</span>
+			),
 		}),
-		column.accessor((lot) => sizeLabel(lot), {
+		column.accessor((lot) => variantLabel(lot), {
 			id: "product",
 			header: m.admin_col_product(),
 			cell: ({ row }) => (
 				<div className="grid">
-					<span className="font-bold">{sizeLabel(row.original)}</span>
+					<span className="font-bold">{variantLabel(row.original)}</span>
 					<span className="type-meta text-muted-foreground">
 						{row.original.sku}
 					</span>
@@ -118,7 +102,7 @@ export function useLotColumns({
 					variant="outline"
 					size="sm"
 					aria-label={m.admin_lot_adjust_label({
-						name: `${sizeLabel(row.original)} ${lotName(row.original)}`,
+						name: `${variantLabel(row.original)} ${lotName(row.original)}`,
 					})}
 					onClick={() => onAdjust(row.original)}
 				>

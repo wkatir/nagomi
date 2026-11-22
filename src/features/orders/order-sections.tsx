@@ -21,7 +21,6 @@ import { useMoney } from "#/hooks/use-money";
 import { useCalendarDate, useStoreDate } from "#/hooks/use-store-date";
 import type { AdminOrder } from "#/lib/api";
 import { paymentLabel } from "#/lib/payment";
-import { formatSize } from "#/lib/size";
 import { whatsappLink } from "#/lib/whatsapp";
 import { m } from "#/paraglide/messages";
 
@@ -45,9 +44,7 @@ export function OrderLines({
 					>
 						<span className="type-small">
 							{line.brandName} {line.name}
-							{line.sizeValue !== null && line.sizeUnit
-								? ` · ${formatSize({ value: line.sizeValue, unit: line.sizeUnit })}`
-								: ""}
+							{line.optionLabel ? ` · ${line.optionLabel}` : ""}
 						</span>
 						<span className="type-small text-right font-bold tabular-nums">
 							{money(line.quantity * line.unitPrice)}
@@ -56,10 +53,7 @@ export function OrderLines({
 							{line.sku}
 							{line.lots.length > 0 &&
 								` · ${line.lots
-									.map(
-										(lot) =>
-											`${[lot.code, lot.expiry].filter(Boolean).join(" ")} × ${lot.units}`,
-									)
+									.map((lot) => `${lot.code ?? `#${lot.lotId}`} × ${lot.units}`)
 									.join(", ")}`}
 						</span>
 						<span className="type-meta text-right text-muted-foreground tabular-nums">

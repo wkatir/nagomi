@@ -9,6 +9,7 @@ import {
 	shippingMethodLabel,
 	zoneStatusLabel,
 } from "#/components/admin/labels";
+import { IfWritable } from "#/components/admin/staff-access";
 import { Button } from "#/components/ui/button";
 import {
 	Empty,
@@ -78,10 +79,16 @@ export function ZonesTable({
 						{m.admin_table_clear_filters()}
 					</Button>
 				)}
-				<Button size="sm" className="ml-auto" onClick={() => setDialog("new")}>
-					<PlusIcon aria-hidden />
-					{m.admin_zone_new()}
-				</Button>
+				<IfWritable area="shipping">
+					<Button
+						size="sm"
+						className="ml-auto"
+						onClick={() => setDialog("new")}
+					>
+						<PlusIcon aria-hidden />
+						{m.admin_zone_new()}
+					</Button>
+				</IfWritable>
 			</div>
 			<DataTable
 				table={table}
@@ -94,12 +101,14 @@ export function ZonesTable({
 							<EmptyTitle>{m.admin_zone_empty()}</EmptyTitle>
 							<EmptyDescription>{m.admin_zone_empty_hint()}</EmptyDescription>
 						</EmptyHeader>
-						<EmptyContent>
-							<Button onClick={() => setDialog("new")}>
-								<PlusIcon aria-hidden />
-								{m.admin_zone_new()}
-							</Button>
-						</EmptyContent>
+						<IfWritable area="shipping">
+							<EmptyContent>
+								<Button onClick={() => setDialog("new")}>
+									<PlusIcon aria-hidden />
+									{m.admin_zone_new()}
+								</Button>
+							</EmptyContent>
+						</IfWritable>
 					</Empty>
 				}
 			/>

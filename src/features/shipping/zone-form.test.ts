@@ -24,7 +24,8 @@ const valid = {
 	slug: "centro",
 	method: "own_delivery",
 	fee: "3.50",
-	freeFrom: "",
+	coversRest: false,
+	municipalities: ["San Salvador Centro"] as string[],
 	deliveryDaysMin: "1",
 	deliveryDaysMax: "2",
 	position: "0",
@@ -68,14 +69,11 @@ describe("zoneSchema", () => {
 			expect(refusals({ fee })).toEqual([]);
 	});
 
-	test("the free-shipping amount may be left empty, and is an amount when given", () => {
-		expect(refusals({ freeFrom: "" })).toEqual([]);
-		expect(refusals({ freeFrom: "0" })).toEqual([]);
-		expect(refusals({ freeFrom: "25.00" })).toEqual([]);
-		for (const freeFrom of ["abc", "-5", "1000000.01"])
-			expect(refusals({ freeFrom })).toEqual([
-				["freeFrom", m.admin_invalid_amount()],
-			]);
+	test("the zone that covers the rest of the country lists no municipalities", () => {
+		expect(refusals({ coversRest: true, municipalities: [] })).toEqual([]);
+		expect(refusals({ coversRest: true })).toEqual([
+			["municipalities", m.error_zone_covers_rest()],
+		]);
 	});
 
 	test("the days are whole numbers from 0 to 365", () => {
@@ -182,7 +180,6 @@ describe("zoneFields", () => {
 			zoneFields(
 				parsed({
 					fee: "3.50",
-					freeFrom: "25",
 					deliveryDaysMin: "2",
 					deliveryDaysMax: "4",
 					position: "7",
@@ -192,21 +189,19 @@ describe("zoneFields", () => {
 		).toEqual({
 			method: "own_delivery",
 			fee: 350,
-			freeFrom: 2500,
+			coversRest: false,
+			municipalities: ["San Salvador Centro"],
 			deliveryDaysMin: 2,
 			deliveryDaysMax: 4,
 			position: 7,
 		});
 	});
 
-	test("an empty free-shipping amount is none, and a free zone is zero", () => {
-		expect(zoneFields(parsed({ fee: "0" }), amount)).toMatchObject({
-			fee: 0,
-			freeFrom: null,
-		});
-		expect(zoneFields(parsed({ freeFrom: "0" }), amount)).toMatchObject({
-			freeFrom: 0,
-		});
+	test("a free zone is zero, and the rest of the country sends no municipalities", () => {
+		expect(zoneFields(parsed({ fee: "0" }), amount)).toMatchObject({ fee: 0 });
+		expect(
+			zoneFields(parsed({ coversRest: true, municipalities: [] }), amount),
+		).toMatchObject({ coversRest: true, municipalities: [] });
 	});
 
 	test("an amount that is not one is a bug, not a quiet zero", () => {

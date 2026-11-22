@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { m } from "#/paraglide/messages";
 import { renderAdmin } from "#/test/admin-render";
 import type { AdminZone } from "./queries";
 import { ZoneForm } from "./zone-dialog";
@@ -8,7 +9,8 @@ const zone = (over: Partial<AdminZone> = {}): AdminZone => ({
 	slug: "centro",
 	method: "own_delivery",
 	fee: 350,
-	freeFrom: 2500,
+	coversRest: false,
+	municipalities: ["San Salvador Centro"],
 	deliveryDaysMin: 1,
 	deliveryDaysMax: 3,
 	position: 4,
@@ -32,7 +34,7 @@ const hasField = (html: string, name: string) =>
 const FIELDS = [
 	"method",
 	"fee",
-	"freeFrom",
+	"coversRest",
 	"deliveryDaysMin",
 	"deliveryDaysMax",
 	"position",
@@ -61,7 +63,6 @@ describe("ZoneForm", () => {
 		expect(hasField(html, "slug")).toBe(false);
 		for (const name of FIELDS) expect(hasField(html, name)).toBe(true);
 		expect(html).toContain('value="3.50"');
-		expect(html).toContain('value="25.00"');
 		expect(html).toContain('value="3"');
 		expect(html).toContain('value="4"');
 		expect(html).toContain('value="Centro"');
@@ -75,8 +76,15 @@ describe("ZoneForm", () => {
 		expect(html).toContain('value="Downtown"');
 	});
 
-	test("a zone without a free-shipping amount leaves the field empty", () => {
-		const html = render(zone({ freeFrom: null }));
-		expect(html).not.toContain('value="25.00"');
+	test("a zone that covers the rest of the country lists no municipalities to choose", () => {
+		const html = render(zone({ coversRest: true, municipalities: [] }));
+		expect(html).toContain(m.admin_zone_covers_rest_help());
+		expect(html).not.toContain("San Salvador Centro");
+	});
+
+	test("a zone lists the municipalities by department, its own checked", () => {
+		const html = render(zone());
+		expect(html).toContain("La Libertad Sur");
+		expect(html).toMatch(/aria-checked="true"/);
 	});
 });

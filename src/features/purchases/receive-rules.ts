@@ -1,7 +1,6 @@
 import type { z } from "zod";
 import { isCalendarDate } from "#/lib/dates";
 import { m } from "#/paraglide/messages";
-import { expiryEnd } from "./expiry-input";
 
 export type ReceiptDraft = {
 	receivedOn: string;
@@ -10,7 +9,6 @@ export type ReceiptDraft = {
 		purchaseOrderItemId: number;
 		remaining: number;
 		quantity: string;
-		expiresOn: string;
 	}[];
 };
 
@@ -49,11 +47,6 @@ export function checkReceipt(
 				lot.purchaseOrderItemId,
 				(arrived.get(lot.purchaseOrderItemId) ?? 0) + quantity,
 			);
-		const end = expiryEnd(lot.expiresOn);
-		if (end === null)
-			issue(["lots", index, "expiresOn"], m.error_invalid_expiry());
-		else if (end < value.receivedOn)
-			issue(["lots", index, "expiresOn"], m.error_lot_expired_at_receipt());
 	});
 	value.lots.forEach((lot, index) => {
 		if ((arrived.get(lot.purchaseOrderItemId) ?? 0) > lot.remaining)
@@ -63,12 +56,3 @@ export function checkReceipt(
 			);
 	});
 }
-
-export const hasShortLife = (
-	lots: { expiresOn: string }[],
-	mustOutlast: string,
-) =>
-	lots.some((lot) => {
-		const end = expiryEnd(lot.expiresOn);
-		return end !== null && end < mustOutlast;
-	});

@@ -392,7 +392,7 @@ describe("LossesReportView", () => {
 		writeOffs: {
 			units: 5,
 			cost: 3500,
-			byReason: [{ reason: "expired", units: 5, cost: 3500 }],
+			byReason: [{ reason: "damaged", units: 5, cost: 3500 }],
 		},
 		adjustments: { units: -2, value: -1400 },
 		totalLoss: 4900,
@@ -422,7 +422,7 @@ describe("LossesReportView", () => {
 
 	test("charts and tables each loss by reason", () => {
 		const table = rows(html);
-		const expired = movementReasonLabel.expired();
+		const expired = movementReasonLabel.damaged();
 		const defective = returnReasonLabel.defective();
 		const withdrawal = returnReasonLabel.withdrawal();
 		// The charts' tables: write-offs at cost, returns at the order's price.
@@ -475,87 +475,52 @@ describe("LossesReportView", () => {
 });
 
 describe("StockReportView", () => {
-	const stock = {
-		onHand: 8,
-		value: 5600,
-		atRiskUnits: 3,
-		atRiskValue: 2100,
-		expiredUnits: 1,
-		expiredValue: 700,
-	};
+	const stock = { onHand: 8, value: 5600 };
 	const report: StockReport = {
 		asOf: "2026-10-24",
-		expiryWindowDays: 180,
+		lowStockThreshold: 5,
 		totals: stock,
 		variants: [
 			{
 				variantId: 1,
-				sku: "OIL",
-				brand: "SKIN1004",
-				name: "Aceite",
+				sku: "TEC-001",
+				brand: "Royal Kludge",
+				name: "RK75",
 				variantStatus: "active",
 				productStatus: "published",
 				reorderPoint: 10,
-				belowReorderPoint: true,
+				lowStock: true,
 				...stock,
 			},
 			{
 				variantId: 2,
-				sku: "TONER",
-				brand: "COSRX",
-				name: "Tónico",
+				sku: "RAT-001",
+				brand: "Pulsar",
+				name: "X2",
 				variantStatus: "active",
 				productStatus: "published",
 				reorderPoint: null,
-				belowReorderPoint: false,
+				lowStock: true,
 				...stock,
 				onHand: 2,
 				value: 1400,
 			},
 			{
 				variantId: 3,
-				sku: "MIST",
-				brand: "COSRX",
-				name: "Bruma",
+				sku: "ALF-001",
+				brand: "Nagomi",
+				name: "Sakura XL",
 				variantStatus: "active",
 				productStatus: "published",
 				reorderPoint: 1,
-				belowReorderPoint: false,
+				lowStock: false,
 				...stock,
-			},
-		],
-		expiringLots: [
-			{
-				lotId: 7,
-				code: null,
-				variantId: 1,
-				sku: "OIL",
-				brand: "SKIN1004",
-				name: "Aceite",
-				expiresOn: "2026-12-31",
-				expiry: "2026-12-31",
-				daysLeft: 68,
-				available: 3,
-				value: 2100,
-			},
-			{
-				lotId: 8,
-				code: "L-8",
-				variantId: 2,
-				sku: "TONER",
-				brand: "COSRX",
-				name: "Tónico",
-				expiresOn: "2027-01-31",
-				expiry: "2027-01",
-				daysLeft: 99,
-				available: 1,
-				value: 700,
 			},
 		],
 	};
 	const html = render(<StockReportView report={report} />);
 
-	test("shows the stock at cost, what expires soon and what already expired", () => {
+	test("shows the stock on hand and at cost", () => {
 		expect(stats(html)).toEqual([
 			[
 				m.admin_report_on_hand(),
@@ -565,63 +530,34 @@ describe("StockReportView", () => {
 				}),
 			],
 			[m.admin_report_stock_value(), money(5600), m.admin_report_at_cost()],
-			[
-				m.admin_report_expiring_soon(),
-				"3",
-				`${money(2100)} · ${m.admin_report_within_days({ days: 180 })}`,
-			],
-			[
-				m.admin_report_expired(),
-				"1",
-				`${money(700)} · ${m.admin_report_to_write_off()}`,
-			],
 		]);
 	});
 
-	test("tables each size, marking the one at or below its reorder point", () => {
-		const sizes = rows(html).filter((r) => r.length === 6);
+	test("tables each variant, marking the ones at or below their point or the store's", () => {
+		const sizes = rows(html).filter((r) => r.length === 4);
 		expect(sizes.slice(1)).toEqual([
 			[
-				"SKIN1004 Aceite | OIL",
+				"Royal Kludge RK75 | TEC-001",
 				"8",
 				money(5600),
-				"3",
-				"1",
 				m.admin_report_below_point({ point: 10 }),
 			],
-			["COSRX Tónico | TONER", "2", money(1400), "3", "1", m.admin_report_na()],
-			["COSRX Bruma | MIST", "8", money(5600), "3", "1", "1"],
-		]);
-	});
-
-	test("lists the lots about to expire, by code or by number, with the days left", () => {
-		const lots = rows(html).filter((r) => r.length === 4);
-		expect(lots.slice(1)).toEqual([
 			[
-				`${m.admin_batch({ code: "#7" })} | OIL`,
-				`2026-12-31 | ${m.admin_report_days_left({ count: 68 })}`,
-				"3",
-				money(2100),
+				"Pulsar X2 | RAT-001",
+				"2",
+				money(1400),
+				m.admin_report_below_point({ point: 5 }),
 			],
-			[
-				`${m.admin_batch({ code: "L-8" })} | TONER`,
-				`2027-01 | ${m.admin_report_days_left({ count: 99 })}`,
-				"1",
-				money(700),
-			],
+			["Nagomi Sakura XL | ALF-001", "8", money(5600), "1"],
 		]);
 	});
 
 	test("with nothing on the shelves it says so", () => {
 		const empty = render(
-			<StockReportView
-				report={{ ...report, variants: [], expiringLots: [] }}
-			/>,
+			<StockReportView report={{ ...report, variants: [] }} />,
 		);
 		expect(empty).toContain(m.admin_report_no_stock());
-		expect(empty).toContain(m.admin_nothing_expiring());
 		expect(html).not.toContain(m.admin_report_no_stock());
-		expect(html).not.toContain(m.admin_nothing_expiring());
 	});
 });
 
@@ -638,7 +574,7 @@ describe("ReorderReportView", () => {
 				reorderPoint: 10,
 				sales: [],
 				firstReceivedOn: null,
-				lots: [{ expiresOn: "2027-06-01", available: onHand }],
+				lots: [{ available: onHand }],
 				committed: 0,
 				latestUnitCostE4: null,
 				leadTimeDays: null,
@@ -649,7 +585,6 @@ describe("ReorderReportView", () => {
 				today: "2026-10-24",
 				lookbackWeeks: 8,
 				targetWeeks: 4,
-				minShelfLifeDays: null,
 			},
 		);
 	const entry = (
@@ -672,7 +607,6 @@ describe("ReorderReportView", () => {
 		today: "2026-10-24",
 		lookbackWeeks: 8,
 		targetWeeks: 4,
-		minShelfLifeDays: null,
 		leadTimeOverride: null,
 		variants: [
 			// 7 are suggested; the supplier sells in packs of 12.

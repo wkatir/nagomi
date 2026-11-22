@@ -1,22 +1,27 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import type { AdminSettings } from "#/lib/api";
+import { StaffAccessProvider } from "#/components/admin/staff-access";
 import type { Locale } from "#/lib/enums";
-import { adminSettingsQuery } from "#/lib/queries";
+import { storeQuery } from "#/lib/queries";
 
-// For tests. The settings hold only the principal language, which is all the forms read.
+// For tests. The store holds only what the forms read: the language, currency and region.
 export function renderWithSettings(
 	node: ReactNode,
 	defaultLocale: Locale = "es",
 	prepare?: (client: QueryClient) => void,
 ) {
 	const queryClient = new QueryClient();
-	queryClient.setQueryData(adminSettingsQuery.queryKey, {
+	queryClient.setQueryData(storeQuery.queryKey, {
+		currency: "USD",
+		countryCode: "SV",
+		timeZone: "America/El_Salvador",
 		defaultLocale,
-	} as unknown as AdminSettings);
+	} as unknown as never);
 	prepare?.(queryClient);
 	return renderToStaticMarkup(
-		<QueryClientProvider client={queryClient}>{node}</QueryClientProvider>,
+		<QueryClientProvider client={queryClient}>
+			<StaffAccessProvider user={{ role: "admin" }}>{node}</StaffAccessProvider>
+		</QueryClientProvider>,
 	);
 }

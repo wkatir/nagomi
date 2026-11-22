@@ -9,7 +9,6 @@ import {
 	SearchIcon,
 	ShoppingCart,
 	Tag,
-	Target,
 	Truck,
 	Users,
 } from "lucide-react";
@@ -27,7 +26,8 @@ import { Kbd } from "#/components/ui/kbd";
 import { adminSearchQuery } from "#/features/search/queries";
 import { useDebouncedValue } from "#/hooks/use-debounced-value";
 import { m } from "#/paraglide/messages";
-import { navGroups } from "./nav";
+import { visibleNavGroups } from "./nav";
+import { useStaffAccess } from "./staff-access";
 
 const MIN_CHARS = 2;
 
@@ -35,6 +35,7 @@ type Hit = { id: number; label: string; hint: string | null };
 type Navigate = ReturnType<typeof useNavigate>;
 
 export function CommandSearch() {
+	const access = useStaffAccess();
 	const [open, setOpen] = useState(false);
 	const [text, setText] = useState("");
 	const navigate = useNavigate();
@@ -102,7 +103,7 @@ export function CommandSearch() {
 				<CommandList className="max-h-[min(24rem,60svh)]">
 					<CommandEmpty>{m.admin_search_empty()}</CommandEmpty>
 					<CommandGroup heading={m.admin_search_go_to()}>
-						{navGroups
+						{visibleNavGroups(access.canRead)
 							.flatMap((group) => group.items)
 							.map((item) => (
 								<CommandItem
@@ -154,8 +155,7 @@ function recordGroups(
 				purchases: Hit[];
 				brands: Hit[];
 				categories: Hit[];
-				concerns: Hit[];
-				routines: Hit[];
+				bundles: Hit[];
 				collections: Hit[];
 				promotions: Hit[];
 		  }
@@ -200,11 +200,8 @@ function recordGroups(
 			found.categories,
 			(hit) => navigate({ to: "/admin/categories", search: { q: hit.label } }),
 		),
-		group("concerns", m.admin_nav_concerns(), Target, found.concerns, (hit) =>
-			navigate({ to: "/admin/concerns", search: { q: hit.label } }),
-		),
-		group("routines", m.admin_nav_routines(), Layers, found.routines, (hit) =>
-			navigate({ to: "/admin/routines/$id", params: { id: hit.id } }),
+		group("bundles", m.admin_nav_routines(), Layers, found.bundles, (hit) =>
+			navigate({ to: "/admin/bundles/$id", params: { id: hit.id } }),
 		),
 		group(
 			"collections",

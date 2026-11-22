@@ -12,8 +12,9 @@ import {
 	SidebarMenuButton,
 	SidebarMenuItem,
 } from "#/components/ui/sidebar";
-import { isNavActive, navGroups } from "./nav";
+import { isNavActive, visibleNavGroups } from "./nav";
 import { NavUser } from "./nav-user";
+import { useStaffAccess } from "./staff-access";
 
 export function AppSidebar({
 	storeName,
@@ -25,6 +26,7 @@ export function AppSidebar({
 	signOut: { pending: boolean; run: () => void };
 }) {
 	const pathname = useRouterState({ select: (s) => s.location.pathname });
+	const access = useStaffAccess();
 	return (
 		<Sidebar collapsible="icon">
 			<SidebarHeader>
@@ -46,7 +48,7 @@ export function AppSidebar({
 				</SidebarMenu>
 			</SidebarHeader>
 			<SidebarContent>
-				{navGroups.map((group) => (
+				{visibleNavGroups(access.canRead).map((group) => (
 					<SidebarGroup key={group.items[0].to}>
 						{group.label && (
 							<SidebarGroupLabel>{group.label()}</SidebarGroupLabel>

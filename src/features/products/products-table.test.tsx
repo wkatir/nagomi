@@ -14,7 +14,7 @@ const row = (change: Partial<ProductRow>): ProductRow => ({
 	name: "Aceite",
 	brand: "Marca Uno",
 	category: "Limpiador",
-	sizes: 2,
+	variantCount: 2,
 	priceFrom: 1500,
 	priceTo: 2500,
 	stock: 52,
@@ -42,11 +42,11 @@ describe("ProductsTable", () => {
 		row({}),
 		row({
 			id: 2,
-			slug: "serum",
+			slug: "keyboard",
 			status: "draft",
 			name: "Suero",
 			brand: "Marca Dos",
-			sizes: 0,
+			variantCount: 0,
 			priceFrom: null,
 			priceTo: null,
 			stock: 0,
@@ -56,7 +56,7 @@ describe("ProductsTable", () => {
 			id: 3,
 			status: "archived",
 			name: "Crema",
-			sizes: 1,
+			variantCount: 1,
 			priceFrom: 900,
 			priceTo: 900,
 		}),
@@ -71,7 +71,7 @@ describe("ProductsTable", () => {
 		expect(html).toContain("Limpiador");
 	});
 
-	test("shows the price range and the sizes of each, or that it has none", () => {
+	test("shows the price range and the variants of each, or that it has none", () => {
 		expect(html).toContain("$15.00 - $25.00");
 		expect(html).toContain(m.admin_product_sizes_n({ count: 2 }));
 		// A single price is not a range.
@@ -110,11 +110,10 @@ describe("ProductsTable", () => {
 		for (const label of [
 			m.admin_product_col_brand(),
 			m.admin_product_col_category(),
-			m.admin_product_filter_need(),
 		])
 			expect(html).toContain(`aria-label="${label}"`);
 		expect(html).toContain("Marca Uno");
-		expect(html).toContain("Acné");
+		expect(html).toContain("Teclados");
 		expect(html).toContain('href="/admin/products/new"');
 		expect(html).toContain(m.admin_product_search());
 	});

@@ -12,6 +12,8 @@ const customer = (
 	email: "ana@example.com",
 	notes: "Prefiere WhatsApp",
 	createdAt: "2026-09-01T12:00:00Z",
+	hasAccount: false,
+	segment: "new",
 	...over,
 });
 

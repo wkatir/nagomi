@@ -2,7 +2,7 @@ import { createFileRoute, stripSearchParams } from "@tanstack/react-router";
 import { PageHeader } from "#/components/admin/page-header";
 import { CategoriesTable } from "#/features/categories/categories-table";
 import { categoriesQuery } from "#/features/categories/queries";
-import { adminSettingsQuery } from "#/lib/queries";
+import { storeQuery } from "#/lib/queries";
 import { categoryListSearch } from "#/lib/schemas/categories";
 import { m } from "#/paraglide/messages";
 
@@ -18,7 +18,7 @@ export const Route = createFileRoute("/admin/categories")({
 	// the table). The settings the dialog needs are small and kept.
 	loader: async ({ context, deps }) => {
 		void context.queryClient.prefetchQuery(categoriesQuery(deps));
-		await context.queryClient.ensureQueryData(adminSettingsQuery);
+		await context.queryClient.ensureQueryData(storeQuery);
 	},
 	component: Categories,
 });

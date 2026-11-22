@@ -20,7 +20,6 @@ export const clearedStockFilters = {
 export const clearedLotFilters = {
 	page: 1,
 	q: undefined,
-	view: undefined,
 } satisfies Partial<LotListSearch>;
 export const clearedMovementFilters = {
 	kind: undefined,
@@ -33,8 +32,7 @@ export const clearedMovementFilters = {
 
 export const isStockFiltered = (search: StockListSearch) =>
 	Boolean(search.q || search.view);
-export const isLotsFiltered = (search: LotListSearch) =>
-	Boolean(search.q || search.view);
+export const isLotsFiltered = (search: LotListSearch) => Boolean(search.q);
 export const isLedgerFiltered = (filters: MovementFilters) =>
 	Boolean(
 		filters.kind ||

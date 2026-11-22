@@ -5,6 +5,7 @@ import {
 	type ArchivableActions,
 	archivableColumns,
 } from "../merchandising/archivable-columns";
+import { categoryIcon, categoryIconLabel } from "./icons";
 import type { CategoryRow } from "./queries";
 
 const column = createColumnHelper<ListFeatures, CategoryRow>();
@@ -15,8 +16,21 @@ export const categoryColumns = (actions: ArchivableActions) => {
 	return column.columns([
 		shared.name,
 		shared.slug,
-		column.accessor("routineStep", {
-			header: m.admin_category_col_step(),
+		column.accessor("icon", {
+			header: m.admin_category_icon(),
+			enableSorting: false,
+			cell: ({ getValue }) => {
+				const Icon = categoryIcon[getValue()];
+				return (
+					<Icon
+						aria-label={categoryIconLabel[getValue()]()}
+						className="size-4"
+					/>
+				);
+			},
+		}),
+		column.accessor("sortOrder", {
+			header: m.admin_category_sort_order(),
 			meta: { align: "right" },
 			cell: ({ getValue }) => (
 				<span className="tabular-nums">{getValue()}</span>

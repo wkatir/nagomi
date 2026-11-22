@@ -13,7 +13,7 @@ import { Button } from "#/components/ui/button";
 import { DialogFooter } from "#/components/ui/dialog";
 import { api, parseResponse } from "#/lib/api";
 import { MOVEMENT_REASONS } from "#/lib/enums";
-import { sizeLabel } from "#/lib/size-label";
+import { variantLabel } from "#/lib/variant-label";
 import { m } from "#/paraglide/messages";
 import {
 	type AdjustmentKind,
@@ -103,7 +103,7 @@ export function AdjustLotDialog({
 	return (
 		<AdminDialog
 			onClose={onClose}
-			title={`${sizeLabel(lot)} · ${m.admin_batch({ code: lotName(lot) })}`}
+			title={`${variantLabel(lot)} · ${m.admin_batch({ code: lotName(lot) })}`}
 		>
 			<form
 				noValidate
@@ -115,8 +115,7 @@ export function AdjustLotDialog({
 			>
 				<form.AppForm>
 					<p className="type-small text-muted-foreground">
-						{m.admin_lot_adjust_holds({ count: lot.available })} ·{" "}
-						{m.admin_expires_on({ date: lot.expiry })}
+						{m.admin_lot_adjust_holds({ count: lot.available })}
 					</p>
 					<form.AppField name="kind">
 						{(field) => (

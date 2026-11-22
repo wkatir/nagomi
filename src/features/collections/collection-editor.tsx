@@ -1,7 +1,7 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
 import { DetailColumns, DetailPage } from "#/components/admin/detail-layout";
-import { adminSettingsQuery } from "#/lib/queries";
+import { storeQuery } from "#/lib/queries";
 import { LifecycleHeader } from "../merchandising/lifecycle-header";
 import { CollectionDetails } from "./collection-details";
 import { CollectionProducts } from "./collection-products";
@@ -16,7 +16,7 @@ export function CollectionEditor({
 }: {
 	collection: CollectionDetail;
 }) {
-	const { data: settings } = useSuspenseQuery(adminSettingsQuery);
+	const { data: settings } = useSuspenseQuery(storeQuery);
 	const { defaultLocale } = settings;
 	const router = useRouter();
 	const status = useCollectionStatus();

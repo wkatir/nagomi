@@ -11,7 +11,7 @@ import { Section } from "#/components/admin/section";
 import { Button } from "#/components/ui/button";
 import { api, parseResponse } from "#/lib/api";
 import { SLUG_REGEX } from "#/lib/enums";
-import { adminSettingsQuery } from "#/lib/queries";
+import { storeQuery } from "#/lib/queries";
 import { m } from "#/paraglide/messages";
 import { slugify } from "../merchandising/slug";
 import { useRefresh } from "../merchandising/status-change";
@@ -61,7 +61,7 @@ const blank = {
 export function NewCollectionForm() {
 	const navigate = useNavigate();
 	const refresh = useRefresh(collectionsKeys.all);
-	const { data: settings } = useSuspenseQuery(adminSettingsQuery);
+	const { data: settings } = useSuspenseQuery(storeQuery);
 	const { defaultLocale } = settings;
 
 	const schema = z

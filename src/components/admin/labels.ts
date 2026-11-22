@@ -25,11 +25,6 @@ export const purchaseStatusLabel = {
 	received: m.admin_po_status_received,
 	cancelled: m.admin_po_status_cancelled,
 } as const;
-export const unitLabel = {
-	ml: m.admin_unit_ml,
-	g: m.admin_unit_g,
-	units: m.admin_unit_units,
-} as const;
 export const productStatusLabel = {
 	draft: m.admin_product_status_draft,
 	published: m.admin_product_status_published,
@@ -38,7 +33,7 @@ export const productStatusLabel = {
 export const imageKindLabel = {
 	packshot: m.admin_product_kind_packshot,
 	lifestyle: m.admin_product_kind_lifestyle,
-	texture: m.admin_product_kind_texture,
+	detail: m.admin_product_kind_detail,
 } as const;
 export const shippingMethodLabel = {
 	pickup: m.shipping_method_pickup,
@@ -62,6 +57,12 @@ export const consentChannelLabel = {
 	web: m.admin_customer_channel_web,
 	...channelLabel,
 } as const;
+export const customerSegmentLabel = {
+	new: m.admin_segment_new,
+	occasional: m.admin_segment_occasional,
+	frequent: m.admin_segment_frequent,
+	inactive: m.admin_segment_inactive,
+} as const;
 export const paymentStatusLabel = {
 	unpaid: m.admin_unpaid,
 	partially_paid: m.admin_order_partially_paid,
@@ -71,9 +72,8 @@ export const paymentStatusLabel = {
 	nothing_due: m.admin_order_nothing_due,
 } as const;
 export const movementReasonLabel = {
-	expired: m.movement_reason_expired,
 	damaged: m.movement_reason_damaged,
-	sample_tester: m.movement_reason_sample_tester,
+	demo_unit: m.movement_reason_demo_unit,
 	own_use: m.movement_reason_own_use,
 	lost_theft: m.movement_reason_lost_theft,
 	count_difference: m.movement_reason_count_difference,
@@ -94,6 +94,7 @@ export const dispositionLabel = {
 export const consentPurposeLabel = {
 	privacy_notice: m.admin_consent_privacy_notice,
 	terms: m.admin_consent_terms,
+	marketing_email: m.admin_consent_marketing_email,
 	marketing_whatsapp: m.admin_consent_marketing_whatsapp,
 } as const;
 export const supplierStatusLabel = {
@@ -110,10 +111,4 @@ export const movementKindLabel = {
 export const stockViewLabel = {
 	low: m.admin_inventory_view_low,
 	out: m.admin_inventory_view_out,
-	expiring: m.admin_inventory_view_expiring,
-	expired: m.admin_inventory_view_expired,
-} as const;
-export const lotViewLabel = {
-	expiring: m.admin_lot_view_expiring,
-	expired: m.admin_lot_view_expired,
 } as const;

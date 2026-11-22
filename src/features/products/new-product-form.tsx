@@ -9,7 +9,6 @@ import {
 	useAppForm,
 	validationLogic,
 } from "#/components/admin/form/use-app-form";
-import { unitLabel } from "#/components/admin/labels";
 import { Section } from "#/components/admin/section";
 import {
 	Accordion,
@@ -20,17 +19,14 @@ import {
 import { Button } from "#/components/ui/button";
 import { useMoneyInput } from "#/hooks/use-money";
 import { api, parseResponse } from "#/lib/api";
-import { SIZE_UNITS, SKIN_TYPES, SLUG_REGEX } from "#/lib/enums";
+import { SLUG_REGEX } from "#/lib/enums";
 import { storeQuery } from "#/lib/queries";
 import { PRODUCT_LIMITS } from "#/lib/schemas/products";
-import { skinTypeLabel } from "#/lib/skin-type";
 import { m } from "#/paraglide/messages";
-import { CheckboxGroup } from "./checkbox-group";
 import { choosable } from "./choosable";
 import { useRefreshAfterProductChange } from "./mutations";
 import { useLoadedProductOptions } from "./options";
 import { SectionForm } from "./section-form";
-import { emptySize, sizeIssues, sizePayload } from "./size-form";
 import {
 	localesWithErrors,
 	MAIN_TEXT_FIELDS,
@@ -42,21 +38,19 @@ import {
 	translationsSchema,
 	translationValues,
 } from "./translations";
+import { emptyVariant, variantIssues, variantPayload } from "./variant-form";
 
-// The rest of a size is set on the product's page.
-const SIZE_FIELDS = ["sku", "sizeValue", "sizeUnit", "price"] as const;
+// The rest of a variant is set on the product's page.
+const SIZE_FIELDS = ["sku", "optionLabel", "price"] as const;
 
-// The API sends the size as `variant`.
+// The API sends the variant as `variant`.
 const fieldOf = (path: string) => {
 	if (path.startsWith("variant."))
 		return `size.${path.slice("variant.".length)}`;
 	return path === "slug" ||
 		path === "brandId" ||
 		path === "categoryId" ||
-		path === "concernIds" ||
-		path === "skinTypes" ||
-		path === "inci" ||
-		path === "sanitaryRegistration" ||
+		path === "warrantyMonths" ||
 		path.startsWith("translations.")
 		? path
 		: undefined;
@@ -79,26 +73,29 @@ export function NewProductForm() {
 				.regex(SLUG_REGEX, m.admin_product_slug_invalid()),
 			brandId: z.string().min(1, m.admin_required()),
 			categoryId: z.string().min(1, m.admin_required()),
-			concernIds: z.array(z.string()),
-			skinTypes: z.array(z.enum(SKIN_TYPES)),
-			sanitaryRegistration: z
+			warrantyMonths: z
 				.string()
 				.trim()
-				.max(PRODUCT_LIMITS.sanitaryRegistration),
-			inci: z.string().trim().max(PRODUCT_LIMITS.inci),
+				.regex(/^\d+$/, m.admin_product_warranty_invalid())
+				.refine(
+					(value) => Number(value) <= PRODUCT_LIMITS.warrantyMonths,
+					m.admin_product_warranty_invalid(),
+				),
 			size: z.object({
 				sku: z.string(),
-				sizeValue: z.string(),
-				sizeUnit: z.union([z.literal(""), z.enum(SIZE_UNITS)]),
+				optionLabel: z.string(),
 				price: z.string(),
 			}),
 		})
 		.and(translationsSchema({ defaultLocale: store.defaultLocale, stored: [] }))
 		.superRefine((value, ctx) => {
-			// A size is asked for only once something of it is typed.
+			// A variant is asked for only once something of it is typed.
 			if (SIZE_FIELDS.every((field) => value.size[field].trim() === "")) return;
 			const rules = { parseAmount: moneyInput.parse, priceRequired: false };
-			for (const issue of sizeIssues({ ...emptySize, ...value.size }, rules))
+			for (const issue of variantIssues(
+				{ ...emptyVariant, ...value.size },
+				rules,
+			))
 				if (SIZE_FIELDS.some((field) => field === issue.field))
 					ctx.addIssue({
 						code: "custom",
@@ -118,16 +115,16 @@ export function NewProductForm() {
 						slug: value.slug,
 						brandId: Number(value.brandId),
 						categoryId: Number(value.categoryId),
-						concernIds: value.concernIds.map(Number),
-						skinTypes: value.skinTypes,
-						sanitaryRegistration: value.sanitaryRegistration || null,
-						inci: value.inci || null,
+						warrantyMonths: Number(value.warrantyMonths),
 						translations: translationsPayload(
 							value.translations,
 							translationValues([]),
 						),
 						variant: sized
-							? sizePayload({ ...emptySize, ...value.size }, moneyInput.parse)
+							? variantPayload(
+									{ ...emptyVariant, ...value.size },
+									moneyInput.parse,
+								)
 							: undefined,
 					},
 				}),
@@ -144,15 +141,11 @@ export function NewProductForm() {
 			slug: "",
 			brandId: "",
 			categoryId: "",
-			concernIds: [] as string[],
-			skinTypes: [] as (typeof SKIN_TYPES)[number][],
-			sanitaryRegistration: "",
-			inci: "",
+			warrantyMonths: "12",
 			translations: translationValues([]),
 			size: {
 				sku: "",
-				sizeValue: "",
-				sizeUnit: "" as "" | (typeof SIZE_UNITS)[number],
+				optionLabel: "",
 				price: "",
 			},
 		},
@@ -198,29 +191,6 @@ export function NewProductForm() {
 												/>
 											)}
 										</form.AppField>
-										<form.Field name="concernIds">
-											{(field) => (
-												<CheckboxGroup
-													legend={m.admin_product_needs()}
-													options={choosable(options.concerns, [])}
-													value={field.state.value}
-													onChange={field.handleChange}
-												/>
-											)}
-										</form.Field>
-										<form.Field name="skinTypes">
-											{(field) => (
-												<CheckboxGroup
-													legend={m.admin_product_skin_types()}
-													options={SKIN_TYPES.map((skinType) => ({
-														value: skinType,
-														label: skinTypeLabel[skinType](),
-													}))}
-													value={field.state.value}
-													onChange={field.handleChange}
-												/>
-											)}
-										</form.Field>
 									</div>
 								</Section>
 								<div className="grid gap-3">
@@ -247,20 +217,12 @@ export function NewProductForm() {
 										/>
 									)}
 								</form.AppField>
-								<form.AppField name="sanitaryRegistration">
+								<form.AppField name="warrantyMonths">
 									{(field) => (
 										<field.TextField
-											label={m.admin_field_sanitary_registration()}
-											maxLength={PRODUCT_LIMITS.sanitaryRegistration}
-										/>
-									)}
-								</form.AppField>
-								<form.AppField name="inci">
-									{(field) => (
-										<field.TextareaField
-											label={m.admin_product_inci()}
-											rows={4}
-											maxLength={PRODUCT_LIMITS.inci}
+											label={m.admin_product_warranty_months()}
+											inputMode="numeric"
+											maxLength={3}
 										/>
 									)}
 								</form.AppField>
@@ -324,30 +286,18 @@ export function NewProductForm() {
 										{(field) => (
 											<field.TextField
 												label={m.admin_product_sku()}
+												placeholder="TEC-001"
 												maxLength={PRODUCT_LIMITS.sku}
 											/>
 										)}
 									</form.AppField>
 								</div>
-								<form.AppField name="size.sizeValue">
+								<form.AppField name="size.optionLabel">
 									{(field) => (
 										<field.TextField
-											label={m.admin_size_label()}
-											inputMode="numeric"
-										/>
-									)}
-								</form.AppField>
-								<form.AppField name="size.sizeUnit">
-									{(field) => (
-										<field.SelectField
-											label={m.admin_unit_label()}
-											options={[
-												{ value: "", label: m.admin_product_unit_none() },
-												...SIZE_UNITS.map((unit) => ({
-													value: unit,
-													label: unitLabel[unit](),
-												})),
-											]}
+											label={m.admin_product_option_label()}
+											placeholder={m.admin_product_option_placeholder()}
+											maxLength={PRODUCT_LIMITS.optionLabel}
 										/>
 									)}
 								</form.AppField>

@@ -9,9 +9,9 @@ import { getLocale } from "#/paraglide/runtime";
 
 export const auditEntityLabel = {
 	brand: m.admin_audit_entity_brand,
+	bundle: m.admin_audit_entity_bundle,
 	category: m.admin_audit_entity_category,
 	collection: m.admin_audit_entity_collection,
-	concern: m.admin_audit_entity_concern,
 	customer: m.admin_audit_entity_customer,
 	home_slide: m.admin_audit_entity_home_slide,
 	inventory_movement: m.admin_audit_entity_inventory_movement,
@@ -25,7 +25,6 @@ export const auditEntityLabel = {
 	purchase_order: m.admin_audit_entity_purchase_order,
 	purchase_receipt: m.admin_audit_entity_purchase_receipt,
 	return: m.admin_audit_entity_return,
-	routine: m.admin_audit_entity_routine,
 	shipping_zone: m.admin_audit_entity_shipping_zone,
 	store_promise: m.admin_audit_entity_store_promise,
 	store_settings: m.admin_audit_entity_store_settings,

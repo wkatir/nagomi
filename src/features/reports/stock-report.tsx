@@ -19,7 +19,7 @@ const numeric = "text-right tabular-nums";
 export function StockReportView({ report }: { report: StockReport }) {
 	const money = useMoney();
 	const formatDay = useCalendarDate();
-	const { totals, variants, expiringLots, expiryWindowDays } = report;
+	const { totals, variants } = report;
 	return (
 		<>
 			<StatGrid>
@@ -32,16 +32,6 @@ export function StockReportView({ report }: { report: StockReport }) {
 					label={m.admin_report_stock_value()}
 					value={money(totals.value)}
 					note={m.admin_report_at_cost()}
-				/>
-				<StatCard
-					label={m.admin_report_expiring_soon()}
-					value={String(totals.atRiskUnits)}
-					note={`${money(totals.atRiskValue)} · ${m.admin_report_within_days({ days: expiryWindowDays })}`}
-				/>
-				<StatCard
-					label={m.admin_report_expired()}
-					value={String(totals.expiredUnits)}
-					note={`${money(totals.expiredValue)} · ${m.admin_report_to_write_off()}`}
 				/>
 			</StatGrid>
 			<Section title={m.admin_report_stock_by_size()}>
@@ -56,12 +46,6 @@ export function StockReportView({ report }: { report: StockReport }) {
 								{m.admin_report_value()}
 							</TableHead>
 							<TableHead className="text-right max-md:hidden">
-								{m.admin_report_expiring_soon()}
-							</TableHead>
-							<TableHead className="text-right max-md:hidden">
-								{m.admin_report_expired()}
-							</TableHead>
-							<TableHead className="text-right max-md:hidden">
 								{m.admin_report_reorder_point()}
 							</TableHead>
 						</TableRow>
@@ -70,7 +54,7 @@ export function StockReportView({ report }: { report: StockReport }) {
 						{variants.length === 0 && (
 							<TableRow>
 								<TableCell
-									colSpan={6}
+									colSpan={4}
 									className="py-10 text-center text-muted-foreground"
 								>
 									{m.admin_report_no_stock()}
@@ -92,75 +76,15 @@ export function StockReportView({ report }: { report: StockReport }) {
 								<TableCell className={numeric}>{v.onHand}</TableCell>
 								<TableCell className={numeric}>{money(v.value)}</TableCell>
 								<TableCell className={`${numeric} max-md:hidden`}>
-									{v.atRiskUnits}
-								</TableCell>
-								<TableCell className={`${numeric} max-md:hidden`}>
-									{v.expiredUnits}
-								</TableCell>
-								<TableCell className={`${numeric} max-md:hidden`}>
-									{v.reorderPoint === null ? (
-										m.admin_report_na()
-									) : v.belowReorderPoint ? (
+									{v.lowStock ? (
 										<Badge variant="secondary">
-											{m.admin_report_below_point({ point: v.reorderPoint })}
+											{m.admin_report_below_point({
+												point: v.reorderPoint ?? report.lowStockThreshold,
+											})}
 										</Badge>
 									) : (
-										v.reorderPoint
+										(v.reorderPoint ?? report.lowStockThreshold)
 									)}
-								</TableCell>
-							</TableRow>
-						))}
-					</TableBody>
-				</Table>
-			</Section>
-			<Section title={m.admin_expiring({ days: expiryWindowDays })}>
-				<Table>
-					<TableHeader>
-						<TableRow>
-							<TableHead>{m.admin_report_lot()}</TableHead>
-							<TableHead>{m.admin_report_expires()}</TableHead>
-							<TableHead className="text-right">
-								{m.admin_report_units()}
-							</TableHead>
-							<TableHead className="text-right max-md:hidden">
-								{m.admin_report_value()}
-							</TableHead>
-						</TableRow>
-					</TableHeader>
-					<TableBody>
-						{expiringLots.length === 0 && (
-							<TableRow>
-								<TableCell
-									colSpan={4}
-									className="py-10 text-center text-muted-foreground"
-								>
-									{m.admin_nothing_expiring()}
-								</TableCell>
-							</TableRow>
-						)}
-						{expiringLots.map((lot) => (
-							<TableRow key={lot.lotId}>
-								<TableCell>
-									<div className="grid">
-										<span>
-											{m.admin_batch({ code: lot.code ?? `#${lot.lotId}` })}
-										</span>
-										<span className="type-meta text-muted-foreground">
-											{lot.sku}
-										</span>
-									</div>
-								</TableCell>
-								<TableCell>
-									<div className="grid">
-										<span>{lot.expiry}</span>
-										<span className="type-meta text-muted-foreground">
-											{m.admin_report_days_left({ count: lot.daysLeft })}
-										</span>
-									</div>
-								</TableCell>
-								<TableCell className={numeric}>{lot.available}</TableCell>
-								<TableCell className={`${numeric} max-md:hidden`}>
-									{money(lot.value)}
 								</TableCell>
 							</TableRow>
 						))}

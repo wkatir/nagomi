@@ -11,7 +11,6 @@ import {
 } from "#/components/ui/command";
 import { useDebouncedValue } from "#/hooks/use-debounced-value";
 import { useMoney } from "#/hooks/use-money";
-import { formatSize } from "#/lib/size";
 import { m } from "#/paraglide/messages";
 import { sellableVariantsQuery } from "./queries";
 
@@ -60,10 +59,7 @@ export function VariantPicker({
 					</CommandEmpty>
 					<CommandGroup>
 						{rows.map((row) => {
-							const size =
-								row.sizeValue !== null && row.sizeUnit
-									? formatSize({ value: row.sizeValue, unit: row.sizeUnit })
-									: null;
+							const size = row.optionLabel;
 							const label = [row.brand, row.name, size]
 								.filter(Boolean)
 								.join(" ");

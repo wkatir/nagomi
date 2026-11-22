@@ -12,7 +12,7 @@ import { SizePicker } from "#/components/admin/size-picker";
 import { Button } from "#/components/ui/button";
 import { DialogFooter } from "#/components/ui/dialog";
 import { api, parseResponse } from "#/lib/api";
-import { sizeLabel } from "#/lib/size-label";
+import { variantLabel } from "#/lib/variant-label";
 import { m } from "#/paraglide/messages";
 import { useRefreshAfterSupplierChange } from "./mutations";
 import type { SupplierItem } from "./queries";
@@ -103,7 +103,7 @@ export function SupplierItemDialog({
 	const form = useAppForm({
 		defaultValues: {
 			variantId: item?.variantId ?? (null as number | null),
-			label: item ? sizeLabel(item) : "",
+			label: item ? variantLabel(item) : "",
 			supplierSku: item?.supplierSku ?? "",
 			packSize: item?.packSize == null ? "" : String(item.packSize),
 			minOrderQuantity:
@@ -130,7 +130,7 @@ export function SupplierItemDialog({
 			onClose={onClose}
 			title={
 				item
-					? m.admin_supplier_item_edit_title({ name: sizeLabel(item) })
+					? m.admin_supplier_item_edit_title({ name: variantLabel(item) })
 					: m.admin_supplier_item_new()
 			}
 		>

@@ -25,7 +25,11 @@ const fieldOf = (path: string): Field | undefined =>
 		? FIELD_OF[path as keyof typeof FIELD_OF]
 		: undefined;
 
-const PHONE_REFUSALS = ["duplicate_phone", "invalid_phone"];
+const PHONE_REFUSALS = [
+	"duplicate_phone",
+	"invalid_phone",
+	"phone_not_salvadoran",
+];
 
 // Name and phone cannot be cleared once they exist (an order needs them); email and notes can.
 export function CustomerForm({
@@ -109,6 +113,8 @@ export function CustomerForm({
 					const code = apiErrorOf(error)?.code;
 					if (code !== undefined && PHONE_REFUSALS.includes(code))
 						return { fields: { phone: errorMessage(error) } };
+					if (code === "duplicate_email")
+						return { fields: { email: errorMessage(error) } };
 					return serverErrors(error, fieldOf);
 				}
 			},
@@ -138,6 +144,7 @@ export function CustomerForm({
 						<field.TextField
 							label={m.admin_field_phone()}
 							inputMode="tel"
+							placeholder="+503 7123 4567"
 							maxLength={30}
 						/>
 					)}

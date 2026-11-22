@@ -1,8 +1,11 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { DownloadIcon } from "lucide-react";
 import { DataTable } from "#/components/admin/data-table/data-table";
+import { SelectFilter } from "#/components/admin/data-table/select-filter";
 import { TableToolbar } from "#/components/admin/data-table/table-toolbar";
 import { useDataTable } from "#/components/admin/data-table/use-data-table";
+import { customerSegmentLabel } from "#/components/admin/labels";
+import { IfWritable } from "#/components/admin/staff-access";
 import { Button } from "#/components/ui/button";
 import {
 	Empty,
@@ -10,6 +13,7 @@ import {
 	EmptyHeader,
 	EmptyTitle,
 } from "#/components/ui/empty";
+import { CUSTOMER_SEGMENTS } from "#/lib/enums";
 import {
 	CUSTOMER_SORTS,
 	type CustomerListSearch,
@@ -19,7 +23,7 @@ import { useCustomerColumns } from "./columns";
 import { customersQuery } from "./queries";
 import { clearedFilters, exportHref, isFiltered } from "./search";
 
-// No create button: customers are born from orders.
+// No create button: customers are born from orders and sign-ups.
 export function CustomersTable({
 	search,
 	onSearchChange,
@@ -52,15 +56,29 @@ export function CustomersTable({
 					onChange: (q) => onSearchChange({ page: 1, q }),
 					label: m.admin_customer_search(),
 				}}
+				filters={
+					<SelectFilter
+						label={m.admin_customer_col_segment()}
+						allLabel={m.admin_customer_segment_all()}
+						value={search.segment}
+						options={CUSTOMER_SEGMENTS.map((segment) => ({
+							value: segment,
+							label: customerSegmentLabel[segment](),
+						}))}
+						onChange={(segment) => onSearchChange({ page: 1, segment })}
+					/>
+				}
 				filtered={filtered}
 				onClearFilters={clear}
 				actions={
-					<Button variant="outline" size="sm" asChild>
-						<a href={exportHref(search)} download>
-							<DownloadIcon aria-hidden />
-							{m.admin_export_csv()}
-						</a>
-					</Button>
+					<IfWritable area="reports">
+						<Button variant="outline" size="sm" asChild>
+							<a href={exportHref(search)} download>
+								<DownloadIcon aria-hidden />
+								{m.admin_export_csv()}
+							</a>
+						</Button>
+					</IfWritable>
 				}
 			/>
 			<DataTable

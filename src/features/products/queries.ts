@@ -34,3 +34,14 @@ export const productQuery = (id: number) =>
 				api().admin.products[":id"].$get({ param: { id: String(id) } }),
 			),
 	});
+
+export const priceHistoryQuery = (id: number) =>
+	queryOptions({
+		queryKey: [...productsKeys.detail(id), "price-history"],
+		queryFn: () =>
+			parseResponse(
+				api().admin.products[":id"]["price-history"].$get({
+					param: { id: String(id) },
+				}),
+			),
+	});

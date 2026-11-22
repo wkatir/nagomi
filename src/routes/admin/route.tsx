@@ -11,13 +11,14 @@ import {
 } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { AdminShell } from "#/components/admin/admin-shell";
+import { StaffAccessProvider } from "#/components/admin/staff-access";
 import { Button } from "#/components/ui/button";
 import { FieldError } from "#/components/ui/field";
 import { Toaster } from "#/components/ui/sonner";
 import { authClient } from "#/lib/auth-client";
 import { errorMessage } from "#/lib/errors";
 import { storeQuery } from "#/lib/queries";
-import { isAdmin } from "#/lib/roles";
+import { isAdmin, isStaff } from "#/lib/roles";
 import { m } from "#/paraglide/messages";
 
 // Every admin API call is also checked on the server (src/server/auth.ts); this guard only
@@ -36,6 +37,12 @@ export const Route = createFileRoute("/admin")({
 				to: "/admin/login",
 				search: { redirect: location.href },
 			});
+		if (
+			isStaff(data.user) &&
+			!isAdmin(data.user) &&
+			(location.pathname === "/admin" || location.pathname === "/admin/")
+		)
+			throw redirect({ to: "/admin/orders" });
 		return { user: data.user };
 	},
 	loader: ({ context }) => context.queryClient.ensureQueryData(storeQuery),
@@ -65,7 +72,7 @@ function AdminLayout() {
 	});
 	const signOutError = signOut.isError ? errorMessage(signOut.error) : null;
 
-	if (!isAdmin(user))
+	if (!isStaff(user))
 		return (
 			<main className="grid gap-4 p-admin-page">
 				<p>{m.admin_no_access()}</p>
@@ -82,13 +89,15 @@ function AdminLayout() {
 		);
 	return (
 		<>
-			<AdminShell
-				storeName={store.name}
-				user={user}
-				signOut={{ pending: signOut.isPending, run: () => signOut.mutate() }}
-			>
-				<Outlet />
-			</AdminShell>
+			<StaffAccessProvider user={user}>
+				<AdminShell
+					storeName={store.name}
+					user={user}
+					signOut={{ pending: signOut.isPending, run: () => signOut.mutate() }}
+				>
+					<Outlet />
+				</AdminShell>
+			</StaffAccessProvider>
 			<Toaster theme="light" />
 		</>
 	);

@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
+import { StaffAccessProvider } from "#/components/admin/staff-access";
 import { categoryColumns } from "#/features/categories/columns";
 import type { CategoryRow } from "#/features/categories/queries";
 import { CATEGORY_SORTS } from "#/lib/schemas/categories";
@@ -10,17 +11,19 @@ import type { ListQuery } from "./status-list";
 const rows: CategoryRow[] = [
 	{
 		id: 1,
-		slug: "serum",
-		name: "Sérum",
-		routineStep: 2,
+		slug: "teclados",
+		name: "Teclados",
+		sortOrder: 1,
+		icon: "keyboard",
 		status: "active",
 		products: 7,
 	},
 	{
 		id: 2,
-		slug: "sunscreen",
+		slug: "ratones",
 		name: null,
-		routineStep: 5,
+		sortOrder: 2,
+		icon: "mouse",
 		status: "archived",
 		products: 0,
 	},
@@ -55,37 +58,39 @@ const html = (
 	} = {},
 ) =>
 	renderToStaticMarkup(
-		<ArchivableTable
-			query={query(items)}
-			search={{
-				page: 1,
-				pageSize: 25,
-				sort: search.sort ?? "routineStep",
-				dir: "asc",
-				q: search.q,
-				status: search.status,
-			}}
-			onSearchChange={() => {}}
-			sorts={CATEGORY_SORTS}
-			columns={categoryColumns}
-			onStatus={() => {}}
-			Dialog={() => <p>the dialog</p>}
-			newLabel="New category"
-			searchLabel="Search categories"
-			emptyTitle="No categories"
-			emptyHint="Create the first one"
-		/>,
+		<StaffAccessProvider user={{ role: "admin" }}>
+			<ArchivableTable
+				query={query(items)}
+				search={{
+					page: 1,
+					pageSize: 25,
+					sort: search.sort ?? "sortOrder",
+					dir: "asc",
+					q: search.q,
+					status: search.status,
+				}}
+				onSearchChange={() => {}}
+				sorts={CATEGORY_SORTS}
+				columns={categoryColumns}
+				onStatus={() => {}}
+				Dialog={() => <p>the dialog</p>}
+				newLabel="New category"
+				searchLabel="Search categories"
+				emptyTitle="No categories"
+				emptyHint="Create the first one"
+			/>
+		</StaffAccessProvider>,
 	);
 
 describe("ArchivableTable", () => {
 	test("lists each row with its name, slug, own column, product count and status", () => {
 		const out = html(rows);
-		expect(out).toContain("Sérum");
-		expect(out).toContain("serum");
+		expect(out).toContain("Teclados");
+		expect(out).toContain("teclados");
 		expect(out).toContain(">7<");
 		expect(out).toContain(m.admin_merch_status_active());
 		expect(out).toContain(m.admin_merch_status_archived());
-		expect(out).toContain(m.admin_category_col_step());
+		expect(out).toContain(m.admin_category_sort_order());
 	});
 
 	test("a row without a name in the main language says so", () => {
@@ -98,10 +103,10 @@ describe("ArchivableTable", () => {
 	test("each row's actions button says whose it is, by name or by slug", () => {
 		const out = html(rows);
 		expect(out).toContain(
-			`aria-label="${m.admin_merch_row_actions({ name: "Sérum" })}"`,
+			`aria-label="${m.admin_merch_row_actions({ name: "Teclados" })}"`,
 		);
 		expect(out).toContain(
-			`aria-label="${m.admin_merch_row_actions({ name: "sunscreen" })}"`,
+			`aria-label="${m.admin_merch_row_actions({ name: "ratones" })}"`,
 		);
 	});
 
@@ -133,7 +138,7 @@ describe("ArchivableTable", () => {
 		);
 		expect(html(rows)).toMatch(
 			new RegExp(
-				`<th[^>]*aria-sort="ascending"[^>]*>.*?${m.admin_category_col_step()}`,
+				`<th[^>]*aria-sort="ascending"[^>]*>.*?${m.admin_category_sort_order()}`,
 			),
 		);
 	});
@@ -160,8 +165,8 @@ describe("ArchivableTable", () => {
 	});
 
 	test("shows the search text it was given and no dialog until one is opened", () => {
-		const out = html(rows, { q: "serum" });
-		expect(out).toMatch(/<input[^>]*type="search"[^>]*value="serum"/);
+		const out = html(rows, { q: "teclados" });
+		expect(out).toMatch(/<input[^>]*type="search"[^>]*value="teclados"/);
 		expect(out).not.toContain("the dialog");
 	});
 });

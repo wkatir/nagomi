@@ -1,6 +1,8 @@
 import { Link } from "@tanstack/react-router";
 import { createColumnHelper } from "@tanstack/react-table";
 import type { ListFeatures } from "#/components/admin/data-table/use-data-table";
+import { customerSegmentLabel } from "#/components/admin/labels";
+import { Badge } from "#/components/ui/badge";
 import { useMoney } from "#/hooks/use-money";
 import { useStoreDate } from "#/hooks/use-store-date";
 import { m } from "#/paraglide/messages";
@@ -43,7 +45,26 @@ export function useCustomerColumns() {
 						{contact && (
 							<span className="type-meta text-muted-foreground">{contact}</span>
 						)}
+						{customer.hasAccount && (
+							<Badge variant="outline" className="w-fit">
+								{m.admin_customer_has_account()}
+							</Badge>
+						)}
 					</div>
+				);
+			},
+		}),
+		column.accessor("segment", {
+			header: m.admin_customer_col_segment(),
+			enableSorting: false,
+			cell: ({ getValue }) => {
+				const segment = getValue();
+				return segment === null ? (
+					<span className="text-muted-foreground">
+						{m.admin_customer_segment_unknown()}
+					</span>
+				) : (
+					<Badge variant="secondary">{customerSegmentLabel[segment]()}</Badge>
 				);
 			},
 		}),

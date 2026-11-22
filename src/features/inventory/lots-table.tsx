@@ -1,21 +1,15 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { DataTable } from "#/components/admin/data-table/data-table";
-import { StatusTabs } from "#/components/admin/data-table/status-tabs";
 import { TableToolbar } from "#/components/admin/data-table/table-toolbar";
 import { useDataTable } from "#/components/admin/data-table/use-data-table";
-import { lotViewLabel } from "#/components/admin/labels";
 import {
 	Empty,
 	EmptyDescription,
 	EmptyHeader,
 	EmptyTitle,
 } from "#/components/ui/empty";
-import {
-	LOT_SORTS,
-	LOT_VIEWS,
-	type LotListSearch,
-} from "#/lib/schemas/inventory";
+import { LOT_SORTS, type LotListSearch } from "#/lib/schemas/inventory";
 import { m } from "#/paraglide/messages";
 import { AdjustLotDialog } from "./adjust-lot-dialog";
 import { useLotColumns } from "./lot-columns";
@@ -51,13 +45,6 @@ export function LotsTable({
 
 	return (
 		<>
-			<StatusTabs
-				values={LOT_VIEWS}
-				label={lotViewLabel}
-				allLabel={m.admin_lot_view_all()}
-				value={search.view}
-				onChange={(view) => filter({ view })}
-			/>
 			<TableToolbar
 				search={{
 					value: search.q,

@@ -8,16 +8,18 @@ import {
 } from "#/components/admin/form/use-app-form";
 import { Section } from "#/components/admin/section";
 import { type AdminProduct, api, parseResponse } from "#/lib/api";
-import { SLUG_REGEX } from "#/lib/enums";
+import { PRODUCT_BADGES, SLUG_REGEX } from "#/lib/enums";
 import { PRODUCT_LIMITS } from "#/lib/schemas/products";
 import { m } from "#/paraglide/messages";
+import { badgeLabel } from "./badge-label";
 import { useRefreshAfterProductChange } from "./mutations";
 import { SectionFooter, SectionForm } from "./section-form";
 
 const FIELD_OF = {
 	slug: "slug",
-	sanitaryRegistration: "sanitaryRegistration",
-	inci: "inci",
+	warrantyMonths: "warrantyMonths",
+	isFeatured: "isFeatured",
+	badge: "badge",
 } as const;
 type Field = (typeof FIELD_OF)[keyof typeof FIELD_OF];
 const fieldOf = (path: string): Field | undefined =>
@@ -29,8 +31,9 @@ const fieldOf = (path: string): Field | undefined =>
 // being edited is untouched by the saves of the others.
 export const basicsValues = (product: AdminProduct) => ({
 	slug: product.slug,
-	sanitaryRegistration: product.sanitaryRegistration ?? "",
-	inci: product.inci ?? "",
+	warrantyMonths: String(product.warrantyMonths),
+	isFeatured: product.isFeatured,
+	badge: product.badge ?? "",
 });
 
 export function BasicsCard({ product }: { product: AdminProduct }) {
@@ -42,11 +45,16 @@ export function BasicsCard({ product }: { product: AdminProduct }) {
 			.min(1, m.admin_required())
 			.max(PRODUCT_LIMITS.slug)
 			.regex(SLUG_REGEX, m.admin_product_slug_invalid()),
-		sanitaryRegistration: z
+		warrantyMonths: z
 			.string()
 			.trim()
-			.max(PRODUCT_LIMITS.sanitaryRegistration),
-		inci: z.string().trim().max(PRODUCT_LIMITS.inci),
+			.regex(/^\d+$/, m.admin_product_warranty_invalid())
+			.refine(
+				(value) => Number(value) <= PRODUCT_LIMITS.warrantyMonths,
+				m.admin_product_warranty_invalid(),
+			),
+		isFeatured: z.boolean(),
+		badge: z.union([z.literal(""), z.enum(PRODUCT_BADGES)]),
 	});
 
 	const save = useMutation({
@@ -56,8 +64,9 @@ export function BasicsCard({ product }: { product: AdminProduct }) {
 					param: { id: String(product.id) },
 					json: {
 						slug: value.slug,
-						sanitaryRegistration: value.sanitaryRegistration || null,
-						inci: value.inci || null,
+						warrantyMonths: Number(value.warrantyMonths),
+						isFeatured: value.isFeatured,
+						badge: value.badge || null,
 					},
 				}),
 			),
@@ -102,21 +111,32 @@ export function BasicsCard({ product }: { product: AdminProduct }) {
 								{m.admin_product_slug_locked()}
 							</p>
 						)}
-						<form.AppField name="sanitaryRegistration">
+						<form.AppField name="warrantyMonths">
 							{(field) => (
 								<field.TextField
-									label={m.admin_field_sanitary_registration()}
-									maxLength={PRODUCT_LIMITS.sanitaryRegistration}
+									label={m.admin_product_warranty_months()}
+									inputMode="numeric"
+									maxLength={3}
 								/>
 							)}
 						</form.AppField>
-						<form.AppField name="inci">
+						<form.AppField name="badge">
 							{(field) => (
-								<field.TextareaField
-									label={m.admin_product_inci()}
-									rows={4}
-									maxLength={PRODUCT_LIMITS.inci}
+								<field.SelectField
+									label={m.admin_product_badge()}
+									options={[
+										{ value: "", label: m.admin_product_badge_none() },
+										...PRODUCT_BADGES.map((badge) => ({
+											value: badge,
+											label: badgeLabel[badge](),
+										})),
+									]}
 								/>
+							)}
+						</form.AppField>
+						<form.AppField name="isFeatured">
+							{(field) => (
+								<field.CheckboxField label={m.admin_product_featured()} />
 							)}
 						</form.AppField>
 					</div>

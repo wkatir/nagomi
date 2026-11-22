@@ -18,7 +18,8 @@ const zone = (over: Partial<AdminZone> = {}): AdminZone => ({
 	slug: "centro",
 	method: "own_delivery",
 	fee: 350,
-	freeFrom: 2500,
+	coversRest: false,
+	municipalities: ["San Salvador Centro"],
 	deliveryDaysMin: 1,
 	deliveryDaysMax: 3,
 	position: 4,
@@ -43,7 +44,7 @@ const render = (data: Page, search = zoneSearchDefaults) =>
 	});
 
 describe("ZonesTable", () => {
-	test("draws a row per zone: name, identifier, method, fee, free shipping, delivery time and status", () => {
+	test("draws a row per zone: name, identifier, method, fee, coverage, delivery time and status", () => {
 		const html = render(
 			page([
 				zone(),
@@ -52,7 +53,8 @@ describe("ZonesTable", () => {
 					slug: "retiro",
 					method: "pickup",
 					fee: 0,
-					freeFrom: null,
+					coversRest: true,
+					municipalities: [],
 					deliveryDaysMin: 0,
 					deliveryDaysMax: 0,
 					position: 0,
@@ -64,7 +66,6 @@ describe("ZonesTable", () => {
 		expect(html).toContain("Centro");
 		expect(html).toContain(shippingMethodLabel.own_delivery());
 		expect(html).toContain("$3.50");
-		expect(html).toContain("$25.00");
 		expect(html).toContain(m.admin_zone_days_range({ min: 1, max: 3 }));
 		expect(html).toContain(m.admin_zone_status_active());
 		// Archived without a name in the default language: its identifier names it, as the
@@ -74,7 +75,8 @@ describe("ZonesTable", () => {
 			`aria-label="${m.admin_zone_row_actions({ name: "retiro" })}"`,
 		);
 		expect(html).toContain(shippingMethodLabel.pickup());
-		expect(html).toContain(m.admin_zone_never_free());
+		expect(html).toContain(m.admin_zone_covers_rest());
+		expect(html).toContain(m.admin_zone_municipalities_n({ count: 1 }));
 		expect(html).toContain(m.admin_zone_same_day());
 		expect(html).toContain(m.admin_zone_status_archived());
 	});
@@ -104,7 +106,7 @@ describe("ZonesTable", () => {
 			m.admin_field_name(),
 			m.admin_zone_col_method(),
 			m.admin_zone_col_fee(),
-			m.admin_zone_col_free_from(),
+			m.admin_zone_col_coverage(),
 			m.admin_zone_col_days(),
 			m.admin_zone_col_position(),
 			m.admin_col_status(),

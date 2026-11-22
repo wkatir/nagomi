@@ -30,8 +30,7 @@ const item = (change: Partial<SupplierItem>): SupplierItem => ({
 	sku: "OIL-50",
 	brand: "Brand",
 	name: "Aceite",
-	sizeValue: 50,
-	sizeUnit: "ml",
+	optionLabel: null,
 	supplierSku: null,
 	packSize: null,
 	minOrderQuantity: null,
@@ -47,15 +46,15 @@ const html = (items: SupplierItem[], forSupplier: Supplier = supplier) =>
 	);
 
 describe("SupplierItems", () => {
-	test("lists each product by its name, size and SKU", () => {
+	test("lists each product by its name, option and SKU", () => {
 		const out = html([
 			item({}),
-			item({ id: 2, variantId: 2, sku: "OIL-100", sizeValue: 100 }),
+			item({ id: 2, variantId: 2, sku: "TEC-002", optionLabel: "Negro" }),
 		]);
-		expect(out).toContain("Brand Aceite 50 ml");
-		expect(out).toContain("Brand Aceite 100 ml");
+		expect(out).toContain("Brand Aceite");
+		expect(out).toContain("Brand Aceite Negro");
 		expect(out).toContain("OIL-50");
-		expect(out).toContain("OIL-100");
+		expect(out).toContain("TEC-002");
 	});
 
 	test("says what the supplier ships it as: its code, pack and minimum", () => {
@@ -85,7 +84,7 @@ describe("SupplierItems", () => {
 		const out = html([item({})]);
 		expect(out).toContain(m.admin_supplier_item_new());
 		expect(out).toContain(
-			m.admin_supplier_item_actions({ name: "Brand Aceite 50 ml" }),
+			m.admin_supplier_item_actions({ name: "Brand Aceite" }),
 		);
 	});
 
@@ -98,10 +97,10 @@ describe("SupplierItems", () => {
 	test("takes no change for an archived supplier: no add button and no menus", () => {
 		const archived: Supplier = { ...supplier, status: "archived" };
 		const out = html([item({})], archived);
-		expect(out).toContain("Brand Aceite 50 ml");
+		expect(out).toContain("Brand Aceite");
 		expect(out).not.toContain(m.admin_supplier_item_new());
 		expect(out).not.toContain(
-			m.admin_supplier_item_actions({ name: "Brand Aceite 50 ml" }),
+			m.admin_supplier_item_actions({ name: "Brand Aceite" }),
 		);
 		const empty = html([], archived);
 		expect(empty).toContain(m.admin_supplier_items_empty());

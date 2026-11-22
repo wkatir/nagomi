@@ -6,9 +6,10 @@ import type { RowActions } from "./row-actions";
 
 const row = (status: CategoryRow["status"]): CategoryRow => ({
 	id: 4,
-	slug: "serum",
-	name: "Sérum",
-	routineStep: 1,
+	slug: "teclados",
+	name: "Teclados",
+	sortOrder: 1,
+	icon: "keyboard",
 	status,
 	products: 0,
 });
@@ -29,7 +30,7 @@ function offered(status: CategoryRow["status"]) {
 describe("the actions of a row", () => {
 	test("an active one can be edited and archived, not restored", () => {
 		const { props, calls } = offered("active");
-		expect(props.name).toBe("Sérum");
+		expect(props.name).toBe("Teclados");
 		expect(props.onRestore).toBeUndefined();
 		props.onEdit?.();
 		props.onArchive?.();

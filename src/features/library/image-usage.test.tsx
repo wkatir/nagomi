@@ -89,12 +89,18 @@ describe("UsageList", () => {
 				{ id: 1, slug: "essentials", status: "draft", title: "Esenciales" },
 			],
 			photos: [
-				{ id: 1, productId: 1, slug: "oil", status: "active", name: "Aceite" },
+				{
+					id: 1,
+					productId: 1,
+					slug: "teclado",
+					status: "active",
+					name: "Teclado",
+				},
 				{ id: 2, productId: 2, slug: "cream", status: "archived", name: null },
 			],
 		});
 		expect(html).toContain("Esenciales");
-		expect(html).toContain("Aceite");
+		expect(html).toContain("Teclado");
 		expect(html).toContain("cream");
 	});
 
@@ -102,7 +108,13 @@ describe("UsageList", () => {
 		const html = await render({
 			...empty,
 			photos: [
-				{ id: 1, productId: 1, slug: "oil", status: "active", name: "Aceite" },
+				{
+					id: 1,
+					productId: 1,
+					slug: "teclado",
+					status: "active",
+					name: "Teclado",
+				},
 				{ id: 2, productId: 2, slug: "cream", status: "archived", name: null },
 			],
 		});

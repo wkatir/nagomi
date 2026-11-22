@@ -9,9 +9,11 @@ export const customerSearchDefaults = customerListSearch.parse({});
 export const clearedFilters = {
 	page: 1,
 	q: undefined,
+	segment: undefined,
 } satisfies Partial<CustomerListSearch>;
 
-export const isFiltered = (search: CustomerListSearch) => Boolean(search.q);
+export const isFiltered = (search: CustomerListSearch) =>
+	Boolean(search.q || search.segment);
 
 // The whole search, not one page of it.
 export const exportHref = (search: CustomerListSearch) => {

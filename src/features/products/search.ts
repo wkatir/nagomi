@@ -11,17 +11,10 @@ export const clearedFilters = {
 	status: undefined,
 	brandId: undefined,
 	categoryId: undefined,
-	concernId: undefined,
 } satisfies Partial<ProductListSearch>;
 
 export const isFiltered = (search: ProductListSearch) =>
-	Boolean(
-		search.q ||
-			search.status ||
-			search.brandId ||
-			search.categoryId ||
-			search.concernId,
-	);
+	Boolean(search.q || search.status || search.brandId || search.categoryId);
 
 // Selects hold ids as text.
 export const idOf = (value: string | undefined) =>

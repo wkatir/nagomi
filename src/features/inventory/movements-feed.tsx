@@ -31,7 +31,7 @@ import { useStoreDate } from "#/hooks/use-store-date";
 import { MOVEMENT_KINDS, MOVEMENT_REASONS } from "#/lib/enums";
 import { errorMessage } from "#/lib/errors";
 import type { MovementFilters } from "#/lib/schemas/inventory";
-import { sizeLabel } from "#/lib/size-label";
+import { variantLabel } from "#/lib/variant-label";
 import { m } from "#/paraglide/messages";
 import { ProductFilter } from "./product-filter";
 import { type Movement, movementsQuery } from "./queries";
@@ -65,7 +65,7 @@ function MovementRow({ movement }: { movement: Movement }) {
 			</TableCell>
 			<TableCell>
 				<div className="grid">
-					<span>{sizeLabel(movement)}</span>
+					<span>{variantLabel(movement)}</span>
 					<span className="type-meta text-muted-foreground">
 						{movement.sku}
 					</span>
@@ -78,12 +78,7 @@ function MovementRow({ movement }: { movement: Movement }) {
 				{movement.quantity > 0 ? `+${movement.quantity}` : movement.quantity}
 			</TableCell>
 			<TableCell className="max-md:hidden">
-				<div className="grid">
-					<span>{movement.lotCode ?? `#${movement.lotId}`}</span>
-					<span className="type-meta text-muted-foreground tabular-nums">
-						{movement.expiry}
-					</span>
-				</div>
+				<span>{movement.lotCode ?? `#${movement.lotId}`}</span>
 			</TableCell>
 			<TableCell className="max-md:hidden">
 				<div className="grid">

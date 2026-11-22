@@ -8,6 +8,7 @@ import {
 	validationLogic,
 } from "#/components/admin/form/use-app-form";
 import { shippingMethodLabel } from "#/components/admin/labels";
+import { WritableFor } from "#/components/admin/staff-access";
 import { Button } from "#/components/ui/button";
 import { DialogFooter } from "#/components/ui/dialog";
 import { useMoneyInput } from "#/hooks/use-money";
@@ -15,7 +16,9 @@ import { api, apiErrorOf, parseResponse } from "#/lib/api";
 import { LOCALES, type Locale, SHIPPING_METHODS } from "#/lib/enums";
 import { errorMessage } from "#/lib/errors";
 import { storeQuery } from "#/lib/queries";
+import { SV_LOCATIONS } from "#/lib/sv-locations";
 import { m } from "#/paraglide/messages";
+import { CheckboxGroup } from "../products/checkbox-group";
 import { useRefreshZones } from "./mutations";
 import type { AdminZone } from "./queries";
 import {
@@ -29,7 +32,8 @@ const FIELD_OF = {
 	slug: "slug",
 	method: "method",
 	fee: "fee",
-	freeFrom: "freeFrom",
+	coversRest: "coversRest",
+	municipalities: "municipalities",
 	deliveryDaysMin: "deliveryDaysMin",
 	deliveryDaysMax: "deliveryDaysMax",
 	position: "position",
@@ -100,7 +104,8 @@ export function ZoneForm({
 			slug: "",
 			method: zone?.method ?? "own_delivery",
 			fee: zone ? moneyInput.toInput(zone.fee) : "",
-			freeFrom: zone?.freeFrom != null ? moneyInput.toInput(zone.freeFrom) : "",
+			coversRest: zone?.coversRest ?? false,
+			municipalities: zone?.municipalities ?? ([] as string[]),
 			deliveryDaysMin: String(zone?.deliveryDaysMin ?? 1),
 			deliveryDaysMax: String(zone?.deliveryDaysMax ?? 2),
 			position: String(zone?.position ?? 0),
@@ -141,111 +146,157 @@ export function ZoneForm({
 				form.handleSubmit();
 			}}
 		>
-			<form.AppForm>
-				<div className="grid gap-3 sm:grid-cols-2">
-					{!zone && (
-						<div className="sm:col-span-2">
-							<form.AppField name="slug">
-								{(field) => (
-									<field.TextField
-										label={m.admin_zone_slug()}
-										maxLength={80}
-										autoCapitalize="none"
-										autoComplete="off"
-									/>
-								)}
-							</form.AppField>
-						</div>
-					)}
-					<form.AppField name="method">
-						{(field) => (
-							<field.SelectField
-								label={m.admin_zone_col_method()}
-								options={SHIPPING_METHODS.map((method) => ({
-									value: method,
-									label: shippingMethodLabel[method](),
-								}))}
-							/>
+			<WritableFor area="shipping">
+				<form.AppForm>
+					<div className="grid gap-3 sm:grid-cols-2">
+						{!zone && (
+							<div className="sm:col-span-2">
+								<form.AppField name="slug">
+									{(field) => (
+										<field.TextField
+											label={m.admin_zone_slug()}
+											maxLength={80}
+											autoCapitalize="none"
+											autoComplete="off"
+										/>
+									)}
+								</form.AppField>
+							</div>
 						)}
-					</form.AppField>
-					<form.AppField name="position">
-						{(field) => (
-							<field.TextField
-								label={m.admin_zone_position()}
-								inputMode="numeric"
-								maxLength={4}
-							/>
-						)}
-					</form.AppField>
-					<form.AppField name="fee">
-						{(field) => <field.MoneyField label={m.admin_zone_fee()} />}
-					</form.AppField>
-					<form.AppField name="freeFrom">
-						{(field) => <field.MoneyField label={m.admin_zone_free_from()} />}
-					</form.AppField>
-					<form.AppField name="deliveryDaysMin">
-						{(field) => (
-							<field.TextField
-								label={m.admin_zone_days_min()}
-								inputMode="numeric"
-								maxLength={3}
-							/>
-						)}
-					</form.AppField>
-					<form.AppField name="deliveryDaysMax">
-						{(field) => (
-							<field.TextField
-								label={m.admin_zone_days_max()}
-								inputMode="numeric"
-								maxLength={3}
-							/>
-						)}
-					</form.AppField>
-				</div>
-				<form.Subscribe
-					selector={(state) => ({
-						attempted: state.submissionAttempts > 0,
-						values: state.values,
-					})}
-				>
-					{({ attempted, values }) => (
-						<LocaleTabs
-							defaultLocale={store.defaultLocale}
-							invalid={
-								attempted ? invalidLocales(schema.safeParse(values)) : []
-							}
-						>
-							{(locale) => (
-								<>
-									<form.AppField name={`translations.${locale}.name`}>
-										{(field) => (
-											<field.TextField
-												label={m.admin_field_name()}
-												maxLength={80}
-											/>
-										)}
-									</form.AppField>
-									<form.AppField name={`translations.${locale}.description`}>
-										{(field) => (
-											<field.TextField
-												label={m.admin_zone_description()}
-												maxLength={300}
-											/>
-										)}
-									</form.AppField>
-								</>
+						<form.AppField name="method">
+							{(field) => (
+								<field.SelectField
+									label={m.admin_zone_col_method()}
+									options={SHIPPING_METHODS.map((method) => ({
+										value: method,
+										label: shippingMethodLabel[method](),
+									}))}
+								/>
 							)}
-						</LocaleTabs>
-					)}
-				</form.Subscribe>
-				<form.FormError />
-				<DialogFooter>
-					<Button type="button" variant="outline" onClick={onClose}>
-						{m.admin_cancel()}
-					</Button>
-					<form.SubmitButton>{m.admin_save()}</form.SubmitButton>
-				</DialogFooter>
-			</form.AppForm>
+						</form.AppField>
+						<form.AppField name="position">
+							{(field) => (
+								<field.TextField
+									label={m.admin_zone_position()}
+									inputMode="numeric"
+									maxLength={4}
+								/>
+							)}
+						</form.AppField>
+						<form.AppField name="fee">
+							{(field) => <field.MoneyField label={m.admin_zone_fee()} />}
+						</form.AppField>
+						<form.AppField name="deliveryDaysMin">
+							{(field) => (
+								<field.TextField
+									label={m.admin_zone_days_min()}
+									inputMode="numeric"
+									maxLength={3}
+								/>
+							)}
+						</form.AppField>
+						<form.AppField name="deliveryDaysMax">
+							{(field) => (
+								<field.TextField
+									label={m.admin_zone_days_max()}
+									inputMode="numeric"
+									maxLength={3}
+								/>
+							)}
+						</form.AppField>
+					</div>
+					<form.AppField name="coversRest">
+						{(field) => (
+							<field.CheckboxField label={m.admin_zone_covers_rest()} />
+						)}
+					</form.AppField>
+					<form.Subscribe selector={(state) => state.values.coversRest}>
+						{(coversRest) =>
+							coversRest ? (
+								<p className="type-meta text-muted-foreground">
+									{m.admin_zone_covers_rest_help()}
+								</p>
+							) : (
+								<form.Field name="municipalities">
+									{(field) => (
+										<div className="grid max-h-64 gap-4 overflow-y-auto rounded-md border p-3 sm:grid-cols-2">
+											{SV_LOCATIONS.map((place) => (
+												<CheckboxGroup
+													key={place.department}
+													legend={place.department}
+													options={place.municipalities.map((municipality) => ({
+														value: municipality,
+														label: municipality,
+													}))}
+													value={field.state.value.filter((v) =>
+														place.municipalities.includes(v),
+													)}
+													onChange={(chosen) =>
+														field.handleChange([
+															...field.state.value.filter(
+																(v) => !place.municipalities.includes(v),
+															),
+															...chosen,
+														])
+													}
+												/>
+											))}
+											{field.state.meta.errors.length > 0 && (
+												<p className="type-meta text-destructive sm:col-span-2">
+													{m.error_zone_covers_rest()}
+												</p>
+											)}
+										</div>
+									)}
+								</form.Field>
+							)
+						}
+					</form.Subscribe>
+					<form.Subscribe
+						selector={(state) => ({
+							attempted: state.submissionAttempts > 0,
+							values: state.values,
+						})}
+					>
+						{({ attempted, values }) => (
+							<LocaleTabs
+								defaultLocale={store.defaultLocale}
+								invalid={
+									attempted ? invalidLocales(schema.safeParse(values)) : []
+								}
+							>
+								{(locale) => (
+									<>
+										<form.AppField name={`translations.${locale}.name`}>
+											{(field) => (
+												<field.TextField
+													label={m.admin_field_name()}
+													maxLength={80}
+												/>
+											)}
+										</form.AppField>
+										<form.AppField name={`translations.${locale}.description`}>
+											{(field) => (
+												<field.TextField
+													label={m.admin_zone_description()}
+													maxLength={300}
+												/>
+											)}
+										</form.AppField>
+									</>
+								)}
+							</LocaleTabs>
+						)}
+					</form.Subscribe>
+					<form.FormError />
+					<DialogFooter>
+						<Button type="button" variant="outline" onClick={onClose}>
+							{m.admin_cancel()}
+						</Button>
+						<form.SubmitButton>{m.admin_save()}</form.SubmitButton>
+					</DialogFooter>
+				</form.AppForm>
+			</WritableFor>
 		</form>
 	);
 }

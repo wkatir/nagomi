@@ -36,11 +36,10 @@ describe("isFiltered", () => {
 
 	test("each filter alone is", () => {
 		for (const filter of [
-			{ q: "aceite" },
+			{ q: "teclado" },
 			{ status: "draft" },
 			{ brandId: 2 },
 			{ categoryId: 3 },
-			{ concernId: 4 },
 		] as const)
 			expect(isFiltered({ ...base, ...filter })).toBe(true);
 	});
@@ -53,11 +52,10 @@ describe("clearedFilters", () => {
 			page: 5,
 			sort: "priceFrom",
 			dir: "asc",
-			q: "aceite",
+			q: "teclado",
 			status: "published",
 			brandId: 2,
 			categoryId: 3,
-			concernId: 4,
 		};
 		const cleared = { ...filtered, ...clearedFilters };
 		expect(isFiltered(cleared)).toBe(false);

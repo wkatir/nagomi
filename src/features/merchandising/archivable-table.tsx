@@ -2,6 +2,7 @@ import type { RowData } from "@tanstack/react-table";
 import { PlusIcon } from "lucide-react";
 import { type ComponentType, useState } from "react";
 import type { ListColumns } from "#/components/admin/data-table/use-data-table";
+import { IfWritable } from "#/components/admin/staff-access";
 import { Button } from "#/components/ui/button";
 import { ARCHIVABLE_STATUSES, type ArchivableStatus } from "#/lib/enums";
 import { m } from "#/paraglide/messages";
@@ -49,10 +50,12 @@ export function ArchivableTable<
 }) {
 	const [dialog, setDialog] = useState<"new" | number | null>(null);
 	const create = (
-		<Button size="sm" onClick={() => setDialog("new")}>
-			<PlusIcon aria-hidden />
-			{newLabel}
-		</Button>
+		<IfWritable area="catalog">
+			<Button size="sm" onClick={() => setDialog("new")}>
+				<PlusIcon aria-hidden />
+				{newLabel}
+			</Button>
+		</IfWritable>
 	);
 	return (
 		<>

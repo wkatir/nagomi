@@ -4,7 +4,7 @@ import { Fact, Section } from "#/components/admin/section";
 import { useMoney } from "#/hooks/use-money";
 import { useCalendarDate, useStoreDate } from "#/hooks/use-store-date";
 import { addDays } from "#/lib/dates";
-import { sizeLabel } from "#/lib/size-label";
+import { variantLabel } from "#/lib/variant-label";
 import { m } from "#/paraglide/messages";
 import type { Purchase } from "./queries";
 import { taxLabel } from "./tax";
@@ -25,7 +25,7 @@ export function PurchaseLines({
 						key={item.id}
 						className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-0.5 border-b p-admin-card"
 					>
-						<span className="type-small">{sizeLabel(item)}</span>
+						<span className="type-small">{variantLabel(item)}</span>
 						<span className="type-small text-right font-bold tabular-nums">
 							{money(item.quantity * item.unitCost)}
 						</span>
@@ -118,7 +118,7 @@ export function PurchaseReceipts({ purchase }: { purchase: Purchase }) {
 										className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-0.5"
 									>
 										<span className="type-small">
-											{line.quantity} × {sizeLabel(item)}
+											{line.quantity} × {variantLabel(item)}
 										</span>
 										<span className="type-small text-right tabular-nums">
 											{m.admin_unit_cost({
@@ -126,12 +126,9 @@ export function PurchaseReceipts({ purchase }: { purchase: Purchase }) {
 											})}
 										</span>
 										<span className="type-meta text-muted-foreground">
-											{[
-												line.lotCode && m.admin_batch({ code: line.lotCode }),
-												m.admin_expires_on({ date: line.expiry }),
-											]
-												.filter(Boolean)
-												.join(" · ")}
+											{m.admin_batch({
+												code: line.lotCode ?? `#${line.lotId}`,
+											})}
 										</span>
 										<span className="type-meta text-right text-muted-foreground">
 											{m.admin_purchase_landed()}

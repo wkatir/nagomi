@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import {
 	consentChannelLabel,
 	consentPurposeLabel,
+	customerSegmentLabel,
 	orderStatusLabel,
 } from "#/components/admin/labels";
 import { Fact, Section } from "#/components/admin/section";
@@ -117,6 +118,22 @@ export function CustomerProfile({
 		<Section title={m.admin_customer_profile()} action={action}>
 			<dl className="grid gap-3 p-admin-card">
 				<Fact label={m.admin_order_customer_name()} value={customer.name} />
+				<Fact
+					label={m.admin_customer_col_segment()}
+					value={
+						customer.segment === null
+							? m.admin_customer_segment_unknown()
+							: customerSegmentLabel[customer.segment]()
+					}
+				/>
+				<Fact
+					label={m.admin_customer_account()}
+					value={
+						customer.hasAccount
+							? m.admin_customer_has_account()
+							: m.admin_customer_guest()
+					}
+				/>
 				<Fact label={m.admin_field_phone()} value={customer.phoneE164} />
 				<Fact label={m.admin_field_email()} value={customer.email} />
 				<Fact label={m.admin_order_notes()} value={customer.notes} />
@@ -189,6 +206,54 @@ export function CustomerConsents({ detail }: { detail: AdminCustomer }) {
 						</AccordionItem>
 					</Accordion>
 				</>
+			)}
+		</Section>
+	);
+}
+
+export function CustomerAddresses({ detail }: { detail: AdminCustomer }) {
+	const { addresses } = detail;
+	return (
+		<Section title={m.admin_customer_addresses()}>
+			{addresses.length === 0 ? (
+				<p className="type-small p-admin-card text-muted-foreground">
+					{m.admin_customer_addresses_empty()}
+				</p>
+			) : (
+				<ul>
+					{addresses.map((address) => (
+						<li
+							key={address.id}
+							data-archived={address.status === "archived"}
+							className="grid gap-0.5 border-b p-admin-card last:border-b-0 data-[archived=true]:text-muted-foreground"
+						>
+							<span className="type-small flex flex-wrap items-center gap-2 font-bold">
+								{address.recipientName}
+								{address.isDefault && (
+									<Badge variant="secondary">
+										{m.admin_customer_address_default()}
+									</Badge>
+								)}
+								{address.status === "archived" && (
+									<Badge variant="outline">
+										{m.admin_customer_address_archived()}
+									</Badge>
+								)}
+							</span>
+							<span className="type-small">{address.addressLine}</span>
+							<span className="type-meta text-muted-foreground">
+								{address.municipality}, {address.department}
+								{" · "}
+								{address.phoneE164}
+							</span>
+							{address.reference && (
+								<span className="type-meta text-muted-foreground">
+									{address.reference}
+								</span>
+							)}
+						</li>
+					))}
+				</ul>
 			)}
 		</Section>
 	);

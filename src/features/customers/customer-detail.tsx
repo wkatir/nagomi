@@ -14,6 +14,7 @@ import { whatsappLink } from "#/lib/whatsapp";
 import { m } from "#/paraglide/messages";
 import { customerLabel } from "./columns";
 import {
+	CustomerAddresses,
 	CustomerConsents,
 	CustomerOrders,
 	CustomerProfile,
@@ -122,6 +123,7 @@ export function CustomerDetail({ detail }: { detail: AdminCustomer }) {
 							}
 						/>
 						<CustomerConsents detail={detail} />
+						<CustomerAddresses detail={detail} />
 					</>
 				}
 			>

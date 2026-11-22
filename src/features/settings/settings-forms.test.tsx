@@ -6,20 +6,23 @@ import type { AdminPages, AdminPromises, AdminSettings } from "#/lib/api";
 import { formatInstant } from "#/lib/dates";
 import { storeQuery } from "#/lib/queries";
 import { m } from "#/paraglide/messages";
+import { activeZonesQuery } from "../shipping/queries";
+import { CustomersCard } from "./customers-form";
 import { IdentityCard } from "./identity-form";
 import { LegalCard } from "./legal-form";
 import { OperationsCard } from "./operations-form";
 import { PageCard } from "./page-card";
 import { PaymentsCard } from "./payments-form";
 import { PromiseCard } from "./promise-card";
+import { SocialCard } from "./social-form";
 
 const settings: AdminSettings = {
 	id: 1,
-	name: "Eclalune",
+	name: "Nagomi",
 	currency: "USD",
 	defaultLocale: "es",
 	whatsappNumber: "50371234567",
-	legalName: "Eclalune S.A.",
+	legalName: "Nagomi, S.A. de C.V.",
 	taxIdLabel: "NIT",
 	taxId: "0614-010101-101-0",
 	address: "San Salvador",
@@ -27,19 +30,51 @@ const settings: AdminSettings = {
 	email: null,
 	timeZone: "America/El_Salvador",
 	countryCode: "SV",
-	orderCodePrefix: "EC",
+	orderCodePrefix: "NAG",
 	maxQuantityPerLine: 10,
-	minShelfLifeDays: null,
-	expiryWarningDays: 60,
 	returnWindowDays: 30,
 	foundingYear: 2026,
+	freeShippingFrom: 5000,
+	lowStockThreshold: 5,
+	frequentCustomerMinOrders: 3,
+	inactiveCustomerDays: 90,
+	followupPendingPaymentHours: 48,
+	followupPaidUnshippedHours: 24,
+	followupShippedUndeliveredHours: null,
+	discordUrl: "https://discord.gg/nagomi",
+	instagramUrl: null,
+	tiktokUrl: null,
+	youtubeUrl: null,
 	updatedAt: "2026-10-24T00:00:00Z",
-	acceptedPaymentMethods: ["bank_transfer", "cash"],
+	paymentOptions: [
+		{
+			method: "bank_transfer",
+			position: 0,
+			maxTotal: null,
+			shippingZoneId: null,
+			shippingZoneSlug: null,
+		},
+		{
+			method: "cash_on_delivery",
+			position: 1,
+			maxTotal: 15000,
+			shippingZoneId: 1,
+			shippingZoneSlug: "metro",
+		},
+	],
 };
 
 function render(node: ReactNode) {
 	const client = new QueryClient();
+	client.setQueryData<unknown>(activeZonesQuery.queryKey, [
+		{
+			id: 1,
+			slug: "metro",
+			translations: [{ locale: "es", name: "San Salvador y alrededores" }],
+		},
+	]);
 	client.setQueryData<unknown>(storeQuery.queryKey, {
+		currency: "USD",
 		countryCode: "SV",
 		timeZone: "America/El_Salvador",
 		defaultLocale: "es",
@@ -58,7 +93,7 @@ const control = (html: string, name: string) => {
 describe("IdentityCard", () => {
 	test("shows what is stored, and a save that waits for a change", () => {
 		const html = render(<IdentityCard settings={settings} />);
-		expect(control(html, "name")).toContain('value="Eclalune"');
+		expect(control(html, "name")).toContain('value="Nagomi"');
 		expect(control(html, "currency")).toContain('value="USD"');
 		expect(control(html, "whatsappNumber")).toContain('value="50371234567"');
 		expect(html).toContain(m.admin_save());
@@ -83,9 +118,9 @@ describe("OperationsCard", () => {
 	test("shows the numbers as text and a number that is not set as an empty field", () => {
 		const html = render(<OperationsCard settings={settings} />);
 		expect(control(html, "maxQuantityPerLine")).toContain('value="10"');
-		expect(control(html, "expiryWarningDays")).toContain('value="60"');
 		expect(control(html, "returnWindowDays")).toContain('value="30"');
-		expect(control(html, "minShelfLifeDays")).toContain('value=""');
+		expect(control(html, "lowStockThreshold")).toContain('value="5"');
+		expect(control(html, "freeShippingFrom")).toContain('value="50.00"');
 		expect(control(html, "timeZone")).toContain('value="America/El_Salvador"');
 		expect(html).toContain(m.admin_settings_return_window_help());
 	});
@@ -99,7 +134,7 @@ describe("OperationsCard", () => {
 					countryCode: null,
 					orderCodePrefix: null,
 					maxQuantityPerLine: null,
-					expiryWarningDays: null,
+					freeShippingFrom: null,
 				}}
 			/>,
 		);
@@ -108,7 +143,7 @@ describe("OperationsCard", () => {
 			"countryCode",
 			"orderCodePrefix",
 			"maxQuantityPerLine",
-			"expiryWarningDays",
+			"freeShippingFrom",
 		])
 			expect(control(html, name)).toContain('value=""');
 	});
@@ -117,7 +152,9 @@ describe("OperationsCard", () => {
 describe("LegalCard", () => {
 	test("shows the seller details and leaves empty the ones that are not set", () => {
 		const html = render(<LegalCard settings={settings} />);
-		expect(control(html, "legalName")).toContain('value="Eclalune S.A."');
+		expect(control(html, "legalName")).toContain(
+			'value="Nagomi, S.A. de C.V."',
+		);
 		expect(control(html, "taxIdLabel")).toContain('value="NIT"');
 		expect(control(html, "foundingYear")).toContain('value="2026"');
 		expect(control(html, "phone")).toContain('value=""');
@@ -127,14 +164,51 @@ describe("LegalCard", () => {
 });
 
 describe("PaymentsCard", () => {
-	test("checks the accepted methods only", () => {
-		const html = render(<PaymentsCard settings={settings} />);
-		const checked = (name: string) =>
-			control(html, name).includes('checked=""');
-		expect(checked("bank_transfer")).toBe(true);
-		expect(checked("cash")).toBe(true);
-		expect(checked("cash_on_delivery")).toBe(false);
-		expect(checked("payment_link")).toBe(false);
+	const html = render(<PaymentsCard settings={settings} />);
+	const checked = (method: string) =>
+		html
+			.slice(html.indexOf(`id="payment-${method}"`) - 200)
+			.match(/aria-checked="(true|false)"/)?.[1];
+
+	test("lists the accepted methods first, in their order, then the others unchecked", () => {
+		expect(html.indexOf('id="payment-bank_transfer"')).toBeLessThan(
+			html.indexOf('id="payment-cash_on_delivery"'),
+		);
+		expect(html.indexOf('id="payment-cash_on_delivery"')).toBeLessThan(
+			html.indexOf('id="payment-card"'),
+		);
+		expect(checked("bank_transfer")).toBe("true");
+		expect(checked("card")).toBe("false");
+	});
+
+	test("shows a method's limit and zone", () => {
+		expect(html).toContain('value="150.00"');
+		expect(html).toContain("San Salvador y alrededores");
+		expect(html).toMatch(/<option[^>]*value="1"[^>]*selected/);
+	});
+});
+
+describe("CustomersCard", () => {
+	test("shows the thresholds, and an unset one as an empty field", () => {
+		const html = render(<CustomersCard settings={settings} />);
+		expect(control(html, "frequentCustomerMinOrders")).toContain('value="3"');
+		expect(control(html, "inactiveCustomerDays")).toContain('value="90"');
+		expect(control(html, "followupPendingPaymentHours")).toContain(
+			'value="48"',
+		);
+		expect(control(html, "followupShippedUndeliveredHours")).toContain(
+			'value=""',
+		);
+	});
+});
+
+describe("SocialCard", () => {
+	test("shows the stored links and the empty ones", () => {
+		const html = render(<SocialCard settings={settings} />);
+		expect(control(html, "discordUrl")).toContain(
+			'value="https://discord.gg/nagomi"',
+		);
+		expect(control(html, "instagramUrl")).toContain('value=""');
 	});
 });
 
@@ -186,6 +260,7 @@ const page: AdminPages[number] = {
 	id: 1,
 	slug: "privacy",
 	isPublished: true,
+	footerPosition: null,
 	updatedAt: "2026-10-24T00:00:00Z",
 	translations: [
 		{
