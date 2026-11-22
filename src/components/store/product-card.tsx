@@ -3,8 +3,7 @@ import { cn } from "cn";
 import { Price } from "#/components/store/ui/price";
 import { StoreButton } from "#/components/store/ui/store-button";
 import { Badge } from "#/components/ui/badge";
-import { cart } from "#/lib/cart";
-import { cartDrawer } from "#/lib/cart-ui";
+import { useAddToCart } from "#/lib/cart";
 import { productBadgeLabel } from "#/lib/product-badge";
 import type { CatalogCard } from "#/lib/queries";
 import { m } from "#/paraglide/messages";
@@ -23,6 +22,7 @@ export function ProductCard({
 }) {
 	const card = product;
 	const inStock = card.availability === "in_stock";
+	const { add } = useAddToCart();
 	const Heading = `h${headingLevel}` as const;
 	const specLine = card.shortSpecs ?? card.optionLabel ?? card.category.name;
 	return (
@@ -98,10 +98,7 @@ export function ProductCard({
 							? m.product_add_item({ name: `${card.brand.name} ${card.name}` })
 							: undefined
 					}
-					onClick={(e) => {
-						cart.add(card.sku, 1, card.maxQuantity);
-						cartDrawer.open(e.currentTarget);
-					}}
+					onClick={(e) => add({ sku: card.sku, quantity: 1 }, e.currentTarget)}
 					className="px-2 type-small"
 				>
 					{inStock ? m.product_add() : m.product_out_of_stock()}

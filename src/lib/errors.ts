@@ -86,8 +86,46 @@ const MESSAGES: Record<string, () => string> = {
 	preferred_supplier_taken: m.admin_supplier_item_preferred_taken,
 	invalid_request: m.error_invalid_request,
 	not_found: m.error_not_found,
-	order_not_found: m.error_not_found,
+	order_not_found: m.error_order_not_found,
+	promotion_first_order_only: m.error_promotion_first_order_only,
+	order_not_paid: m.error_order_not_paid,
+	review_requires_delivered_order: m.error_review_requires_delivered_order,
+	review_exists: m.error_review_exists,
+	stock_alert_exists: m.error_stock_alert_exists,
+	out_of_stock: m.error_out_of_stock,
+	cart_empty: m.error_cart_empty,
+	cart_changed: m.error_cart_changed,
+	in_stock: m.error_in_stock,
+	gateway_unavailable: m.error_gateway_unavailable,
+	card_unavailable: m.error_card_unavailable,
+	invalid_fields: m.error_invalid_fields,
+	promotion_limit_reached: m.promotion_reason_usage_limit_reached,
+	promotion_unavailable: m.promotion_reason_not_found,
+	promotion_changed: m.error_cart_changed,
 };
+
+const PROMOTION_REASONS: Record<string, () => string> = {
+	not_found: m.promotion_reason_not_found,
+	promotion_unavailable: m.promotion_reason_not_found,
+	not_started: m.promotion_reason_not_started,
+	expired: m.promotion_reason_expired,
+	usage_limit_reached: m.promotion_reason_usage_limit_reached,
+	promotion_limit_reached: m.promotion_reason_customer_limit_reached,
+	customer_limit_reached: m.promotion_reason_customer_limit_reached,
+	first_order_only: m.promotion_reason_first_order_only,
+	promotion_first_order_only: m.promotion_reason_first_order_only,
+	promotion_changed: m.error_cart_changed,
+};
+
+// Why a coupon does not apply; `minimum` is the formatted minimum subtotal when that is
+// the reason.
+export function promotionReasonMessage(reason: string, minimum: string | null) {
+	if (reason === "min_subtotal_not_met" && minimum)
+		return m.promotion_reason_min_subtotal_not_met({ amount: minimum });
+	return Object.hasOwn(PROMOTION_REASONS, reason)
+		? PROMOTION_REASONS[reason]()
+		: m.promotion_reason_not_found();
+}
 
 export function errorMessage(error: unknown): string {
 	const e = apiErrorOf(error);
@@ -124,6 +162,8 @@ export function errorMessage(error: unknown): string {
 						requested: String(e.body.requested),
 					});
 		}
+		case "promotion_invalid":
+			return promotionReasonMessage(String(e.body.reason), null);
 		case "variant_has_stock":
 			return m.error_variant_has_stock({ onHand: String(e.body.onHand) });
 	}

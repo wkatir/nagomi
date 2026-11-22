@@ -80,6 +80,7 @@ function Account() {
 		},
 		onSuccess: async () => {
 			queryClient.removeQueries({ queryKey: ["account"] });
+			queryClient.removeQueries({ queryKey: ["cart"] });
 			await navigate({ to: "/" });
 		},
 	});
@@ -95,13 +96,21 @@ function Account() {
 						</p>
 					)}
 				</div>
-				<StoreButton
-					variant="outline"
-					pending={signOut.isPending}
-					onClick={() => signOut.mutate()}
-				>
-					{m.account_sign_out()}
-				</StoreButton>
+				<div className="flex flex-wrap gap-3">
+					<StoreButton asChild variant="outline">
+						<Link to="/account/wishlist">{m.wishlist_title()}</Link>
+					</StoreButton>
+					<StoreButton asChild variant="outline">
+						<Link to="/account/reviews">{m.reviews_mine_title()}</Link>
+					</StoreButton>
+					<StoreButton
+						variant="outline"
+						pending={signOut.isPending}
+						onClick={() => signOut.mutate()}
+					>
+						{m.account_sign_out()}
+					</StoreButton>
+				</div>
 			</div>
 			{profile.isPending ? (
 				<Spinner aria-label={m.loading()} className="text-muted-foreground" />

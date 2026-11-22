@@ -15,9 +15,8 @@ import { Badge } from "#/components/ui/badge";
 import { Progress } from "#/components/ui/progress";
 import { Sheet, SheetClose } from "#/components/ui/sheet";
 import { Spinner } from "#/components/ui/spinner";
-import { useCartRows } from "#/hooks/use-cart-rows";
 import { useMoney } from "#/hooks/use-money";
-import { useCart } from "#/lib/cart";
+import { useCart, useCartCount } from "#/lib/cart";
 import { cartDrawer, useCartDrawerOpen } from "#/lib/cart-ui";
 import { errorMessage } from "#/lib/errors";
 import { storeQuery } from "#/lib/queries";
@@ -27,7 +26,7 @@ import { PaymentMethods } from "./payment-methods";
 
 // A real link to /cart (works without JavaScript); once hydrated it opens the drawer.
 export function CartButton() {
-	const count = useCart().reduce((n, l) => n + l.quantity, 0);
+	const count = useCartCount();
 	const onCartPage = useRouterState({
 		select: (s) => s.location.pathname === "/cart",
 	});
@@ -91,9 +90,11 @@ export function CartDrawer() {
 function CartDrawerBody() {
 	const money = useMoney();
 	const { data: store } = useSuspenseQuery(storeQuery);
-	const { catalog, rows, hasUnavailable, hasBeyondStock, subtotal } =
-		useCartRows();
-	const count = rows.reduce((n, r) => n + r.quantity, 0);
+	const cart = useCart();
+	const lines = cart.data?.lines ?? [];
+	const count = cart.data?.count ?? 0;
+	const subtotal = cart.data ? cart.data.subtotal - cart.data.discount : 0;
+	const hasProblems = cart.data?.hasProblems ?? false;
 	const threshold = store.freeShippingFrom;
 
 	return (
@@ -112,19 +113,19 @@ function CartDrawerBody() {
 				}
 			/>
 
-			{rows.length === 0 ? (
+			{cart.isPending ? (
+				<Spinner
+					aria-label={m.loading()}
+					className="m-5 text-muted-foreground"
+				/>
+			) : cart.isError ? (
+				<p className="p-5 text-destructive">{errorMessage(cart.error)}</p>
+			) : lines.length === 0 ? (
 				<EmptyState title={m.cart_empty()} className="p-5">
 					<StoreButton asChild>
 						<Link to="/products">{m.home_cta_shop()}</Link>
 					</StoreButton>
 				</EmptyState>
-			) : catalog.isPending ? (
-				<Spinner
-					aria-label={m.loading()}
-					className="m-5 text-muted-foreground"
-				/>
-			) : catalog.isError ? (
-				<p className="p-5 text-destructive">{errorMessage(catalog.error)}</p>
 			) : (
 				<>
 					{threshold != null && (
@@ -148,7 +149,7 @@ function CartDrawerBody() {
 						</div>
 					)}
 					<div className="min-h-0 flex-1 overflow-y-auto px-5">
-						<CartLines rows={rows} className="border-t-0" />
+						<CartLines lines={lines} className="border-t-0" />
 					</div>
 					<div className="shrink-0 border-t px-5 pt-4 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
 						<dl className="grid gap-1">
@@ -166,12 +167,7 @@ function CartDrawerBody() {
 							</div>
 						</dl>
 						<PaymentMethods methods={store.paymentMethods} className="mt-2" />
-						{hasUnavailable && (
-							<p className="mt-3 type-small text-destructive">
-								{m.cart_remove_unavailable()}
-							</p>
-						)}
-						{hasBeyondStock && (
+						{hasProblems && (
 							<p className="mt-3 type-small text-destructive">
 								{m.cart_adjust_stock()}
 							</p>

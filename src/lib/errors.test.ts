@@ -38,11 +38,8 @@ const SHOWN_GENERIC = [
 	"internal_error",
 	"invalid_form",
 	"collections_changed",
-	"promotion_changed",
-	"promotion_invalid",
-	"promotion_limit_reached",
-	"promotion_min_subtotal",
-	"promotion_unavailable",
+	"invalid_signature",
+	"amount_mismatch",
 ];
 
 describe("errorMessage", () => {

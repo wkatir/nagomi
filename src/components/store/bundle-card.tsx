@@ -1,8 +1,7 @@
 import { StoreButton } from "#/components/store/ui/store-button";
 import { TextLink } from "#/components/store/ui/text-link";
 import { useMoney } from "#/hooks/use-money";
-import { cart } from "#/lib/cart";
-import { cartDrawer } from "#/lib/cart-ui";
+import { useAddToCart } from "#/lib/cart";
 import type { BundleView } from "#/lib/queries";
 import { m } from "#/paraglide/messages";
 
@@ -15,6 +14,7 @@ export function BundleCard({
 }) {
 	const money = useMoney();
 	const available = bundle.availability === "in_stock";
+	const { add } = useAddToCart();
 	const Heading = headingLevel === 2 ? "h2" : "h3";
 	return (
 		<article className="flex h-full flex-col border">
@@ -98,16 +98,9 @@ export function BundleCard({
 					</div>
 					<StoreButton
 						disabled={!available}
-						onClick={(e) => {
-							cart.addMany(
-								bundle.items.map((item) => ({
-									sku: item.sku,
-									quantity: item.quantity,
-									max: item.maxQuantity,
-								})),
-							);
-							cartDrawer.open(e.currentTarget);
-						}}
+						onClick={(e) =>
+							add({ bundle: bundle.slug, quantity: 1 }, e.currentTarget)
+						}
 						className="shrink-0"
 					>
 						{available ? m.bundle_add() : m.bundle_sold_out()}

@@ -1,118 +1,122 @@
-import { useSuspenseQuery } from "@tanstack/react-query";
-import { useSyncExternalStore } from "react";
-import { z } from "zod";
+import {
+	type QueryClient,
+	queryOptions,
+	useMutation,
+	useQuery,
+	useQueryClient,
+	useSuspenseQuery,
+} from "@tanstack/react-query";
+import type { InferResponseType } from "hono/client";
+import { toast } from "sonner";
+import { getLocale } from "#/paraglide/runtime";
+import { api, parseResponse } from "./api";
+import { cartDrawer } from "./cart-ui";
+import { errorMessage } from "./errors";
 import { storeQuery } from "./queries";
 
-// Also checked by the order API.
+// Also checked by the cart API.
 export const useMaxQuantity = () =>
 	useSuspenseQuery(storeQuery).data.maxQuantityPerLine;
 
-// Cart keeps only SKU and quantity; prices always come from the server.
-const Lines = z.array(
-	z.object({
-		sku: z.string(),
-		quantity: z.number().int().min(1),
-	}),
-);
-export type CartLine = z.infer<typeof Lines>[number];
-const KEY = "nagomi:cart:v1";
-const listeners = new Set<() => void>();
-let cache: CartLine[] | null = null;
+// The cart lives on the server (an httpOnly cookie names it); every read is priced there.
+// The browser keeps only this query's cache, for the header count and the drawer.
+export type Cart = InferResponseType<
+	ReturnType<typeof api>["cart"]["$get"],
+	200
+>;
+export type CartLine = Cart["lines"][number];
 
-function parse(raw: string): CartLine[] | null {
-	let json: unknown;
-	try {
-		json = JSON.parse(raw);
-	} catch {
-		return null;
-	}
-	const result = Lines.safeParse(json);
-	return result.success ? result.data : null;
-}
+type CartQuery = { locale: "es" | "en"; municipality?: string };
 
-function stored(): string | null {
-	try {
-		return localStorage.getItem(KEY);
-	} catch {
-		// Storage can be blocked by the browser; the cart then lives only in this tab.
-		return null;
-	}
-}
+const cartKey = (query: CartQuery) => [
+	"cart",
+	query.locale,
+	query.municipality ?? null,
+];
 
-function read(): CartLine[] {
-	if (cache) return cache;
-	const raw = stored();
-	const lines = raw === null ? [] : parse(raw);
-	if (lines) {
-		cache = lines;
-		return cache;
-	}
-	console.warn("Discarded an invalid cart from localStorage", raw);
-	localStorage.removeItem(KEY);
-	cache = [];
-	return cache;
-}
-
-function write(lines: CartLine[]) {
-	cache = lines;
-	try {
-		localStorage.setItem(KEY, JSON.stringify(lines));
-	} catch {
-		// Storage can be unavailable (private mode); the cart still works for this tab.
-	}
-	for (const l of listeners) l();
-}
-
-const EMPTY: CartLine[] = [];
-const subscribe = (l: () => void) => {
-	listeners.add(l);
-	return () => {
-		listeners.delete(l);
+export const cartQuery = (municipality?: string) => {
+	const query: CartQuery = {
+		locale: getLocale(),
+		...(municipality ? { municipality } : {}),
 	};
-};
-
-// Another tab changed the bag: drop the cached copy, or this tab would overwrite it.
-if (typeof window !== "undefined")
-	window.addEventListener("storage", (e) => {
-		if (e.key !== KEY && e.key !== null) return;
-		cache = null;
-		for (const l of listeners) l();
+	return queryOptions({
+		queryKey: cartKey(query),
+		queryFn: () => parseResponse(api().cart.$get({ query })),
+		// Server-side API calls carry no cookies, so the cart is read in the browser only.
+		enabled: typeof window !== "undefined",
 	});
-
-export const useCart = () => useSyncExternalStore(subscribe, read, () => EMPTY);
-
-type Addition = { sku: string; quantity: number; max: number };
-
-// `max` is the size's maxQuantity in the catalogue: the units it has left, already capped
-// at the store's limit per line.
-function withAdded(lines: CartLine[], { sku, quantity, max }: Addition) {
-	if (max <= 0) return lines;
-	const existing = lines.find((l) => l.sku === sku);
-	return existing
-		? lines.map((l) =>
-				l.sku === sku
-					? { ...l, quantity: Math.min(max, l.quantity + quantity) }
-					: l,
-			)
-		: [...lines, { sku, quantity: Math.min(max, quantity) }];
-}
-
-function addAll(additions: Addition[]) {
-	const lines = read();
-	const next = additions.reduce(withAdded, lines);
-	if (next !== lines) write(next);
-}
-
-export const cart = {
-	add: (sku: string, quantity: number, max: number) =>
-		addAll([{ sku, quantity, max }]),
-	addMany: addAll,
-	set: (sku: string, quantity: number, max: number) =>
-		write(
-			read().map((l) =>
-				l.sku === sku ? { ...l, quantity: Math.min(max, quantity) } : l,
-			),
-		),
-	remove: (sku: string) => write(read().filter((l) => l.sku !== sku)),
-	clear: () => write([]),
 };
+
+export const useCart = (municipality?: string) =>
+	useQuery(cartQuery(municipality));
+
+export const useCartCount = () => useCart().data?.count ?? 0;
+
+export const invalidateCart = (queryClient: QueryClient) =>
+	queryClient.invalidateQueries({ queryKey: ["cart"] });
+
+export function useCartActions() {
+	const queryClient = useQueryClient();
+	const query: CartQuery = { locale: getLocale() };
+	const settle = (cart: Cart) => {
+		queryClient.setQueryData(cartKey(query), cart);
+		void queryClient.invalidateQueries({
+			queryKey: ["cart"],
+			predicate: (q) => q.queryKey[2] !== null,
+		});
+	};
+	const add = useMutation({
+		mutationFn: (input: { sku?: string; bundle?: string; quantity: number }) =>
+			parseResponse(api().cart.items.$post({ query, json: input })),
+		onSuccess: settle,
+	});
+	const update = useMutation({
+		mutationFn: (input: { id: number; quantity: number }) =>
+			parseResponse(
+				api().cart.items[":id"].$patch({
+					param: { id: String(input.id) },
+					query,
+					json: { quantity: input.quantity },
+				}),
+			),
+		onSuccess: settle,
+	});
+	const remove = useMutation({
+		mutationFn: (id: number) =>
+			parseResponse(
+				api().cart.items[":id"].$delete({ param: { id: String(id) }, query }),
+			),
+		onSuccess: settle,
+	});
+	const clear = useMutation({
+		mutationFn: () => parseResponse(api().cart.$delete({ query })),
+		onSuccess: settle,
+	});
+	const applyCoupon = useMutation({
+		mutationFn: (code: string) =>
+			parseResponse(api().cart.coupon.$put({ query, json: { code } })),
+		onSuccess: settle,
+	});
+	const removeCoupon = useMutation({
+		mutationFn: () => parseResponse(api().cart.coupon.$delete({ query })),
+		onSuccess: settle,
+	});
+	return { add, update, remove, clear, applyCoupon, removeCoupon };
+}
+
+// Adds and opens the drawer from the button that was pressed; a refusal (sold out meanwhile)
+// is shown as a toast.
+export function useAddToCart() {
+	const { add } = useCartActions();
+	return {
+		pending: add.isPending,
+		add: (
+			input: { sku?: string; bundle?: string; quantity: number },
+			opener: HTMLElement | null,
+		) =>
+			add.mutate(input, {
+				onSuccess: () => cartDrawer.open(opener),
+				onError: (e) => toast.error(errorMessage(e)),
+			}),
+	};
+}

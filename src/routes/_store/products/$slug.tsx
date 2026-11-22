@@ -3,6 +3,12 @@ import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { cn } from "cn";
 import { ArrowRight, ArrowUpRight, ShieldCheck } from "lucide-react";
 import { useState } from "react";
+import {
+	ProductReviews,
+	RatingSummary,
+	StockAlertForm,
+	WishlistButton,
+} from "#/components/store/product-extras";
 import { ProductGallery } from "#/components/store/product-gallery";
 import { QuantityStepper } from "#/components/store/quantity-stepper";
 import { RelatedProducts } from "#/components/store/related-products";
@@ -25,8 +31,7 @@ import {
 } from "#/components/ui/breadcrumb";
 import { useMoney } from "#/hooks/use-money";
 import { isNotFound } from "#/lib/api";
-import { cart, useCart, useMaxQuantity } from "#/lib/cart";
-import { cartDrawer } from "#/lib/cart-ui";
+import { useAddToCart, useCart, useMaxQuantity } from "#/lib/cart";
 import { paymentMethodList } from "#/lib/payment";
 import { productBadgeLabel } from "#/lib/product-badge";
 import { productQuery, storeQuery } from "#/lib/queries";
@@ -136,7 +141,8 @@ function ProductDetail({ slug }: { slug: string }) {
 	// maxQuantity is already capped at the store's limit.
 	const room =
 		variant.maxQuantity -
-		(useCart().find((l) => l.sku === variant.sku)?.quantity ?? 0);
+		(useCart().data?.lines.find((l) => l.sku === variant.sku)?.quantity ?? 0);
+	const { add, pending } = useAddToCart();
 	const option = variant.optionLabel;
 	const fullName = `${p.brand.name} ${p.name}`;
 	const email = store.business.email;
@@ -187,7 +193,11 @@ function ProductDetail({ slug }: { slug: string }) {
 					</p>
 					{/* type-h1 (up to 68px) would set most product names in three or four lines
 					    in the 5/12 column; type-h2 stays close to the 40px this page was drawn at. */}
-					<h1 className="mt-1 type-h2">{p.name}</h1>
+					<div className="mt-1 flex items-start justify-between gap-3">
+						<h1 className="type-h2">{p.name}</h1>
+						<WishlistButton slug={p.slug} className="shrink-0" />
+					</div>
+					<RatingSummary rating={p.rating} className="mt-2" />
 					{p.tagline && (
 						<p className="mt-3 type-lead text-foreground-secondary">
 							{p.tagline}
@@ -252,20 +262,20 @@ function ProductDetail({ slug }: { slug: string }) {
 						<StoreButton
 							size="lg"
 							disabled={room <= 0}
+							pending={pending}
 							onClick={(e) => {
-								cart.add(
-									variant.sku,
-									Math.min(quantity, room),
-									variant.maxQuantity,
+								add(
+									{ sku: variant.sku, quantity: Math.min(quantity, room) },
+									e.currentTarget,
 								);
 								setQuantity(1);
-								cartDrawer.open(e.currentTarget);
 							}}
 							className="flex-1"
 						>
 							{inStock ? m.product_add_to_cart() : m.product_out_of_stock()}
 						</StoreButton>
 					</div>
+					{!inStock && <StockAlertForm sku={variant.sku} className="mt-4" />}
 					{inStock && room <= 0 && (
 						<p className="type-meta text-muted-foreground max-md:mt-3">
 							{variant.maxQuantity < storeLimit
@@ -370,6 +380,7 @@ function ProductDetail({ slug }: { slug: string }) {
 				</div>
 			</div>
 
+			<ProductReviews slug={p.slug} />
 			<RelatedProducts related={p.related} bundles={p.bundles} />
 		</>
 	);

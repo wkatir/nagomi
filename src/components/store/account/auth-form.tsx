@@ -1,4 +1,4 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { StoreButton } from "#/components/store/ui/store-button";
@@ -6,12 +6,14 @@ import { TextLink } from "#/components/store/ui/text-link";
 import { Field, FieldError, FieldLabel } from "#/components/ui/field";
 import { Input } from "#/components/ui/input";
 import { authClient } from "#/lib/auth-client";
+import { invalidateCart } from "#/lib/cart";
 import { m } from "#/paraglide/messages";
 
 const input = "h-(--control-lg) md:type-body";
 
 export function AuthForm({ mode }: { mode: "sign-in" | "sign-up" }) {
 	const navigate = useNavigate();
+	const queryClient = useQueryClient();
 	const [name, setName] = useState("");
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
@@ -23,7 +25,11 @@ export function AuthForm({ mode }: { mode: "sign-in" | "sign-up" }) {
 					: await authClient.signIn.email({ email, password });
 			if (error) throw new Error(error.code ?? error.message ?? "auth_failed");
 		},
-		onSuccess: () => navigate({ to: "/account" }),
+		// The guest cart is merged into the customer's on the next cart read.
+		onSuccess: async () => {
+			await invalidateCart(queryClient);
+			await navigate({ to: "/account" });
+		},
 	});
 	const errorText = (code: string) =>
 		code === "USER_ALREADY_EXISTS" ||

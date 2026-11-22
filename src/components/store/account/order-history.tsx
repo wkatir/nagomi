@@ -12,8 +12,8 @@ import { m } from "#/paraglide/messages";
 
 const statusLabel: Record<OrderStatus, () => string> = {
 	pending: m.account_order_status_pending,
-	confirmed: m.account_order_status_confirmed,
-	fulfilled: m.account_order_status_fulfilled,
+	paid: m.account_order_status_paid,
+	shipped: m.account_order_status_shipped,
 	delivered: m.account_order_status_delivered,
 	cancelled: m.account_order_status_cancelled,
 };
