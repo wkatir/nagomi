@@ -2,53 +2,44 @@
 @plugin '@tailwindcss/typography';
 @import 'tw-animate-css';
 
-/* Light only: no element ever gets .dark, so generated dark: classes stay inert (Tailwind's default would follow the OS setting). */
 @custom-variant dark (&:is(.dark *));
 
 @font-face { font-family: 'Inter Variable'; src: url('../node_modules/@fontsource-variable/inter/files/inter-latin-wght-normal.woff2') format('woff2-variations'); font-weight: 100 900; font-style: normal; font-display: swap; unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
 @font-face { font-family: 'Noto Serif JP Variable'; src: url('../node_modules/@fontsource-variable/noto-serif-jp/files/noto-serif-jp-latin-wght-normal.woff2') format('woff2-variations'); font-weight: 200 900; font-style: normal; font-display: swap; unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
 
-/* Monochrome palette: white, ink and one photo grey; colour comes from photography only. */
 :root {
-  --radius: 2px;
-  --background: #ffffff;
-  --foreground: #111111;
-  --foreground-secondary: #333333;
-  --card: #ffffff;
-  --card-foreground: #111111;
-  --popover: #ffffff;
-  --popover-foreground: #111111;
-  --primary: #111111;
-  --primary-foreground: #ffffff;
-  --secondary: #f2f2f0;
-  --secondary-foreground: #111111;
-  --muted: #f2f2f0;
-  --muted-foreground: #6b6b6b;
-  --accent: #f2f2f0;
-  --accent-foreground: #111111;
-  --destructive: #b42318;
-  --border: #e6e6e3;
-  /* 3.47:1 on white: text field boundaries need 3:1 (WCAG 1.4.11); the hairline is only 1.25:1. */
-  --input: #8a8a86;
-  --ring: #111111;
-  --success: #1e7a46;
-  /* Text-only states that are not errors (short shelf life, unpaid). */
-  --warning: #8a5300;
-  --photo: #f2f2f0;
-  /* Ink surface for full-bleed black bands. */
-  --inverse: #111111;
-  --inverse-foreground: #ffffff;
-  --inverse-muted: #bdbdbd;
-  --inverse-border: #333333;
-  /* Admin charts: one ink series; the grey only with a second encoding (dashes, direct labels). */
-  --chart-1: #111111;
-  --chart-2: #6b6b6b;
-  /* Control heights. Use h-(--control-lg), not a made-up h-control-lg: cn merges the var()
-     syntax with a component's own h-9 but keeps both when it cannot read the class. */
+  color-scheme: dark;
+  --radius: 12px;
+  --background: #0d0d17;
+  --foreground: #ecebff;
+  --foreground-secondary: #c9c6e3;
+  --card: #151524;
+  --card-foreground: #ecebff;
+  --popover: #171728;
+  --popover-foreground: #ecebff;
+  --primary: #a78bfa;
+  --primary-foreground: #0d0d17;
+  --secondary: #1e1d33;
+  --secondary-foreground: #ecebff;
+  --muted: #1b1a2e;
+  --muted-foreground: #9b97b8;
+  --accent: #221f3d;
+  --accent-foreground: #ecebff;
+  --brand: #8b7cf6;
+  --destructive: #f87171;
+  --border: #26263a;
+  --input: #66638a;
+  --ring: #b4a8ff;
+  --success: #4ade80;
+  --warning: #fbbf24;
+  --photo: #10101c;
+  --chart-1: #a78bfa;
+  --chart-2: #9b97b8;
   --control-sm: 2rem;
   --control-md: 2.25rem;
   --control-lg: 2.75rem;
   --control-xl: 3.25rem;
+  --header-height: 3.75rem;
   --sidebar: var(--background);
   --sidebar-foreground: var(--foreground);
   --sidebar-primary: var(--primary);
@@ -57,6 +48,10 @@
   --sidebar-accent-foreground: var(--accent-foreground);
   --sidebar-border: var(--border);
   --sidebar-ring: var(--ring);
+}
+
+@media (width >= 64rem) {
+  :root { --header-height: 4.875rem; }
 }
 
 @theme inline {
@@ -77,6 +72,7 @@
   --color-muted-foreground: var(--muted-foreground);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
+  --color-brand: var(--brand);
   --color-destructive: var(--destructive);
   --color-border: var(--border);
   --color-input: var(--input);
@@ -84,20 +80,16 @@
   --color-success: var(--success);
   --color-warning: var(--warning);
   --color-photo: var(--photo);
-  --color-inverse: var(--inverse);
-  --color-inverse-foreground: var(--inverse-foreground);
-  --color-inverse-muted: var(--inverse-muted);
-  --color-inverse-border: var(--inverse-border);
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
-  --radius-xs: var(--radius);
-  --radius-sm: var(--radius);
-  --radius-md: var(--radius);
-  --radius-lg: var(--radius);
+  --radius-xs: calc(var(--radius) - 8px);
+  --radius-sm: calc(var(--radius) - 6px);
+  --radius-md: calc(var(--radius) - 4px);
+  --radius-lg: calc(var(--radius) - 2px);
   --radius-xl: var(--radius);
-  --radius-2xl: var(--radius);
-  --radius-3xl: var(--radius);
-  --radius-4xl: var(--radius);
+  --radius-2xl: calc(var(--radius) + 4px);
+  --radius-3xl: calc(var(--radius) + 8px);
+  --radius-4xl: calc(var(--radius) + 12px);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -111,14 +103,13 @@
 @theme {
   /* The standard size names follow the type scale, so generated parts (text-xs, text-base)
      match it: tailwind-merge knows these names, unlike a made-up text-ui. */
-  --text-xs: 0.8125rem;
+  --text-xs: 0.75rem;
   --text-xs--line-height: 1.4;
-  --text-base: 1.0625rem;
+  --text-base: 0.9375rem;
   --text-base--line-height: 1.5;
 
-  /* Vertical rhythm between page sections (py-section-sm, py-section). Vary them. */
-  --spacing-section-sm: clamp(2.5rem, 1.75rem + 3vw, 4.5rem);
-  --spacing-section: clamp(3.5rem, 2.25rem + 5vw, 7rem);
+  --spacing-section-sm: clamp(1.75rem, 1.25rem + 2vw, 2.75rem);
+  --spacing-section: clamp(2.5rem, 1.75rem + 3vw, 4.5rem);
 
   /* Back office density: every admin screen takes its spacing from these (px-admin-page,
      mb-admin-section, gap-admin-stack, p-admin-card, min-h-admin-header), so it changes here.
@@ -130,39 +121,30 @@
   --spacing-admin-card: 1rem;
   --spacing-admin-header: 3rem;
 
-  /* Flat surfaces; floating layers (popover, menu, dialog, sheet) get one quiet shadow plus a hairline.
-     0 0 #0000 rather than none, because Tailwind composes shadows and rings in one box-shadow. */
   --shadow-2xs: 0 0 #0000;
   --shadow-xs: 0 0 #0000;
   --shadow-sm: 0 0 #0000;
-  --shadow-md: 0 1px 2px rgb(17 17 17 / 0.08);
-  --shadow-lg: 0 1px 2px rgb(17 17 17 / 0.08);
-  --shadow-xl: 0 1px 2px rgb(17 17 17 / 0.08);
-  --shadow-2xl: 0 1px 2px rgb(17 17 17 / 0.08);
+  --shadow-md: 0 8px 24px rgb(0 0 0 / 0.35);
+  --shadow-lg: 0 12px 32px rgb(0 0 0 / 0.45);
+  --shadow-xl: 0 16px 40px rgb(0 0 0 / 0.5);
+  --shadow-2xl: 0 20px 48px rgb(0 0 0 / 0.55);
 }
 
 @layer base {
   * { @apply border-border; }
   html { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
-  body { @apply bg-background font-sans text-[1.0625rem] leading-normal text-foreground; }
-  ::selection { background: var(--foreground); color: var(--background); }
+  body { @apply bg-background font-sans text-[0.9375rem] leading-normal text-foreground; }
+  ::selection { background: var(--primary); color: var(--primary-foreground); }
   :focus-visible { outline: 2px solid var(--ring); outline-offset: 3px; }
-  /* Icons keep the brand stroke, also inside generated components (author CSS beats the SVG attribute). */
   .lucide { stroke-width: 1.5; }
 }
 
-/* One focus indicator on every control, generated or not. Unlayered on purpose: it must beat the
-   utilities layer (outline-none, focus-visible:ring-*), and it survives forced-colours mode, where
-   box-shadow rings are dropped. */
 :where(button, a, input, select, textarea, [role='checkbox'], [role='radio'], [role='switch'], [role='tab'], [role='slider'])[data-slot]:focus-visible {
   outline: 2px solid var(--ring);
   outline-offset: 3px;
   box-shadow: none;
 }
 
-/* A grouped input (search box, money field: one bordered box holding the input and its
-   buttons) draws the indicator around the box, so it is one frame with the icon inside, not a
-   ring around the inner input that stops short of the buttons. The border keeps its colour. */
 [data-slot='input-group-control']:focus-visible {
   outline: none;
 }
@@ -173,10 +155,6 @@
   box-shadow: none;
 }
 
-/* Embla and Radix crop their panels to the box, which cut the 5px focus outline of a control at the
-   edge (a link at the edge of a slide, a filter checkbox). The carousel keeps its crop but lets the
-   outline out. The accordion panel is padded and pulled back by the same amount, so the layout
-   does not move and the height animation is untouched. */
 [data-slot='carousel-content'] {
   overflow: clip;
   overflow-clip-margin: 0.5rem;
@@ -186,8 +164,6 @@
   padding-inline: 0.5rem;
 }
 
-/* The search box of a command list fills a box that clips what is outside it, so its ring is
-   drawn inside. */
 [data-slot='command-input']:focus-visible {
   outline-offset: -2px;
 }
@@ -201,76 +177,79 @@
   }
 }
 
-/* Type scale, fluid between 390px and 1440px; Satoshi Bold needs negative tracking at large sizes.
-   Named type-* (not text-*) so cn/tailwind-merge does not mistake them for colours and drop them
-   next to text-muted-foreground. Do not combine with text-<size>, leading-* or tracking-* on one element. */
 @utility type-display {
-  font-size: clamp(2.75rem, 1.5rem + 5.4vw, 6rem);
-  line-height: 0.92;
-  letter-spacing: -0.055em;
-  font-weight: 700;
+  font-family: var(--font-serif);
+  font-size: clamp(2.5rem, 1.9rem + 2.6vw, 3.75rem);
+  line-height: 1;
+  letter-spacing: -0.01em;
+  font-weight: 500;
 }
 @utility type-h1 {
-  font-size: clamp(2.25rem, 1.55rem + 2.9vw, 4.25rem);
-  line-height: 0.98;
-  letter-spacing: -0.05em;
-  font-weight: 700;
+  font-size: clamp(1.5rem, 1.3rem + 0.9vw, 2rem);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  font-weight: 650;
 }
 @utility type-h2 {
-  font-size: clamp(1.75rem, 1.3rem + 1.9vw, 3rem);
-  line-height: 1.02;
-  letter-spacing: -0.045em;
-  font-weight: 700;
+  font-size: clamp(1.1875rem, 1.1rem + 0.35vw, 1.375rem);
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  font-weight: 650;
 }
 @utility type-h3 {
-  font-size: clamp(1.25rem, 1.1rem + 0.6vw, 1.625rem);
-  line-height: 1.12;
-  letter-spacing: -0.03em;
-  font-weight: 700;
+  font-size: 1.0625rem;
+  line-height: 1.3;
+  letter-spacing: -0.005em;
+  font-weight: 600;
+}
+@utility type-h4 {
+  font-size: 0.9375rem;
+  line-height: 1.35;
+  font-weight: 600;
 }
 @utility type-lead {
-  font-size: clamp(1.0625rem, 1rem + 0.35vw, 1.25rem);
-  line-height: 1.5;
+  font-size: clamp(0.9375rem, 0.9rem + 0.2vw, 1.0625rem);
+  line-height: 1.55;
 }
 @utility type-body {
-  font-size: 1.0625rem;
+  font-size: 0.9375rem;
   line-height: 1.5;
 }
 @utility type-small {
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   line-height: 1.45;
 }
 @utility type-meta {
-  font-size: 0.8125rem;
+  font-size: 0.75rem;
   line-height: 1.4;
 }
 @utility type-ui {
-  font-size: 0.9375rem;
+  font-size: 0.875rem;
   line-height: 1.45;
 }
 @utility type-title {
-  font-size: 1.375rem;
-  line-height: 1.15;
-  letter-spacing: -0.02em;
-  font-weight: 700;
+  font-size: 1.25rem;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  font-weight: 650;
 }
 @utility type-stat {
-  font-size: 1.75rem;
+  font-size: 1.5rem;
   line-height: 1;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
 
-/* Page widths, all with 24px (16px below 768px) side gutters. */
 @utility container-page {
-  width: min(100% - 48px, 1320px);
+  width: 100%;
+  max-width: 82rem;
   margin-inline: auto;
-  @media (width < 48rem) { width: calc(100% - 32px); }
+  padding-inline: 2.25rem;
+  @media (width < 64rem) { padding-inline: 1.5rem; }
+  @media (width < 48rem) { padding-inline: 1rem; }
 }
 
-/* A 44px tap area around a small control (a 16px checkbox) that takes no room: it reaches to
-   the left, above and below the control and stops at its right edge, where the label starts. */
 @utility tap-area {
   position: relative;
   &::before {
@@ -281,35 +260,25 @@
   }
 }
 
-/* Ink section: flips the semantic tokens so shadcn components and store primitives inside it
-   (buttons, links, hairlines, focus ring) render light on ink without per-call classes. */
-@utility surface-inverse {
-  background-color: var(--inverse);
-  color: var(--inverse-foreground);
-  --background: var(--inverse);
-  --foreground: var(--inverse-foreground);
-  --foreground-secondary: #dcdcdc;
-  --primary: var(--inverse-foreground);
-  --primary-foreground: var(--inverse);
-  --secondary: #222222;
-  --secondary-foreground: var(--inverse-foreground);
-  --muted: #222222;
-  --muted-foreground: var(--inverse-muted);
-  --accent: #222222;
-  --accent-foreground: var(--inverse-foreground);
-  --border: var(--inverse-border);
-  --ring: var(--inverse-foreground);
-  --destructive: #f97066;
-  --success: #5cc28a;
-  --warning: #f0b45a;
+@utility panel {
+  background-color: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
 }
 
-/* Legibility scrim for text set on photography: bottom fade on phones, bottom-left on wider screens. */
-@utility scrim {
-  background-image: linear-gradient(to top, rgb(17 17 17 / 0.72) 0%, rgb(17 17 17 / 0.32) 42%, rgb(17 17 17 / 0) 70%);
-  @media (width >= 48rem) {
-    background-image:
-      linear-gradient(to top, rgb(17 17 17 / 0.55) 0%, rgb(17 17 17 / 0) 55%),
-      linear-gradient(to right, rgb(17 17 17 / 0.45) 0%, rgb(17 17 17 / 0) 60%);
+@utility bg-primary-gradient {
+  background-image: linear-gradient(135deg, #b9a6fc 0%, #a78bfa 45%, #8b7cf6 100%);
+}
+
+@utility tap-target {
+  position: relative;
+  &::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: max(100%, 2.75rem);
+    height: max(100%, 2.75rem);
+    transform: translate(-50%, -50%);
   }
 }

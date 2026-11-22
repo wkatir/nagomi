@@ -49,16 +49,40 @@ export const catalogQuery = (locale: Locale) =>
 export const productPageQuery = (filter: ListingFilter, page: number) =>
 	queryOptions({
 		queryKey: ["products", filter, page],
-		queryFn: () =>
-			parseResponse(
+		queryFn: () => {
+			const { minPrice, maxPrice, ...rest } = filter;
+			return parseResponse(
 				api().products.$get({
 					query: {
-						...filter,
+						...rest,
+						...(minPrice === undefined ? {} : { minPrice: String(minPrice) }),
+						...(maxPrice === undefined ? {} : { maxPrice: String(maxPrice) }),
 						page: String(page),
 						pageSize: String(LISTING_PAGE_SIZE),
 					},
 				}),
+			);
+		},
+	});
+
+export const productsBySlugQuery = (locale: Locale, slugs: string[]) =>
+	queryOptions({
+		queryKey: ["products", "by-slug", locale, slugs],
+		queryFn: () =>
+			parseResponse(
+				api().products.$get({
+					query: { locale, slug: slugs, pageSize: "60" },
+				}),
 			),
+		enabled: slugs.length > 0,
+	});
+
+export const shippingZonesQuery = (locale: Locale) =>
+	queryOptions({
+		queryKey: ["shipping-zones", locale],
+		queryFn: () =>
+			parseResponse(api().shipping.zones.$get({ query: { locale } })),
+		staleTime: 5 * 60_000,
 	});
 
 export const categoryQuery = (slug: string, locale: Locale) =>

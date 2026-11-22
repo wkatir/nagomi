@@ -31,7 +31,7 @@ export function CookieNotice() {
 	return (
 		<section
 			aria-label={m.cookies_label()}
-			className="fixed inset-x-4 bottom-4 z-40 border bg-background p-5 shadow-lg max-md:[:root:has([data-buy-bar])_&]:bottom-24 md:right-auto md:bottom-6 md:left-6 md:max-w-[420px]"
+			className="panel fixed inset-x-4 bottom-4 z-40 p-5 shadow-lg max-md:[:root:has([data-buy-bar])_&]:bottom-24 md:right-auto md:bottom-6 md:left-6 md:max-w-[420px]"
 		>
 			<p className="type-small text-foreground-secondary">
 				{m.cookies_notice()}{" "}

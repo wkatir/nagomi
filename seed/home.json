@@ -5,27 +5,27 @@
       "linkPath": "/products",
       "es": {
         "title": "Tu espacio, tu estilo, tu calma.",
-        "body": "Teclados, ratones, audífonos e iluminación para un setup que se siente bien. Envío a todo El Salvador.",
-        "ctaLabel": "Ver productos"
+        "body": "Periféricos y accesorios para setups que combinan diseño, funcionalidad y personalidad. Todo lo que necesitas, en un solo lugar.",
+        "ctaLabel": "Explorar productos"
       },
       "en": {
         "title": "Your space, your style, your calm.",
-        "body": "Keyboards, mice, headphones and lighting for a setup that feels right. Shipping across El Salvador.",
-        "ctaLabel": "Shop now"
+        "body": "Peripherals and accessories for setups that blend design, function and personality. Everything you need, in one place.",
+        "ctaLabel": "Explore products"
       }
     },
     {
       "image": "combo-banner.webp",
       "linkPath": "/sets",
       "es": {
-        "title": "Sets que combinan.",
-        "body": "Teclado, mouse y alfombrilla juntos, a un precio menor que por separado.",
-        "ctaLabel": "Ver sets"
+        "title": "Arma tu setup ideal",
+        "body": "Encuentra los mejores productos en combos y ahorra.",
+        "ctaLabel": "Ver combos"
       },
       "en": {
-        "title": "Sets that match.",
-        "body": "Keyboard, mouse and desk mat together, for less than buying them separately.",
-        "ctaLabel": "See sets"
+        "title": "Build your ideal setup",
+        "body": "Find the best products in bundles and save.",
+        "ctaLabel": "See bundles"
       }
     }
   ]

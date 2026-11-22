@@ -1,6 +1,5 @@
-import { useSuspenseQuery } from "@tanstack/react-query";
 import { Link, useRouter, useRouterState } from "@tanstack/react-router";
-import { ShoppingBag } from "lucide-react";
+import { ShoppingCart } from "lucide-react";
 import { useEffect } from "react";
 import { EmptyState } from "#/components/store/ui/empty-state";
 import {
@@ -11,27 +10,23 @@ import {
 	StoreSheetContent,
 	StoreSheetHeader,
 } from "#/components/store/ui/store-sheet";
-import { Badge } from "#/components/ui/badge";
-import { Progress } from "#/components/ui/progress";
 import { Sheet, SheetClose } from "#/components/ui/sheet";
 import { Spinner } from "#/components/ui/spinner";
 import { useMoney } from "#/hooks/use-money";
 import { useCart, useCartCount } from "#/lib/cart";
 import { cartDrawer, useCartDrawerOpen } from "#/lib/cart-ui";
 import { errorMessage } from "#/lib/errors";
-import { storeQuery } from "#/lib/queries";
 import { m } from "#/paraglide/messages";
 import { CartLines } from "./cart-lines";
-import { PaymentMethods } from "./payment-methods";
+import { FreeShippingProgress } from "./cart-totals";
 
-// A real link to /cart (works without JavaScript); once hydrated it opens the drawer.
 export function CartButton() {
 	const count = useCartCount();
 	const onCartPage = useRouterState({
 		select: (s) => s.location.pathname === "/cart",
 	});
 	return (
-		<StoreIconButton asChild className="relative -mr-2.5">
+		<StoreIconButton asChild className="relative">
 			<Link
 				to="/cart"
 				aria-label={m.nav_cart({ count: count })}
@@ -50,15 +45,13 @@ export function CartButton() {
 					cartDrawer.open(e.currentTarget);
 				}}
 			>
-				<ShoppingBag aria-hidden className="size-[22px]" />
-				{count > 0 && (
-					<Badge
-						aria-hidden
-						className="absolute top-0.5 right-0 h-5 min-w-5 rounded-sm px-1 font-bold tabular-nums"
-					>
-						{count}
-					</Badge>
-				)}
+				<ShoppingCart aria-hidden className="size-6" />
+				<span
+					aria-hidden
+					className="absolute top-0.5 right-0 flex h-[1.125rem] min-w-[1.125rem] items-center justify-center rounded-full bg-[#ecebff] px-1 text-[0.6875rem] font-semibold text-[#0d0d17] tabular-nums"
+				>
+					{count}
+				</span>
 			</Link>
 		</StoreIconButton>
 	);
@@ -89,13 +82,9 @@ export function CartDrawer() {
 
 function CartDrawerBody() {
 	const money = useMoney();
-	const { data: store } = useSuspenseQuery(storeQuery);
 	const cart = useCart();
 	const lines = cart.data?.lines ?? [];
 	const count = cart.data?.count ?? 0;
-	const subtotal = cart.data ? cart.data.subtotal - cart.data.discount : 0;
-	const hasProblems = cart.data?.hasProblems ?? false;
-	const threshold = store.freeShippingFrom;
 
 	return (
 		<>
@@ -122,53 +111,36 @@ function CartDrawerBody() {
 				<p className="p-5 text-destructive">{errorMessage(cart.error)}</p>
 			) : lines.length === 0 ? (
 				<EmptyState title={m.cart_empty()} className="p-5">
-					<StoreButton asChild>
-						<Link to="/products">{m.home_cta_shop()}</Link>
-					</StoreButton>
+					<SheetClose asChild>
+						<StoreButton asChild>
+							<Link to="/products">{m.home_cta_shop()}</Link>
+						</StoreButton>
+					</SheetClose>
 				</EmptyState>
 			) : (
 				<>
-					{threshold != null && (
-						<div className="shrink-0 border-b px-5 py-4">
-							<p className="type-small">
-								{subtotal >= threshold
-									? m.cart_free_shipping_reached()
-									: m.cart_free_shipping_gap({
-											amount: money(threshold - subtotal),
-										})}
-							</p>
-							<Progress
-								aria-hidden
-								value={
-									threshold > 0
-										? Math.min(100, (subtotal / threshold) * 100)
-										: 100
-								}
-								className="mt-2.5 h-0.5 rounded-none bg-border"
-							/>
-						</div>
-					)}
-					<div className="min-h-0 flex-1 overflow-y-auto px-5">
-						<CartLines lines={lines} className="border-t-0" />
+					<FreeShippingProgress
+						cart={cart.data}
+						className="shrink-0 border-b px-5 py-4"
+					/>
+					<div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
+						<CartLines lines={lines} />
 					</div>
 					<div className="shrink-0 border-t px-5 pt-4 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
 						<dl className="grid gap-1">
 							<div className="flex justify-between">
 								<dt>{m.cart_subtotal()}</dt>
-								<dd className="font-bold tabular-nums">{money(subtotal)}</dd>
-							</div>
-							<div className="flex justify-between type-small text-muted-foreground">
-								<dt>{m.cart_shipping()}</dt>
-								<dd>
-									{threshold != null && subtotal >= threshold
-										? m.cart_shipping_free()
-										: m.cart_shipping_pending()}
+								<dd className="font-semibold tabular-nums">
+									{money(cart.data.subtotal - cart.data.discount)}
 								</dd>
 							</div>
+							<div className="flex justify-between gap-4 type-small text-muted-foreground">
+								<dt>{m.cart_shipping()}</dt>
+								<dd className="text-right">{m.cart_shipping_pending()}</dd>
+							</div>
 						</dl>
-						<PaymentMethods methods={store.paymentMethods} className="mt-2" />
-						{hasProblems && (
-							<p className="mt-3 type-small text-destructive">
+						{cart.data.hasProblems && (
+							<p role="alert" className="mt-3 type-small text-destructive">
 								{m.cart_adjust_stock()}
 							</p>
 						)}

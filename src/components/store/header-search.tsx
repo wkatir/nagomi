@@ -1,4 +1,5 @@
 import { useNavigate } from "@tanstack/react-router";
+import { cn } from "cn";
 import { Search } from "lucide-react";
 import {
 	InputGroup,
@@ -9,7 +10,6 @@ import {
 import { m } from "#/paraglide/messages";
 import { localizeHref } from "#/paraglide/runtime";
 
-// A plain GET form too, so it works before hydration; after it, the router takes the submit.
 export function HeaderSearch({ className }: { className?: string }) {
 	const navigate = useNavigate();
 	return (
@@ -23,23 +23,29 @@ export function HeaderSearch({ className }: { className?: string }) {
 					navigate({ to: "/products", search: { q: q.trim() || undefined } });
 				}}
 			>
-				<InputGroup className="h-(--control-lg) rounded-sm">
+				<InputGroup
+					className={cn(
+						"h-10 rounded-full border-input bg-card pl-2 lg:h-9",
+						"has-[[data-slot=input-group-control]:focus-visible]:border-input",
+					)}
+				>
 					<InputGroupInput
 						name="q"
 						type="search"
 						maxLength={80}
 						autoComplete="off"
 						aria-label={m.search_label()}
-						placeholder={m.search_label()}
-						className="type-body"
+						placeholder={m.store_search_placeholder()}
+						className="type-small placeholder:text-muted-foreground"
 					/>
-					<InputGroupAddon align="inline-end">
+					<InputGroupAddon align="inline-end" className="pr-1.5">
 						<InputGroupButton
 							type="submit"
-							size="icon-xs"
+							size="icon-sm"
 							aria-label={m.search_submit()}
+							className="rounded-full text-foreground hover:bg-accent"
 						>
-							<Search aria-hidden strokeWidth={1.5} />
+							<Search aria-hidden className="size-[1.125rem]" />
 						</InputGroupButton>
 					</InputGroupAddon>
 				</InputGroup>

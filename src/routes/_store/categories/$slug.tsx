@@ -3,6 +3,7 @@ import { createFileRoute, notFound } from "@tanstack/react-router";
 import { LandingPage } from "#/components/store/listing/landing-page";
 import { loadListing } from "#/components/store/listing/load-listing";
 import { isNotFound } from "#/lib/api";
+import { categoryIcon } from "#/lib/category-icon";
 import type { Trail } from "#/lib/crumbs";
 import { listingSearch } from "#/lib/listing";
 import { categoryQuery, storeQuery } from "#/lib/queries";
@@ -65,6 +66,7 @@ function CategoryPage() {
 			title={category.name}
 			subtitle={category.subtitle}
 			description={category.description}
+			icon={categoryIcon[category.icon]}
 			scope={{ category: slug }}
 			search={search}
 			onChange={(next) => navigate({ search: next, resetScroll: false })}

@@ -1,4 +1,5 @@
-import { useId } from "react";
+import { useId, useState } from "react";
+import { StoreButton } from "#/components/store/ui/store-button";
 import {
 	Accordion,
 	AccordionContent,
@@ -6,13 +7,21 @@ import {
 	AccordionTrigger,
 } from "#/components/ui/accordion";
 import { Checkbox } from "#/components/ui/checkbox";
-import { Field, FieldLabel } from "#/components/ui/field";
+import { Field, FieldError, FieldLabel } from "#/components/ui/field";
+import {
+	InputGroup,
+	InputGroupAddon,
+	InputGroupInput,
+	InputGroupText,
+} from "#/components/ui/input-group";
+import { useCurrencySymbol, useMoneyInput } from "#/hooks/use-money";
 import {
 	type Facet,
 	type ListingScope,
 	type ListingSearch,
 	listOf,
 	setAvailability,
+	setPrice,
 	toggle,
 } from "#/lib/listing";
 import type { ProductPage } from "#/lib/queries";
@@ -25,15 +34,15 @@ const GROUPS: { facet: Facet; title: () => string }[] = [
 	{ facet: "brand", title: m.shop_facet_brand },
 ];
 
-// The checks follow `search`, which the list updates at once, not the data, which arrives
-// after the new list loads.
 export function FacetGroups({
 	facets,
+	priceRange,
 	search,
 	scope,
 	onChange,
 }: {
 	facets: Facets;
+	priceRange?: ProductPage["priceRange"];
 	search: ListingSearch;
 	scope: ListingScope;
 	onChange: (next: ListingSearch) => void;
@@ -49,12 +58,12 @@ export function FacetGroups({
 	return (
 		<Accordion
 			type="multiple"
-			defaultValue={[...groups.map((g) => g.facet), "availability"]}
-			className="border-t"
+			defaultValue={[...groups.map((g) => g.facet), "price", "availability"]}
+			className="panel px-4"
 		>
 			{groups.map(({ facet, title }) => (
 				<AccordionItem key={facet} value={facet}>
-					<AccordionTrigger className="py-4 type-ui font-bold hover:no-underline">
+					<AccordionTrigger className="py-3.5 type-small font-semibold hover:no-underline">
 						{title()}
 					</AccordionTrigger>
 					<AccordionContent className="pb-3">
@@ -81,9 +90,24 @@ export function FacetGroups({
 					</AccordionContent>
 				</AccordionItem>
 			))}
+			{priceRange && (
+				<AccordionItem value="price">
+					<AccordionTrigger className="py-3.5 type-small font-semibold hover:no-underline">
+						{m.shop_facet_price()}
+					</AccordionTrigger>
+					<AccordionContent className="pb-4">
+						<PriceRange
+							key={`${search.minPrice}-${search.maxPrice}`}
+							range={priceRange}
+							search={search}
+							onChange={onChange}
+						/>
+					</AccordionContent>
+				</AccordionItem>
+			)}
 			{inStock && (
-				<AccordionItem value="availability">
-					<AccordionTrigger className="py-4 type-ui font-bold hover:no-underline">
+				<AccordionItem value="availability" className="border-b-0">
+					<AccordionTrigger className="py-3.5 type-small font-semibold hover:no-underline">
 						{m.shop_facet_stock()}
 					</AccordionTrigger>
 					<AccordionContent className="pb-3">
@@ -120,7 +144,7 @@ function Option({
 	onChange: (checked: boolean) => void;
 }) {
 	return (
-		<Field orientation="horizontal" className="min-h-11 items-center gap-2.5">
+		<Field orientation="horizontal" className="min-h-10 items-center gap-2.5">
 			<Checkbox
 				id={id}
 				checked={checked}
@@ -130,11 +154,83 @@ function Option({
 			/>
 			<FieldLabel
 				htmlFor={id}
-				className="flex-1 justify-between gap-3 type-ui font-normal"
+				className="flex-1 justify-between gap-3 type-small font-normal text-foreground-secondary"
 			>
 				<span>{label}</span>
 				<span className="text-muted-foreground tabular-nums">{count}</span>
 			</FieldLabel>
 		</Field>
+	);
+}
+
+function PriceRange({
+	range,
+	search,
+	onChange,
+}: {
+	range: { min: number; max: number };
+	search: ListingSearch;
+	onChange: (next: ListingSearch) => void;
+}) {
+	const id = useId();
+	const symbol = useCurrencySymbol();
+	const { parse, toInput } = useMoneyInput();
+	const [min, setMin] = useState(
+		search.minPrice === undefined ? "" : toInput(search.minPrice),
+	);
+	const [max, setMax] = useState(
+		search.maxPrice === undefined ? "" : toInput(search.maxPrice),
+	);
+	const [invalid, setInvalid] = useState(false);
+	const bound = (text: string) => (text.trim() ? parse(text) : undefined);
+	return (
+		<form
+			noValidate
+			className="grid gap-3"
+			onSubmit={(e) => {
+				e.preventDefault();
+				const low = bound(min);
+				const high = bound(max);
+				if (low === null || high === null) {
+					setInvalid(true);
+					return;
+				}
+				setInvalid(false);
+				onChange(setPrice(search, low, high));
+			}}
+		>
+			<div className="grid grid-cols-2 gap-2">
+				{(
+					[
+						["min", m.shop_price_min(), min, setMin, range.min],
+						["max", m.shop_price_max(), max, setMax, range.max],
+					] as const
+				).map(([key, label, value, set, placeholder]) => (
+					<Field key={key} className="gap-1">
+						<FieldLabel htmlFor={`${id}-${key}`} className="type-meta">
+							{label}
+						</FieldLabel>
+						<InputGroup className="h-10 rounded-lg bg-background">
+							<InputGroupAddon>
+								<InputGroupText>{symbol}</InputGroupText>
+							</InputGroupAddon>
+							<InputGroupInput
+								id={`${id}-${key}`}
+								inputMode="decimal"
+								value={value}
+								placeholder={toInput(placeholder)}
+								aria-invalid={invalid || undefined}
+								onChange={(e) => set(e.target.value)}
+								className="type-small tabular-nums"
+							/>
+						</InputGroup>
+					</Field>
+				))}
+			</div>
+			{invalid && <FieldError>{m.shop_price_invalid()}</FieldError>}
+			<StoreButton type="submit" variant="outline" size="sm" fullWidth>
+				{m.shop_price_apply()}
+			</StoreButton>
+		</form>
 	);
 }

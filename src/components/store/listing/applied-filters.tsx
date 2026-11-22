@@ -1,5 +1,6 @@
 import { X } from "lucide-react";
 import { StoreButton } from "#/components/store/ui/store-button";
+import { useMoney } from "#/hooks/use-money";
 import {
 	activeCount,
 	clearFilters,
@@ -8,13 +9,13 @@ import {
 	type ListingSearch,
 	listOf,
 	setAvailability,
+	setPrice,
 	setQuery,
 	toggle,
 } from "#/lib/listing";
 import type { ProductPage } from "#/lib/queries";
 import { m } from "#/paraglide/messages";
 
-// The chips follow `search`, not the data; a value the facets do not know shows its slug.
 export function AppliedFilters({
 	facets,
 	search,
@@ -53,23 +54,25 @@ export function AppliedFilters({
 				]
 			: []),
 	];
-	if (chips.length === 0) return null;
+	const priced = search.minPrice !== undefined || search.maxPrice !== undefined;
+	if (chips.length === 0 && !priced) return null;
 	return (
-		<section aria-label={m.shop_applied()} className="mt-5">
+		<section aria-label={m.shop_applied()} className="mt-4">
 			<ul className="flex flex-wrap items-center gap-2">
 				{chips.map((chip) => (
 					<li key={chip.key}>
-						<StoreButton
-							variant="outline"
-							onClick={chip.remove}
-							aria-label={m.shop_remove_filter({ name: chip.name })}
-							className="gap-2 px-3 type-small font-medium"
-						>
-							{chip.name}
-							<X aria-hidden strokeWidth={1.5} className="size-4" />
-						</StoreButton>
+						<Chip name={chip.name} onRemove={chip.remove} />
 					</li>
 				))}
+				{priced && (
+					<li>
+						<PriceChip
+							min={search.minPrice}
+							max={search.maxPrice}
+							onRemove={() => onChange(setPrice(search, undefined, undefined))}
+						/>
+					</li>
+				)}
 				{activeCount(search) > 1 && (
 					<li>
 						<StoreButton
@@ -84,4 +87,38 @@ export function AppliedFilters({
 			</ul>
 		</section>
 	);
+}
+
+function Chip({ name, onRemove }: { name: string; onRemove: () => void }) {
+	return (
+		<StoreButton
+			variant="outline"
+			size="sm"
+			onClick={onRemove}
+			aria-label={m.shop_remove_filter({ name })}
+			className="gap-2 px-3 font-medium"
+		>
+			{name}
+			<X aria-hidden className="size-4" />
+		</StoreButton>
+	);
+}
+
+function PriceChip({
+	min,
+	max,
+	onRemove,
+}: {
+	min: number | undefined;
+	max: number | undefined;
+	onRemove: () => void;
+}) {
+	const money = useMoney();
+	const name =
+		min !== undefined && max !== undefined
+			? m.shop_price_between({ min: money(min), max: money(max) })
+			: min !== undefined
+				? m.shop_price_from({ min: money(min) })
+				: m.shop_price_up_to({ max: money(max ?? 0) });
+	return <Chip name={name} onRemove={onRemove} />;
 }

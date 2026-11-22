@@ -9,6 +9,7 @@ import {
 	listOf,
 	pagesOf,
 	setAvailability,
+	setPrice,
 	setQuery,
 	setSort,
 	showMore,
@@ -59,8 +60,21 @@ describe("other changes", () => {
 		});
 	});
 
+	test("a price range starts from the first page and never ends below its start", () => {
+		expect(setPrice({ page: 3 }, 2000, 5000)).toEqual({
+			page: undefined,
+			minPrice: 2000,
+			maxPrice: 5000,
+		});
+		expect(setPrice({}, 5000, 2000)).toMatchObject({
+			minPrice: 5000,
+			maxPrice: 5000,
+		});
+		expect(setPrice({ minPrice: 1 }, undefined, 900).minPrice).toBeUndefined();
+	});
+
 	test("the default order is not written to the URL", () => {
-		expect(setSort({ sort: "name" }, "featured").sort).toBeUndefined();
+		expect(setSort({ sort: "rating" }, "featured").sort).toBeUndefined();
 		expect(setSort({}, "newest").sort).toBe("newest");
 	});
 
@@ -77,13 +91,15 @@ describe("other changes", () => {
 	test("clearing keeps the search and the order", () => {
 		const cleared = clearFilters({
 			q: "rgb",
-			sort: "name",
+			sort: "rating",
 			category: "teclados",
 			brand: "akko",
 			availability: "in_stock",
+			minPrice: 1000,
 			page: 2,
 		});
-		expect(cleared).toMatchObject({ q: "rgb", sort: "name" });
+		expect(cleared).toMatchObject({ q: "rgb", sort: "rating" });
+		expect(cleared.minPrice).toBeUndefined();
 		expect(activeCount(cleared)).toBe(0);
 		expect(cleared.page).toBeUndefined();
 	});
@@ -97,8 +113,9 @@ describe("activeCount", () => {
 				category: "teclados,ratones",
 				brand: "akko",
 				availability: "in_stock",
+				maxPrice: 5000,
 			}),
-		).toBe(4);
+		).toBe(5);
 		expect(activeCount({})).toBe(0);
 	});
 });
@@ -117,13 +134,15 @@ describe("listingFilter", () => {
 			category: [],
 			brand: ["pulsar", "akko"],
 			availability: undefined,
+			minPrice: undefined,
+			maxPrice: undefined,
 			sort: "featured",
 		});
 	});
 
 	test("the same search gives the same filter", () => {
-		const a = listingFilter("en", parse({ brand: "a,b", sort: "name" }));
-		const b = listingFilter("en", parse({ sort: "name", brand: "a,b" }));
+		const a = listingFilter("en", parse({ brand: "a,b", sort: "rating" }));
+		const b = listingFilter("en", parse({ sort: "rating", brand: "a,b" }));
 		expect(a).toEqual(b);
 	});
 });

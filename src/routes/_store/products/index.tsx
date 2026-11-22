@@ -1,13 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { Search, Store } from "lucide-react";
+import { LandingPage } from "#/components/store/listing/landing-page";
 import { loadListing } from "#/components/store/listing/load-listing";
-import { ProductListing } from "#/components/store/listing/product-listing";
 import { listingSearch } from "#/lib/listing";
 import { storeQuery } from "#/lib/queries";
 import { pageMeta } from "#/lib/seo";
 import { m } from "#/paraglide/messages";
 
-// The choices live in the URL, so a list can be shared. `q` is the search the WebSite
-// structured data advertises (src/lib/seo.ts).
 export const Route = createFileRoute("/_store/products/")({
 	validateSearch: listingSearch,
 	loaderDeps: ({ search }) => search,
@@ -34,17 +33,18 @@ export const Route = createFileRoute("/_store/products/")({
 function Shop() {
 	const search = Route.useSearch();
 	const navigate = Route.useNavigate();
+	const title = search.q ? m.shop_results({ q: search.q }) : m.shop_all_title();
 	return (
-		<div className="container-page py-section-sm">
-			<h1 className="type-h1 text-balance">
-				{search.q ? m.shop_results({ q: search.q }) : m.shop_title()}
-			</h1>
-			<div className="mt-8">
-				<ProductListing
-					search={search}
-					onChange={(next) => navigate({ search: next, resetScroll: false })}
-				/>
-			</div>
-		</div>
+		<LandingPage
+			trail={{
+				ancestors: ["home"],
+				current: { name: title, path: "/products" },
+			}}
+			title={title}
+			description={search.q ? null : m.shop_all_body()}
+			icon={search.q ? Search : Store}
+			search={search}
+			onChange={(next) => navigate({ search: next, resetScroll: false })}
+		/>
 	);
 }

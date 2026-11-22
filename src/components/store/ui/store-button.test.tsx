@@ -17,28 +17,28 @@ describe("StoreButton", () => {
 		expect(lg).not.toContain("h-(--control-lg)");
 	});
 
-	test("the label is bold at body size, not the generated medium at 14px", () => {
+	test("the label is semibold at the UI size, not the generated medium text-sm", () => {
 		const classes = classesOf(
 			renderToStaticMarkup(<StoreButton>Buy</StoreButton>),
 		);
-		expect(classes).toContain("font-bold");
+		expect(classes).toContain("font-semibold");
 		expect(classes).not.toContain("font-medium");
-		expect(classes).toContain("type-body");
+		expect(classes).toContain("type-ui");
 		expect(classes).not.toContain("text-sm");
 	});
 
-	test("solid is ink with a /90 hover, outline is an ink border that fills on hover", () => {
+	test("solid is the violet pill with dark text, outline a pill border on the background", () => {
 		const solid = classesOf(
 			renderToStaticMarkup(<StoreButton>Buy</StoreButton>),
 		);
-		expect(solid).toContain("bg-primary");
-		expect(solid).toContain("hover:bg-primary/90");
+		expect(solid).toContain("bg-primary-gradient");
+		expect(solid).toContain("text-primary-foreground");
+		expect(solid).toContain("rounded-full");
 		const outline = classesOf(
 			renderToStaticMarkup(<StoreButton variant="outline">Buy</StoreButton>),
 		);
-		expect(outline).toContain("border-foreground");
-		expect(outline).toContain("hover:bg-foreground");
-		expect(outline).not.toContain("hover:bg-accent");
+		expect(outline).toContain("border-input");
+		expect(outline).toContain("bg-transparent");
 		expect(outline).not.toContain("bg-background");
 	});
 

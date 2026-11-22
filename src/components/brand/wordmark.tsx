@@ -33,7 +33,11 @@ export function LogoMark({
 	);
 }
 
-export function Logo({ className, label = "Nagomi" }: BrandProps) {
+export function Logo({
+	className,
+	label = "Nagomi",
+	kana = true,
+}: BrandProps & { kana?: boolean }) {
 	return (
 		<svg
 			viewBox={`0 0 ${LOGO_WIDTH} 100`}
@@ -45,7 +49,7 @@ export function Logo({ className, label = "Nagomi" }: BrandProps) {
 			<path d={MARK_RING} />
 			<path d={MARK_GLYPH} />
 			<path d={WORDMARK} />
-			<path d={WORDMARK_KANA} />
+			{kana && <path d={WORDMARK_KANA} />}
 		</svg>
 	);
 }

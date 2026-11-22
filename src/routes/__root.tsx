@@ -20,7 +20,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 		meta: [
 			{ charSet: "utf-8" },
 			{ name: "viewport", content: "width=device-width, initial-scale=1" },
-			{ name: "theme-color", content: "#ffffff" },
+			{ name: "theme-color", content: "#0d0d17" },
 			// Set here, not by the page, so it is also in the HTML of pages rendered only in the
 			// browser (the back office).
 			...(isNoindex(matches) ? [{ name: "robots", content: "noindex" }] : []),
@@ -44,20 +44,6 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 			{ rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
 			{ rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
 			{ rel: "manifest", href: "/site.webmanifest" },
-			{
-				rel: "preload",
-				href: "/fonts/satoshi-medium.woff2",
-				as: "font",
-				type: "font/woff2",
-				crossOrigin: "anonymous",
-			},
-			{
-				rel: "preload",
-				href: "/fonts/satoshi-bold.woff2",
-				as: "font",
-				type: "font/woff2",
-				crossOrigin: "anonymous",
-			},
 		],
 	}),
 	shellComponent: RootDocument,

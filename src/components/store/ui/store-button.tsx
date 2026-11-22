@@ -4,37 +4,40 @@ import { Button } from "#/components/ui/button";
 import { Spinner } from "#/components/ui/spinner";
 import { m } from "#/paraglide/messages";
 
-// Spec: docs/strategy/DESIGN_SYSTEM.md.
 type StoreButtonProps = Omit<
 	React.ComponentProps<typeof Button>,
 	"variant" | "size"
 > & {
 	variant?: "solid" | "outline" | "link";
-	size?: "md" | "lg";
+	size?: "sm" | "md" | "lg";
 	fullWidth?: boolean;
 	pending?: boolean;
 };
 
 const variants = {
-	solid: { variant: "default", className: "" },
+	solid: {
+		variant: "default",
+		className:
+			"rounded-full bg-primary-gradient text-primary-foreground hover:bg-primary/90 hover:brightness-110",
+	},
 	outline: {
 		variant: "outline",
 		className:
-			"border-foreground bg-transparent hover:bg-foreground hover:text-background",
+			"rounded-full border-input bg-transparent text-foreground hover:border-primary hover:bg-accent",
 	},
 	link: {
 		variant: "link",
 		className:
-			"px-0 font-normal underline decoration-1 underline-offset-4 hover:decoration-2",
+			"px-0 font-normal text-foreground underline decoration-1 underline-offset-4 hover:decoration-2",
 	},
 } as const;
 
 const sizes = {
+	sm: "h-9 px-4 type-small has-[>svg]:px-4",
 	md: "h-(--control-lg) px-6 has-[>svg]:px-6",
 	lg: "h-(--control-xl) px-8 has-[>svg]:px-8",
 } as const;
 
-// Icon-only: always pass aria-label.
 export function StoreIconButton({
 	variant = "ghost",
 	className,
@@ -46,7 +49,11 @@ export function StoreIconButton({
 		<Button
 			variant={variant}
 			size="icon"
-			className={cn("size-(--control-lg)", className)}
+			className={cn(
+				"size-(--control-lg) rounded-full",
+				variant === "outline" && "border-input bg-card hover:bg-accent",
+				className,
+			)}
 			{...props}
 		/>
 	);
@@ -70,7 +77,7 @@ export function StoreButton({
 			disabled={disabled || pending}
 			aria-busy={pending || undefined}
 			className={cn(
-				"type-body font-bold",
+				"type-ui font-semibold",
 				sizes[size],
 				variants[variant].className,
 				fullWidth && "w-full",

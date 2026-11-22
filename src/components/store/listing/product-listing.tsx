@@ -1,5 +1,6 @@
 import { useSuspenseQueries } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
+import { SlidersHorizontal } from "lucide-react";
 import { useOptimistic, useTransition } from "react";
 import { ProductCard } from "#/components/store/product-card";
 import { EmptyState } from "#/components/store/ui/empty-state";
@@ -29,8 +30,6 @@ import { SortField } from "./sort-field";
 
 const EAGER_CARDS = 4;
 
-// `scope` fixes some facets (a category's page fixes the category). `onChange` puts the change in the
-// URL and returns once the new list is shown; until then the list shows the choice, not the data.
 export function ProductListing({
 	search,
 	scope = {},
@@ -56,12 +55,13 @@ export function ProductListing({
 	});
 	const [first] = pages;
 	if (!first) throw new Error("A list has at least one page");
-	const { total, facets } = first.data;
+	const { total, facets, priceRange } = first.data;
 	const items = pages.flatMap((page) => page.data.items);
 	const active = activeCount(view);
 	const facetGroups = (
 		<FacetGroups
 			facets={facets}
+			priceRange={priceRange}
 			search={view}
 			scope={scope}
 			onChange={change}
@@ -69,16 +69,19 @@ export function ProductListing({
 	);
 
 	return (
-		<div className="grid gap-x-12 lg:grid-cols-[15rem_minmax(0,1fr)]">
+		<div className="grid gap-x-6 lg:grid-cols-[14rem_minmax(0,1fr)]">
 			<aside aria-label={m.shop_filters_title()} className="max-lg:hidden">
-				{facetGroups}
+				<div className="sticky top-[calc(var(--header-height)+1.25rem)]">
+					{facetGroups}
+				</div>
 			</aside>
 			<div className="min-w-0">
-				<div className="flex items-end justify-between gap-4">
-					<div className="flex items-center gap-4">
+				<div className="flex flex-wrap items-center justify-between gap-3">
+					<div className="flex items-center gap-3">
 						<Sheet>
 							<SheetTrigger asChild>
-								<StoreButton variant="outline" className="lg:hidden">
+								<StoreButton variant="outline" className="gap-2 lg:hidden">
+									<SlidersHorizontal aria-hidden className="size-4" />
 									{active > 0
 										? m.shop_filters_open_count({ count: active })
 										: m.shop_filters_open()}
@@ -89,7 +92,7 @@ export function ProductListing({
 									title={m.shop_filters_title()}
 									className="h-14 px-4"
 								/>
-								<div className="min-h-0 flex-1 overflow-y-auto px-4 pt-2">
+								<div className="min-h-0 flex-1 overflow-y-auto p-4">
 									{facetGroups}
 								</div>
 								<div className="shrink-0 border-t p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
@@ -101,7 +104,10 @@ export function ProductListing({
 								</div>
 							</StoreSheetContent>
 						</Sheet>
-						<output className="type-small text-muted-foreground">
+						<output
+							aria-live="polite"
+							className="type-small text-muted-foreground"
+						>
 							{m.shop_count({ count: total })}
 						</output>
 					</div>
@@ -118,17 +124,19 @@ export function ProductListing({
 				/>
 				{items.length > 0 && (
 					<>
-						<div className="mt-8 grid grid-cols-2 gap-x-3 gap-y-10 md:grid-cols-3 md:gap-x-5 md:gap-y-12">
+						<ul className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4 xl:grid-cols-4">
 							{items.map((product, index) => (
-								<ProductCard
-									key={product.slug}
-									product={product}
-									headingLevel={headingLevel}
-									loading={index < EAGER_CARDS ? "eager" : "lazy"}
-								/>
+								<li key={product.slug} className="flex">
+									<ProductCard
+										product={product}
+										headingLevel={headingLevel}
+										loading={index < EAGER_CARDS ? "eager" : "lazy"}
+										className="w-full"
+									/>
+								</li>
 							))}
-						</div>
-						<div className="mt-12 flex flex-col items-center gap-4">
+						</ul>
+						<div className="mt-10 flex flex-col items-center gap-3">
 							<p className="type-small text-muted-foreground">
 								{m.shop_shown({ shown: items.length, total })}
 							</p>
@@ -147,7 +155,8 @@ export function ProductListing({
 				{items.length === 0 && search.q && (
 					<EmptyState
 						title={m.shop_no_results({ q: search.q })}
-						className="mt-10"
+						description={m.shop_no_results_hint()}
+						className="mt-6"
 					>
 						<StoreButton asChild variant="outline">
 							<Link to="/products">{m.shop_clear_search()}</Link>
@@ -155,7 +164,11 @@ export function ProductListing({
 					</EmptyState>
 				)}
 				{items.length === 0 && !search.q && (
-					<EmptyState title={m.shop_no_matches()} className="mt-10">
+					<EmptyState
+						title={m.shop_no_matches()}
+						description={m.shop_no_matches_hint()}
+						className="mt-6"
+					>
 						<StoreButton
 							variant="outline"
 							onClick={() => change(clearFilters(view))}

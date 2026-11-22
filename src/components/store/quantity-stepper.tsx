@@ -23,7 +23,7 @@ export function QuantityStepper({
 	const height = size === "lg" ? "h-(--control-xl)" : "h-(--control-lg)";
 	const step = cn(
 		height,
-		"w-11 border-input px-0 has-[>svg]:px-0",
+		"w-11 border-input bg-card px-0 hover:bg-accent has-[>svg]:px-0 first:rounded-l-full last:rounded-r-full",
 		size === "lg" && "w-12",
 	);
 	return (
@@ -41,7 +41,7 @@ export function QuantityStepper({
 			<ButtonGroupText
 				className={cn(
 					height,
-					"min-w-10 justify-center border-input bg-background px-0 type-body tabular-nums",
+					"min-w-10 justify-center rounded-none border-input bg-background px-0 type-body tabular-nums",
 				)}
 			>
 				<output aria-live="polite">{value}</output>

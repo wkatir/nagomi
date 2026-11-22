@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import { cn } from "cn";
 import { Fragment } from "react";
 import {
 	Breadcrumb,
@@ -19,7 +20,10 @@ export function StoreBreadcrumb({
 	className?: string;
 }) {
 	return (
-		<Breadcrumb aria-label={m.nav_breadcrumb()} className={className}>
+		<Breadcrumb
+			aria-label={m.nav_breadcrumb()}
+			className={cn("type-small", className)}
+		>
 			<BreadcrumbList>
 				{trail.ancestors.map((ancestor) => (
 					<Fragment key={ancestor}>

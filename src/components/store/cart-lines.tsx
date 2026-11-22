@@ -16,7 +16,7 @@ export function CartLines({
 	className?: string;
 }) {
 	return (
-		<ul className={cn("@container border-t", className)}>
+		<ul className={cn("@container grid gap-3", className)}>
 			{lines.map((line) => (
 				<CartLineRow key={line.id} line={line} />
 			))}
@@ -25,7 +25,7 @@ export function CartLines({
 }
 
 const lineGrid =
-	"grid grid-cols-[72px_1fr_auto] items-start gap-x-4 border-b py-5 @md:grid-cols-[96px_1fr_auto] @md:gap-x-5";
+	"panel grid grid-cols-[72px_1fr_auto] items-start gap-x-4 p-3 @md:grid-cols-[96px_1fr_auto] @md:gap-x-5 @md:p-4";
 
 function CartLineRow({ line }: { line: CartLine }) {
 	const money = useMoney();
@@ -35,9 +35,12 @@ function CartLineRow({ line }: { line: CartLine }) {
 	if (line.problem === "unavailable" || line.unitPrice === null)
 		return (
 			<li className={lineGrid}>
-				<div className="aspect-square bg-photo" />
+				<div className="aspect-square rounded-lg bg-photo" />
 				<div>
 					<p className="font-medium">{m.cart_unavailable()}</p>
+					{line.name && (
+						<p className="type-small text-muted-foreground">{line.name}</p>
+					)}
 				</div>
 				<RemoveButton id={line.id} name={line.name ?? ""} />
 			</li>
@@ -57,7 +60,7 @@ function CartLineRow({ line }: { line: CartLine }) {
 				{...link}
 				tabIndex={-1}
 				aria-hidden
-				className="flex aspect-square items-center justify-center overflow-hidden bg-photo p-2"
+				className="flex aspect-square items-center justify-center overflow-hidden rounded-lg bg-photo"
 			>
 				{line.image && (
 					<img
@@ -66,7 +69,7 @@ function CartLineRow({ line }: { line: CartLine }) {
 						width={line.image.width}
 						height={line.image.height}
 						loading="lazy"
-						className="h-full w-full object-contain"
+						className="h-full w-full object-cover"
 					/>
 				)}
 			</Link>
@@ -78,11 +81,11 @@ function CartLineRow({ line }: { line: CartLine }) {
 					inline
 					variant="nav"
 					{...link}
-					className="leading-snug font-medium"
+					className="type-ui leading-snug font-medium"
 				>
 					{name}
 				</TextLink>
-				<p className="type-meta text-muted-foreground tabular-nums">
+				<p className="mt-0.5 type-meta text-muted-foreground tabular-nums">
 					{line.optionLabel ? `${line.optionLabel} · ${unitPrice}` : unitPrice}
 				</p>
 				{line.components.length > 0 && (
@@ -96,7 +99,7 @@ function CartLineRow({ line }: { line: CartLine }) {
 						})}
 					</p>
 				)}
-				<div className="mt-3 flex items-center gap-2">
+				<div className="mt-3 flex items-center gap-1">
 					{max === 0 && line.quantity === 0 ? (
 						<p className="type-small font-medium">{m.product_out_of_stock()}</p>
 					) : (
@@ -110,7 +113,7 @@ function CartLineRow({ line }: { line: CartLine }) {
 					<RemoveButton id={line.id} name={name} />
 				</div>
 				{line.problem === "beyond_stock" ? (
-					<p className="mt-2 type-meta text-destructive">
+					<p role="alert" className="mt-2 type-meta text-destructive">
 						{max === 0
 							? m.product_out_of_stock()
 							: m.cart_stock_left({ count: max })}
@@ -121,11 +124,11 @@ function CartLineRow({ line }: { line: CartLine }) {
 							? m.cart_stock_reached()
 							: m.cart_max_reached({ max: storeLimit })}
 					</p>
-				) : (
-					<p className="mt-2 type-meta text-success">{m.product_in_stock()}</p>
-				)}
+				) : null}
 			</div>
-			<p className="font-bold tabular-nums">{money(line.lineTotal)}</p>
+			<p className="type-ui font-semibold tabular-nums">
+				{money(line.lineTotal)}
+			</p>
 		</li>
 	);
 }
@@ -140,7 +143,7 @@ function RemoveButton({ id, name }: { id: number; name: string }) {
 			onClick={() => remove.mutate(id)}
 			className="text-muted-foreground hover:text-foreground"
 		>
-			<Trash2 aria-hidden />
+			<Trash2 aria-hidden className="size-[1.125rem]" />
 		</StoreIconButton>
 	);
 }

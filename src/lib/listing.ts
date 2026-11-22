@@ -8,10 +8,10 @@ import type { CatalogSort } from "#/server/domain/catalog-query";
 // The first is the API's default.
 export const SORTS = [
 	"featured",
-	"newest",
+	"rating",
 	"price_asc",
 	"price_desc",
-	"name",
+	"newest",
 ] as const satisfies readonly CatalogSort[];
 
 export const LISTING_PAGE_SIZE = 24;
@@ -34,6 +34,20 @@ export const listingSearch = z.object({
 	category: list,
 	brand: list,
 	availability: z.literal("in_stock").optional().catch(undefined),
+	minPrice: z.coerce
+		.number()
+		.int()
+		.min(0)
+		.max(100_000_000)
+		.optional()
+		.catch(undefined),
+	maxPrice: z.coerce
+		.number()
+		.int()
+		.min(0)
+		.max(100_000_000)
+		.optional()
+		.catch(undefined),
 	sort: z.enum(SORTS).optional().catch(undefined),
 	// How many pages are shown: "Ver más" adds the next one.
 	page: z.coerce.number().int().min(1).max(50).optional().catch(undefined),
@@ -69,6 +83,19 @@ export function toggle(
 export const setAvailability = (search: ListingSearch, on: boolean) =>
 	refined(search, { availability: on ? "in_stock" : undefined });
 
+export const setPrice = (
+	search: ListingSearch,
+	minPrice: number | undefined,
+	maxPrice: number | undefined,
+) =>
+	refined(search, {
+		minPrice,
+		maxPrice:
+			minPrice !== undefined && maxPrice !== undefined && maxPrice < minPrice
+				? minPrice
+				: maxPrice,
+	});
+
 export const setSort = (search: ListingSearch, sort: ListingSearch["sort"]) =>
 	refined(search, { sort: sort === SORTS[0] ? undefined : sort });
 
@@ -85,12 +112,15 @@ export const clearFilters = (search: ListingSearch): ListingSearch =>
 		category: undefined,
 		brand: undefined,
 		availability: undefined,
+		minPrice: undefined,
+		maxPrice: undefined,
 	});
 
 // The search is left out: it has its own box.
 export const activeCount = (search: ListingSearch) =>
 	FACETS.reduce((n, facet) => n + listOf(search[facet]).length, 0) +
-	(search.availability ? 1 : 0);
+	(search.availability ? 1 : 0) +
+	(search.minPrice !== undefined || search.maxPrice !== undefined ? 1 : 0);
 
 // Equal searches give equal filters, so the cache can share their pages.
 export type ListingFilter = {
@@ -99,6 +129,8 @@ export type ListingFilter = {
 	category: string[];
 	brand: string[];
 	availability?: "in_stock";
+	minPrice?: number;
+	maxPrice?: number;
 	sort: CatalogSort;
 };
 
@@ -117,6 +149,8 @@ export function listingFilter(
 		category: values("category"),
 		brand: values("brand"),
 		availability: search.availability,
+		minPrice: search.minPrice,
+		maxPrice: search.maxPrice,
 		sort: search.sort ?? SORTS[0],
 	};
 }

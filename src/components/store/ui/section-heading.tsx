@@ -14,7 +14,6 @@ export type SectionHeadingProps<
 	title: string;
 	body?: string;
 	action?: { label: string; link: ValidateLinkOptions<TRouter, TOptions> };
-	/** Id for the heading, so the section can use aria-labelledby. */
 	id?: string;
 	className?: string;
 };
@@ -32,16 +31,16 @@ export function SectionHeading({
 	return (
 		<div
 			className={cn(
-				"flex items-end justify-between gap-x-8 gap-y-3 max-md:flex-wrap",
+				"flex items-end justify-between gap-x-6 gap-y-2 max-md:flex-wrap",
 				className,
 			)}
 		>
 			<div className="min-w-0">
-				<h2 id={id} className="max-w-[22ch] type-h2 text-balance">
+				<h2 id={id} className="type-h2 text-balance">
 					{title}
 				</h2>
 				{body && (
-					<p className="mt-3 max-w-[52ch] type-lead text-foreground-secondary">
+					<p className="mt-1.5 max-w-[60ch] type-small text-muted-foreground">
 						{body}
 					</p>
 				)}
@@ -49,7 +48,8 @@ export function SectionHeading({
 			{action && (
 				<TextLink
 					{...action.link}
-					className="group/action shrink-0 gap-2 type-small font-medium"
+					variant="nav"
+					className="group/action shrink-0 gap-1.5 type-meta font-medium text-brand hover:text-primary"
 				>
 					{action.label}
 					<ArrowRight

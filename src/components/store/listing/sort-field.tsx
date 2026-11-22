@@ -11,10 +11,10 @@ type Sort = (typeof SORTS)[number];
 
 const sortLabel: Record<Sort, () => string> = {
 	featured: m.shop_sort_featured,
-	newest: m.shop_sort_newest,
+	rating: m.shop_sort_rating,
 	price_asc: m.shop_sort_price_asc,
 	price_desc: m.shop_sort_price_desc,
-	name: m.shop_sort_name,
+	newest: m.shop_sort_newest,
 };
 
 export function SortField({
@@ -26,10 +26,13 @@ export function SortField({
 }) {
 	const id = useId();
 	return (
-		<Field className="w-auto min-w-0 shrink-0 gap-1.5 md:[&_[data-slot=native-select-wrapper]]:w-52 [&_[data-slot=native-select-wrapper]]:w-full">
+		<Field
+			orientation="horizontal"
+			className="w-auto min-w-0 shrink-0 items-center gap-2 [&_[data-slot=native-select-wrapper]]:w-full md:[&_[data-slot=native-select-wrapper]]:w-48"
+		>
 			<FieldLabel
 				htmlFor={id}
-				className="type-small font-normal text-muted-foreground"
+				className="shrink-0 type-small font-normal text-muted-foreground"
 			>
 				{m.shop_sort_label()}
 			</FieldLabel>
@@ -40,7 +43,7 @@ export function SortField({
 					const sort = SORTS.find((s) => s === event.target.value);
 					if (sort) onChange(sort);
 				}}
-				className="h-(--control-lg) truncate bg-background type-body"
+				className="h-10 truncate rounded-full bg-card pl-4 type-small"
 			>
 				{SORTS.map((sort) => (
 					<NativeSelectOption key={sort} value={sort}>

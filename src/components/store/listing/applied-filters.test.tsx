@@ -32,7 +32,7 @@ const render = (search: ListingSearch, scope: ListingScope = {}) =>
 describe("AppliedFilters", () => {
 	test("draws nothing when no filter is on", () => {
 		expect(render({})).toBe("");
-		expect(render({ sort: "name", page: 2 })).toBe("");
+		expect(render({ sort: "rating", page: 2 })).toBe("");
 	});
 
 	test("one chip for each value, named, each with its own removal", () => {
