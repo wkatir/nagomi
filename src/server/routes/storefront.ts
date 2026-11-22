@@ -126,6 +126,39 @@ export const storefront = new Hono()
 			});
 		},
 	)
+	.get("/shipping/zones", validate("query", localeQuery), async (c) => {
+		const db = getDb();
+		const { locale } = c.req.valid("query");
+		const [settings, zones] = await Promise.all([
+			getSettings(db),
+			zoneOptions(db),
+		]);
+		return c.json({
+			freeShippingFrom: settings.freeShippingFrom,
+			zones: zones
+				.filter((z) => z.method !== "pickup")
+				.map((zone) => {
+					const text = pickLocale(
+						zone.translations,
+						locale,
+						settings.defaultLocale,
+					);
+					if (!text)
+						throw new Error(
+							`Shipping zone ${zone.slug} has no ${settings.defaultLocale} name`,
+						);
+					return {
+						slug: zone.slug,
+						name: text.name,
+						method: zone.method,
+						fee: zone.fee,
+						coversRest: zone.coversRest,
+						deliveryDaysMin: zone.deliveryDaysMin,
+						deliveryDaysMax: zone.deliveryDaysMax,
+					};
+				}),
+		});
+	})
 	.get("/catalog", validate("query", localeQuery), async (c) => {
 		const db = getDb();
 		const { locale } = c.req.valid("query");

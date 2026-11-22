@@ -124,6 +124,37 @@ describe("profile", () => {
 		expect(await json<unknown>(res)).toEqual({ error: "duplicate_phone" });
 	});
 
+	test("a sign-up records the privacy notice acknowledged with the marketing choices", async () => {
+		const res = await send("PUT", "/consents", {
+			locale: "es",
+			privacyNotice: true,
+			marketingEmail: false,
+			marketingWhatsapp: true,
+		});
+		expect(res.status).toBe(200);
+		expect(
+			db
+				.query(
+					"select purpose, granted from customer_consents where customer_id = 1 order by id",
+				)
+				.all(),
+		).toEqual([
+			{ purpose: "privacy_notice", granted: 1 },
+			{ purpose: "marketing_email", granted: 0 },
+			{ purpose: "marketing_whatsapp", granted: 1 },
+		]);
+		expect(
+			(
+				await send("PUT", "/consents", {
+					locale: "es",
+					privacyNotice: false,
+					marketingEmail: false,
+					marketingWhatsapp: false,
+				})
+			).status,
+		).toBe(400);
+	});
+
 	test("records each marketing choice against the privacy notice shown", async () => {
 		const res = await send("PUT", "/consents", {
 			locale: "en",

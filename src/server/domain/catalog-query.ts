@@ -9,6 +9,7 @@ export const CATALOG_SORTS = [
 	"newest",
 	"price_asc",
 	"price_desc",
+	"rating",
 	"name",
 ] as const;
 export type CatalogSort = (typeof CATALOG_SORTS)[number];
@@ -124,6 +125,7 @@ export function toCard(e: CatalogEntry): ProductCard {
 
 export type CatalogFilter = {
 	q?: string;
+	slug?: string[];
 	category: string[];
 	brand: string[];
 	collection: string[];
@@ -225,6 +227,11 @@ function comparator(
 				return (a, b) => price(a) - price(b) || byName(a, b);
 			case "price_desc":
 				return (a, b) => price(b) - price(a) || byName(a, b);
+			case "rating":
+				return (a, b) =>
+					(b.rating.average ?? -1) - (a.rating.average ?? -1) ||
+					b.rating.count - a.rating.count ||
+					byName(a, b);
 			case "name":
 				return byName;
 		}
@@ -255,7 +262,13 @@ export function queryCatalog(
 		throw new Error(`Invalid page ${f.page}`);
 	if (!Number.isInteger(f.pageSize) || f.pageSize < 1)
 		throw new Error(`Invalid page size ${f.pageSize}`);
-	const scoped = entries.filter((e) => matchesSearch(e, f.q));
+	const scoped = entries.filter(
+		(e) =>
+			(f.slug === undefined ||
+				f.slug.length === 0 ||
+				f.slug.includes(e.slug)) &&
+			matchesSearch(e, f.q),
+	);
 	const test = predicates(f);
 	const matching = (except?: Refinement) =>
 		scoped.filter((e) => REFINEMENTS.every((r) => r === except || test[r](e)));

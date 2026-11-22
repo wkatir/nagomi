@@ -99,3 +99,33 @@ describe("GET /shipping/quote", () => {
 		expect((await quote("Springfield", 1000)).status).toBe(400);
 	});
 });
+
+describe("GET /shipping/zones", () => {
+	test("lists every zone in order with its name in the page's language, else the default", async () => {
+		const res = await get("/shipping/zones?locale=en");
+		expect(res.status).toBe(200);
+		expect(res.body).toEqual({
+			freeShippingFrom: 5000,
+			zones: [
+				{
+					slug: "metro",
+					name: "Greater San Salvador",
+					method: "own_delivery",
+					fee: 350,
+					coversRest: false,
+					deliveryDaysMin: 1,
+					deliveryDaysMax: 2,
+				},
+				{
+					slug: "resto",
+					name: "Resto del país",
+					method: "courier",
+					fee: 500,
+					coversRest: true,
+					deliveryDaysMin: 2,
+					deliveryDaysMax: 4,
+				},
+			],
+		});
+	});
+});

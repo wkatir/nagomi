@@ -331,6 +331,36 @@ describe("queryCatalog", () => {
 		]);
 	});
 
+	test("best rated first: the average, then the number of reviews, unrated last", () => {
+		const rated = [
+			{ ...oil, rating: { average: 4.5, count: 3 } },
+			{ ...cleanser, rating: { average: 4.5, count: 9 } },
+			{ ...sunKeyboard, rating: { average: 4.9, count: 2 } },
+			sunEssence,
+			{ ...ampoule, rating: { average: 3, count: 1 } },
+		];
+		const r = queryCatalog(
+			rated,
+			dimensions,
+			{ ...none, sort: "rating" },
+			"es",
+		);
+		expect(slugs(r)).toEqual([
+			"salicylic-cleanser",
+			"light-cleansing-oil",
+			"water-fit-sun-keyboard",
+			"centella-ampoule",
+			"purity-sun-essence",
+		]);
+	});
+
+	test("a list of slugs narrows the list to those products", () => {
+		expect(
+			slugs(query({ slug: ["centella-ampoule", "light-cleansing-oil"] })),
+		).toEqual(["light-cleansing-oil", "centella-ampoule"]);
+		expect(query({ slug: [] }).total).toBe(5);
+	});
+
 	test("sold-out products go after every product in stock, whatever the sort", () => {
 		for (const sort of CATALOG_SORTS) {
 			const order = query({ sort }).items.map((i) => i.availability);

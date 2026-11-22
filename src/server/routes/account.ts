@@ -65,6 +65,7 @@ const profilePatch = z
 
 const consentsInput = z.object({
 	locale: z.enum(LOCALES),
+	privacyNotice: z.literal(true).optional(),
 	marketingEmail: z.boolean(),
 	marketingWhatsapp: z.boolean(),
 });
@@ -218,6 +219,9 @@ export const account = new Hono<AccountEnv>()
 		if (!pages.ok)
 			return c.json({ error: "store_not_ready", missing: pages.missing }, 409);
 		const rows = [
+			...(input.privacyNotice
+				? [{ purpose: "privacy_notice" as const, granted: true }]
+				: []),
 			{ purpose: "marketing_email" as const, granted: input.marketingEmail },
 			{
 				purpose: "marketing_whatsapp" as const,

@@ -54,18 +54,19 @@ const {
 // Any text: a slug that cannot exist is just not found.
 const slugParam = z.object({ slug: z.string().max(200) });
 
-const repeated = <T extends z.ZodType<unknown, string>>(item: T) =>
+const repeated = <T extends z.ZodType<unknown, string>>(item: T, max = 20) =>
 	z
 		.union([z.string(), z.array(z.string())])
 		.optional()
 		.transform((v) => (v === undefined ? [] : Array.isArray(v) ? v : [v]))
-		.pipe(z.array(item).max(20));
+		.pipe(z.array(item).max(max));
 const slugList = repeated(z.string().regex(SLUG_REGEX).max(80));
 const minorUnits = z.coerce.number().int().min(0).max(100_000_000);
 
 const productsQuery = localeQuery
 	.extend({
 		q: z.string().trim().max(80).optional(),
+		slug: repeated(z.string().regex(SLUG_REGEX).max(80), 60),
 		category: slugList,
 		brand: slugList,
 		collection: slugList,
