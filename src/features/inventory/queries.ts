@@ -5,7 +5,6 @@ import { toQuery } from "#/lib/list";
 import type {
 	LotListSearch,
 	MovementFilters,
-	ReorderSearch,
 	StockListSearch,
 } from "#/lib/schemas/inventory";
 
@@ -73,18 +72,4 @@ export const movementsQuery = (filters: MovementFilters) =>
 				}),
 			),
 		getNextPageParam: (last) => last.nextCursor,
-	});
-
-export const reorderQuery = (search: ReorderSearch) =>
-	queryOptions({
-		queryKey: ["admin", "reports", "reorder", search],
-		queryFn: () =>
-			parseResponse(
-				api().admin.reports.reorder.$get({
-					query: {
-						lookbackWeeks: String(search.lookbackWeeks),
-						targetWeeks: String(search.targetWeeks),
-					},
-				}),
-			),
 	});

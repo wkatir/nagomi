@@ -159,3 +159,13 @@ export const pageQuery = (slug: string, locale: Locale) =>
 				api().pages[":slug"].$get({ param: { slug }, query: { locale } }),
 			),
 	});
+
+export const accountProfileQuery = queryOptions({
+	queryKey: ["account", "profile"],
+	queryFn: () => parseResponse(api().account.profile.$get()),
+});
+
+export const accountAddressesQuery = queryOptions({
+	queryKey: ["account", "addresses"],
+	queryFn: () => parseResponse(api().account.addresses.$get()),
+});

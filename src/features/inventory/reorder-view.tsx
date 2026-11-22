@@ -24,8 +24,9 @@ import { api, parseResponse } from "#/lib/api";
 import { errorMessage } from "#/lib/errors";
 import type { ReorderSearch } from "#/lib/schemas/inventory";
 import { m } from "#/paraglide/messages";
+import { reorderReportQuery } from "../reports/queries";
 import { useRefreshAfterStockChange } from "./mutations";
-import { reorderQuery, type Suggestion } from "./queries";
+import type { Suggestion } from "./queries";
 import { groupSuggestions } from "./reorder-groups";
 import { reorderReasonLabel } from "./reorder-reasons";
 
@@ -247,7 +248,7 @@ export function ReorderView({
 	onSearchChange: (change: Partial<ReorderSearch>) => void;
 }) {
 	const query = useQuery({
-		...reorderQuery(search),
+		...reorderReportQuery(search),
 		placeholderData: keepPreviousData,
 	});
 	const groups = query.data && groupSuggestions(query.data.variants);

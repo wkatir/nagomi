@@ -17,7 +17,11 @@ import { api, parseResponse } from "#/lib/api";
 import { authClient } from "#/lib/auth-client";
 import { errorMessage } from "#/lib/errors";
 import { pageTitle } from "#/lib/head";
-import { storeQuery } from "#/lib/queries";
+import {
+	accountAddressesQuery,
+	accountProfileQuery,
+	storeQuery,
+} from "#/lib/queries";
 import { m } from "#/paraglide/messages";
 import { getLocale } from "#/paraglide/runtime";
 
@@ -34,16 +38,6 @@ export const Route = createFileRoute("/_store/account/")({
 	component: AccountPage,
 });
 
-const profileQuery = {
-	queryKey: ["account", "profile"],
-	queryFn: () => parseResponse(api().account.profile.$get()),
-} as const;
-
-const addressesQuery = {
-	queryKey: ["account", "addresses"],
-	queryFn: () => parseResponse(api().account.addresses.$get()),
-} as const;
-
 function AccountPage() {
 	const session = authClient.useSession();
 	const firstName = session.data?.user.name.split(" ")[0] ?? "";
@@ -58,7 +52,7 @@ function AccountPage() {
 }
 
 function AccountSections() {
-	const profile = useQuery(profileQuery);
+	const profile = useQuery(accountProfileQuery);
 	return (
 		<div className="grid gap-10">
 			<OrderHistory />
@@ -118,7 +112,7 @@ function ProfileForm({
 				}),
 			),
 		onSuccess: () =>
-			queryClient.invalidateQueries({ queryKey: ["account", "profile"] }),
+			queryClient.invalidateQueries({ queryKey: accountProfileQuery.queryKey }),
 	});
 	return (
 		<form
@@ -189,7 +183,7 @@ function ConsentsForm({
 				}),
 			),
 		onSuccess: () =>
-			queryClient.invalidateQueries({ queryKey: ["account", "profile"] }),
+			queryClient.invalidateQueries({ queryKey: accountProfileQuery.queryKey }),
 	});
 	return (
 		<form
@@ -239,10 +233,10 @@ function ConsentsForm({
 
 function AddressesSection() {
 	const queryClient = useQueryClient();
-	const addresses = useQuery(addressesQuery);
+	const addresses = useQuery(accountAddressesQuery);
 	const [adding, setAdding] = useState(false);
 	const refresh = () =>
-		queryClient.invalidateQueries({ queryKey: ["account", "addresses"] });
+		queryClient.invalidateQueries({ queryKey: accountAddressesQuery.queryKey });
 	const archive = useMutation({
 		mutationFn: (id: number) =>
 			parseResponse(

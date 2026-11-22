@@ -31,7 +31,11 @@ import type { CheckoutPaymentMethod } from "#/lib/enums";
 import { errorMessage, promotionReasonMessage } from "#/lib/errors";
 import { pageTitle } from "#/lib/head";
 import { paymentLabel } from "#/lib/payment";
-import { storeQuery } from "#/lib/queries";
+import {
+	accountAddressesQuery,
+	accountProfileQuery,
+	storeQuery,
+} from "#/lib/queries";
 import { m } from "#/paraglide/messages";
 import { getLocale } from "#/paraglide/runtime";
 
@@ -75,15 +79,6 @@ const fieldMessage = (field: string, code: string | undefined) =>
 		? null
 		: (FIELD_MESSAGES[field]?.[code] ?? m.error_generic)();
 
-const profileQuery = {
-	queryKey: ["account", "profile"],
-	queryFn: () => parseResponse(api().account.profile.$get()),
-};
-const addressesQuery = {
-	queryKey: ["account", "addresses"],
-	queryFn: () => parseResponse(api().account.addresses.$get()),
-};
-
 function Checkout() {
 	const locale = getLocale();
 	const money = useMoney();
@@ -92,8 +87,8 @@ function Checkout() {
 	const { data: store } = useSuspenseQuery(storeQuery);
 	const session = authClient.useSession();
 	const signedIn = session.data?.user.role === "customer";
-	const profile = useQuery({ ...profileQuery, enabled: signedIn });
-	const addresses = useQuery({ ...addressesQuery, enabled: signedIn });
+	const profile = useQuery({ ...accountProfileQuery, enabled: signedIn });
+	const addresses = useQuery({ ...accountAddressesQuery, enabled: signedIn });
 
 	const [name, setName] = useState("");
 	const [email, setEmail] = useState("");
