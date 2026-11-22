@@ -3,10 +3,14 @@ import type { ReactNode } from "react";
 import {
 	consentChannelLabel,
 	consentPurposeLabel,
-	customerSegmentLabel,
-	orderStatusLabel,
+	reviewStatusLabel,
 } from "#/components/admin/labels";
 import { Fact, Section } from "#/components/admin/section";
+import {
+	CustomerSegmentBadge,
+	OrderStatusBadge,
+	ToneBadge,
+} from "#/components/admin/tone-badge";
 import {
 	Accordion,
 	AccordionContent,
@@ -85,18 +89,9 @@ export function CustomerOrders({ detail }: { detail: AdminCustomer }) {
 									{" · "}
 									{m.admin_customer_units({ count: order.units })}
 								</span>
-								<Badge
-									variant={
-										order.status === "pending"
-											? "secondary"
-											: order.status === "cancelled"
-												? "outline"
-												: "default"
-									}
-									className="justify-self-end"
-								>
-									{orderStatusLabel[order.status]()}
-								</Badge>
+								<span className="justify-self-end">
+									<OrderStatusBadge status={order.status} />
+								</span>
 							</Link>
 						</li>
 					))}
@@ -120,11 +115,7 @@ export function CustomerProfile({
 				<Fact label={m.admin_order_customer_name()} value={customer.name} />
 				<Fact
 					label={m.admin_customer_col_segment()}
-					value={
-						customer.segment === null
-							? m.admin_customer_segment_unknown()
-							: customerSegmentLabel[customer.segment]()
-					}
+					value={<CustomerSegmentBadge segment={customer.segment} />}
 				/>
 				<Fact
 					label={m.admin_customer_account()}
@@ -251,6 +242,61 @@ export function CustomerAddresses({ detail }: { detail: AdminCustomer }) {
 									{address.reference}
 								</span>
 							)}
+						</li>
+					))}
+				</ul>
+			)}
+		</Section>
+	);
+}
+
+const reviewTone = {
+	pending: "warning",
+	approved: "success",
+	rejected: "neutral",
+} as const;
+
+export function CustomerReviews({ detail }: { detail: AdminCustomer }) {
+	const formatDate = useStoreDate();
+	return (
+		<Section title={m.admin_customer_reviews()}>
+			{detail.reviews.length === 0 ? (
+				<p className="type-small p-admin-card text-muted-foreground">
+					{m.admin_customer_reviews_empty()}
+				</p>
+			) : (
+				<ul>
+					{detail.reviews.map((review) => (
+						<li
+							key={review.id}
+							className="grid gap-1 border-b p-admin-card last:border-b-0"
+						>
+							<div className="flex flex-wrap items-center justify-between gap-2">
+								<span className="type-small font-bold">
+									{review.productName ?? m.admin_customer_review_product()}
+								</span>
+								<ToneBadge tone={reviewTone[review.status]}>
+									{reviewStatusLabel[review.status]()}
+								</ToneBadge>
+							</div>
+							<span className="type-small">
+								<span
+									role="img"
+									aria-label={m.admin_customer_review_rating({
+										rating: review.rating,
+									})}
+									className="mr-2 text-warning"
+								>
+									{"★".repeat(review.rating)}
+									<span className="text-muted-foreground">
+										{"★".repeat(5 - review.rating)}
+									</span>
+								</span>
+								{review.title}
+							</span>
+							<span className="type-meta text-muted-foreground">
+								{formatDate(review.createdAt, { dateStyle: "medium" })}
+							</span>
 						</li>
 					))}
 				</ul>

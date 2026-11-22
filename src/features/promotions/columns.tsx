@@ -3,16 +3,18 @@ import { createColumnHelper } from "@tanstack/react-table";
 import { RowActions } from "#/components/admin/data-table/row-actions";
 import type { ListFeatures } from "#/components/admin/data-table/use-data-table";
 import { promotionStatusLabel } from "#/components/admin/labels";
-import { Badge } from "#/components/ui/badge";
+import { ToneBadge } from "#/components/admin/tone-badge";
 import { Button } from "#/components/ui/button";
 import { DropdownMenuItem } from "#/components/ui/dropdown-menu";
 import { useMoney } from "#/hooks/use-money";
 import { useCalendarDate, useStoreDate } from "#/hooks/use-store-date";
+import { storeToday } from "#/lib/dates";
 import type { PromotionStatus } from "#/lib/enums";
 import { storeQuery } from "#/lib/queries";
 import { m } from "#/paraglide/messages";
 import { usePromotionStatus } from "./mutations";
 import type { AdminPromotion } from "./queries";
+import { promotionValidity, validityLabel, validityTone } from "./validity";
 
 const column = createColumnHelper<ListFeatures, AdminPromotion>();
 
@@ -68,9 +70,10 @@ export function usePromotionColumns({
 	const formatDay = useCalendarDate();
 	const formatDate = useStoreDate();
 	const { data: store } = useSuspenseQuery(storeQuery);
+	const today = storeToday(store.timeZone);
 	const day = (value: string | null) =>
 		value ? (
-			formatDay(value)
+			formatDay(value, "medium")
 		) : (
 			<span className="text-muted-foreground">
 				{m.admin_promotion_no_date()}
@@ -85,7 +88,7 @@ export function usePromotionColumns({
 					(t) => t.locale === store.defaultLocale,
 				)?.description;
 				return (
-					<div className="grid justify-items-start">
+					<div className="grid max-w-80 justify-items-start whitespace-normal">
 						<Button
 							variant="link"
 							className="h-auto p-0 font-bold"
@@ -97,6 +100,20 @@ export function usePromotionColumns({
 							<span className="type-meta text-muted-foreground">
 								{description}
 							</span>
+						)}
+						{(promotion.firstOrderOnly || promotion.perCustomerLimit) && (
+							<div className="mt-1 flex flex-wrap gap-1">
+								{promotion.firstOrderOnly && (
+									<ToneBadge tone="accent">
+										{m.admin_promotion_first_order_badge()}
+									</ToneBadge>
+								)}
+								{promotion.perCustomerLimit && (
+									<ToneBadge tone="neutral">
+										{m.admin_promotion_once_badge()}
+									</ToneBadge>
+								)}
+							</div>
 						)}
 					</div>
 				);
@@ -150,23 +167,35 @@ export function usePromotionColumns({
 				</span>
 			),
 		}),
+		column.display({
+			id: "validity",
+			header: m.admin_promotion_col_validity(),
+			cell: ({ row }) => {
+				const validity = promotionValidity(row.original, today);
+				return (
+					<ToneBadge tone={validityTone[validity]}>
+						{validityLabel[validity]()}
+					</ToneBadge>
+				);
+			},
+		}),
 		column.accessor("status", {
 			header: m.admin_col_status(),
 			enableSorting: false,
 			cell: ({ getValue }) => {
 				const status = getValue();
 				return (
-					<Badge
-						variant={
+					<ToneBadge
+						tone={
 							status === "active"
-								? "default"
+								? "accent"
 								: status === "inactive"
-									? "secondary"
-									: "outline"
+									? "neutral"
+									: "danger"
 						}
 					>
 						{promotionStatusLabel[status]()}
-					</Badge>
+					</ToneBadge>
 				);
 			},
 		}),
