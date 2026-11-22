@@ -51,7 +51,6 @@ import { phoneDigits, searchKey } from "../../domain/search";
 import { getPaymentMethods, getSettings } from "../../domain/settings";
 import { zoneFee } from "../../domain/shipping";
 import { catalogContext } from "../../domain/storefront-catalog";
-import { queueInvoice, sendQueuedInvoice } from "../../invoicing";
 import { money, requiredText } from "./catalog-inputs";
 
 const {
@@ -847,29 +846,6 @@ export const ordersRouter = new Hono<AdminEnv>()
 				delivery: { from: input.deliveryFrom, to: input.deliveryTo },
 			});
 
-			// A paid confirmation is a sale: its Factura is due now. A counter sale waits for
-			// the seal so the buyer leaves with a sealed document.
-			const invoice =
-				input.paid && total > 0
-					? await queueInvoice(
-							db,
-							{
-								id,
-								code: order.code,
-								status: "confirmed",
-								subtotal: order.subtotal,
-								discount,
-								shipping,
-								paymentMethod: input.paymentMethod,
-							},
-							{
-								actor,
-								guard: stillPending,
-								waitForSeal: order.channel === "in_person" ? 8 : undefined,
-							},
-						)
-					: null;
-
 			const results = await db.batch([
 				audit(
 					db,
@@ -908,7 +884,6 @@ export const ordersRouter = new Hono<AdminEnv>()
 							),
 						]
 					: []),
-				...(invoice ? [invoice.insert] : []),
 				db
 					.update(orders)
 					.set({
@@ -957,7 +932,6 @@ export const ordersRouter = new Hono<AdminEnv>()
 					? c.json(insufficientStock(taken), 409)
 					: invalidTransition(c, "confirm");
 			}
-			if (invoice) await sendQueuedInvoice(db, id);
 			return c.json({ ok: true, confirmationMessage: message });
 		},
 	)
@@ -978,12 +952,6 @@ export const ordersRouter = new Hono<AdminEnv>()
 		if (!row.paymentMethod)
 			throw new Error(`Order ${id} is ${row.status} without a payment method`);
 		if (summary.balance <= 0) return invalidTransition(c, "mark-paid");
-		// The guard counts the payments, so the Factura goes in before the payment row.
-		const invoice = await queueInvoice(
-			db,
-			{ ...row, id, status, paymentMethod: row.paymentMethod },
-			{ actor, guard: unchanged },
-		);
 		const results = await db.batch([
 			audit(
 				db,
@@ -1001,7 +969,6 @@ export const ordersRouter = new Hono<AdminEnv>()
 				},
 				unchanged,
 			),
-			...(invoice ? [invoice.insert] : []),
 			insertIfExists(
 				db,
 				payments,
@@ -1018,7 +985,6 @@ export const ordersRouter = new Hono<AdminEnv>()
 		]);
 		if (!results[results.length - 1].meta.changes)
 			return invalidTransition(c, "mark-paid");
-		if (invoice) await sendQueuedInvoice(db, id);
 		return c.json({ ok: true, amount: summary.balance });
 	})
 	.post(
@@ -1159,8 +1125,6 @@ export const ordersRouter = new Hono<AdminEnv>()
 			throw new Error(`Order ${id} kept its status after its sale movements`);
 		return c.json({ ok: true });
 	})
-	// Delivery makes the sale taxable when it was not paid before (cash on delivery): its
-	// Factura is queued with it unless the order already has one.
 	.post("/:id/deliver", validate("param", idParam), async (c) => {
 		const db = getDb();
 		const { id } = c.req.valid("param");
@@ -1170,16 +1134,6 @@ export const ordersRouter = new Hono<AdminEnv>()
 			.select({ id: orders.id })
 			.from(orders)
 			.where(fulfilled);
-		const order = await db.query.orders.findFirst({ where: fulfilled });
-		if (order && !order.paymentMethod)
-			throw new Error(`Order ${id} is fulfilled without a payment method`);
-		const invoice = order?.paymentMethod
-			? await queueInvoice(
-					db,
-					{ ...order, status: "delivered", paymentMethod: order.paymentMethod },
-					{ actor, guard: stillFulfilled },
-				)
-			: null;
 		const results = await db.batch([
 			audit(
 				db,
@@ -1192,7 +1146,6 @@ export const ordersRouter = new Hono<AdminEnv>()
 				},
 				stillFulfilled,
 			),
-			...(invoice ? [invoice.insert] : []),
 			db
 				.update(orders)
 				.set({ status: "delivered", deliveredAt: now })
@@ -1200,7 +1153,6 @@ export const ordersRouter = new Hono<AdminEnv>()
 		]);
 		if (!results[results.length - 1].meta.changes)
 			return invalidTransition(c, "deliver");
-		if (invoice) await sendQueuedInvoice(db, id);
 		return c.json({ ok: true });
 	})
 	// A fulfilled order is cancelled only when its delivery failed: a delivery_failed return

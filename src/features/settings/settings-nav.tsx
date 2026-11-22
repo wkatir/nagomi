@@ -8,7 +8,6 @@ const SECTIONS = [
 	{ to: "/admin/settings/payments", label: m.admin_settings_tab_payments },
 	{ to: "/admin/settings/promises", label: m.admin_settings_tab_promises },
 	{ to: "/admin/settings/pages", label: m.admin_settings_tab_pages },
-	{ to: "/admin/settings/invoicing", label: m.admin_settings_tab_invoicing },
 ] as const;
 
 export function SettingsNav() {

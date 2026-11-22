@@ -15,7 +15,6 @@ const PATHS = [
 	"/admin/settings/payments",
 	"/admin/settings/promises",
 	"/admin/settings/pages",
-	"/admin/settings/invoicing",
 ];
 
 async function renderAt(path: string) {
@@ -38,14 +37,13 @@ const link = (html: string, to: string) => {
 };
 
 describe("SettingsNav", () => {
-	test("links to the five sections, in order", async () => {
+	test("links to the four sections, in order", async () => {
 		const html = await renderAt("/admin/settings/store");
 		const labels = [
 			m.admin_settings_tab_store(),
 			m.admin_settings_tab_payments(),
 			m.admin_settings_tab_promises(),
 			m.admin_settings_tab_pages(),
-			m.admin_settings_tab_invoicing(),
 		];
 		const positions = labels.map((label) => html.indexOf(`>${label}</a>`));
 		expect(positions.every((at) => at > -1)).toBe(true);

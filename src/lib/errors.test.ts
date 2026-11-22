@@ -84,7 +84,6 @@ describe("errorMessage", () => {
 		expect(errorMessage(fail("quantity_exceeds_limit"))).toBe(
 			m.error_generic(),
 		);
-		expect(errorMessage(fail("invoice_refused"))).toBe(m.error_generic());
 	});
 
 	test("a code named like an Object method is not a message", () => {

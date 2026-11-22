@@ -117,17 +117,3 @@ export const lotViewLabel = {
 	expiring: m.admin_lot_view_expiring,
 	expired: m.admin_lot_view_expired,
 } as const;
-export const invoiceStatusLabel = {
-	queued: m.admin_invoice_status_queued,
-	processing: m.admin_invoice_status_processing,
-	contingency: m.admin_invoice_status_contingency,
-	sealed: m.admin_invoice_status_sealed,
-	rejected: m.admin_invoice_status_rejected,
-	failed: m.admin_invoice_status_failed,
-	voided: m.admin_invoice_status_voided,
-} as const;
-// CAT-022 codes of a person's ID on a tax document.
-export const personDocumentLabel = {
-	"13": m.admin_invoice_doc_dui,
-	"36": m.admin_invoice_doc_nit,
-} as const;

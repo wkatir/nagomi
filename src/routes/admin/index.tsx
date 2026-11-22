@@ -3,7 +3,6 @@ import { createFileRoute, stripSearchParams } from "@tanstack/react-router";
 import { PageHeader } from "#/components/admin/page-header";
 import { QueryError } from "#/components/admin/query-error";
 import { ToggleGroup, ToggleGroupItem } from "#/components/ui/toggle-group";
-import { invoiceAttentionQuery } from "#/features/invoices/queries";
 import {
 	OverviewBlocks,
 	OverviewSkeleton,
@@ -20,7 +19,6 @@ export const Route = createFileRoute("/admin/")({
 	// Started, not awaited: the page has its own loading state.
 	loader: ({ context, deps }) => {
 		void context.queryClient.prefetchQuery(dashboardQuery(deps.days));
-		void context.queryClient.prefetchQuery(invoiceAttentionQuery);
 	},
 	component: Overview,
 });

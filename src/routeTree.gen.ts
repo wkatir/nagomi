@@ -23,7 +23,6 @@ import { Route as AdminCollectionsRouteRouteImport } from './routes/admin/collec
 import { Route as AdminConcernsRouteImport } from './routes/admin/concerns'
 import { Route as AdminCustomersRouteRouteImport } from './routes/admin/customers/route'
 import { Route as AdminInventoryRouteRouteImport } from './routes/admin/inventory/route'
-import { Route as AdminInvoicesRouteRouteImport } from './routes/admin/invoices/route'
 import { Route as AdminLibraryRouteRouteImport } from './routes/admin/library/route'
 import { Route as AdminOrdersRouteRouteImport } from './routes/admin/orders/route'
 import { Route as AdminProductsRouteRouteImport } from './routes/admin/products/route'
@@ -55,7 +54,6 @@ import { Route as AdminInventoryIndexRouteImport } from './routes/admin/inventor
 import { Route as AdminInventoryLotsRouteImport } from './routes/admin/inventory/lots'
 import { Route as AdminInventoryMovementsRouteImport } from './routes/admin/inventory/movements'
 import { Route as AdminInventoryReorderRouteImport } from './routes/admin/inventory/reorder'
-import { Route as AdminInvoicesIndexRouteImport } from './routes/admin/invoices/index'
 import { Route as AdminLibraryIndexRouteImport } from './routes/admin/library/index'
 import { Route as AdminOrdersIndexRouteImport } from './routes/admin/orders/index'
 import { Route as AdminOrdersIdRouteImport } from './routes/admin/orders/$id'
@@ -77,7 +75,6 @@ import { Route as AdminRoutinesIndexRouteImport } from './routes/admin/routines/
 import { Route as AdminRoutinesIdRouteImport } from './routes/admin/routines/$id'
 import { Route as AdminRoutinesNewRouteImport } from './routes/admin/routines/new'
 import { Route as AdminSettingsIndexRouteImport } from './routes/admin/settings/index'
-import { Route as AdminSettingsInvoicingRouteImport } from './routes/admin/settings/invoicing'
 import { Route as AdminSettingsPagesRouteImport } from './routes/admin/settings/pages'
 import { Route as AdminSettingsPaymentsRouteImport } from './routes/admin/settings/payments'
 import { Route as AdminSettingsPromisesRouteImport } from './routes/admin/settings/promises'
@@ -156,11 +153,6 @@ const AdminCustomersRouteRoute = AdminCustomersRouteRouteImport.update({
 const AdminInventoryRouteRoute = AdminInventoryRouteRouteImport.update({
   id: '/inventory',
   path: '/inventory',
-  getParentRoute: () => AdminRouteRoute,
-} as any)
-const AdminInvoicesRouteRoute = AdminInvoicesRouteRouteImport.update({
-  id: '/invoices',
-  path: '/invoices',
   getParentRoute: () => AdminRouteRoute,
 } as any)
 const AdminLibraryRouteRoute = AdminLibraryRouteRouteImport.update({
@@ -318,11 +310,6 @@ const AdminInventoryReorderRoute = AdminInventoryReorderRouteImport.update({
   path: '/reorder',
   getParentRoute: () => AdminInventoryRouteRoute,
 } as any)
-const AdminInvoicesIndexRoute = AdminInvoicesIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => AdminInvoicesRouteRoute,
-} as any)
 const AdminLibraryIndexRoute = AdminLibraryIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -428,11 +415,6 @@ const AdminSettingsIndexRoute = AdminSettingsIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AdminSettingsRouteRoute,
 } as any)
-const AdminSettingsInvoicingRoute = AdminSettingsInvoicingRouteImport.update({
-  id: '/invoicing',
-  path: '/invoicing',
-  getParentRoute: () => AdminSettingsRouteRoute,
-} as any)
 const AdminSettingsPagesRoute = AdminSettingsPagesRouteImport.update({
   id: '/pages',
   path: '/pages',
@@ -491,7 +473,6 @@ export interface FileRoutesByFullPath {
   '/admin/collections': typeof AdminCollectionsRouteRouteWithChildren
   '/admin/customers': typeof AdminCustomersRouteRouteWithChildren
   '/admin/inventory': typeof AdminInventoryRouteRouteWithChildren
-  '/admin/invoices': typeof AdminInvoicesRouteRouteWithChildren
   '/admin/library': typeof AdminLibraryRouteRouteWithChildren
   '/admin/orders': typeof AdminOrdersRouteRouteWithChildren
   '/admin/products': typeof AdminProductsRouteRouteWithChildren
@@ -537,7 +518,6 @@ export interface FileRoutesByFullPath {
   '/admin/reports/stock': typeof AdminReportsStockRoute
   '/admin/routines/$id': typeof AdminRoutinesIdRoute
   '/admin/routines/new': typeof AdminRoutinesNewRoute
-  '/admin/settings/invoicing': typeof AdminSettingsInvoicingRoute
   '/admin/settings/pages': typeof AdminSettingsPagesRoute
   '/admin/settings/payments': typeof AdminSettingsPaymentsRoute
   '/admin/settings/promises': typeof AdminSettingsPromisesRoute
@@ -551,7 +531,6 @@ export interface FileRoutesByFullPath {
   '/admin/collections/': typeof AdminCollectionsIndexRoute
   '/admin/customers/': typeof AdminCustomersIndexRoute
   '/admin/inventory/': typeof AdminInventoryIndexRoute
-  '/admin/invoices/': typeof AdminInvoicesIndexRoute
   '/admin/library/': typeof AdminLibraryIndexRoute
   '/admin/orders/': typeof AdminOrdersIndexRoute
   '/admin/products/': typeof AdminProductsIndexRoute
@@ -600,7 +579,6 @@ export interface FileRoutesByTo {
   '/admin/reports/stock': typeof AdminReportsStockRoute
   '/admin/routines/$id': typeof AdminRoutinesIdRoute
   '/admin/routines/new': typeof AdminRoutinesNewRoute
-  '/admin/settings/invoicing': typeof AdminSettingsInvoicingRoute
   '/admin/settings/pages': typeof AdminSettingsPagesRoute
   '/admin/settings/payments': typeof AdminSettingsPaymentsRoute
   '/admin/settings/promises': typeof AdminSettingsPromisesRoute
@@ -614,7 +592,6 @@ export interface FileRoutesByTo {
   '/admin/collections': typeof AdminCollectionsIndexRoute
   '/admin/customers': typeof AdminCustomersIndexRoute
   '/admin/inventory': typeof AdminInventoryIndexRoute
-  '/admin/invoices': typeof AdminInvoicesIndexRoute
   '/admin/library': typeof AdminLibraryIndexRoute
   '/admin/orders': typeof AdminOrdersIndexRoute
   '/admin/products': typeof AdminProductsIndexRoute
@@ -635,7 +612,6 @@ export interface FileRoutesById {
   '/admin/collections': typeof AdminCollectionsRouteRouteWithChildren
   '/admin/customers': typeof AdminCustomersRouteRouteWithChildren
   '/admin/inventory': typeof AdminInventoryRouteRouteWithChildren
-  '/admin/invoices': typeof AdminInvoicesRouteRouteWithChildren
   '/admin/library': typeof AdminLibraryRouteRouteWithChildren
   '/admin/orders': typeof AdminOrdersRouteRouteWithChildren
   '/admin/products': typeof AdminProductsRouteRouteWithChildren
@@ -682,7 +658,6 @@ export interface FileRoutesById {
   '/admin/reports/stock': typeof AdminReportsStockRoute
   '/admin/routines/$id': typeof AdminRoutinesIdRoute
   '/admin/routines/new': typeof AdminRoutinesNewRoute
-  '/admin/settings/invoicing': typeof AdminSettingsInvoicingRoute
   '/admin/settings/pages': typeof AdminSettingsPagesRoute
   '/admin/settings/payments': typeof AdminSettingsPaymentsRoute
   '/admin/settings/promises': typeof AdminSettingsPromisesRoute
@@ -696,7 +671,6 @@ export interface FileRoutesById {
   '/admin/collections/': typeof AdminCollectionsIndexRoute
   '/admin/customers/': typeof AdminCustomersIndexRoute
   '/admin/inventory/': typeof AdminInventoryIndexRoute
-  '/admin/invoices/': typeof AdminInvoicesIndexRoute
   '/admin/library/': typeof AdminLibraryIndexRoute
   '/admin/orders/': typeof AdminOrdersIndexRoute
   '/admin/products/': typeof AdminProductsIndexRoute
@@ -718,7 +692,6 @@ export interface FileRouteTypes {
     | '/admin/collections'
     | '/admin/customers'
     | '/admin/inventory'
-    | '/admin/invoices'
     | '/admin/library'
     | '/admin/orders'
     | '/admin/products'
@@ -764,7 +737,6 @@ export interface FileRouteTypes {
     | '/admin/reports/stock'
     | '/admin/routines/$id'
     | '/admin/routines/new'
-    | '/admin/settings/invoicing'
     | '/admin/settings/pages'
     | '/admin/settings/payments'
     | '/admin/settings/promises'
@@ -778,7 +750,6 @@ export interface FileRouteTypes {
     | '/admin/collections/'
     | '/admin/customers/'
     | '/admin/inventory/'
-    | '/admin/invoices/'
     | '/admin/library/'
     | '/admin/orders/'
     | '/admin/products/'
@@ -827,7 +798,6 @@ export interface FileRouteTypes {
     | '/admin/reports/stock'
     | '/admin/routines/$id'
     | '/admin/routines/new'
-    | '/admin/settings/invoicing'
     | '/admin/settings/pages'
     | '/admin/settings/payments'
     | '/admin/settings/promises'
@@ -841,7 +811,6 @@ export interface FileRouteTypes {
     | '/admin/collections'
     | '/admin/customers'
     | '/admin/inventory'
-    | '/admin/invoices'
     | '/admin/library'
     | '/admin/orders'
     | '/admin/products'
@@ -861,7 +830,6 @@ export interface FileRouteTypes {
     | '/admin/collections'
     | '/admin/customers'
     | '/admin/inventory'
-    | '/admin/invoices'
     | '/admin/library'
     | '/admin/orders'
     | '/admin/products'
@@ -908,7 +876,6 @@ export interface FileRouteTypes {
     | '/admin/reports/stock'
     | '/admin/routines/$id'
     | '/admin/routines/new'
-    | '/admin/settings/invoicing'
     | '/admin/settings/pages'
     | '/admin/settings/payments'
     | '/admin/settings/promises'
@@ -922,7 +889,6 @@ export interface FileRouteTypes {
     | '/admin/collections/'
     | '/admin/customers/'
     | '/admin/inventory/'
-    | '/admin/invoices/'
     | '/admin/library/'
     | '/admin/orders/'
     | '/admin/products/'
@@ -1042,13 +1008,6 @@ declare module '@tanstack/react-router' {
       path: '/inventory'
       fullPath: '/admin/inventory'
       preLoaderRoute: typeof AdminInventoryRouteRouteImport
-      parentRoute: typeof AdminRouteRoute
-    }
-    '/admin/invoices': {
-      id: '/admin/invoices'
-      path: '/invoices'
-      fullPath: '/admin/invoices'
-      preLoaderRoute: typeof AdminInvoicesRouteRouteImport
       parentRoute: typeof AdminRouteRoute
     }
     '/admin/library': {
@@ -1268,13 +1227,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminInventoryReorderRouteImport
       parentRoute: typeof AdminInventoryRouteRoute
     }
-    '/admin/invoices/': {
-      id: '/admin/invoices/'
-      path: '/'
-      fullPath: '/admin/invoices/'
-      preLoaderRoute: typeof AdminInvoicesIndexRouteImport
-      parentRoute: typeof AdminInvoicesRouteRoute
-    }
     '/admin/library/': {
       id: '/admin/library/'
       path: '/'
@@ -1420,13 +1372,6 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/admin/settings/'
       preLoaderRoute: typeof AdminSettingsIndexRouteImport
-      parentRoute: typeof AdminSettingsRouteRoute
-    }
-    '/admin/settings/invoicing': {
-      id: '/admin/settings/invoicing'
-      path: '/invoicing'
-      fullPath: '/admin/settings/invoicing'
-      preLoaderRoute: typeof AdminSettingsInvoicingRouteImport
       parentRoute: typeof AdminSettingsRouteRoute
     }
     '/admin/settings/pages': {
@@ -1595,17 +1540,6 @@ const AdminInventoryRouteRouteChildren: AdminInventoryRouteRouteChildren = {
 const AdminInventoryRouteRouteWithChildren =
   AdminInventoryRouteRoute._addFileChildren(AdminInventoryRouteRouteChildren)
 
-interface AdminInvoicesRouteRouteChildren {
-  AdminInvoicesIndexRoute: typeof AdminInvoicesIndexRoute
-}
-
-const AdminInvoicesRouteRouteChildren: AdminInvoicesRouteRouteChildren = {
-  AdminInvoicesIndexRoute: AdminInvoicesIndexRoute,
-}
-
-const AdminInvoicesRouteRouteWithChildren =
-  AdminInvoicesRouteRoute._addFileChildren(AdminInvoicesRouteRouteChildren)
-
 interface AdminLibraryRouteRouteChildren {
   AdminLibraryIndexRoute: typeof AdminLibraryIndexRoute
 }
@@ -1710,7 +1644,6 @@ const AdminRoutinesRouteRouteWithChildren =
   AdminRoutinesRouteRoute._addFileChildren(AdminRoutinesRouteRouteChildren)
 
 interface AdminSettingsRouteRouteChildren {
-  AdminSettingsInvoicingRoute: typeof AdminSettingsInvoicingRoute
   AdminSettingsPagesRoute: typeof AdminSettingsPagesRoute
   AdminSettingsPaymentsRoute: typeof AdminSettingsPaymentsRoute
   AdminSettingsPromisesRoute: typeof AdminSettingsPromisesRoute
@@ -1719,7 +1652,6 @@ interface AdminSettingsRouteRouteChildren {
 }
 
 const AdminSettingsRouteRouteChildren: AdminSettingsRouteRouteChildren = {
-  AdminSettingsInvoicingRoute: AdminSettingsInvoicingRoute,
   AdminSettingsPagesRoute: AdminSettingsPagesRoute,
   AdminSettingsPaymentsRoute: AdminSettingsPaymentsRoute,
   AdminSettingsPromisesRoute: AdminSettingsPromisesRoute,
@@ -1772,7 +1704,6 @@ interface AdminRouteRouteChildren {
   AdminCollectionsRouteRoute: typeof AdminCollectionsRouteRouteWithChildren
   AdminCustomersRouteRoute: typeof AdminCustomersRouteRouteWithChildren
   AdminInventoryRouteRoute: typeof AdminInventoryRouteRouteWithChildren
-  AdminInvoicesRouteRoute: typeof AdminInvoicesRouteRouteWithChildren
   AdminLibraryRouteRoute: typeof AdminLibraryRouteRouteWithChildren
   AdminOrdersRouteRoute: typeof AdminOrdersRouteRouteWithChildren
   AdminProductsRouteRoute: typeof AdminProductsRouteRouteWithChildren
@@ -1795,7 +1726,6 @@ const AdminRouteRouteChildren: AdminRouteRouteChildren = {
   AdminCollectionsRouteRoute: AdminCollectionsRouteRouteWithChildren,
   AdminCustomersRouteRoute: AdminCustomersRouteRouteWithChildren,
   AdminInventoryRouteRoute: AdminInventoryRouteRouteWithChildren,
-  AdminInvoicesRouteRoute: AdminInvoicesRouteRouteWithChildren,
   AdminLibraryRouteRoute: AdminLibraryRouteRouteWithChildren,
   AdminOrdersRouteRoute: AdminOrdersRouteRouteWithChildren,
   AdminProductsRouteRoute: AdminProductsRouteRouteWithChildren,

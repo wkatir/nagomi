@@ -11,7 +11,6 @@ import {
 	ListOrdered,
 	type LucideIcon,
 	Package,
-	ReceiptText,
 	ScrollText,
 	Settings,
 	ShoppingCart,
@@ -45,7 +44,6 @@ export const navGroups: NavGroup[] = [
 		label: m.admin_nav_group_sales,
 		items: [
 			{ to: "/admin/orders", label: m.admin_nav_orders, icon: ShoppingCart },
-			{ to: "/admin/invoices", label: m.admin_nav_invoices, icon: ReceiptText },
 			{ to: "/admin/customers", label: m.admin_nav_customers, icon: Users },
 			{
 				to: "/admin/promotions",

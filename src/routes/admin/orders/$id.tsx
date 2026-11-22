@@ -1,10 +1,6 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, notFound } from "@tanstack/react-router";
 import { DetailSkeleton, RecordNotFound } from "#/components/admin/skeletons";
-import {
-	invoiceAttentionQuery,
-	orderInvoicesQuery,
-} from "#/features/invoices/queries";
 import { OrderDetail } from "#/features/orders/order-detail";
 import { orderQuery } from "#/features/orders/queries";
 import { activeZonesQuery } from "#/features/shipping/queries";
@@ -22,11 +18,8 @@ export const Route = createFileRoute("/admin/orders/$id")({
 		},
 		stringify: ({ id }) => ({ id: String(id) }),
 	},
-	// What the confirm dialog needs is loaded with the order, so opening it never waits. The
-	// invoice card has its own loading state, so its queries are only started.
+	// What the confirm dialog needs is loaded with the order, so opening it never waits.
 	loader: async ({ context, params }): Promise<LoaderCrumb> => {
-		void context.queryClient.prefetchQuery(orderInvoicesQuery(params.id));
-		void context.queryClient.prefetchQuery(invoiceAttentionQuery);
 		try {
 			const [detail] = await Promise.all([
 				context.queryClient.ensureQueryData(orderQuery(params.id)),

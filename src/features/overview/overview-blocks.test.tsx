@@ -9,10 +9,6 @@ import {
 import { renderToStaticMarkup } from "react-dom/server";
 import { formatPeriod } from "#/components/admin/chart-format";
 import { linkedStats, rows } from "#/components/admin/test-markup";
-import {
-	type InvoiceAttention,
-	invoiceAttentionQuery,
-} from "#/features/invoices/queries";
 import { formatPercent } from "#/features/reports/format";
 import { intlLocale } from "#/lib/intl";
 import { formatMoney } from "#/lib/money";
@@ -125,13 +121,6 @@ async function render(d: AdminDashboard, queryClient = client) {
 	);
 }
 
-function withInvoices(attention: InvoiceAttention) {
-	const queryClient = new QueryClient();
-	queryClient.setQueryData(["store"], client.getQueryData(["store"]));
-	queryClient.setQueryData(invoiceAttentionQuery.queryKey, attention);
-	return queryClient;
-}
-
 describe("OverviewBlocks", () => {
 	test("each figure links to the screen where it can be acted on, with the days it sums up", async () => {
 		const days = "from=2026-10-23&amp;to=2026-10-24";
@@ -185,35 +174,6 @@ describe("OverviewBlocks", () => {
 				m.admin_overview_stock_note({ count: 40 }),
 			],
 		]);
-	});
-
-	test("with invoicing set up, counts the invoices to review and links to them", async () => {
-		const html = await render(
-			dashboard,
-			withInvoices({ configured: true, refused: 1, waiting: 2, stuck: 3 }),
-		);
-		expect(linkedStats(html).at(-1)).toEqual([
-			"/admin/invoices",
-			m.admin_overview_invoices(),
-			"6",
-			m.admin_overview_invoices_note(),
-		]);
-		expect(html).toContain('data-tone="destructive">6<');
-		const none = await render(
-			dashboard,
-			withInvoices({ configured: true, refused: 0, waiting: 0, stuck: 0 }),
-		);
-		expect(linkedStats(none).at(-1)?.[2]).toBe("0");
-		expect(none).not.toContain('data-tone="destructive"');
-	});
-
-	test("without invoicing set up there is no invoices figure", async () => {
-		const html = await render(
-			dashboard,
-			withInvoices({ configured: false, refused: 0, waiting: 0, stuck: 0 }),
-		);
-		expect(html).not.toContain('href="/admin/invoices"');
-		expect(linkedStats(html)).toHaveLength(8);
 	});
 
 	test("charts the sales and the profit of each day, and tables them too", async () => {

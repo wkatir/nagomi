@@ -6,7 +6,6 @@ import {
 } from "#/components/admin/labels";
 import { PageHeader } from "#/components/admin/page-header";
 import { Badge } from "#/components/ui/badge";
-import { OrderInvoice } from "#/features/invoices/invoice-card";
 import { useStoreDate } from "#/hooks/use-store-date";
 import type { AdminOrder } from "#/lib/api";
 import { useOrderActions } from "./mutations";
@@ -69,7 +68,6 @@ export function OrderDetail({ detail }: { detail: AdminOrder }) {
 				aside={
 					<>
 						<OrderCustomer detail={detail} />
-						<OrderInvoice order={order} />
 						<OrderDelivery detail={detail} />
 						<OrderMore detail={detail} />
 					</>

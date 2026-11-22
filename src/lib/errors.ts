@@ -24,13 +24,6 @@ const MESSAGES: Record<string, () => string> = {
 	payment_method_not_accepted: m.error_payment_method_not_accepted,
 	invalid_phone: m.error_invalid_phone,
 	duplicate_phone: m.error_duplicate_phone,
-	invoicing_not_configured: m.error_invoicing_not_configured,
-	invoicing_unavailable: m.error_invoicing_unavailable,
-	invoice_not_allowed: m.error_invoice_not_allowed,
-	invoice_exists: m.error_invoice_exists,
-	invoice_not_sealed: m.error_invoice_not_sealed,
-	invoice_deadline_passed: m.error_invoice_deadline_passed,
-	invoice_not_filed: m.error_invoice_not_filed,
 	duplicate_code: m.admin_promotion_error_duplicate_code,
 	promotion_in_use: m.admin_promotion_error_in_use,
 	shipping_fee_required: m.error_shipping_fee_required,
@@ -88,10 +81,6 @@ export function errorMessage(error: unknown): string {
 		return m.error_generic();
 	}
 	switch (e.code) {
-		case "invoice_refused":
-			return typeof e.body.message === "string"
-				? m.error_invoice_refused({ message: e.body.message })
-				: m.error_generic();
 		case "quantity_exceeds_limit":
 			return typeof e.body.max === "number"
 				? m.error_quantity_exceeds_limit({ max: String(e.body.max) })

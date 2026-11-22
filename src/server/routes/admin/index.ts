@@ -10,7 +10,6 @@ import { dashboardRouter } from "./dashboard";
 import { exportsRouter } from "./exports";
 import { homeSlidesRouter } from "./home-slides";
 import { inventoryRouter } from "./inventory";
-import { invoicesRouter } from "./invoices";
 import { mediaFilesRouter, mediaRouter } from "./media";
 import { ordersRouter } from "./orders";
 import { productsRouter } from "./products";
@@ -46,5 +45,4 @@ export const admin = new Hono<AdminEnv>()
 	.route("/exports", exportsRouter)
 	.route("/audit-events", auditRouter)
 	.route("/settings", settingsRouter)
-	.route("/shipping-zones", shippingRouter)
-	.route("/invoices", invoicesRouter);
+	.route("/shipping-zones", shippingRouter);

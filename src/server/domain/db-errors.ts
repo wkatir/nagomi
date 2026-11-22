@@ -41,7 +41,6 @@ const UNIQUE_KEYS = {
 	"purchase_orders.supplier_id, purchase_orders.reference":
 		"duplicate_reference",
 	"customers.phone_e164": "duplicate_phone",
-	"tax_documents.order_id": "invoice_exists",
 	"products.slug": "duplicate_slug",
 	"brands.slug": "duplicate_slug",
 	"categories.slug": "duplicate_slug",

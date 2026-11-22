@@ -1,4 +1,3 @@
-import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { ChartCard, ChartCardSkeleton } from "#/components/admin/chart-card";
@@ -6,7 +5,6 @@ import {
 	useCompactMoney,
 	usePeriodLabel,
 } from "#/components/admin/chart-format";
-import { QueryError } from "#/components/admin/query-error";
 import { Section } from "#/components/admin/section";
 import {
 	StatCard,
@@ -15,7 +13,6 @@ import {
 } from "#/components/admin/stat-card";
 import { Button } from "#/components/ui/button";
 import { Skeleton } from "#/components/ui/skeleton";
-import { invoiceAttentionQuery } from "#/features/invoices/queries";
 import { usePercent } from "#/features/reports/format";
 import { useMoney } from "#/hooks/use-money";
 import { m } from "#/paraglide/messages";
@@ -31,25 +28,6 @@ const ListRow = ({ children }: { children: ReactNode }) => (
 		{children}
 	</li>
 );
-
-// It loads on its own, so the other figures never wait for it.
-function InvoicesToReview() {
-	const query = useQuery(invoiceAttentionQuery);
-	if (query.isError)
-		return <QueryError error={query.error} onRetry={() => query.refetch()} />;
-	// Nothing while it loads or while invoicing is off.
-	if (!query.data?.configured) return null;
-	const { refused, waiting, stuck } = query.data;
-	const count = refused + waiting + stuck;
-	return (
-		<StatCard
-			label={<Link to="/admin/invoices">{m.admin_overview_invoices()}</Link>}
-			value={String(count)}
-			note={m.admin_overview_invoices_note()}
-			tone={count > 0 ? "destructive" : undefined}
-		/>
-	);
-}
 
 function SeeAll({ children }: { children: ReactNode }) {
 	return (
@@ -147,7 +125,6 @@ export function OverviewBlocks({ d }: { d: AdminDashboard }) {
 					value={money(d.stock.value)}
 					note={m.admin_overview_stock_note({ count: d.stock.onHand })}
 				/>
-				<InvoicesToReview />
 			</StatGrid>
 			<div className="grid gap-admin-stack lg:grid-cols-2">
 				<ChartCard

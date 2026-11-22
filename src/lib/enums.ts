@@ -114,22 +114,3 @@ export const MOVEMENT_KINDS = [
 	"adjustment",
 	"waste",
 ] as const;
-
-// DTE types issued: Factura (01). CCF (03) and Nota de Crédito (05) are not issued yet.
-export const DTE_TYPES = ["01"] as const;
-export type DteType = (typeof DTE_TYPES)[number];
-
-// queued: written with the payment or delivery, not yet accepted by the provider.
-// processing / contingency: emitted, Hacienda's seal on its way. sealed: valid.
-// rejected: Hacienda refused an emitted document. failed: the provider refused the
-// request, nothing was emitted. voided: invalidated before Hacienda (Evento de Invalidación).
-export const TAX_DOCUMENT_STATUSES = [
-	"queued",
-	"processing",
-	"contingency",
-	"sealed",
-	"rejected",
-	"failed",
-	"voided",
-] as const;
-export type TaxDocumentStatus = (typeof TAX_DOCUMENT_STATUSES)[number];

@@ -31,7 +31,6 @@ export const auditEntityLabel = {
 	store_settings: m.admin_audit_entity_store_settings,
 	supplier: m.admin_audit_entity_supplier,
 	supplier_item: m.admin_audit_entity_supplier_item,
-	tax_document: m.admin_audit_entity_tax_document,
 	variant: m.admin_audit_entity_variant,
 } as const satisfies Record<AuditEntityType, () => string>;
 

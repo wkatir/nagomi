@@ -27,7 +27,6 @@ export const AUDIT_ENTITY_TYPES = [
 	"store_settings",
 	"supplier",
 	"supplier_item",
-	"tax_document",
 	"variant",
 ] as const;
 export type AuditEntityType = (typeof AUDIT_ENTITY_TYPES)[number];
