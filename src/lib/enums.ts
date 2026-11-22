@@ -16,10 +16,12 @@ export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
 export const SHIPPING_METHODS = ["pickup", "own_delivery", "courier"] as const;
 export type ShippingMethod = (typeof SHIPPING_METHODS)[number];
 
+// pending (stock taken, awaiting payment) -> paid -> shipped -> delivered (final); cash on
+// delivery goes pending -> shipped. Cancelled only from pending or paid.
 export const ORDER_STATUSES = [
 	"pending",
-	"confirmed",
-	"fulfilled",
+	"paid",
+	"shipped",
 	"delivered",
 	"cancelled",
 ] as const;
@@ -60,7 +62,12 @@ export const SKU_REGEX = /^[A-Z]{3}-[0-9]{3}$/;
 
 export const IMAGE_KINDS = ["packshot", "lifestyle", "detail"] as const;
 
-export const ORDER_CHANNELS = ["whatsapp", "instagram", "in_person"] as const;
+export const ORDER_CHANNELS = [
+	"web",
+	"whatsapp",
+	"instagram",
+	"in_person",
+] as const;
 export type OrderChannel = (typeof ORDER_CHANNELS)[number];
 
 // Derived, never stored: see paymentSummary in the API.
@@ -74,12 +81,10 @@ export const ORDER_PAYMENT_STATUSES = [
 ] as const;
 export type OrderPaymentStatus = (typeof ORDER_PAYMENT_STATUSES)[number];
 
-// delivery_failed is written by cancelling a shipped order, never typed.
 export const RETURN_REASONS = [
 	"withdrawal",
 	"defective",
 	"wrong_item",
-	"delivery_failed",
 	"other",
 ] as const;
 export type ReturnReason = (typeof RETURN_REASONS)[number];
@@ -107,13 +112,25 @@ export const PURCHASE_ORDER_STATUSES = [
 ] as const;
 export type PurchaseOrderStatus = (typeof PURCHASE_ORDER_STATUSES)[number];
 
+// cancellation: units of a cancelled order put back in the lot they left.
 export const MOVEMENT_KINDS = [
 	"receive",
 	"sale",
+	"cancellation",
 	"return",
 	"adjustment",
 	"waste",
 ] as const;
+
+export const REVIEW_STATUSES = ["pending", "approved", "rejected"] as const;
+export type ReviewStatus = (typeof REVIEW_STATUSES)[number];
+
+export const CHECKOUT_PAYMENT_METHODS = [
+	"card",
+	"bank_transfer",
+	"cash_on_delivery",
+] as const;
+export type CheckoutPaymentMethod = (typeof CHECKOUT_PAYMENT_METHODS)[number];
 
 export const CUSTOMER_SEGMENTS = [
 	"new",

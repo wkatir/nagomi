@@ -64,11 +64,11 @@ export const inventoryMovements = sqliteTable(
 		check("inventory_movements_nonzero", sql`${t.quantity} <> 0`),
 		check(
 			"inventory_movements_sign",
-			sql`(${t.kind} in ('receive', 'return') and ${t.quantity} > 0) or (${t.kind} in ('sale', 'waste') and ${t.quantity} < 0) or ${t.kind} = 'adjustment'`,
+			sql`(${t.kind} in ('receive', 'return', 'cancellation') and ${t.quantity} > 0) or (${t.kind} in ('sale', 'waste') and ${t.quantity} < 0) or ${t.kind} = 'adjustment'`,
 		),
 		check(
 			"inventory_movements_links",
-			sql`(${t.kind} = 'sale') = (${t.orderItemId} is not null) and (${t.kind} = 'return' or (${t.kind} = 'waste' and ${t.reason} = 'customer_return')) = (${t.returnLineId} is not null)`,
+			sql`(${t.kind} in ('sale', 'cancellation')) = (${t.orderItemId} is not null) and (${t.kind} = 'return' or (${t.kind} = 'waste' and ${t.reason} = 'customer_return')) = (${t.returnLineId} is not null)`,
 		),
 		check(
 			"inventory_movements_reason_required",

@@ -51,18 +51,22 @@ describe("migrations", () => {
 			"variants_price_history_update",
 			"bundles_published_price_below_items",
 			"variants_bundle_price_below_items",
-			"orders_status_history_update",
+			"orders_status_history_paid",
 			"customer_consents_page_matches_purpose",
 			"purchase_orders_active_supplier_insert",
 			"supplier_items_no_delete",
 			"supplier_items_identity_locked",
 			"media_files_locked",
 			"promotions_terms_locked",
-			"orders_promotion_usage_limit",
-			"orders_promotion_customer_limit",
+			"promotion_redemptions_usage_limit",
+			"promotion_redemptions_first_order",
+			"promotion_redemptions_matches_order",
 			"orders_promotion_discount_insert",
-			"orders_promotion_discount_update",
-			"orders_confirm_within_stock",
+			"orders_paid_requires_payment",
+			"orders_units_taken",
+			"orders_cancel_returns_stock",
+			"orders_cancel_releases_coupon",
+			"product_reviews_requires_delivered_order",
 		])
 			expect(present.has(name)).toBe(true);
 	});
@@ -120,7 +124,7 @@ INSERT INTO purchase_receipts (purchase_order_id, received_on, created_by) VALUE
 INSERT INTO purchase_receipt_lines (receipt_id, purchase_order_item_id, quantity, allocated_shipping_e4) VALUES (1, 1, 2, 0);
 INSERT INTO lots (variant_id, receipt_line_id, unit_cost_e4) VALUES (1, 1, 70000);
 INSERT INTO inventory_movements (lot_id, kind, quantity, created_by) VALUES (1, 'receive', 2, 'u');
-INSERT INTO orders (code, idempotency_key, request_hash, locale, channel, subtotal, total, search_key) VALUES ('O-1', 'k1', 'h', 'es', 'whatsapp', 1700, 1700, 'o-1');
+INSERT INTO orders (code, idempotency_key, request_hash, customer_name, customer_email, customer_phone, locale, channel, payment_method, shipping_method, confirmation_message, subtotal, total, search_key, created_at) VALUES ('O-1', 'k1', 'h', 'Ana', 'ana@example.com', '+50371234567', 'es', 'web', 'bank_transfer', 'pickup', 'm', 1700, 1700, 'o-1', '2026-10-04T15:00:00Z');
 INSERT INTO order_items (order_id, variant_id, quantity, unit_price, sku, brand_name, product_name) VALUES (1, 1, 1, 1700, 'SKU-001', 'Brand', 'Name');
 INSERT INTO pages (slug, is_published) VALUES ('privacy', 1);
 INSERT INTO page_versions (page_id, locale, version, title, body_markdown) VALUES (1, 'es', 1, 'Aviso', 'Texto');
@@ -128,8 +132,6 @@ INSERT INTO pages (slug, is_published) VALUES ('terms', 1);
 INSERT INTO page_versions (page_id, locale, version, title, body_markdown) VALUES (2, 'es', 1, 'Términos', 'Texto');
 `);
 	});
-	const confirm = `UPDATE orders SET status = 'confirmed', confirmed_at = '2026-10-05T00:00:00Z', payment_method = 'cash', shipping_method = 'pickup', delivery_estimate_from = '2026-10-06', delivery_estimate_to = '2026-10-06', confirmation_message = 'm' WHERE id = 1`;
-
 	test("a lot never goes below zero and the ledger is append-only", () => {
 		expect(
 			refused(
@@ -154,45 +156,57 @@ INSERT INTO page_versions (page_id, locale, version, title, body_markdown) VALUE
 		).toContain("receive_mismatch");
 	});
 
+	const sale = (orderItem = 1, quantity = 1) =>
+		`INSERT INTO inventory_movements (lot_id, kind, quantity, order_item_id, created_by) VALUES (1, 'sale', ${-quantity}, ${orderItem}, 'u')`;
+	const payment = (order = 1, amount = 1700) =>
+		`INSERT INTO payments (order_id, kind, method, amount, status, recorded_by) VALUES (${order}, 'payment', 'bank_transfer', ${amount}, 'confirmed', 'u')`;
+	const pay =
+		"UPDATE orders SET status = 'paid', paid_at = '2026-10-05T00:00:00Z' WHERE id = 1";
+	const ship =
+		"UPDATE orders SET status = 'shipped', shipped_at = '2026-10-05T01:00:00Z', courier = 'Reparto' WHERE id = 1";
+	const deliver =
+		"UPDATE orders SET status = 'delivered', delivered_at = '2026-10-06T00:00:00Z' WHERE id = 1";
+	const cancel =
+		"UPDATE orders SET status = 'cancelled', cancelled_at = '2026-10-05T02:00:00Z', cancelled_by = 'u' WHERE id = 1";
+	const balance = () =>
+		(
+			db
+				.query(
+					"SELECT sum(quantity) AS n FROM inventory_movements WHERE lot_id = 1",
+				)
+				.get() as { n: number }
+		).n;
+
 	test("an order starts pending and keeps its identity", () => {
 		expect(
 			refused(
 				db,
-				"INSERT INTO orders (code, idempotency_key, request_hash, locale, channel, status, subtotal, total, search_key) VALUES ('O-2', 'k2', 'h', 'es', 'instagram', 'confirmed', 0, 0, 'o-2')",
+				"INSERT INTO orders (code, idempotency_key, request_hash, customer_name, customer_email, customer_phone, locale, channel, status, payment_method, shipping_method, confirmation_message, subtotal, total, search_key) VALUES ('O-2', 'k2', 'h', 'Ana', 'ana@example.com', '+50371234567', 'es', 'web', 'paid', 'card', 'pickup', 'm', 0, 0, 'o-2')",
 			),
 		).toContain("order_must_start_pending");
-		expect(
-			refused(db, "UPDATE orders SET code = 'X', locale = 'en'"),
-		).toContain("order_identity_locked");
+		for (const change of [
+			"code = 'X'",
+			"locale = 'en'",
+			"customer_email = 'otra@example.com'",
+			"customer_phone = '+50377777777'",
+		])
+			expect(refused(db, `UPDATE orders SET ${change} WHERE id = 1`)).toContain(
+				"order_identity_locked",
+			);
 	});
 
-	test("lines of a pending order can change, and must add up on confirmation", () => {
+	test("the lines and terms are fixed when the order is placed", () => {
 		expect(
 			refused(db, "UPDATE order_items SET quantity = 2 WHERE id = 1"),
-		).toBe("accepted");
-		expect(refused(db, confirm)).toContain("order_subtotal_mismatch");
-		db.exec(
-			"UPDATE orders SET subtotal = 3400, total = 3400 WHERE id = 1; UPDATE order_items SET quantity = 1 WHERE id = 1; UPDATE orders SET subtotal = 1700, total = 1700 WHERE id = 1",
-		);
-		expect(refused(db, confirm)).toBe("accepted");
+		).toContain("order_items_locked");
 		expect(refused(db, "DELETE FROM order_items WHERE id = 1")).toContain(
 			"order_items_are_permanent",
 		);
-	});
-
-	test("a pending order's line can be deleted", () => {
-		expect(refused(db, "DELETE FROM order_items WHERE id = 1")).toBe(
-			"accepted",
-		);
-	});
-
-	test("confirmed terms, address and names are fixed; timestamps are write-once", () => {
-		db.exec(confirm);
 		for (const change of [
-			"ship_to = 'elsewhere'",
+			"ship_address_line = 'elsewhere'",
 			"shipping_zone_name = 'Z'",
-			"discount_reason = 'x'",
 			"customer_name = 'Other'",
+			"payment_method = 'card'",
 			"shipping = 300, total = 2000",
 		])
 			expect(refused(db, `UPDATE orders SET ${change} WHERE id = 1`)).toContain(
@@ -201,41 +215,157 @@ INSERT INTO page_versions (page_id, locale, version, title, body_markdown) VALUE
 		expect(
 			refused(
 				db,
-				"UPDATE orders SET fulfilled_at = '2026-01-01T00:00:00Z' WHERE id = 1",
-			),
-		).toContain("order_timestamps_locked");
-		db.exec(
-			"INSERT INTO inventory_movements (lot_id, kind, quantity, order_item_id, created_by) VALUES (1, 'sale', -1, 1, 'u')",
-		);
-		db.exec(
-			"UPDATE orders SET status = 'fulfilled', fulfilled_at = '2026-10-05T01:00:00Z' WHERE id = 1",
-		);
-		expect(
-			refused(
-				db,
-				"UPDATE orders SET fulfilled_at = '1999-01-01T00:00:00Z' WHERE id = 1",
+				"UPDATE orders SET paid_at = '2026-01-01T00:00:00Z' WHERE id = 1",
 			),
 		).toContain("order_timestamps_locked");
 	});
 
-	test("concurrent fulfils are refused by the sale triggers", () => {
-		db.exec(confirm);
-		db.exec(
-			"INSERT INTO inventory_movements (lot_id, kind, quantity, order_item_id, created_by) VALUES (1, 'sale', -1, 1, 'u')",
-		);
+	test("an order leaves pending only with every unit taken and, to be paid, its total paid", () => {
+		db.exec(payment());
+		expect(refused(db, pay)).toContain("order_units_not_taken");
+		db.exec(sale());
+		expect(refused(db, pay)).toBe("accepted");
 		expect(
 			refused(
 				db,
-				"INSERT INTO inventory_movements (lot_id, kind, quantity, order_item_id, created_by) VALUES (1, 'sale', -1, 1, 'u')",
+				"UPDATE orders SET paid_at = '1999-01-01T00:00:00Z' WHERE id = 1",
 			),
-		).toContain("sale_exceeds_order_line");
+		).toContain("order_timestamps_locked");
+	});
+
+	test("paid needs the money recorded", () => {
+		db.exec(sale());
+		expect(refused(db, pay)).toContain("order_not_paid");
+		db.exec(payment(1, 1000));
+		expect(refused(db, pay)).toContain("order_not_paid");
+		db.exec(payment(1, 700));
+		expect(refused(db, pay)).toBe("accepted");
+	});
+
+	test("pending, paid, shipped, delivered: no step is skipped and delivered is final", () => {
+		db.exec(sale());
+		expect(refused(db, ship)).toContain("invalid_order_transition");
+		db.exec(payment());
+		db.exec(pay);
+		expect(refused(db, deliver)).toContain("invalid_order_transition");
+		expect(
+			refused(
+				db,
+				"UPDATE orders SET status = 'shipped', shipped_at = '2026-10-05T01:00:00Z' WHERE id = 1",
+			),
+		).toContain("order_status_data_missing");
+		db.exec(ship);
+		expect(refused(db, cancel)).toContain("invalid_order_transition");
+		db.exec(deliver);
+		for (const change of [
+			"status = 'shipped'",
+			"status = 'cancelled', cancelled_at = '2026-10-07T00:00:00Z'",
+			"tracking_code = 'X1'",
+			"courier = 'Otro'",
+		])
+			expect(refused(db, `UPDATE orders SET ${change} WHERE id = 1`)).not.toBe(
+				"accepted",
+			);
+		const history = db
+			.query(
+				"SELECT from_status, to_status, changed_at FROM order_status_history WHERE order_id = 1 ORDER BY id",
+			)
+			.all();
+		expect(history).toEqual([
+			{
+				from_status: null,
+				to_status: "pending",
+				changed_at: "2026-10-04T15:00:00Z",
+			},
+			{
+				from_status: "pending",
+				to_status: "paid",
+				changed_at: "2026-10-05T00:00:00Z",
+			},
+			{
+				from_status: "paid",
+				to_status: "shipped",
+				changed_at: "2026-10-05T01:00:00Z",
+			},
+			{
+				from_status: "shipped",
+				to_status: "delivered",
+				changed_at: "2026-10-06T00:00:00Z",
+			},
+		]);
+	});
+
+	test("cash on delivery is shipped before it is paid and delivered once its cash is in", () => {
+		db.exec(`
+INSERT INTO orders (code, idempotency_key, request_hash, customer_name, customer_email, customer_phone, locale, channel, payment_method, shipping_method, confirmation_message, subtotal, total, search_key, created_at) VALUES ('O-2', 'k2', 'h', 'Ana', 'ana@example.com', '+50371234567', 'es', 'web', 'cash_on_delivery', 'pickup', 'm', 1700, 1700, 'o-2', '2026-10-04T15:00:00Z');
+INSERT INTO order_items (order_id, variant_id, quantity, unit_price, sku, brand_name, product_name) VALUES (2, 1, 1, 1700, 'SKU-001', 'Brand', 'Name');`);
+		db.exec(sale(2));
+		expect(refused(db, ship.replace("WHERE id = 1", "WHERE id = 2"))).toBe(
+			"accepted",
+		);
+		expect(
+			refused(db, deliver.replace("WHERE id = 1", "WHERE id = 2")),
+		).toContain("order_not_paid");
+		db.exec(payment(2));
+		expect(refused(db, deliver.replace("WHERE id = 1", "WHERE id = 2"))).toBe(
+			"accepted",
+		);
+	});
+
+	test("cancelling a pending or paid order puts every unit back in its lot", () => {
+		db.exec(sale());
+		expect(balance()).toBe(1);
+		db.exec(cancel);
+		expect(balance()).toBe(2);
+		expect(
+			db
+				.query(
+					"SELECT kind, quantity, order_item_id, created_at, created_by FROM inventory_movements WHERE kind = 'cancellation'",
+				)
+				.all(),
+		).toEqual([
+			{
+				kind: "cancellation",
+				quantity: 1,
+				order_item_id: 1,
+				created_at: "2026-10-05T02:00:00Z",
+				created_by: "u",
+			},
+		]);
+		expect(
+			refused(
+				db,
+				"INSERT INTO inventory_movements (lot_id, kind, quantity, order_item_id, created_by) VALUES (1, 'cancellation', 1, 1, 'u')",
+			),
+		).toContain("cancellation_exceeds_sale");
+		expect(refused(db, sale())).not.toBe("accepted");
+	});
+
+	test("a cancellation is only for a cancelled order, and never above what left the lot", () => {
+		db.exec(sale());
+		expect(
+			refused(
+				db,
+				"INSERT INTO inventory_movements (lot_id, kind, quantity, order_item_id, created_by) VALUES (1, 'cancellation', 1, 1, 'u')",
+			),
+		).toContain("order_not_cancelled");
+	});
+
+	test("sales stay within the line and the lot", () => {
+		db.exec(sale());
+		expect(refused(db, sale())).toContain("sale_exceeds_order_line");
+		db.exec(`
+INSERT INTO orders (code, idempotency_key, request_hash, customer_name, customer_email, customer_phone, locale, channel, payment_method, shipping_method, confirmation_message, subtotal, total, search_key) VALUES ('O-2', 'k2', 'h', 'Ana', 'ana@example.com', '+50371234567', 'es', 'web', 'card', 'pickup', 'm', 3400, 3400, 'o-2');
+INSERT INTO order_items (order_id, variant_id, quantity, unit_price, sku, brand_name, product_name) VALUES (2, 1, 2, 1700, 'SKU-001', 'Brand', 'Name');`);
+		expect(refused(db, sale(2, 2))).toContain("lot_balance_negative");
 	});
 
 	test("return movements follow their return line", () => {
-		db.exec(confirm);
+		db.exec(sale());
+		db.exec(payment());
+		db.exec(pay);
+		db.exec(ship);
 		db.exec(`
-INSERT INTO inventory_movements (lot_id, kind, quantity, order_item_id, created_by) VALUES (1, 'sale', -1, 1, 'u');
-UPDATE orders SET status = 'fulfilled', fulfilled_at = '2026-10-05T01:00:00Z' WHERE id = 1;
 INSERT INTO returns (order_id, reason, created_by) VALUES (1, 'withdrawal', 'u');
 INSERT INTO return_lines (return_id, order_item_id, lot_id, quantity, disposition) VALUES (1, 1, 1, 1, 'restock');`);
 		expect(
@@ -253,14 +383,8 @@ INSERT INTO return_lines (return_id, order_item_id, lot_id, quantity, dispositio
 		expect(refused(db, "UPDATE returns SET reason = 'defective'")).toContain(
 			"returns_are_permanent",
 		);
-		expect(
-			refused(
-				db,
-				"INSERT INTO payments (order_id, kind, method, amount, status, return_id, recorded_by) VALUES (1, 'payment', 'cash', 1700, 'confirmed', NULL, 'u')",
-			),
-		).toBe("accepted");
 		db.exec(
-			"INSERT INTO orders (code, idempotency_key, request_hash, locale, channel, subtotal, total, search_key) VALUES ('O-2', 'k2', 'h', 'es', 'instagram', 0, 0, 'o-2')",
+			"INSERT INTO orders (code, idempotency_key, request_hash, customer_name, customer_email, customer_phone, locale, channel, payment_method, shipping_method, confirmation_message, subtotal, total, search_key) VALUES ('O-2', 'k2', 'h', 'Ana', 'ana@example.com', '+50371234567', 'es', 'web', 'card', 'pickup', 'm', 0, 0, 'o-2')",
 		);
 		expect(
 			refused(
@@ -423,31 +547,16 @@ INSERT INTO purchase_order_items (purchase_order_id, variant_id, quantity, unit_
 			);
 	});
 
-	test("an order is confirmed only while its units fit in its lots", () => {
-		// The lot holds 2 units; O-1 wants 1 and O-2 wants 2.
-		db.exec(`
-INSERT INTO orders (code, idempotency_key, request_hash, locale, channel, subtotal, total, search_key) VALUES ('O-2', 'k2', 'h', 'es', 'whatsapp', 3400, 3400, 'o-2');
-INSERT INTO order_items (order_id, variant_id, quantity, unit_price, sku, brand_name, product_name) VALUES (2, 1, 2, 1700, 'SKU-001', 'Brand', 'Name');
-`);
-		const confirmSecond = confirm.replace("WHERE id = 1", "WHERE id = 2");
-		expect(refused(db, confirm)).toBe("accepted");
-		expect(refused(db, confirmSecond)).toContain("order_exceeds_stock");
+	test("an order without lines is never paid or shipped", () => {
 		db.exec(
-			"UPDATE orders SET status = 'cancelled', cancelled_at = '2026-10-05T00:00:00Z' WHERE id = 1",
+			"INSERT INTO orders (code, idempotency_key, request_hash, customer_name, customer_email, customer_phone, locale, channel, payment_method, shipping_method, confirmation_message, subtotal, total, search_key) VALUES ('O-2', 'k2', 'h', 'Ana', 'ana@example.com', '+50371234567', 'es', 'web', 'card', 'pickup', 'm', 0, 0, 'o-2')",
 		);
-		expect(refused(db, confirmSecond)).toBe("accepted");
-	});
-
-	test("an order without lines is never confirmed or fulfilled", () => {
-		db.exec("DELETE FROM order_items WHERE id = 1");
-		db.exec("UPDATE orders SET subtotal = 0, total = 0 WHERE id = 1");
-		expect(refused(db, confirm)).toContain("order_has_no_lines");
-		expect(
-			refused(
-				db,
-				"UPDATE orders SET status = 'cancelled', cancelled_at = '2026-10-05T00:00:00Z' WHERE id = 1",
-			),
-		).toBe("accepted");
+		expect(refused(db, pay.replace("WHERE id = 1", "WHERE id = 2"))).toContain(
+			"order_has_no_lines",
+		);
+		expect(refused(db, cancel.replace("WHERE id = 1", "WHERE id = 2"))).toBe(
+			"accepted",
+		);
 	});
 
 	test("purchase orders only go to active suppliers; draft notes are never blank", () => {
@@ -608,11 +717,20 @@ INSERT INTO customers (name, phone_e164, search_key) VALUES ('Ana', '+5037123456
 			subtotal: number;
 			discount?: number;
 			reason?: string;
+			email?: string;
 			phone?: string;
 			customer?: number;
+			channel?: string;
 		},
 	) =>
-		`INSERT INTO orders (code, idempotency_key, request_hash, locale, channel, subtotal, discount, discount_reason, total, search_key, promotion_id, customer_phone, customer_id) VALUES ('O-${n}', 'k${n}', 'h', 'es', 'whatsapp', ${f.subtotal}, ${f.discount ?? 0}, ${quoted(f.reason)}, ${f.subtotal - (f.discount ?? 0)}, 'o', ${quoted(f.promotion)}, ${quoted(f.phone)}, ${quoted(f.customer)})`;
+		`INSERT INTO orders (code, idempotency_key, request_hash, customer_name, customer_email, customer_phone, locale, channel, payment_method, shipping_method, confirmation_message, subtotal, discount, discount_reason, total, search_key, promotion_id, customer_id) VALUES ('O-${n}', 'k${n}', 'h', 'Ana', '${f.email ?? `cliente${n}@example.com`}', '${f.phone ?? "+50371234567"}', 'es', '${f.channel ?? "web"}', 'card', 'pickup', 'm', ${f.subtotal}, ${f.discount ?? 0}, ${quoted(f.reason)}, ${f.subtotal - (f.discount ?? 0)}, 'o', ${quoted(f.promotion)}, ${quoted(f.customer)})`;
+	const redeem = (
+		n: number,
+		promotion: number,
+		email = `cliente${n}@example.com`,
+		key: string | null = null,
+	) =>
+		`INSERT INTO promotion_redemptions (promotion_id, order_id, email, customer_key) VALUES (${promotion}, (SELECT id FROM orders WHERE code = 'O-${n}'), '${email}', ${key === null ? "NULL" : `'${key}'`})`;
 	// HOLA10: 10% from 30.00, once in total.
 	const hola = (n: number, subtotal = 4100) =>
 		order(n, {
@@ -621,14 +739,14 @@ INSERT INTO customers (name, phone_e164, search_key) VALUES ('Ana', '+5037123456
 			discount: Math.floor((subtotal * 10 + 50) / 100),
 			reason: "HOLA10",
 		});
-	// CINCO: 5.00 off, once per customer.
-	const cinco = (n: number, extra: { phone?: string; customer?: number }) =>
+	// CINCO: 5.00 off, once per customer email.
+	const cinco = (n: number, email: string) =>
 		order(n, {
 			promotion: 2,
 			subtotal: 1700,
 			discount: 500,
 			reason: "CINCO",
-			...extra,
+			email,
 		});
 	const cancel = (n: number) =>
 		`UPDATE orders SET status = 'cancelled', cancelled_at = '2026-10-15T00:00:00Z' WHERE code = 'O-${n}'`;
@@ -698,30 +816,49 @@ INSERT INTO customers (name, phone_e164, search_key) VALUES ('Ana', '+5037123456
 		).toBe("accepted");
 	});
 
-	test("codes are capitals; a percentage is 1 to 100, a fixed amount positive", () => {
-		const promotion = (code: string, type: string, value: number) =>
-			`INSERT INTO promotions (code, type, value) VALUES ('${code}', '${type}', ${value})`;
+	test("codes are capitals; a percentage is 1 to 50, a fixed amount positive; a code starts before it ends", () => {
+		const promotion = (code: string, type: string, value: number, extra = "") =>
+			`INSERT INTO promotions (code, type, value${extra ? ", starts_on, ends_on" : ""}) VALUES ('${code}', '${type}', ${value}${extra})`;
 		expect(refused(db, promotion("hola", "percentage", 10))).toContain(
 			"promotions_code",
 		);
 		expect(refused(db, promotion("A B C", "percentage", 10))).toContain(
 			"promotions_code",
 		);
-		expect(refused(db, promotion("DOBLE", "percentage", 101))).toContain(
+		expect(refused(db, promotion("DOBLE", "percentage", 51))).toContain(
 			"promotions_value",
 		);
+		expect(refused(db, promotion("MITAD", "percentage", 50))).toBe("accepted");
 		expect(refused(db, promotion("NADA", "fixed", 0))).toContain(
 			"promotions_value",
 		);
 		expect(refused(db, promotion("HOLA10", "fixed", 100))).toContain(
 			"UNIQUE constraint failed: promotions.code",
 		);
+		expect(
+			refused(
+				db,
+				promotion("UNDIA", "fixed", 100, ", '2026-12-01', '2026-12-01'"),
+			),
+		).toContain("promotions_dates");
+		expect(
+			refused(
+				db,
+				promotion("DOSDIAS", "fixed", 100, ", '2026-12-01', '2026-12-02'"),
+			),
+		).toBe("accepted");
+		expect(
+			refused(
+				db,
+				"INSERT INTO promotions (code, type, value, per_customer_limit) VALUES ('DOSVECES', 'fixed', 100, 2)",
+			),
+		).toContain("promotions_limits");
 		expect(refused(db, promotion("BIEN-VENIDA_2", "fixed", 250))).toBe(
 			"accepted",
 		);
 	});
 
-	test("an order placed with a code gets exactly the code's discount", () => {
+	test("an order placed with a code gets exactly the code's discount, and no code no discount", () => {
 		for (const wrong of [
 			order(1, {
 				promotion: 1,
@@ -730,11 +867,10 @@ INSERT INTO customers (name, phone_e164, search_key) VALUES ('Ana', '+5037123456
 				reason: "HOLA10",
 			}),
 			order(1, { promotion: 1, subtotal: 4100, discount: 410, reason: "OTRO" }),
-			// Below the minimum subtotal.
 			hola(1, 2999),
+			order(1, { subtotal: 4100, discount: 410, reason: "Amigo" }),
 		])
 			expect(refused(db, wrong)).toContain("promotion_discount_mismatch");
-		// A fixed amount is never more than the subtotal.
 		expect(
 			refused(
 				db,
@@ -743,11 +879,9 @@ INSERT INTO customers (name, phone_e164, search_key) VALUES ('Ana', '+5037123456
 					subtotal: 300,
 					discount: 500,
 					reason: "CINCO",
-					phone: "+50370000001",
 				}),
 			),
 		).toMatch(/promotion_discount_mismatch|orders_amounts_non_negative/);
-		// 4105 x 10% = 410.5, rounded half up.
 		expect(refused(db, hola(1, 4105))).toBe("accepted");
 		expect(
 			db.query("select discount from orders where code = 'O-1'").get(),
@@ -760,42 +894,102 @@ INSERT INTO customers (name, phone_e164, search_key) VALUES ('Ana', '+5037123456
 					subtotal: 300,
 					discount: 300,
 					reason: "CINCO",
-					phone: "+50370000001",
 				}),
 			),
 		).toBe("accepted");
 	});
 
-	test("the usage limit holds in the database; a cancelled order frees its use", () => {
-		expect(refused(db, hola(1))).toBe("accepted");
-		expect(refused(db, hola(2))).toContain("promotion_usage_limit");
-		// A concurrent retry of the order that used it is left to its ON CONFLICT.
+	test("a redemption belongs to its pending order, with the order's email", () => {
+		db.exec(hola(1));
+		expect(refused(db, redeem(1, 1, "otra@example.com"))).toContain(
+			"promotion_redemption_mismatch",
+		);
+		expect(refused(db, redeem(1, 2))).toContain(
+			"promotion_redemption_mismatch",
+		);
 		expect(
-			refused(db, `${hola(1)} ON CONFLICT (idempotency_key) DO NOTHING`),
-		).toBe("accepted");
-		db.exec(cancel(1));
-		expect(refused(db, hola(2))).toBe("accepted");
+			refused(db, redeem(1, 1, "cliente1@example.com", "cliente1@example.com")),
+		).toContain("promotion_redemption_mismatch");
+		expect(refused(db, redeem(1, 1))).toBe("accepted");
+		expect(refused(db, redeem(1, 1))).not.toBe("accepted");
+		expect(refused(db, "DELETE FROM promotion_redemptions")).toContain(
+			"promotion_redemptions_are_permanent",
+		);
 	});
 
-	test("the limit per customer needs a phone and counts it, also through the linked customer", () => {
-		expect(refused(db, cinco(1, {}))).toContain("promotion_customer_limit");
-		expect(refused(db, cinco(1, { phone: "+50370000001" }))).toBe("accepted");
-		expect(refused(db, cinco(2, { phone: "+50370000001" }))).toContain(
-			"promotion_customer_limit",
+	test("the usage limit holds in the database; a cancelled order releases its use", () => {
+		db.exec(hola(1));
+		expect(refused(db, redeem(1, 1))).toBe("accepted");
+		db.exec(hola(2));
+		expect(refused(db, redeem(2, 1))).toContain("promotion_usage_limit");
+		db.exec(cancel(1));
+		expect(
+			db
+				.query(
+					"select released_at from promotion_redemptions where order_id = 1",
+				)
+				.get(),
+		).toEqual({ released_at: "2026-10-15T00:00:00Z" });
+		expect(refused(db, redeem(2, 1))).toBe("accepted");
+		expect(
+			refused(
+				db,
+				"UPDATE promotion_redemptions SET released_at = NULL WHERE order_id = 1",
+			),
+		).toContain("promotion_redemptions_locked");
+	});
+
+	test("a code once per customer is refused for a second order of the same email until the first is cancelled", () => {
+		const key = (email: string) => email;
+		db.exec(cinco(1, "ana@example.com"));
+		expect(refused(db, redeem(1, 2, "ana@example.com"))).toContain(
+			"promotion_redemption_mismatch",
 		);
-		expect(refused(db, cinco(2, { phone: "+50370000002" }))).toBe("accepted");
-		// Placed with another phone, then linked to Ana (+50371234567).
-		expect(refused(db, cinco(3, { phone: "+50370000003", customer: 1 }))).toBe(
-			"accepted",
+		expect(
+			refused(db, redeem(1, 2, "ana@example.com", key("ana@example.com"))),
+		).toBe("accepted");
+		db.exec(cinco(2, "ana@example.com"));
+		expect(
+			refused(db, redeem(2, 2, "ana@example.com", "ana@example.com")),
+		).toContain(
+			"UNIQUE constraint failed: promotion_redemptions.promotion_id, promotion_redemptions.customer_key",
 		);
-		expect(refused(db, cinco(4, { phone: "+50371234567" }))).toContain(
-			"promotion_customer_limit",
+		db.exec(cinco(3, "beto@example.com"));
+		expect(
+			refused(db, redeem(3, 2, "beto@example.com", "beto@example.com")),
+		).toBe("accepted");
+		db.exec(cancel(1));
+		expect(
+			refused(db, redeem(2, 2, "ana@example.com", "ana@example.com")),
+		).toBe("accepted");
+	});
+
+	test("a first-purchase code is only for an email without an order that was not cancelled", () => {
+		db.exec(
+			"INSERT INTO promotions (code, type, value, first_order_only, status) VALUES ('PRIMERA', 'percentage', 10, 1, 'active')",
 		);
+		const primera = (n: number, email: string) =>
+			order(n, {
+				promotion: 3,
+				subtotal: 1000,
+				discount: 100,
+				reason: "PRIMERA",
+				email,
+			});
+		db.exec(primera(1, "ana@example.com"));
+		expect(refused(db, redeem(1, 3, "ana@example.com"))).toBe("accepted");
+		db.exec(primera(2, "ana@example.com"));
+		expect(refused(db, redeem(2, 3, "ana@example.com"))).toContain(
+			"promotion_first_order_only",
+		);
+		db.exec(cancel(1));
+		expect(refused(db, redeem(2, 3, "ana@example.com"))).toBe("accepted");
 	});
 
 	test("an inactive code is refused", () => {
 		db.exec("UPDATE promotions SET status = 'inactive' WHERE id = 1");
-		expect(refused(db, hola(1))).toContain("promotion_inactive");
+		db.exec(hola(1));
+		expect(refused(db, redeem(1, 1))).toContain("promotion_inactive");
 	});
 
 	test("a code's terms are fixed once used; dates, limits and status are not", () => {
@@ -803,11 +997,14 @@ INSERT INTO customers (name, phone_e164, search_key) VALUES ('Ana', '+5037123456
 			"accepted",
 		);
 		db.exec(hola(1));
+		db.exec(redeem(1, 1));
 		for (const change of [
 			"code = 'HOLA20'",
 			"type = 'fixed'",
 			"value = 20",
 			"min_subtotal = 1",
+			"first_order_only = 1",
+			"per_customer_limit = 1",
 		])
 			expect(
 				refused(db, `UPDATE promotions SET ${change} WHERE id = 1`),
@@ -820,40 +1017,26 @@ INSERT INTO customers (name, phone_e164, search_key) VALUES ('Ana', '+5037123456
 		).toBe("accepted");
 	});
 
-	test("a pending order's discount follows its code, which may only be dropped", () => {
+	test("an order keeps its code and its discount", () => {
 		db.exec(hola(1));
-		const update = (set: string) =>
-			refused(db, `UPDATE orders SET ${set} WHERE id = 1`);
-		expect(update("subtotal = 5000, discount = 500, total = 4500")).toBe(
-			"accepted",
-		);
-		expect(update("subtotal = 6000, discount = 500, total = 5500")).toContain(
-			"promotion_discount_mismatch",
-		);
-		expect(update("subtotal = 2000, discount = 200, total = 1800")).toContain(
-			"promotion_discount_mismatch",
-		);
-		expect(update("promotion_id = NULL")).toContain(
-			"promotion_discount_mismatch",
-		);
-		expect(
-			update(
-				"promotion_id = NULL, discount = 0, discount_reason = NULL, total = subtotal",
-			),
-		).toBe("accepted");
-		expect(update("promotion_id = 1")).toContain("order_promotion_locked");
+		for (const change of [
+			"promotion_id = NULL",
+			"discount = 0, total = subtotal",
+			"discount_reason = 'OTRO'",
+		])
+			expect(refused(db, `UPDATE orders SET ${change} WHERE id = 1`)).toContain(
+				"order_terms_locked",
+			);
 	});
 
-	test("an order out of pending keeps its code", () => {
-		db.exec(hola(1));
-		db.exec(cancel(1));
-		expect(
-			refused(db, "UPDATE orders SET promotion_id = NULL WHERE id = 1"),
-		).toContain("order_promotion_locked");
-	});
-
-	test("the phone given with an order is E.164 and never changes", () => {
-		for (const phone of ["71234567", "+5037123456a", "+0123456789", "+5031"])
+	test("the phone given with an order is Salvadoran and never changes", () => {
+		for (const phone of [
+			"71234567",
+			"+5037123456a",
+			"+0123456789",
+			"+5031",
+			"+12025550123",
+		])
 			expect(refused(db, order(1, { subtotal: 100, phone }))).toContain(
 				"CHECK constraint failed: orders_customer_phone",
 			);
@@ -865,11 +1048,13 @@ INSERT INTO customers (name, phone_e164, search_key) VALUES ('Ana', '+5037123456
 		).toContain("order_identity_locked");
 	});
 
-	test("what the store no longer has is refused", () => {
-		// A storefront order is a WhatsApp order; the web is only where a consent was given.
+	test("what the store does not have is refused", () => {
 		expect(
-			refused(db, order(1, { subtotal: 100 }).replace("'whatsapp'", "'web'")),
+			refused(db, order(1, { subtotal: 100, channel: "telegram" })),
 		).toContain("CHECK constraint failed: orders_channel");
+		expect(
+			refused(db, order(1, { subtotal: 100, email: "Ana@Example.com" })),
+		).toContain("CHECK constraint failed: orders_customer_email");
 		expect(
 			refused(
 				db,

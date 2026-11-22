@@ -1,6 +1,6 @@
 import type { Database } from "bun:sqlite";
 import { beforeEach, describe, expect, test } from "bun:test";
-import { migratedDatabase } from "./test-database";
+import { migratedDatabase, orderSql } from "./test-database";
 
 const refused = (db: Database, sql: string) => {
 	try {
@@ -329,75 +329,185 @@ describe("order follow-up", () => {
 				followup_pending_payment_hours, followup_paid_unshipped_hours, followup_shipped_undelivered_hours)
 			VALUES (1, 'Nagomi', 'USD', 'es', 3, 90, 48, 24, 96);
 			INSERT INTO customers (id, search_key) VALUES (1, 'nuevo'), (2, 'ocasional'), (3, 'frecuente'), (4, 'inactivo');
+			INSERT INTO brands (id, slug, name, search_key) VALUES (1, 'b', 'B', 'b');
+			INSERT INTO categories (id, slug, icon) VALUES (1, 'c', 'mouse');
+			INSERT INTO products (id, slug, brand_id, category_id) VALUES (1, 'p', 1, 1);
+			INSERT INTO variants (id, product_id, sku, search_key, price) VALUES (1, 1, 'TEC-001', 'x', 100);
+			INSERT INTO suppliers (id, name, search_key) VALUES (1, 's', 's');
+			INSERT INTO purchase_orders (id, supplier_id, reference, status, ordered_on) VALUES (1, 1, 'PO-1', 'ordered', '2019-01-01');
+			INSERT INTO purchase_order_items (id, purchase_order_id, variant_id, quantity, unit_cost) VALUES (1, 1, 1, 50, 10);
+			INSERT INTO purchase_receipts (id, purchase_order_id, received_on, created_by) VALUES (1, 1, '2019-01-02', 'seed');
+			INSERT INTO purchase_receipt_lines (id, receipt_id, purchase_order_item_id, quantity, allocated_shipping_e4) VALUES (1, 1, 1, 50, 0);
+			INSERT INTO lots (id, variant_id, receipt_line_id, unit_cost_e4) VALUES (1, 1, 1, 100000);
+			INSERT INTO inventory_movements (lot_id, kind, quantity, created_by) VALUES (1, 'receive', 50, 'seed');
 		`);
 	});
+	const ago = (hours: number) =>
+		new Date(Date.now() - hours * 3_600_000)
+			.toISOString()
+			.replace(/\.\d{3}Z$/, "Z");
+	const line = [{ variantId: 1, quantity: 1, unitPrice: 100 }];
 
-	const order = (id: number, customerId: number, createdAt: string) =>
-		`INSERT INTO orders (id, code, idempotency_key, request_hash, customer_id, search_key, locale, channel, subtotal, total, created_at)
-			VALUES (${id}, 'NAG-${id}', 'k${id}', 'h', ${customerId}, 'x', 'es', 'whatsapp', 0, 0, '${createdAt}')`;
-	const confirm = (id: number) =>
-		`UPDATE orders SET status = 'confirmed', confirmed_at = strftime('%Y-%m-%dT%H:%M:%SZ', 'now', '-30 hours'), payment_method = 'cash',
-			shipping_method = 'pickup', delivery_estimate_from = '2026-01-01', delivery_estimate_to = '2026-01-01', confirmation_message = 'ok' WHERE id = ${id}`;
-
-	const withLine = (id: number) =>
-		`INSERT INTO variants (id, product_id, sku, search_key, price) SELECT 1, 1, 'TEC-001', 'x', 100 WHERE NOT EXISTS (SELECT 1 FROM variants);
-		INSERT OR IGNORE INTO suppliers (id, name, search_key) VALUES (1, 's', 's');
-		INSERT OR IGNORE INTO purchase_orders (id, supplier_id, reference, status, ordered_on) VALUES (1, 1, 'PO-1', 'ordered', '2026-01-01');
-		INSERT OR IGNORE INTO purchase_order_items (id, purchase_order_id, variant_id, quantity, unit_cost) VALUES (1, 1, 1, 50, 10);
-		INSERT OR IGNORE INTO purchase_receipts (id, purchase_order_id, received_on, created_by) VALUES (1, 1, '2026-01-02', 'seed');
-		INSERT OR IGNORE INTO purchase_receipt_lines (id, receipt_id, purchase_order_item_id, quantity, allocated_shipping_e4) VALUES (1, 1, 1, 50, 0);
-		INSERT OR IGNORE INTO lots (id, variant_id, receipt_line_id, unit_cost_e4) VALUES (1, 1, 1, 100000);
-		INSERT INTO inventory_movements (lot_id, kind, quantity, created_by) SELECT 1, 'receive', 50, 'seed' WHERE NOT EXISTS (SELECT 1 FROM inventory_movements);
-		INSERT INTO order_items (order_id, variant_id, quantity, unit_price, sku, brand_name, product_name) VALUES (${id}, 1, 1, 0, 'TEC-001', 'b', 'p');`;
-
-	test("every status an order takes is kept, in order, and never rewritten", () => {
+	test("every status an order takes is kept with its own time, in order, and never rewritten", () => {
 		db.exec(
-			"INSERT INTO brands (id, slug, name, search_key) VALUES (1, 'b', 'B', 'b'); INSERT INTO categories (id, slug, icon) VALUES (1, 'c', 'mouse'); INSERT INTO products (id, slug, brand_id, category_id) VALUES (1, 'p', 1, 1);",
+			orderSql({
+				id: 1,
+				customerId: 1,
+				status: "delivered",
+				createdAt: "2026-11-01T10:00:00Z",
+				paidAt: "2026-11-01T11:00:00Z",
+				shippedAt: "2026-11-02T09:00:00Z",
+				deliveredAt: "2026-11-03T15:00:00Z",
+				lines: line,
+			}),
 		);
-		db.exec(order(1, 1, "2026-11-01T10:00:00Z"));
-		db.exec(withLine(1));
-		db.exec(confirm(1));
 		expect(
 			rows(
 				db,
-				"SELECT from_status, to_status FROM order_status_history WHERE order_id = 1 ORDER BY id",
+				"SELECT from_status, to_status, changed_at FROM order_status_history WHERE order_id = 1 ORDER BY id",
 			),
 		).toEqual([
-			{ from_status: null, to_status: "pending" },
-			{ from_status: "pending", to_status: "confirmed" },
+			{
+				from_status: null,
+				to_status: "pending",
+				changed_at: "2026-11-01T10:00:00Z",
+			},
+			{
+				from_status: "pending",
+				to_status: "paid",
+				changed_at: "2026-11-01T11:00:00Z",
+			},
+			{
+				from_status: "paid",
+				to_status: "shipped",
+				changed_at: "2026-11-02T09:00:00Z",
+			},
+			{
+				from_status: "shipped",
+				to_status: "delivered",
+				changed_at: "2026-11-03T15:00:00Z",
+			},
 		]);
 		expect(refused(db, "DELETE FROM order_status_history")).toContain(
 			"order_status_history_append_only",
 		);
 		expect(
-			rows(db, "SELECT order_id, status, deadline_hours FROM order_followups"),
-		).toEqual([{ order_id: 1, status: "confirmed", deadline_hours: 24 }]);
+			refused(db, "UPDATE order_status_history SET changed_at = 'x'"),
+		).toContain("order_status_history_append_only");
 	});
 
-	test("orders pending payment past their deadline are listed, recent ones are not", () => {
-		db.exec(order(1, 1, "2020-01-01T00:00:00Z"));
+	test("each open order waits for its next step until its deadline in the settings", () => {
 		db.exec(
-			`${order(2, 1, "2999-01-01T00:00:00Z").replace("'2999-01-01T00:00:00Z'", "strftime('%Y-%m-%dT%H:%M:%SZ', 'now')")}`,
+			orderSql({
+				id: 1,
+				createdAt: ago(50),
+				method: "bank_transfer",
+				lines: line,
+			}),
 		);
-		expect(rows(db, "SELECT order_id, status FROM order_followups")).toEqual([
-			{ order_id: 1, status: "pending" },
+		db.exec(
+			orderSql({ id: 2, createdAt: ago(10), method: "card", lines: line }),
+		);
+		db.exec(
+			orderSql({
+				id: 3,
+				createdAt: ago(30),
+				method: "cash_on_delivery",
+				lines: line,
+			}),
+		);
+		db.exec(
+			orderSql({
+				id: 4,
+				status: "paid",
+				createdAt: ago(40),
+				paidAt: ago(30),
+				lines: line,
+			}),
+		);
+		db.exec(
+			orderSql({
+				id: 5,
+				status: "shipped",
+				createdAt: ago(200),
+				paidAt: ago(199),
+				shippedAt: ago(100),
+				lines: line,
+			}),
+		);
+		db.exec(
+			orderSql({
+				id: 6,
+				status: "shipped",
+				createdAt: ago(30),
+				paidAt: ago(29),
+				shippedAt: ago(20),
+				lines: line,
+			}),
+		);
+		expect(
+			rows(
+				db,
+				"SELECT order_id, status, action, deadline_hours FROM order_followups ORDER BY order_id",
+			),
+		).toEqual([
+			{
+				order_id: 1,
+				status: "pending",
+				action: "collect_payment",
+				deadline_hours: 48,
+			},
+			{ order_id: 3, status: "pending", action: "ship", deadline_hours: 24 },
+			{ order_id: 4, status: "paid", action: "ship", deadline_hours: 24 },
+			{
+				order_id: 5,
+				status: "shipped",
+				action: "confirm_delivery",
+				deadline_hours: 96,
+			},
 		]);
 	});
 
-	test("customers are segmented by their purchases and the thresholds in the settings", () => {
+	test("customers are segmented by what they bought and the thresholds in the settings", () => {
+		const recent = ago(5 * 24);
 		db.exec(
-			"INSERT INTO brands (id, slug, name, search_key) VALUES (1, 'b', 'B', 'b'); INSERT INTO categories (id, slug, icon) VALUES (1, 'c', 'mouse'); INSERT INTO products (id, slug, brand_id, category_id) VALUES (1, 'p', 1, 1);",
+			orderSql({
+				id: 1,
+				customerId: 2,
+				status: "paid",
+				createdAt: recent,
+				lines: line,
+			}),
 		);
-		const recent = "strftime('%Y-%m-%dT%H:%M:%SZ', 'now', '-5 days')";
-		const bought = (id: number, customer: number, at: string) => {
-			db.exec(order(id, customer, "x").replace("'x')", `${at})`));
-			db.exec(withLine(id));
-			db.exec(confirm(id));
-		};
-		bought(1, 2, recent);
-		for (const id of [2, 3, 4]) bought(id, 3, recent);
-		bought(5, 4, "'2020-01-01T00:00:00Z'");
-		db.exec(order(6, 1, "2026-11-01T00:00:00Z"));
+		for (const id of [2, 3, 4])
+			db.exec(
+				orderSql({
+					id,
+					customerId: 3,
+					status: "delivered",
+					createdAt: recent,
+					lines: line,
+				}),
+			);
+		db.exec(
+			orderSql({
+				id: 5,
+				customerId: 4,
+				status: "delivered",
+				createdAt: "2020-01-01T00:00:00Z",
+				lines: line,
+			}),
+		);
+		db.exec(orderSql({ id: 6, customerId: 1, createdAt: recent, lines: line }));
+		db.exec(
+			orderSql({
+				id: 7,
+				customerId: 1,
+				status: "cancelled",
+				createdAt: recent,
+				lines: line,
+			}),
+		);
 		expect(
 			rows(
 				db,
@@ -413,5 +523,70 @@ describe("order follow-up", () => {
 		expect(rows(db, "SELECT DISTINCT segment FROM customer_segments")).toEqual([
 			{ segment: null },
 		]);
+	});
+
+	test("only a customer with a delivered order of the product reviews it, once", () => {
+		const review = (customer: number, rating = 5) =>
+			`INSERT INTO product_reviews (product_id, customer_id, rating, title, body) VALUES (1, ${customer}, ${rating}, 'Muy bueno', 'Llegó rápido.')`;
+		db.exec(orderSql({ id: 1, customerId: 2, status: "shipped", lines: line }));
+		expect(refused(db, review(2))).toContain("review_requires_delivered_order");
+		db.exec(
+			orderSql({ id: 2, customerId: 3, status: "delivered", lines: line }),
+		);
+		expect(refused(db, review(3, 6))).toContain("product_reviews_rating");
+		expect(refused(db, review(3, 0))).toContain("product_reviews_rating");
+		expect(refused(db, review(3))).toBe("accepted");
+		expect(refused(db, review(3, 4))).toContain(
+			"UNIQUE constraint failed: product_reviews.customer_id, product_reviews.product_id",
+		);
+		expect(refused(db, "UPDATE product_reviews SET customer_id = 2")).toContain(
+			"review_identity_locked",
+		);
+		expect(
+			refused(db, "UPDATE product_reviews SET rating = 4, status = 'approved'"),
+		).toBe("accepted");
+		expect(
+			refused(db, "UPDATE product_reviews SET status = 'hidden'"),
+		).toContain("product_reviews_status");
+	});
+
+	test("a cart line is one size or one set with a positive quantity, once per cart", () => {
+		db.exec("UPDATE products SET status = 'published'");
+		db.exec(`INSERT INTO carts (id) VALUES ('${"a".repeat(32)}')`);
+		const item = (variant: string, bundle: string, quantity: number) =>
+			`INSERT INTO cart_items (cart_id, variant_id, bundle_id, quantity) VALUES ('${"a".repeat(32)}', ${variant}, ${bundle}, ${quantity})`;
+		expect(refused(db, "INSERT INTO carts (id) VALUES ('short')")).toContain(
+			"carts_id",
+		);
+		expect(refused(db, item("1", "NULL", 0))).toContain("cart_items_quantity");
+		expect(refused(db, item("NULL", "NULL", 1))).toContain(
+			"cart_items_one_kind",
+		);
+		expect(refused(db, item("1", "NULL", 2))).toBe("accepted");
+		expect(refused(db, item("1", "NULL", 1))).toContain(
+			"UNIQUE constraint failed",
+		);
+		db.exec("UPDATE products SET status = 'draft'");
+		db.exec("DELETE FROM cart_items");
+		expect(refused(db, item("1", "NULL", 1))).toContain(
+			"cart_item_unavailable",
+		);
+	});
+
+	test("a pending stock alert is one per size and email, and is notified once", () => {
+		const alert = (email: string) =>
+			`INSERT INTO stock_alerts (variant_id, email) VALUES (1, '${email}')`;
+		expect(refused(db, alert("Ana@Example.com"))).toContain(
+			"stock_alerts_email",
+		);
+		expect(refused(db, alert("ana@example.com"))).toBe("accepted");
+		expect(refused(db, alert("ana@example.com"))).toContain(
+			"UNIQUE constraint failed",
+		);
+		db.exec("UPDATE stock_alerts SET notified_at = '2026-11-01T00:00:00Z'");
+		expect(refused(db, "UPDATE stock_alerts SET notified_at = NULL")).toContain(
+			"stock_alert_locked",
+		);
+		expect(refused(db, alert("ana@example.com"))).toBe("accepted");
 	});
 });

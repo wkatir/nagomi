@@ -20,13 +20,25 @@ BEGIN
 	SELECT RAISE(ABORT, 'lot_balance_negative');
 END;
 --> statement-breakpoint
-CREATE TRIGGER `inventory_movements_sale_order_confirmed` BEFORE INSERT ON `inventory_movements`
+CREATE TRIGGER `inventory_movements_sale_order_pending` BEFORE INSERT ON `inventory_movements`
 WHEN NEW.`kind` = 'sale'
-	AND (SELECT o.`status` FROM `order_items` i JOIN `orders` o ON o.`id` = i.`order_id` WHERE i.`id` = NEW.`order_item_id`) <> 'confirmed'
+	AND (SELECT o.`status` FROM `order_items` i JOIN `orders` o ON o.`id` = i.`order_id` WHERE i.`id` = NEW.`order_item_id`) <> 'pending'
 BEGIN
-	SELECT RAISE(ABORT, 'order_not_confirmed');
-END;
---> statement-breakpoint
+	SELECT RAISE(ABORT, 'order_not_pending');
+END;--> statement-breakpoint
+CREATE TRIGGER `inventory_movements_cancellation_order_cancelled` BEFORE INSERT ON `inventory_movements`
+WHEN NEW.`kind` = 'cancellation'
+	AND (SELECT o.`status` FROM `order_items` i JOIN `orders` o ON o.`id` = i.`order_id` WHERE i.`id` = NEW.`order_item_id`) <> 'cancelled'
+BEGIN
+	SELECT RAISE(ABORT, 'order_not_cancelled');
+END;--> statement-breakpoint
+CREATE TRIGGER `inventory_movements_cancellation_within_sale` BEFORE INSERT ON `inventory_movements`
+WHEN NEW.`kind` = 'cancellation'
+	AND (SELECT coalesce(sum(`quantity`), 0) FROM `inventory_movements` WHERE `kind` = 'cancellation' AND `order_item_id` = NEW.`order_item_id` AND `lot_id` = NEW.`lot_id`) + NEW.`quantity`
+		> (SELECT coalesce(-sum(`quantity`), 0) FROM `inventory_movements` WHERE `kind` = 'sale' AND `order_item_id` = NEW.`order_item_id` AND `lot_id` = NEW.`lot_id`)
+BEGIN
+	SELECT RAISE(ABORT, 'cancellation_exceeds_sale');
+END;--> statement-breakpoint
 CREATE TRIGGER `inventory_movements_sale_within_line` BEFORE INSERT ON `inventory_movements`
 WHEN NEW.`kind` = 'sale'
 	AND (SELECT coalesce(-sum(`quantity`), 0) FROM `inventory_movements` WHERE `kind` = 'sale' AND `order_item_id` = NEW.`order_item_id`) - NEW.`quantity`
@@ -89,117 +101,169 @@ BEGIN
 END;
 --> statement-breakpoint
 
--- Orders: the status machine of src/server/domain/order-state.ts, confirmation data,
--- terms fixed once confirmed, lines fixed once the order leaves pending, no empty order
--- confirmed or fulfilled.
+-- Orders: placed online with every term fixed and their units already taken from stock
+-- (sale movements in the same batch). The status machine of src/server/domain/order-state.ts:
+-- pending -> paid -> shipped -> delivered (final), cash on delivery pending -> shipped,
+-- cancelled only from pending or paid. Paid and delivered need the money recorded; a
+-- cancellation puts every unit back in its lot and releases the coupon.
 CREATE TRIGGER `orders_start_pending` BEFORE INSERT ON `orders`
 WHEN NEW.`status` <> 'pending'
-	OR NEW.`confirmed_at` IS NOT NULL OR NEW.`fulfilled_at` IS NOT NULL
+	OR NEW.`paid_at` IS NOT NULL OR NEW.`shipped_at` IS NOT NULL
 	OR NEW.`delivered_at` IS NOT NULL OR NEW.`cancelled_at` IS NOT NULL
-	OR NEW.`confirmation_message` IS NOT NULL
+	OR NEW.`courier` IS NOT NULL OR NEW.`tracking_code` IS NOT NULL
 BEGIN
 	SELECT RAISE(ABORT, 'order_must_start_pending');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `orders_identity_locked` BEFORE UPDATE ON `orders`
 WHEN NEW.`code` IS NOT OLD.`code`
 	OR NEW.`idempotency_key` IS NOT OLD.`idempotency_key`
 	OR NEW.`request_hash` IS NOT OLD.`request_hash`
 	OR NEW.`locale` IS NOT OLD.`locale`
 	OR NEW.`channel` IS NOT OLD.`channel`
+	OR NEW.`customer_email` IS NOT OLD.`customer_email`
 	OR NEW.`customer_phone` IS NOT OLD.`customer_phone`
 	OR NEW.`created_at` IS NOT OLD.`created_at`
+	OR (NEW.`customer_id` IS NOT OLD.`customer_id` AND OLD.`customer_id` IS NOT NULL)
 BEGIN
 	SELECT RAISE(ABORT, 'order_identity_locked');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
+CREATE TRIGGER `orders_terms_locked` BEFORE UPDATE ON `orders`
+WHEN NEW.`subtotal` IS NOT OLD.`subtotal`
+	OR NEW.`discount` IS NOT OLD.`discount`
+	OR NEW.`discount_reason` IS NOT OLD.`discount_reason`
+	OR NEW.`shipping` IS NOT OLD.`shipping`
+	OR NEW.`total` IS NOT OLD.`total`
+	OR NEW.`tax_included` IS NOT OLD.`tax_included`
+	OR NEW.`payment_method` IS NOT OLD.`payment_method`
+	OR NEW.`shipping_method` IS NOT OLD.`shipping_method`
+	OR NEW.`shipping_zone_id` IS NOT OLD.`shipping_zone_id`
+	OR NEW.`shipping_zone_name` IS NOT OLD.`shipping_zone_name`
+	OR NEW.`ship_department` IS NOT OLD.`ship_department`
+	OR NEW.`ship_municipality` IS NOT OLD.`ship_municipality`
+	OR NEW.`ship_address_line` IS NOT OLD.`ship_address_line`
+	OR NEW.`ship_reference` IS NOT OLD.`ship_reference`
+	OR NEW.`delivery_estimate_from` IS NOT OLD.`delivery_estimate_from`
+	OR NEW.`delivery_estimate_to` IS NOT OLD.`delivery_estimate_to`
+	OR NEW.`confirmation_message` IS NOT OLD.`confirmation_message`
+	OR NEW.`customer_name` IS NOT OLD.`customer_name`
+	OR NEW.`promotion_id` IS NOT OLD.`promotion_id`
+BEGIN
+	SELECT RAISE(ABORT, 'order_terms_locked');
+END;--> statement-breakpoint
 CREATE TRIGGER `orders_timestamps` BEFORE UPDATE ON `orders`
-WHEN (NEW.`confirmed_at` IS NOT OLD.`confirmed_at` AND NOT (OLD.`confirmed_at` IS NULL AND OLD.`status` = 'pending' AND NEW.`status` = 'confirmed'))
-	OR (NEW.`fulfilled_at` IS NOT OLD.`fulfilled_at` AND NOT (OLD.`fulfilled_at` IS NULL AND OLD.`status` = 'confirmed' AND NEW.`status` = 'fulfilled'))
-	OR (NEW.`delivered_at` IS NOT OLD.`delivered_at` AND NOT (OLD.`delivered_at` IS NULL AND OLD.`status` = 'fulfilled' AND NEW.`status` = 'delivered'))
-	OR (NEW.`cancelled_at` IS NOT OLD.`cancelled_at` AND NOT (OLD.`cancelled_at` IS NULL AND OLD.`status` <> 'cancelled' AND NEW.`status` = 'cancelled'))
+WHEN (NEW.`paid_at` IS NOT OLD.`paid_at` AND NOT (OLD.`paid_at` IS NULL AND OLD.`status` = 'pending' AND NEW.`status` = 'paid'))
+	OR (NEW.`shipped_at` IS NOT OLD.`shipped_at` AND NOT (OLD.`shipped_at` IS NULL AND OLD.`status` IN ('pending', 'paid') AND NEW.`status` = 'shipped'))
+	OR (NEW.`delivered_at` IS NOT OLD.`delivered_at` AND NOT (OLD.`delivered_at` IS NULL AND OLD.`status` = 'shipped' AND NEW.`status` = 'delivered'))
+	OR (NEW.`cancelled_at` IS NOT OLD.`cancelled_at` AND NOT (OLD.`cancelled_at` IS NULL AND OLD.`status` IN ('pending', 'paid') AND NEW.`status` = 'cancelled'))
 BEGIN
 	SELECT RAISE(ABORT, 'order_timestamps_locked');
-END;
---> statement-breakpoint
-CREATE TRIGGER `orders_subtotal_matches_lines` BEFORE UPDATE OF `status` ON `orders`
-WHEN OLD.`status` = 'pending' AND NEW.`status` = 'confirmed'
-	AND NEW.`subtotal` IS NOT (SELECT coalesce(sum(`quantity` * `unit_price`), 0) FROM `order_items` WHERE `order_id` = NEW.`id`)
+END;--> statement-breakpoint
+CREATE TRIGGER `orders_delivered_final` BEFORE UPDATE ON `orders`
+WHEN OLD.`status` IN ('delivered', 'cancelled') AND (
+	NEW.`courier` IS NOT OLD.`courier`
+	OR NEW.`tracking_code` IS NOT OLD.`tracking_code`
+	OR NEW.`cancel_reason` IS NOT OLD.`cancel_reason`
+	OR NEW.`cancelled_by` IS NOT OLD.`cancelled_by`
+	OR NEW.`payment_url` IS NOT OLD.`payment_url`
+)
 BEGIN
-	SELECT RAISE(ABORT, 'order_subtotal_mismatch');
-END;
---> statement-breakpoint
-CREATE TRIGGER `orders_require_lines` BEFORE UPDATE OF `status` ON `orders`
-WHEN NEW.`status` <> OLD.`status` AND NEW.`status` IN ('confirmed', 'fulfilled')
-	AND NOT EXISTS (SELECT 1 FROM `order_items` WHERE `order_id` = NEW.`id`)
-BEGIN
-	SELECT RAISE(ABORT, 'order_has_no_lines');
-END;
---> statement-breakpoint
+	SELECT RAISE(ABORT, 'order_is_final');
+END;--> statement-breakpoint
 CREATE TRIGGER `orders_status_transition` BEFORE UPDATE OF `status` ON `orders`
 WHEN NEW.`status` <> OLD.`status` AND NOT (
-	(OLD.`status` = 'pending' AND NEW.`status` IN ('confirmed', 'cancelled'))
-	OR (OLD.`status` = 'confirmed' AND NEW.`status` IN ('fulfilled', 'cancelled'))
-	OR (OLD.`status` = 'fulfilled' AND NEW.`status` IN ('delivered', 'cancelled'))
+	(OLD.`status` = 'pending' AND NEW.`status` IN ('paid', 'cancelled'))
+	OR (OLD.`status` = 'pending' AND NEW.`status` = 'shipped' AND NEW.`payment_method` = 'cash_on_delivery')
+	OR (OLD.`status` = 'paid' AND NEW.`status` IN ('shipped', 'cancelled'))
+	OR (OLD.`status` = 'shipped' AND NEW.`status` = 'delivered')
 )
 BEGIN
 	SELECT RAISE(ABORT, 'invalid_order_transition');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 CREATE TRIGGER `orders_status_data` BEFORE UPDATE OF `status` ON `orders`
 WHEN NEW.`status` <> OLD.`status` AND (
-	(NEW.`status` = 'confirmed' AND (NEW.`confirmed_at` IS NULL OR NEW.`payment_method` IS NULL OR NEW.`shipping_method` IS NULL OR NEW.`delivery_estimate_from` IS NULL OR NEW.`confirmation_message` IS NULL))
-	OR (NEW.`status` = 'fulfilled' AND NEW.`fulfilled_at` IS NULL)
+	(NEW.`status` = 'paid' AND NEW.`paid_at` IS NULL)
+	OR (NEW.`status` = 'shipped' AND (NEW.`shipped_at` IS NULL OR NEW.`courier` IS NULL))
 	OR (NEW.`status` = 'delivered' AND NEW.`delivered_at` IS NULL)
 	OR (NEW.`status` = 'cancelled' AND NEW.`cancelled_at` IS NULL)
 )
 BEGIN
 	SELECT RAISE(ABORT, 'order_status_data_missing');
-END;
---> statement-breakpoint
-CREATE TRIGGER `orders_cancel_fulfilled_returned` BEFORE UPDATE OF `status` ON `orders`
-WHEN OLD.`status` = 'fulfilled' AND NEW.`status` = 'cancelled'
-	AND (SELECT coalesce(-sum(m.`quantity`), 0) FROM `inventory_movements` m JOIN `order_items` i ON i.`id` = m.`order_item_id` WHERE m.`kind` = 'sale' AND i.`order_id` = NEW.`id`)
-		> (SELECT coalesce(sum(rl.`quantity`), 0) FROM `return_lines` rl JOIN `returns` r ON r.`id` = rl.`return_id` WHERE r.`order_id` = NEW.`id`)
+END;--> statement-breakpoint
+CREATE TRIGGER `orders_paid_requires_payment` BEFORE UPDATE OF `status` ON `orders`
+WHEN NEW.`status` <> OLD.`status` AND NEW.`status` IN ('paid', 'delivered')
+	AND (SELECT coalesce(sum(`amount`), 0) FROM `payments` WHERE `order_id` = NEW.`id` AND `kind` = 'payment' AND `status` = 'confirmed')
+		- (SELECT coalesce(sum(`amount`), 0) FROM `payments` WHERE `order_id` = NEW.`id` AND `kind` = 'refund' AND `status` = 'confirmed')
+		< NEW.`total`
 BEGIN
-	SELECT RAISE(ABORT, 'order_units_not_returned');
-END;
---> statement-breakpoint
-CREATE TRIGGER `orders_terms_locked` BEFORE UPDATE ON `orders`
-WHEN OLD.`status` <> 'pending' AND (
-	NEW.`subtotal` IS NOT OLD.`subtotal`
-	OR NEW.`discount` IS NOT OLD.`discount`
-	OR NEW.`shipping` IS NOT OLD.`shipping`
-	OR NEW.`total` IS NOT OLD.`total`
-	OR NEW.`payment_method` IS NOT OLD.`payment_method`
-	OR NEW.`shipping_method` IS NOT OLD.`shipping_method`
-	OR NEW.`shipping_zone_id` IS NOT OLD.`shipping_zone_id`
-	OR NEW.`delivery_estimate_from` IS NOT OLD.`delivery_estimate_from`
-	OR NEW.`delivery_estimate_to` IS NOT OLD.`delivery_estimate_to`
-	OR NEW.`confirmation_message` IS NOT OLD.`confirmation_message`
-	OR NEW.`confirmed_at` IS NOT OLD.`confirmed_at`
-	OR NEW.`ship_to` IS NOT OLD.`ship_to`
-	OR NEW.`shipping_zone_name` IS NOT OLD.`shipping_zone_name`
-	OR NEW.`discount_reason` IS NOT OLD.`discount_reason`
-	OR NEW.`customer_name` IS NOT OLD.`customer_name`
-)
+	SELECT RAISE(ABORT, 'order_not_paid');
+END;--> statement-breakpoint
+CREATE TRIGGER `orders_require_lines` BEFORE UPDATE OF `status` ON `orders`
+WHEN NEW.`status` <> OLD.`status` AND OLD.`status` = 'pending' AND NEW.`status` <> 'cancelled'
+	AND NOT EXISTS (SELECT 1 FROM `order_items` WHERE `order_id` = NEW.`id`)
 BEGIN
-	SELECT RAISE(ABORT, 'order_terms_locked');
-END;
---> statement-breakpoint
+	SELECT RAISE(ABORT, 'order_has_no_lines');
+END;--> statement-breakpoint
+CREATE TRIGGER `orders_subtotal_matches_lines` BEFORE UPDATE OF `status` ON `orders`
+WHEN OLD.`status` = 'pending' AND NEW.`status` IN ('paid', 'shipped')
+	AND NEW.`subtotal` IS NOT (SELECT coalesce(sum(`quantity` * `unit_price`), 0) FROM `order_items` WHERE `order_id` = NEW.`id`)
+BEGIN
+	SELECT RAISE(ABORT, 'order_subtotal_mismatch');
+END;--> statement-breakpoint
+CREATE TRIGGER `orders_units_taken` BEFORE UPDATE OF `status` ON `orders`
+WHEN OLD.`status` = 'pending' AND NEW.`status` IN ('paid', 'shipped')
+	AND EXISTS (SELECT 1 FROM `order_items` i WHERE i.`order_id` = NEW.`id`
+		AND i.`quantity` > (SELECT coalesce(-sum(m.`quantity`), 0) FROM `inventory_movements` m WHERE m.`kind` = 'sale' AND m.`order_item_id` = i.`id`))
+BEGIN
+	SELECT RAISE(ABORT, 'order_units_not_taken');
+END;--> statement-breakpoint
+CREATE TRIGGER `orders_promotion_redeemed` BEFORE UPDATE OF `status` ON `orders`
+WHEN OLD.`status` = 'pending' AND NEW.`status` IN ('paid', 'shipped') AND NEW.`promotion_id` IS NOT NULL
+	AND NOT EXISTS (SELECT 1 FROM `promotion_redemptions` WHERE `order_id` = NEW.`id` AND `promotion_id` = NEW.`promotion_id`)
+BEGIN
+	SELECT RAISE(ABORT, 'promotion_not_redeemed');
+END;--> statement-breakpoint
+CREATE TRIGGER `orders_cancel_returns_stock` AFTER UPDATE OF `status` ON `orders`
+WHEN NEW.`status` = 'cancelled' AND OLD.`status` <> 'cancelled'
+BEGIN
+	INSERT INTO `inventory_movements` (`lot_id`, `kind`, `quantity`, `order_item_id`, `note`, `created_at`, `created_by`)
+	SELECT m.`lot_id`, 'cancellation', -sum(m.`quantity`), m.`order_item_id`, 'order_cancelled', NEW.`cancelled_at`, coalesce(NEW.`cancelled_by`, 'system')
+	FROM `inventory_movements` m JOIN `order_items` i ON i.`id` = m.`order_item_id`
+	WHERE i.`order_id` = NEW.`id` AND m.`kind` = 'sale'
+	GROUP BY m.`lot_id`, m.`order_item_id`;
+END;--> statement-breakpoint
+CREATE TRIGGER `orders_cancel_releases_coupon` AFTER UPDATE OF `status` ON `orders`
+WHEN NEW.`status` = 'cancelled' AND OLD.`status` <> 'cancelled'
+BEGIN
+	UPDATE `promotion_redemptions` SET `released_at` = NEW.`cancelled_at` WHERE `order_id` = NEW.`id` AND `released_at` IS NULL;
+END;--> statement-breakpoint
 CREATE TRIGGER `order_items_locked_insert` BEFORE INSERT ON `order_items`
 WHEN (SELECT `status` FROM `orders` WHERE `id` = NEW.`order_id`) <> 'pending'
 BEGIN
 	SELECT RAISE(ABORT, 'order_items_locked');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
+CREATE TRIGGER `order_items_bundle_same_order` BEFORE INSERT ON `order_items`
+WHEN NEW.`order_bundle_id` IS NOT NULL
+	AND (SELECT `order_id` FROM `order_bundles` WHERE `id` = NEW.`order_bundle_id`) IS NOT NEW.`order_id`
+BEGIN
+	SELECT RAISE(ABORT, 'order_bundle_wrong_order');
+END;--> statement-breakpoint
 CREATE TRIGGER `order_items_locked_update` BEFORE UPDATE ON `order_items`
-WHEN (SELECT `status` FROM `orders` WHERE `id` = OLD.`order_id`) <> 'pending'
-	OR NEW.`order_id` IS NOT OLD.`order_id`
 BEGIN
 	SELECT RAISE(ABORT, 'order_items_locked');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
+CREATE TRIGGER `order_bundles_locked_insert` BEFORE INSERT ON `order_bundles`
+WHEN (SELECT `status` FROM `orders` WHERE `id` = NEW.`order_id`) <> 'pending'
+BEGIN
+	SELECT RAISE(ABORT, 'order_items_locked');
+END;--> statement-breakpoint
+CREATE TRIGGER `order_bundles_locked_update` BEFORE UPDATE ON `order_bundles`
+BEGIN
+	SELECT RAISE(ABORT, 'order_items_locked');
+END;--> statement-breakpoint
+CREATE TRIGGER `order_bundles_no_delete` BEFORE DELETE ON `order_bundles`
+BEGIN
+	SELECT RAISE(ABORT, 'order_items_are_permanent');
+END;--> statement-breakpoint
 
 -- Payments: final once out of pending, refunds never above confirmed payments.
 CREATE TRIGGER `payments_final` BEFORE UPDATE ON `payments`
@@ -247,7 +311,7 @@ BEGIN
 END;
 --> statement-breakpoint
 CREATE TRIGGER `returns_shipped_order` BEFORE INSERT ON `returns`
-WHEN (SELECT `status` FROM `orders` WHERE `id` = NEW.`order_id`) NOT IN ('fulfilled', 'delivered')
+WHEN (SELECT `status` FROM `orders` WHERE `id` = NEW.`order_id`) NOT IN ('shipped', 'delivered')
 BEGIN
 	SELECT RAISE(ABORT, 'return_requires_shipped_order');
 END;
@@ -469,8 +533,8 @@ BEGIN
 END;
 --> statement-breakpoint
 
--- Records kept for 10 years (consumer and tax law): never deleted (lines of pending
--- orders and draft purchase orders excepted). Audit events and consents are not
+-- Records kept for 10 years (consumer and tax law): never deleted (lines of draft purchase
+-- orders excepted). Audit events and consents are not
 -- rewritten, except that a consent gets its customer once its order is linked to one.
 -- A consent points at the page its purpose is about: terms at the terms, the privacy
 -- notice and marketing permissions at the privacy notice.
@@ -480,7 +544,6 @@ BEGIN
 END;
 --> statement-breakpoint
 CREATE TRIGGER `order_items_no_delete` BEFORE DELETE ON `order_items`
-WHEN (SELECT `status` FROM `orders` WHERE `id` = OLD.`order_id`) IS NOT 'pending'
 BEGIN
 	SELECT RAISE(ABORT, 'order_items_are_permanent');
 END;
@@ -634,51 +697,63 @@ END;
 
 -- Promotions: once an order used a code, the code and its terms are fixed, so the order's
 -- discount stays derivable from them.
-CREATE TRIGGER `promotions_terms_locked` BEFORE UPDATE OF `code`, `type`, `value`, `min_subtotal` ON `promotions`
+CREATE TRIGGER `promotions_terms_locked` BEFORE UPDATE OF `code`, `type`, `value`, `min_subtotal`, `first_order_only`, `per_customer_limit` ON `promotions`
 WHEN (NEW.`code` IS NOT OLD.`code` OR NEW.`type` IS NOT OLD.`type`
-		OR NEW.`value` IS NOT OLD.`value` OR NEW.`min_subtotal` IS NOT OLD.`min_subtotal`)
-	AND EXISTS (SELECT 1 FROM `orders` WHERE `promotion_id` = OLD.`id`)
+		OR NEW.`value` IS NOT OLD.`value` OR NEW.`min_subtotal` IS NOT OLD.`min_subtotal`
+		OR NEW.`first_order_only` IS NOT OLD.`first_order_only` OR NEW.`per_customer_limit` IS NOT OLD.`per_customer_limit`)
+	AND EXISTS (SELECT 1 FROM `promotion_redemptions` WHERE `promotion_id` = OLD.`id`)
 BEGIN
 	SELECT RAISE(ABORT, 'promotion_terms_locked');
 END;
 --> statement-breakpoint
 
--- An order placed with a code: the promotion is active and within its limits (orders that
--- used it and were not cancelled, in total and per phone), and the discount is the code's:
--- a percentage of the subtotal rounded half up, or the fixed amount up to the subtotal,
--- once the subtotal reaches the minimum. A concurrent retry of an existing order (same
--- idempotency key) is left to its ON CONFLICT DO NOTHING. Dates are local days of the
--- store, checked by the API.
-CREATE TRIGGER `orders_promotion_active` BEFORE INSERT ON `orders`
-WHEN NEW.`promotion_id` IS NOT NULL
-	AND NOT EXISTS (SELECT 1 FROM `orders` WHERE `idempotency_key` = NEW.`idempotency_key`)
-	AND (SELECT `status` FROM `promotions` WHERE `id` = NEW.`promotion_id`) IS NOT 'active'
+-- Coupons: an order placed with a code has one promotion_redemptions row, written in the
+-- order's batch. The code is active, under its total limit, once per email when the code
+-- says so (unique index), for a first order only when it says so, and the discount is the
+-- code's: a percentage of the subtotal rounded half up, or the fixed amount up to the
+-- subtotal, once the subtotal reaches the minimum. A cancelled order releases its row.
+-- Dates are local days of the store, checked by the API.
+CREATE TRIGGER `promotion_redemptions_matches_order` BEFORE INSERT ON `promotion_redemptions`
+WHEN NOT EXISTS (SELECT 1 FROM `orders` o WHERE o.`id` = NEW.`order_id` AND o.`status` = 'pending'
+		AND o.`promotion_id` IS NEW.`promotion_id` AND o.`customer_email` = NEW.`email`)
+	OR NEW.`released_at` IS NOT NULL
+	OR ((SELECT `per_customer_limit` FROM `promotions` WHERE `id` = NEW.`promotion_id`) IS NOT NULL AND NEW.`customer_key` IS NOT NEW.`email`)
+	OR ((SELECT `per_customer_limit` FROM `promotions` WHERE `id` = NEW.`promotion_id`) IS NULL AND NEW.`customer_key` IS NOT NULL)
+BEGIN
+	SELECT RAISE(ABORT, 'promotion_redemption_mismatch');
+END;--> statement-breakpoint
+CREATE TRIGGER `promotion_redemptions_active` BEFORE INSERT ON `promotion_redemptions`
+WHEN (SELECT `status` FROM `promotions` WHERE `id` = NEW.`promotion_id`) IS NOT 'active'
 BEGIN
 	SELECT RAISE(ABORT, 'promotion_inactive');
-END;
---> statement-breakpoint
-CREATE TRIGGER `orders_promotion_usage_limit` BEFORE INSERT ON `orders`
-WHEN NEW.`promotion_id` IS NOT NULL
-	AND NOT EXISTS (SELECT 1 FROM `orders` WHERE `idempotency_key` = NEW.`idempotency_key`)
-	AND (SELECT `usage_limit` FROM `promotions` WHERE `id` = NEW.`promotion_id`)
-		<= (SELECT count(*) FROM `orders` WHERE `promotion_id` = NEW.`promotion_id` AND `status` <> 'cancelled')
+END;--> statement-breakpoint
+CREATE TRIGGER `promotion_redemptions_usage_limit` BEFORE INSERT ON `promotion_redemptions`
+WHEN (SELECT `usage_limit` FROM `promotions` WHERE `id` = NEW.`promotion_id`)
+	<= (SELECT count(*) FROM `promotion_redemptions` WHERE `promotion_id` = NEW.`promotion_id` AND `released_at` IS NULL)
 BEGIN
 	SELECT RAISE(ABORT, 'promotion_usage_limit');
-END;
---> statement-breakpoint
-CREATE TRIGGER `orders_promotion_customer_limit` BEFORE INSERT ON `orders`
-WHEN NEW.`promotion_id` IS NOT NULL
-	AND NOT EXISTS (SELECT 1 FROM `orders` WHERE `idempotency_key` = NEW.`idempotency_key`)
-	AND (SELECT `per_customer_limit` FROM `promotions` WHERE `id` = NEW.`promotion_id`) IS NOT NULL
-	AND (NEW.`customer_phone` IS NULL
-		OR (SELECT `per_customer_limit` FROM `promotions` WHERE `id` = NEW.`promotion_id`)
-			<= (SELECT count(*) FROM `orders` o WHERE o.`promotion_id` = NEW.`promotion_id` AND o.`status` <> 'cancelled'
-				AND (o.`customer_phone` = NEW.`customer_phone`
-					OR o.`customer_id` = (SELECT `id` FROM `customers` WHERE `phone_e164` = NEW.`customer_phone`))))
+END;--> statement-breakpoint
+CREATE TRIGGER `promotion_redemptions_first_order` BEFORE INSERT ON `promotion_redemptions`
+WHEN (SELECT `first_order_only` FROM `promotions` WHERE `id` = NEW.`promotion_id`) = 1
+	AND EXISTS (SELECT 1 FROM `orders` o WHERE o.`customer_email` = NEW.`email` AND o.`id` <> NEW.`order_id` AND o.`status` <> 'cancelled')
 BEGIN
-	SELECT RAISE(ABORT, 'promotion_customer_limit');
-END;
---> statement-breakpoint
+	SELECT RAISE(ABORT, 'promotion_first_order_only');
+END;--> statement-breakpoint
+CREATE TRIGGER `promotion_redemptions_locked` BEFORE UPDATE ON `promotion_redemptions`
+WHEN NEW.`promotion_id` IS NOT OLD.`promotion_id`
+	OR NEW.`order_id` IS NOT OLD.`order_id`
+	OR NEW.`email` IS NOT OLD.`email`
+	OR NEW.`customer_key` IS NOT OLD.`customer_key`
+	OR NEW.`created_at` IS NOT OLD.`created_at`
+	OR NOT (OLD.`released_at` IS NULL AND NEW.`released_at` IS NOT NULL
+		AND (SELECT `status` FROM `orders` WHERE `id` = NEW.`order_id`) = 'cancelled')
+BEGIN
+	SELECT RAISE(ABORT, 'promotion_redemptions_locked');
+END;--> statement-breakpoint
+CREATE TRIGGER `promotion_redemptions_no_delete` BEFORE DELETE ON `promotion_redemptions`
+BEGIN
+	SELECT RAISE(ABORT, 'promotion_redemptions_are_permanent');
+END;--> statement-breakpoint
 CREATE TRIGGER `orders_promotion_discount_insert` BEFORE INSERT ON `orders`
 WHEN NEW.`promotion_id` IS NOT NULL AND EXISTS (
 	SELECT 1 FROM `promotions` p WHERE p.`id` = NEW.`promotion_id` AND (
@@ -690,59 +765,13 @@ WHEN NEW.`promotion_id` IS NOT NULL AND EXISTS (
 )
 BEGIN
 	SELECT RAISE(ABORT, 'promotion_discount_mismatch');
-END;
---> statement-breakpoint
-
--- While the order is pending its lines may change: the discount follows the code's terms,
--- and an order that loses its code loses its discount. Confirmation fixes the discount
--- (the admin may change it there, with a reason).
-CREATE TRIGGER `orders_promotion_discount_update` BEFORE UPDATE OF `subtotal`, `discount`, `discount_reason`, `promotion_id` ON `orders`
-WHEN NEW.`status` = 'pending' AND (
-	(NEW.`promotion_id` IS NOT NULL AND EXISTS (
-		SELECT 1 FROM `promotions` p WHERE p.`id` = NEW.`promotion_id` AND (
-			NEW.`discount_reason` IS NOT p.`code`
-			OR (p.`min_subtotal` IS NOT NULL AND NEW.`subtotal` < p.`min_subtotal`)
-			OR (p.`type` = 'percentage' AND NEW.`discount` IS NOT (NEW.`subtotal` * p.`value` + 50) / 100)
-			OR (p.`type` = 'fixed' AND NEW.`discount` IS NOT min(p.`value`, NEW.`subtotal`))
-		)
-	))
-	OR (NEW.`promotion_id` IS NULL AND OLD.`promotion_id` IS NOT NULL
-		AND (NEW.`discount` <> 0 OR NEW.`discount_reason` IS NOT NULL))
-)
+END;--> statement-breakpoint
+CREATE TRIGGER `orders_discount_requires_promotion` BEFORE INSERT ON `orders`
+WHEN NEW.`promotion_id` IS NULL AND NEW.`discount` <> 0
 BEGIN
 	SELECT RAISE(ABORT, 'promotion_discount_mismatch');
-END;
---> statement-breakpoint
-CREATE TRIGGER `orders_promotion_locked` BEFORE UPDATE OF `promotion_id` ON `orders`
-WHEN NEW.`promotion_id` IS NOT OLD.`promotion_id`
-	AND (NEW.`promotion_id` IS NOT NULL OR OLD.`status` <> 'pending')
-BEGIN
-	SELECT RAISE(ABORT, 'order_promotion_locked');
-END;
---> statement-breakpoint
+END;--> statement-breakpoint
 
--- Backstop of the stock rule (src/server/domain/stock.ts). The rule needs the store's today
--- and the pending hold, which the database cannot know (it has no time zone), so the API
--- enforces it inside the batch that writes an order (stockFits in
--- src/server/domain/inventory.ts). This trigger keeps a weaker invariant that never refuses
--- what that guard accepts and stops a write path that forgets it: an order is confirmed only
--- while its lines, plus the units of the same sizes on other confirmed orders, fit in the
--- units of all their lots. The abort code is mapped in src/server/domain/db-errors.ts.
--- Written for the D1 statement splitter: uppercase block keywords, no conditional
--- expressions in trigger bodies, LF.
-CREATE TRIGGER `orders_confirm_within_stock` BEFORE UPDATE OF `status` ON `orders`
-WHEN OLD.`status` = 'pending' AND NEW.`status` = 'confirmed'
-	AND EXISTS (SELECT 1 FROM `order_items` i WHERE i.`order_id` = NEW.`id`
-		AND i.`quantity` + (SELECT coalesce(sum(c.`quantity`), 0) FROM `order_items` c
-			JOIN `orders` o ON o.`id` = c.`order_id`
-			WHERE c.`variant_id` = i.`variant_id` AND o.`status` = 'confirmed')
-		> (SELECT coalesce(sum(m.`quantity`), 0) FROM `lots` l
-			JOIN `inventory_movements` m ON m.`lot_id` = l.`id`
-			WHERE l.`variant_id` = i.`variant_id`))
-BEGIN
-	SELECT RAISE(ABORT, 'order_exceeds_stock');
-END;
---> statement-breakpoint
 CREATE TRIGGER `variants_price_history_insert` AFTER INSERT ON `variants`
 WHEN NEW.`price` IS NOT NULL
 BEGIN
@@ -932,15 +961,28 @@ END;
 
 CREATE TRIGGER `orders_status_history_insert` AFTER INSERT ON `orders`
 BEGIN
-	INSERT INTO `order_status_history` (`order_id`, `from_status`, `to_status`) VALUES (NEW.`id`, NULL, NEW.`status`);
-END;
---> statement-breakpoint
-CREATE TRIGGER `orders_status_history_update` AFTER UPDATE OF `status` ON `orders`
-WHEN NEW.`status` IS NOT OLD.`status`
+	INSERT INTO `order_status_history` (`order_id`, `from_status`, `to_status`, `changed_at`) VALUES (NEW.`id`, NULL, NEW.`status`, NEW.`created_at`);
+END;--> statement-breakpoint
+CREATE TRIGGER `orders_status_history_paid` AFTER UPDATE OF `status` ON `orders`
+WHEN NEW.`status` = 'paid' AND OLD.`status` <> 'paid'
 BEGIN
-	INSERT INTO `order_status_history` (`order_id`, `from_status`, `to_status`) VALUES (NEW.`id`, OLD.`status`, NEW.`status`);
-END;
---> statement-breakpoint
+	INSERT INTO `order_status_history` (`order_id`, `from_status`, `to_status`, `changed_at`) VALUES (NEW.`id`, OLD.`status`, NEW.`status`, NEW.`paid_at`);
+END;--> statement-breakpoint
+CREATE TRIGGER `orders_status_history_shipped` AFTER UPDATE OF `status` ON `orders`
+WHEN NEW.`status` = 'shipped' AND OLD.`status` <> 'shipped'
+BEGIN
+	INSERT INTO `order_status_history` (`order_id`, `from_status`, `to_status`, `changed_at`) VALUES (NEW.`id`, OLD.`status`, NEW.`status`, NEW.`shipped_at`);
+END;--> statement-breakpoint
+CREATE TRIGGER `orders_status_history_delivered` AFTER UPDATE OF `status` ON `orders`
+WHEN NEW.`status` = 'delivered' AND OLD.`status` <> 'delivered'
+BEGIN
+	INSERT INTO `order_status_history` (`order_id`, `from_status`, `to_status`, `changed_at`) VALUES (NEW.`id`, OLD.`status`, NEW.`status`, NEW.`delivered_at`);
+END;--> statement-breakpoint
+CREATE TRIGGER `orders_status_history_cancelled` AFTER UPDATE OF `status` ON `orders`
+WHEN NEW.`status` = 'cancelled' AND OLD.`status` <> 'cancelled'
+BEGIN
+	INSERT INTO `order_status_history` (`order_id`, `from_status`, `to_status`, `changed_at`) VALUES (NEW.`id`, OLD.`status`, NEW.`status`, NEW.`cancelled_at`);
+END;--> statement-breakpoint
 CREATE TRIGGER `order_status_history_no_update` BEFORE UPDATE ON `order_status_history`
 BEGIN
 	SELECT RAISE(ABORT, 'order_status_history_append_only');
@@ -982,26 +1024,71 @@ SELECT c.`id` AS `customer_id`,
 				iif(count(o.`id`) >= s.`frequent_customer_min_orders`, 'frequent', 'occasional')))) AS `segment`
 FROM `customers` c
 JOIN `store_settings` s ON s.`id` = 1
-LEFT JOIN `orders` o ON o.`customer_id` = c.`id` AND o.`status` IN ('confirmed', 'fulfilled', 'delivered')
+LEFT JOIN `orders` o ON o.`customer_id` = c.`id` AND o.`status` IN ('paid', 'shipped', 'delivered')
 GROUP BY c.`id`;
 --> statement-breakpoint
 
+-- What each open order waits for and since when: payment of a card or transfer order (it is
+-- cancelled once overdue), shipping of a paid or cash-on-delivery order, delivery of a
+-- shipped one. Rows appear once the deadline (store_settings hours) has passed.
 CREATE VIEW `order_followups` AS
 SELECT o.`id` AS `order_id`,
 	o.`status` AS `status`,
+	o.`action` AS `action`,
 	o.`since` AS `since`,
 	o.`deadline_hours` AS `deadline_hours`,
 	strftime('%Y-%m-%dT%H:%M:%SZ', julianday(o.`since`) + o.`deadline_hours` / 24.0) AS `due_at`,
 	round((julianday('now') - julianday(o.`since`)) * 24 - o.`deadline_hours`, 1) AS `hours_overdue`
 FROM (
-	SELECT x.`id`, x.`status`, x.`created_at` AS `since`, s.`followup_pending_payment_hours` AS `deadline_hours`
-	FROM `orders` x JOIN `store_settings` s ON s.`id` = 1 WHERE x.`status` = 'pending'
+	SELECT x.`id`, x.`status`, 'collect_payment' AS `action`, x.`created_at` AS `since`, s.`followup_pending_payment_hours` AS `deadline_hours`
+	FROM `orders` x JOIN `store_settings` s ON s.`id` = 1 WHERE x.`status` = 'pending' AND x.`payment_method` <> 'cash_on_delivery'
 	UNION ALL
-	SELECT x.`id`, x.`status`, x.`confirmed_at`, s.`followup_paid_unshipped_hours`
-	FROM `orders` x JOIN `store_settings` s ON s.`id` = 1 WHERE x.`status` = 'confirmed'
+	SELECT x.`id`, x.`status`, 'ship', x.`created_at`, s.`followup_paid_unshipped_hours`
+	FROM `orders` x JOIN `store_settings` s ON s.`id` = 1 WHERE x.`status` = 'pending' AND x.`payment_method` = 'cash_on_delivery'
 	UNION ALL
-	SELECT x.`id`, x.`status`, x.`fulfilled_at`, s.`followup_shipped_undelivered_hours`
-	FROM `orders` x JOIN `store_settings` s ON s.`id` = 1 WHERE x.`status` = 'fulfilled'
+	SELECT x.`id`, x.`status`, 'ship', x.`paid_at`, s.`followup_paid_unshipped_hours`
+	FROM `orders` x JOIN `store_settings` s ON s.`id` = 1 WHERE x.`status` = 'paid'
+	UNION ALL
+	SELECT x.`id`, x.`status`, 'confirm_delivery', x.`shipped_at`, s.`followup_shipped_undelivered_hours`
+	FROM `orders` x JOIN `store_settings` s ON s.`id` = 1 WHERE x.`status` = 'shipped'
 ) o
 WHERE o.`deadline_hours` IS NOT NULL
 	AND julianday('now') > julianday(o.`since`) + o.`deadline_hours` / 24.0;
+--> statement-breakpoint
+
+-- Reviews: only from a customer with a delivered order of the product; the author and the
+-- product never change.
+CREATE TRIGGER `product_reviews_requires_delivered_order` BEFORE INSERT ON `product_reviews`
+WHEN NOT EXISTS (SELECT 1 FROM `orders` o JOIN `order_items` i ON i.`order_id` = o.`id` JOIN `variants` v ON v.`id` = i.`variant_id`
+	WHERE o.`customer_id` = NEW.`customer_id` AND o.`status` = 'delivered' AND v.`product_id` = NEW.`product_id`)
+BEGIN
+	SELECT RAISE(ABORT, 'review_requires_delivered_order');
+END;--> statement-breakpoint
+CREATE TRIGGER `product_reviews_identity_locked` BEFORE UPDATE ON `product_reviews`
+WHEN NEW.`product_id` IS NOT OLD.`product_id`
+	OR NEW.`customer_id` IS NOT OLD.`customer_id`
+	OR NEW.`created_at` IS NOT OLD.`created_at`
+BEGIN
+	SELECT RAISE(ABORT, 'review_identity_locked');
+END;--> statement-breakpoint
+CREATE TRIGGER `stock_alerts_locked` BEFORE UPDATE ON `stock_alerts`
+WHEN NEW.`variant_id` IS NOT OLD.`variant_id`
+	OR NEW.`email` IS NOT OLD.`email`
+	OR NEW.`created_at` IS NOT OLD.`created_at`
+	OR OLD.`notified_at` IS NOT NULL
+BEGIN
+	SELECT RAISE(ABORT, 'stock_alert_locked');
+END;--> statement-breakpoint
+CREATE TRIGGER `cart_items_variant_sellable` BEFORE INSERT ON `cart_items`
+WHEN NEW.`variant_id` IS NOT NULL
+	AND NOT EXISTS (SELECT 1 FROM `variants` v JOIN `products` p ON p.`id` = v.`product_id`
+		WHERE v.`id` = NEW.`variant_id` AND v.`status` = 'active' AND v.`price` IS NOT NULL AND p.`status` = 'published')
+BEGIN
+	SELECT RAISE(ABORT, 'cart_item_unavailable');
+END;--> statement-breakpoint
+CREATE TRIGGER `cart_items_bundle_sellable` BEFORE INSERT ON `cart_items`
+WHEN NEW.`bundle_id` IS NOT NULL
+	AND (SELECT `status` FROM `bundles` WHERE `id` = NEW.`bundle_id`) IS NOT 'published'
+BEGIN
+	SELECT RAISE(ABORT, 'cart_item_unavailable');
+END;

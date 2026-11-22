@@ -54,6 +54,13 @@ export const storeSettings = sqliteTable(
 		followupShippedUndeliveredHours: integer(
 			"followup_shipped_undelivered_hours",
 		),
+		// IVA included in every price, in basis points (1300 = 13 %).
+		taxRateBp: integer("tax_rate_bp"),
+		// Shown to customers who pay by bank transfer.
+		bankName: text("bank_name"),
+		bankAccountType: text("bank_account_type"),
+		bankAccountNumber: text("bank_account_number"),
+		bankAccountHolder: text("bank_account_holder"),
 		discordUrl: text("discord_url"),
 		instagramUrl: text("instagram_url"),
 		tiktokUrl: text("tiktok_url"),
@@ -78,6 +85,10 @@ export const storeSettings = sqliteTable(
 		check(
 			"store_settings_followup_hours",
 			sql`(${t.followupPendingPaymentHours} is null or ${t.followupPendingPaymentHours} > 0) and (${t.followupPaidUnshippedHours} is null or ${t.followupPaidUnshippedHours} > 0) and (${t.followupShippedUndeliveredHours} is null or ${t.followupShippedUndeliveredHours} > 0)`,
+		),
+		check(
+			"store_settings_tax_rate",
+			sql`${t.taxRateBp} is null or ${t.taxRateBp} between 0 and 5000`,
 		),
 		check(
 			"store_settings_social_urls",

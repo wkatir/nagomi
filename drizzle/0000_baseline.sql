@@ -270,11 +270,11 @@ CREATE TABLE `inventory_movements` (
 	FOREIGN KEY (`lot_id`) REFERENCES `lots`(`id`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`order_item_id`) REFERENCES `order_items`(`id`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`return_line_id`) REFERENCES `return_lines`(`id`) ON UPDATE no action ON DELETE no action,
-	CONSTRAINT "inventory_movements_kind" CHECK("inventory_movements"."kind" in ('receive', 'sale', 'return', 'adjustment', 'waste')),
+	CONSTRAINT "inventory_movements_kind" CHECK("inventory_movements"."kind" in ('receive', 'sale', 'cancellation', 'return', 'adjustment', 'waste')),
 	CONSTRAINT "inventory_movements_reason" CHECK("inventory_movements"."reason" in ('damaged', 'demo_unit', 'own_use', 'lost_theft', 'count_difference', 'customer_return', 'other')),
 	CONSTRAINT "inventory_movements_nonzero" CHECK("inventory_movements"."quantity" <> 0),
-	CONSTRAINT "inventory_movements_sign" CHECK(("inventory_movements"."kind" in ('receive', 'return') and "inventory_movements"."quantity" > 0) or ("inventory_movements"."kind" in ('sale', 'waste') and "inventory_movements"."quantity" < 0) or "inventory_movements"."kind" = 'adjustment'),
-	CONSTRAINT "inventory_movements_links" CHECK(("inventory_movements"."kind" = 'sale') = ("inventory_movements"."order_item_id" is not null) and ("inventory_movements"."kind" = 'return' or ("inventory_movements"."kind" = 'waste' and "inventory_movements"."reason" = 'customer_return')) = ("inventory_movements"."return_line_id" is not null)),
+	CONSTRAINT "inventory_movements_sign" CHECK(("inventory_movements"."kind" in ('receive', 'return', 'cancellation') and "inventory_movements"."quantity" > 0) or ("inventory_movements"."kind" in ('sale', 'waste') and "inventory_movements"."quantity" < 0) or "inventory_movements"."kind" = 'adjustment'),
+	CONSTRAINT "inventory_movements_links" CHECK(("inventory_movements"."kind" in ('sale', 'cancellation')) = ("inventory_movements"."order_item_id" is not null) and ("inventory_movements"."kind" = 'return' or ("inventory_movements"."kind" = 'waste' and "inventory_movements"."reason" = 'customer_return')) = ("inventory_movements"."return_line_id" is not null)),
 	CONSTRAINT "inventory_movements_reason_required" CHECK("inventory_movements"."kind" not in ('waste', 'adjustment') or "inventory_movements"."reason" is not null)
 );
 --> statement-breakpoint
@@ -409,10 +409,25 @@ CREATE TABLE `home_slides` (
 );
 --> statement-breakpoint
 CREATE INDEX `home_slides_status_idx` ON `home_slides` (`status`,`position`);--> statement-breakpoint
+CREATE TABLE `order_bundles` (
+	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+	`order_id` integer NOT NULL,
+	`bundle_id` integer NOT NULL,
+	`quantity` integer NOT NULL,
+	`unit_price` integer NOT NULL,
+	`name` text NOT NULL,
+	FOREIGN KEY (`order_id`) REFERENCES `orders`(`id`) ON UPDATE no action ON DELETE no action,
+	FOREIGN KEY (`bundle_id`) REFERENCES `bundles`(`id`) ON UPDATE no action ON DELETE no action,
+	CONSTRAINT "order_bundles_quantity" CHECK("order_bundles"."quantity" > 0),
+	CONSTRAINT "order_bundles_unit_price" CHECK("order_bundles"."unit_price" >= 0)
+);
+--> statement-breakpoint
+CREATE UNIQUE INDEX `order_bundles_unique` ON `order_bundles` (`order_id`,`bundle_id`);--> statement-breakpoint
 CREATE TABLE `order_items` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`order_id` integer NOT NULL,
 	`variant_id` integer NOT NULL,
+	`order_bundle_id` integer,
 	`quantity` integer NOT NULL,
 	`unit_price` integer NOT NULL,
 	`sku` text NOT NULL,
@@ -421,11 +436,14 @@ CREATE TABLE `order_items` (
 	`option_label` text,
 	FOREIGN KEY (`order_id`) REFERENCES `orders`(`id`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`variant_id`) REFERENCES `variants`(`id`) ON UPDATE no action ON DELETE no action,
+	FOREIGN KEY (`order_bundle_id`) REFERENCES `order_bundles`(`id`) ON UPDATE no action ON DELETE no action,
 	CONSTRAINT "order_items_quantity_positive" CHECK("order_items"."quantity" > 0),
 	CONSTRAINT "order_items_unit_price" CHECK("order_items"."unit_price" >= 0)
 );
 --> statement-breakpoint
-CREATE UNIQUE INDEX `order_items_unique` ON `order_items` (`order_id`,`variant_id`);--> statement-breakpoint
+CREATE INDEX `order_items_order_idx` ON `order_items` (`order_id`);--> statement-breakpoint
+CREATE UNIQUE INDEX `order_items_unique` ON `order_items` (`order_id`,`variant_id`) WHERE order_bundle_id is null;--> statement-breakpoint
+CREATE UNIQUE INDEX `order_items_bundle_unique` ON `order_items` (`order_bundle_id`,`variant_id`) WHERE order_bundle_id is not null;--> statement-breakpoint
 CREATE INDEX `order_items_variant_idx` ON `order_items` (`variant_id`);--> statement-breakpoint
 CREATE TABLE `order_status_history` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -434,8 +452,8 @@ CREATE TABLE `order_status_history` (
 	`to_status` text NOT NULL,
 	`changed_at` text DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')) NOT NULL,
 	FOREIGN KEY (`order_id`) REFERENCES `orders`(`id`) ON UPDATE no action ON DELETE no action,
-	CONSTRAINT "order_status_history_from" CHECK("order_status_history"."from_status" in ('pending', 'confirmed', 'fulfilled', 'delivered', 'cancelled')),
-	CONSTRAINT "order_status_history_to" CHECK("order_status_history"."to_status" in ('pending', 'confirmed', 'fulfilled', 'delivered', 'cancelled')),
+	CONSTRAINT "order_status_history_from" CHECK("order_status_history"."from_status" in ('pending', 'paid', 'shipped', 'delivered', 'cancelled')),
+	CONSTRAINT "order_status_history_to" CHECK("order_status_history"."to_status" in ('pending', 'paid', 'shipped', 'delivered', 'cancelled')),
 	CONSTRAINT "order_status_history_changed" CHECK("order_status_history"."from_status" is not "order_status_history"."to_status")
 );
 --> statement-breakpoint
@@ -446,45 +464,58 @@ CREATE TABLE `orders` (
 	`idempotency_key` text NOT NULL,
 	`request_hash` text NOT NULL,
 	`customer_id` integer,
-	`customer_name` text,
+	`customer_name` text NOT NULL,
+	`customer_email` text NOT NULL,
+	`customer_phone` text NOT NULL,
 	`search_key` text NOT NULL,
 	`locale` text NOT NULL,
 	`channel` text NOT NULL,
 	`status` text DEFAULT 'pending' NOT NULL,
-	`payment_method` text,
+	`payment_method` text NOT NULL,
 	`subtotal` integer NOT NULL,
 	`discount` integer DEFAULT 0 NOT NULL,
 	`discount_reason` text,
 	`shipping` integer DEFAULT 0 NOT NULL,
 	`total` integer NOT NULL,
-	`shipping_method` text,
+	`tax_included` integer DEFAULT 0 NOT NULL,
+	`shipping_method` text NOT NULL,
 	`shipping_zone_id` integer,
 	`shipping_zone_name` text,
-	`ship_to` text,
+	`ship_department` text,
+	`ship_municipality` text,
+	`ship_address_line` text,
+	`ship_reference` text,
 	`delivery_estimate_from` text,
 	`delivery_estimate_to` text,
-	`confirmation_message` text,
+	`confirmation_message` text NOT NULL,
+	`payment_url` text,
+	`courier` text,
+	`tracking_code` text,
 	`cancel_reason` text,
+	`cancelled_by` text,
 	`notes` text,
 	`created_at` text DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')) NOT NULL,
-	`confirmed_at` text,
-	`fulfilled_at` text,
+	`paid_at` text,
+	`shipped_at` text,
 	`delivered_at` text,
 	`cancelled_at` text,
 	`promotion_id` integer,
-	`customer_phone` text,
 	FOREIGN KEY (`customer_id`) REFERENCES `customers`(`id`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`shipping_zone_id`) REFERENCES `shipping_zones`(`id`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`promotion_id`) REFERENCES `promotions`(`id`) ON UPDATE no action ON DELETE no action,
-	CONSTRAINT "orders_channel" CHECK("orders"."channel" in ('whatsapp', 'instagram', 'in_person')),
-	CONSTRAINT "orders_status" CHECK("orders"."status" in ('pending', 'confirmed', 'fulfilled', 'delivered', 'cancelled')),
+	CONSTRAINT "orders_channel" CHECK("orders"."channel" in ('web', 'whatsapp', 'instagram', 'in_person')),
+	CONSTRAINT "orders_status" CHECK("orders"."status" in ('pending', 'paid', 'shipped', 'delivered', 'cancelled')),
 	CONSTRAINT "orders_payment_method" CHECK("orders"."payment_method" in ('card', 'bank_transfer', 'cash_on_delivery', 'payment_link', 'cash')),
-	CONSTRAINT "orders_customer_phone" CHECK("orders"."customer_phone" is null or ("orders"."customer_phone" glob '+[1-9]*' and substr("orders"."customer_phone", 2) not glob '*[^0-9]*' and length("orders"."customer_phone") between 8 and 16)),
 	CONSTRAINT "orders_shipping_method" CHECK("orders"."shipping_method" in ('pickup', 'own_delivery', 'courier')),
+	CONSTRAINT "orders_customer_phone" CHECK("orders"."customer_phone" glob '+503[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]'),
+	CONSTRAINT "orders_customer_email" CHECK("orders"."customer_email" = lower(trim("orders"."customer_email")) and "orders"."customer_email" like '%_@_%._%'),
+	CONSTRAINT "orders_customer_name" CHECK(trim("orders"."customer_name") <> ''),
 	CONSTRAINT "orders_total_consistent" CHECK("orders"."total" = "orders"."subtotal" - "orders"."discount" + "orders"."shipping"),
-	CONSTRAINT "orders_amounts_non_negative" CHECK("orders"."subtotal" >= 0 and "orders"."discount" >= 0 and "orders"."discount" <= "orders"."subtotal" and "orders"."shipping" >= 0),
+	CONSTRAINT "orders_amounts_non_negative" CHECK("orders"."subtotal" >= 0 and "orders"."discount" >= 0 and "orders"."discount" <= "orders"."subtotal" and "orders"."shipping" >= 0 and "orders"."tax_included" >= 0 and "orders"."tax_included" <= "orders"."total"),
 	CONSTRAINT "orders_discount_reason" CHECK("orders"."discount" = 0 or "orders"."discount_reason" is not null),
-	CONSTRAINT "orders_delivery_estimate" CHECK(("orders"."delivery_estimate_from" is null) = ("orders"."delivery_estimate_to" is null) and ("orders"."delivery_estimate_from" is null or ("orders"."delivery_estimate_from" glob '[0-9][0-9][0-9][0-9]-[0-1][0-9]-[0-3][0-9]' and "orders"."delivery_estimate_to" glob '[0-9][0-9][0-9][0-9]-[0-1][0-9]-[0-3][0-9]' and "orders"."delivery_estimate_from" <= "orders"."delivery_estimate_to")))
+	CONSTRAINT "orders_delivery_address" CHECK("orders"."shipping_method" = 'pickup' or ("orders"."ship_municipality" is not null and "orders"."ship_department" is not null and trim("orders"."ship_address_line") <> '' and "orders"."shipping_zone_id" is not null)),
+	CONSTRAINT "orders_delivery_estimate" CHECK(("orders"."delivery_estimate_from" is null) = ("orders"."delivery_estimate_to" is null) and ("orders"."delivery_estimate_from" is null or ("orders"."delivery_estimate_from" glob '[0-9][0-9][0-9][0-9]-[0-1][0-9]-[0-3][0-9]' and "orders"."delivery_estimate_to" glob '[0-9][0-9][0-9][0-9]-[0-1][0-9]-[0-3][0-9]' and "orders"."delivery_estimate_from" <= "orders"."delivery_estimate_to"))),
+	CONSTRAINT "orders_shipped_courier" CHECK("orders"."shipped_at" is null or trim("orders"."courier") <> '')
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `orders_code_unique` ON `orders` (`code`);--> statement-breakpoint
@@ -492,9 +523,10 @@ CREATE UNIQUE INDEX `orders_idempotency_key_unique` ON `orders` (`idempotency_ke
 CREATE INDEX `orders_status_created_idx` ON `orders` (`status`,`created_at`);--> statement-breakpoint
 CREATE INDEX `orders_customer_created_idx` ON `orders` (`customer_id`,`created_at`);--> statement-breakpoint
 CREATE INDEX `orders_created_idx` ON `orders` (`created_at`);--> statement-breakpoint
-CREATE INDEX `orders_fulfilled_idx` ON `orders` (`fulfilled_at`);--> statement-breakpoint
-CREATE INDEX `orders_confirmed_idx` ON `orders` (`confirmed_at`);--> statement-breakpoint
+CREATE INDEX `orders_shipped_idx` ON `orders` (`shipped_at`);--> statement-breakpoint
+CREATE INDEX `orders_paid_idx` ON `orders` (`paid_at`);--> statement-breakpoint
 CREATE INDEX `orders_promotion_idx` ON `orders` (`promotion_id`);--> statement-breakpoint
+CREATE INDEX `orders_customer_email_idx` ON `orders` (`customer_email`);--> statement-breakpoint
 CREATE INDEX `orders_customer_phone_idx` ON `orders` (`customer_phone`);--> statement-breakpoint
 CREATE TABLE `payments` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -544,11 +576,27 @@ CREATE TABLE `returns` (
 	`created_at` text DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')) NOT NULL,
 	`created_by` text NOT NULL,
 	FOREIGN KEY (`order_id`) REFERENCES `orders`(`id`) ON UPDATE no action ON DELETE no action,
-	CONSTRAINT "returns_reason" CHECK("returns"."reason" in ('withdrawal', 'defective', 'wrong_item', 'delivery_failed', 'other'))
+	CONSTRAINT "returns_reason" CHECK("returns"."reason" in ('withdrawal', 'defective', 'wrong_item', 'other'))
 );
 --> statement-breakpoint
 CREATE INDEX `returns_order_idx` ON `returns` (`order_id`);--> statement-breakpoint
 CREATE INDEX `returns_created_idx` ON `returns` (`created_at`);--> statement-breakpoint
+CREATE TABLE `promotion_redemptions` (
+	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+	`promotion_id` integer NOT NULL,
+	`order_id` integer NOT NULL,
+	`email` text NOT NULL,
+	`customer_key` text,
+	`created_at` text DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')) NOT NULL,
+	`released_at` text,
+	FOREIGN KEY (`promotion_id`) REFERENCES `promotions`(`id`) ON UPDATE no action ON DELETE no action,
+	FOREIGN KEY (`order_id`) REFERENCES `orders`(`id`) ON UPDATE no action ON DELETE no action
+);
+--> statement-breakpoint
+CREATE UNIQUE INDEX `promotion_redemptions_order_id_unique` ON `promotion_redemptions` (`order_id`);--> statement-breakpoint
+CREATE UNIQUE INDEX `promotion_redemptions_once_per_customer` ON `promotion_redemptions` (`promotion_id`,`customer_key`) WHERE customer_key is not null and released_at is null;--> statement-breakpoint
+CREATE INDEX `promotion_redemptions_promotion_idx` ON `promotion_redemptions` (`promotion_id`);--> statement-breakpoint
+CREATE INDEX `promotion_redemptions_email_idx` ON `promotion_redemptions` (`email`);--> statement-breakpoint
 CREATE TABLE `promotion_translations` (
 	`promotion_id` integer NOT NULL,
 	`locale` text NOT NULL,
@@ -567,15 +615,16 @@ CREATE TABLE `promotions` (
 	`ends_on` text,
 	`usage_limit` integer,
 	`per_customer_limit` integer,
+	`first_order_only` integer DEFAULT false NOT NULL,
 	`status` text DEFAULT 'inactive' NOT NULL,
 	`created_at` text DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')) NOT NULL,
 	`updated_at` text DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')) NOT NULL,
 	CONSTRAINT "promotions_type" CHECK("promotions"."type" in ('percentage', 'fixed')),
 	CONSTRAINT "promotions_status" CHECK("promotions"."status" in ('active', 'inactive', 'archived')),
 	CONSTRAINT "promotions_code" CHECK(length("promotions"."code") between 3 and 32 and "promotions"."code" not glob '*[^A-Z0-9_-]*'),
-	CONSTRAINT "promotions_value" CHECK(("promotions"."type" = 'percentage' and "promotions"."value" between 1 and 100) or ("promotions"."type" = 'fixed' and "promotions"."value" > 0)),
-	CONSTRAINT "promotions_limits" CHECK(("promotions"."min_subtotal" is null or "promotions"."min_subtotal" > 0) and ("promotions"."usage_limit" is null or "promotions"."usage_limit" > 0) and ("promotions"."per_customer_limit" is null or "promotions"."per_customer_limit" > 0)),
-	CONSTRAINT "promotions_dates" CHECK(("promotions"."starts_on" is null or "promotions"."starts_on" glob '[0-9][0-9][0-9][0-9]-[0-1][0-9]-[0-3][0-9]') and ("promotions"."ends_on" is null or "promotions"."ends_on" glob '[0-9][0-9][0-9][0-9]-[0-1][0-9]-[0-3][0-9]') and ("promotions"."starts_on" is null or "promotions"."ends_on" is null or "promotions"."starts_on" <= "promotions"."ends_on"))
+	CONSTRAINT "promotions_value" CHECK(("promotions"."type" = 'percentage' and "promotions"."value" between 1 and 50) or ("promotions"."type" = 'fixed' and "promotions"."value" > 0)),
+	CONSTRAINT "promotions_limits" CHECK(("promotions"."min_subtotal" is null or "promotions"."min_subtotal" > 0) and ("promotions"."usage_limit" is null or "promotions"."usage_limit" > 0) and ("promotions"."per_customer_limit" is null or "promotions"."per_customer_limit" = 1)),
+	CONSTRAINT "promotions_dates" CHECK(("promotions"."starts_on" is null or "promotions"."starts_on" glob '[0-9][0-9][0-9][0-9]-[0-1][0-9]-[0-3][0-9]') and ("promotions"."ends_on" is null or "promotions"."ends_on" glob '[0-9][0-9][0-9][0-9]-[0-1][0-9]-[0-3][0-9]') and ("promotions"."starts_on" is null or "promotions"."ends_on" is null or "promotions"."starts_on" < "promotions"."ends_on"))
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `promotions_code_unique` ON `promotions` (`code`);--> statement-breakpoint
@@ -682,6 +731,76 @@ CREATE TABLE `suppliers` (
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `suppliers_name_unique` ON `suppliers` (`name`);--> statement-breakpoint
+CREATE TABLE `cart_items` (
+	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+	`cart_id` text NOT NULL,
+	`variant_id` integer,
+	`bundle_id` integer,
+	`quantity` integer NOT NULL,
+	`created_at` text DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')) NOT NULL,
+	FOREIGN KEY (`cart_id`) REFERENCES `carts`(`id`) ON UPDATE no action ON DELETE no action,
+	FOREIGN KEY (`variant_id`) REFERENCES `variants`(`id`) ON UPDATE no action ON DELETE no action,
+	FOREIGN KEY (`bundle_id`) REFERENCES `bundles`(`id`) ON UPDATE no action ON DELETE no action,
+	CONSTRAINT "cart_items_quantity" CHECK("cart_items"."quantity" > 0),
+	CONSTRAINT "cart_items_one_kind" CHECK(("cart_items"."variant_id" is null) <> ("cart_items"."bundle_id" is null))
+);
+--> statement-breakpoint
+CREATE UNIQUE INDEX `cart_items_variant_unique` ON `cart_items` (`cart_id`,`variant_id`) WHERE variant_id is not null;--> statement-breakpoint
+CREATE UNIQUE INDEX `cart_items_bundle_unique` ON `cart_items` (`cart_id`,`bundle_id`) WHERE bundle_id is not null;--> statement-breakpoint
+CREATE TABLE `carts` (
+	`id` text PRIMARY KEY NOT NULL,
+	`customer_id` integer,
+	`promotion_code` text,
+	`created_at` text DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')) NOT NULL,
+	`updated_at` text DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')) NOT NULL,
+	FOREIGN KEY (`customer_id`) REFERENCES `customers`(`id`) ON UPDATE no action ON DELETE no action,
+	CONSTRAINT "carts_id" CHECK(length("carts"."id") = 32 and "carts"."id" not glob '*[^0-9a-f]*')
+);
+--> statement-breakpoint
+CREATE UNIQUE INDEX `carts_customer_unique` ON `carts` (`customer_id`) WHERE customer_id is not null;--> statement-breakpoint
+CREATE TABLE `product_reviews` (
+	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+	`product_id` integer NOT NULL,
+	`customer_id` integer NOT NULL,
+	`rating` integer NOT NULL,
+	`title` text NOT NULL,
+	`body` text NOT NULL,
+	`status` text DEFAULT 'pending' NOT NULL,
+	`created_at` text DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')) NOT NULL,
+	`updated_at` text DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')) NOT NULL,
+	`moderated_at` text,
+	FOREIGN KEY (`product_id`) REFERENCES `products`(`id`) ON UPDATE no action ON DELETE no action,
+	FOREIGN KEY (`customer_id`) REFERENCES `customers`(`id`) ON UPDATE no action ON DELETE no action,
+	CONSTRAINT "product_reviews_status" CHECK("product_reviews"."status" in ('pending', 'approved', 'rejected')),
+	CONSTRAINT "product_reviews_rating" CHECK("product_reviews"."rating" between 1 and 5),
+	CONSTRAINT "product_reviews_text" CHECK(length(trim("product_reviews"."title")) between 1 and 120 and length(trim("product_reviews"."body")) between 1 and 2000)
+);
+--> statement-breakpoint
+CREATE UNIQUE INDEX `product_reviews_once` ON `product_reviews` (`customer_id`,`product_id`);--> statement-breakpoint
+CREATE INDEX `product_reviews_product_idx` ON `product_reviews` (`product_id`,`status`);--> statement-breakpoint
+CREATE INDEX `product_reviews_status_idx` ON `product_reviews` (`status`,`created_at`);--> statement-breakpoint
+CREATE TABLE `stock_alerts` (
+	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+	`variant_id` integer NOT NULL,
+	`email` text NOT NULL,
+	`created_at` text DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')) NOT NULL,
+	`notified_at` text,
+	FOREIGN KEY (`variant_id`) REFERENCES `variants`(`id`) ON UPDATE no action ON DELETE no action,
+	CONSTRAINT "stock_alerts_email" CHECK("stock_alerts"."email" = lower(trim("stock_alerts"."email")) and "stock_alerts"."email" like '%_@_%._%')
+);
+--> statement-breakpoint
+CREATE UNIQUE INDEX `stock_alerts_pending_unique` ON `stock_alerts` (`variant_id`,`email`) WHERE notified_at is null;--> statement-breakpoint
+CREATE INDEX `stock_alerts_variant_idx` ON `stock_alerts` (`variant_id`,`notified_at`);--> statement-breakpoint
+CREATE TABLE `wishlist_items` (
+	`customer_id` integer NOT NULL,
+	`product_id` integer NOT NULL,
+	`created_at` text DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')) NOT NULL,
+	PRIMARY KEY(`customer_id`, `product_id`),
+	FOREIGN KEY (`customer_id`) REFERENCES `customers`(`id`) ON UPDATE no action ON DELETE no action,
+	FOREIGN KEY (`product_id`) REFERENCES `products`(`id`) ON UPDATE no action ON DELETE no action
+);
+--> statement-breakpoint
+CREATE INDEX `wishlist_items_product_idx` ON `wishlist_items` (`product_id`);--> statement-breakpoint
 CREATE TABLE `page_versions` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`page_id` integer NOT NULL,
@@ -795,6 +914,11 @@ CREATE TABLE `store_settings` (
 	`followup_pending_payment_hours` integer,
 	`followup_paid_unshipped_hours` integer,
 	`followup_shipped_undelivered_hours` integer,
+	`tax_rate_bp` integer,
+	`bank_name` text,
+	`bank_account_type` text,
+	`bank_account_number` text,
+	`bank_account_holder` text,
 	`discord_url` text,
 	`instagram_url` text,
 	`tiktok_url` text,
@@ -806,6 +930,7 @@ CREATE TABLE `store_settings` (
 	CONSTRAINT "store_settings_days" CHECK(("store_settings"."max_quantity_per_line" is null or "store_settings"."max_quantity_per_line" > 0) and ("store_settings"."return_window_days" is null or "store_settings"."return_window_days" > 0)),
 	CONSTRAINT "store_settings_thresholds" CHECK(("store_settings"."free_shipping_from" is null or "store_settings"."free_shipping_from" >= 0) and ("store_settings"."low_stock_threshold" is null or "store_settings"."low_stock_threshold" >= 0) and ("store_settings"."frequent_customer_min_orders" is null or "store_settings"."frequent_customer_min_orders" > 1) and ("store_settings"."inactive_customer_days" is null or "store_settings"."inactive_customer_days" > 0)),
 	CONSTRAINT "store_settings_followup_hours" CHECK(("store_settings"."followup_pending_payment_hours" is null or "store_settings"."followup_pending_payment_hours" > 0) and ("store_settings"."followup_paid_unshipped_hours" is null or "store_settings"."followup_paid_unshipped_hours" > 0) and ("store_settings"."followup_shipped_undelivered_hours" is null or "store_settings"."followup_shipped_undelivered_hours" > 0)),
+	CONSTRAINT "store_settings_tax_rate" CHECK("store_settings"."tax_rate_bp" is null or "store_settings"."tax_rate_bp" between 0 and 5000),
 	CONSTRAINT "store_settings_social_urls" CHECK(("store_settings"."discord_url" is null or "store_settings"."discord_url" glob 'https://*') and ("store_settings"."instagram_url" is null or "store_settings"."instagram_url" glob 'https://*') and ("store_settings"."tiktok_url" is null or "store_settings"."tiktok_url" glob 'https://*') and ("store_settings"."youtube_url" is null or "store_settings"."youtube_url" glob 'https://*'))
 );
 --> statement-breakpoint

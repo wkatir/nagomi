@@ -18,7 +18,7 @@ export const IMAGE_TYPES = [
 ] as const;
 export type ImageType = (typeof IMAGE_TYPES)[number];
 
-export const CONSENT_CHANNELS = ["web", ...ORDER_CHANNELS] as const;
+export const CONSENT_CHANNELS = ORDER_CHANNELS;
 export type ConsentChannel = (typeof CONSENT_CHANNELS)[number];
 
 // privacy_notice and terms are acknowledgements required to order; the marketing one is an

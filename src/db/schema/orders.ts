@@ -20,9 +20,13 @@ import { variants } from "./catalog";
 import { customers } from "./customers";
 import { PAYMENT_KINDS, PAYMENT_STATUSES } from "./enums";
 import { lots } from "./inventory";
+import { bundles } from "./merchandising";
 import { promotions } from "./promotions";
 import { shippingZones } from "./store";
 
+// Placed with every term fixed (online checkout): prices, discount, shipping and payment
+// method never change afterwards (trigger). Stock leaves the lots when the order is placed
+// and comes back when it is cancelled.
 export const orders = sqliteTable(
 	"orders",
 	{
@@ -32,87 +36,132 @@ export const orders = sqliteTable(
 		idempotencyKey: text("idempotency_key").notNull().unique(),
 		requestHash: text("request_hash").notNull(),
 		customerId: integer("customer_id").references(() => customers.id),
-		// The name given with this order (a gift buyer may not be the stored customer).
-		customerName: text("customer_name"),
-		// searchKey() of code and customer name (src/server/domain/search.ts), written by the API.
+		customerName: text("customer_name").notNull(),
+		// Lower case, trimmed: guest lookup and once-per-customer coupons.
+		customerEmail: text("customer_email").notNull(),
+		// E.164 (+503 and 8 digits).
+		customerPhone: text("customer_phone").notNull(),
+		// searchKey() of code, customer name, email and phone digits (src/server/domain/search.ts).
 		searchKey: text("search_key").notNull(),
 		locale: locale(),
 		channel: text("channel", { enum: ORDER_CHANNELS }).notNull(),
 		status: text("status", { enum: ORDER_STATUSES })
 			.notNull()
 			.default("pending"),
-		// Method agreed at confirmation; money received is in `payments`.
-		paymentMethod: text("payment_method", { enum: PAYMENT_METHODS }),
+		paymentMethod: text("payment_method", { enum: PAYMENT_METHODS }).notNull(),
 		subtotal: integer("subtotal").notNull(),
 		discount: integer("discount").notNull().default(0),
 		discountReason: text("discount_reason"),
-		// Fixed at confirmation.
 		shipping: integer("shipping").notNull().default(0),
 		total: integer("total").notNull(),
-		shippingMethod: text("shipping_method", { enum: SHIPPING_METHODS }),
+		// The IVA included in the total at the store's rate when the order was placed.
+		taxIncluded: integer("tax_included").notNull().default(0),
+		shippingMethod: text("shipping_method", {
+			enum: SHIPPING_METHODS,
+		}).notNull(),
 		shippingZoneId: integer("shipping_zone_id").references(
 			() => shippingZones.id,
 		),
-		// Zone name in the default locale at confirmation.
+		// Zone name in the order's locale when it was placed.
 		shippingZoneName: text("shipping_zone_name"),
-		shipTo: text("ship_to"),
+		shipDepartment: text("ship_department"),
+		shipMunicipality: text("ship_municipality"),
+		shipAddressLine: text("ship_address_line"),
+		shipReference: text("ship_reference"),
 		// Promised delivery as local dates; a single day has from = to.
 		deliveryEstimateFrom: text("delivery_estimate_from"),
 		deliveryEstimateTo: text("delivery_estimate_to"),
-		// Exactly what was sent to the customer at confirmation (consumer law).
-		confirmationMessage: text("confirmation_message"),
+		// The summary the customer saw when placing the order (consumer law).
+		confirmationMessage: text("confirmation_message").notNull(),
+		// The hosted payment page of a card order (Wompi payment link).
+		paymentUrl: text("payment_url"),
+		courier: text("courier"),
+		trackingCode: text("tracking_code"),
 		cancelReason: text("cancel_reason"),
+		cancelledBy: actor("cancelled_by"),
 		notes: text("notes"),
 		createdAt: createdAt(),
-		confirmedAt: text("confirmed_at"),
-		fulfilledAt: text("fulfilled_at"),
+		paidAt: text("paid_at"),
+		shippedAt: text("shipped_at"),
 		deliveredAt: text("delivered_at"),
 		cancelledAt: text("cancelled_at"),
-		// The discount code used when the order was placed; its discount is `discount`, with
-		// the code as `discount_reason`. It may only be removed, while pending (trigger).
 		promotionId: integer("promotion_id").references(() => promotions.id),
-		// The phone given with the order (E.164), for order lookup and per-customer
-		// promotion limits; the customer is linked at confirmation. Never changes (trigger).
-		customerPhone: text("customer_phone"),
 	},
 	(t) => [
 		oneOf("orders_channel", t.channel, ORDER_CHANNELS),
 		oneOf("orders_status", t.status, ORDER_STATUSES),
 		oneOf("orders_payment_method", t.paymentMethod, PAYMENT_METHODS),
+		oneOf("orders_shipping_method", t.shippingMethod, SHIPPING_METHODS),
 		check(
 			"orders_customer_phone",
-			sql`${t.customerPhone} is null or (${t.customerPhone} glob '+[1-9]*' and substr(${t.customerPhone}, 2) not glob '*[^0-9]*' and length(${t.customerPhone}) between 8 and 16)`,
+			sql`${t.customerPhone} glob '+503[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]'`,
 		),
-		oneOf("orders_shipping_method", t.shippingMethod, SHIPPING_METHODS),
+		check(
+			"orders_customer_email",
+			sql`${t.customerEmail} = lower(trim(${t.customerEmail})) and ${t.customerEmail} like '%_@_%._%'`,
+		),
+		check("orders_customer_name", sql`trim(${t.customerName}) <> ''`),
 		check(
 			"orders_total_consistent",
 			sql`${t.total} = ${t.subtotal} - ${t.discount} + ${t.shipping}`,
 		),
 		check(
 			"orders_amounts_non_negative",
-			sql`${t.subtotal} >= 0 and ${t.discount} >= 0 and ${t.discount} <= ${t.subtotal} and ${t.shipping} >= 0`,
+			sql`${t.subtotal} >= 0 and ${t.discount} >= 0 and ${t.discount} <= ${t.subtotal} and ${t.shipping} >= 0 and ${t.taxIncluded} >= 0 and ${t.taxIncluded} <= ${t.total}`,
 		),
 		check(
 			"orders_discount_reason",
 			sql`${t.discount} = 0 or ${t.discountReason} is not null`,
 		),
 		check(
+			"orders_delivery_address",
+			sql`${t.shippingMethod} = 'pickup' or (${t.shipMunicipality} is not null and ${t.shipDepartment} is not null and trim(${t.shipAddressLine}) <> '' and ${t.shippingZoneId} is not null)`,
+		),
+		check(
 			"orders_delivery_estimate",
 			sql`(${t.deliveryEstimateFrom} is null) = (${t.deliveryEstimateTo} is null) and (${t.deliveryEstimateFrom} is null or (${isDate(t.deliveryEstimateFrom)} and ${isDate(t.deliveryEstimateTo)} and ${t.deliveryEstimateFrom} <= ${t.deliveryEstimateTo}))`,
+		),
+		check(
+			"orders_shipped_courier",
+			sql`${t.shippedAt} is null or trim(${t.courier}) <> ''`,
 		),
 		index("orders_status_created_idx").on(t.status, t.createdAt),
 		index("orders_customer_created_idx").on(t.customerId, t.createdAt),
 		index("orders_created_idx").on(t.createdAt),
-		// Reports date sales by fulfilment and bookings by confirmation.
-		index("orders_fulfilled_idx").on(t.fulfilledAt),
-		index("orders_confirmed_idx").on(t.confirmedAt),
+		index("orders_shipped_idx").on(t.shippedAt),
+		index("orders_paid_idx").on(t.paidAt),
 		index("orders_promotion_idx").on(t.promotionId),
+		index("orders_customer_email_idx").on(t.customerEmail),
 		index("orders_customer_phone_idx").on(t.customerPhone),
 	],
 );
 
-// One line per variant. Description and price are copied when the order is placed, so
-// later catalogue edits never rewrite what was sold.
+// A set sold as one line at the set's price. Its units are order_items rows pointing here,
+// priced so they add up to the set's price.
+export const orderBundles = sqliteTable(
+	"order_bundles",
+	{
+		id: id(),
+		orderId: integer("order_id")
+			.notNull()
+			.references(() => orders.id),
+		bundleId: integer("bundle_id")
+			.notNull()
+			.references(() => bundles.id),
+		quantity: integer("quantity").notNull(),
+		unitPrice: integer("unit_price").notNull(),
+		// In the order's locale.
+		name: text("name").notNull(),
+	},
+	(t) => [
+		uniqueIndex("order_bundles_unique").on(t.orderId, t.bundleId),
+		check("order_bundles_quantity", sql`${t.quantity} > 0`),
+		check("order_bundles_unit_price", sql`${t.unitPrice} >= 0`),
+	],
+);
+
+// One line per variant (and per set it came in). Description and price are copied when the
+// order is placed, so later catalogue edits never rewrite what was sold.
 export const orderItems = sqliteTable(
 	"order_items",
 	{
@@ -123,6 +172,7 @@ export const orderItems = sqliteTable(
 		variantId: integer("variant_id")
 			.notNull()
 			.references(() => variants.id),
+		orderBundleId: integer("order_bundle_id").references(() => orderBundles.id),
 		quantity: integer("quantity").notNull(),
 		unitPrice: integer("unit_price").notNull(),
 		sku: text("sku").notNull(),
@@ -132,7 +182,13 @@ export const orderItems = sqliteTable(
 		optionLabel: text("option_label"),
 	},
 	(t) => [
-		uniqueIndex("order_items_unique").on(t.orderId, t.variantId),
+		uniqueIndex("order_items_unique")
+			.on(t.orderId, t.variantId)
+			.where(sql`order_bundle_id is null`),
+		uniqueIndex("order_items_bundle_unique")
+			.on(t.orderBundleId, t.variantId)
+			.where(sql`order_bundle_id is not null`),
+		index("order_items_order_idx").on(t.orderId),
 		index("order_items_variant_idx").on(t.variantId),
 		check("order_items_quantity_positive", sql`${t.quantity} > 0`),
 		check("order_items_unit_price", sql`${t.unitPrice} >= 0`),
@@ -148,6 +204,7 @@ export const orderStatusHistory = sqliteTable(
 			.references(() => orders.id),
 		fromStatus: text("from_status", { enum: ORDER_STATUSES }),
 		toStatus: text("to_status", { enum: ORDER_STATUSES }).notNull(),
+		// The order's own timestamp of the change (triggers copy it).
 		changedAt: text("changed_at").notNull().default(now),
 	},
 	(t) => [
@@ -196,7 +253,7 @@ export const payments = sqliteTable(
 	],
 );
 
-// Units that came back from a fulfilled or delivered order. A refund is a payments row.
+// Units that came back from a shipped or delivered order. A refund is a payments row.
 export const returns = sqliteTable(
 	"returns",
 	{

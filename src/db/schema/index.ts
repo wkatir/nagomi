@@ -38,8 +38,10 @@ export {
 	type PromotionType,
 	RETURN_DISPOSITIONS,
 	RETURN_REASONS,
+	REVIEW_STATUSES,
 	type ReturnDisposition,
 	type ReturnReason,
+	type ReviewStatus,
 	SHIPPING_METHODS,
 	type ShippingMethod,
 	SLUG_REGEX,
@@ -54,4 +56,5 @@ export * from "./merchandising";
 export * from "./orders";
 export * from "./promotions";
 export * from "./purchasing";
+export * from "./shopping";
 export * from "./store";
