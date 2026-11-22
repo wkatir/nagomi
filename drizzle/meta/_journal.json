@@ -5,36 +5,15 @@
     {
       "idx": 0,
       "version": "6",
-      "when": 1792882957057,
+      "when": 1795305396843,
       "tag": "0000_baseline",
       "breakpoints": true
     },
     {
       "idx": 1,
       "version": "6",
-      "when": 1792882958862,
+      "when": 1795305397797,
       "tag": "0001_integrity_triggers",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "6",
-      "when": 1792968330865,
-      "tag": "0002_landing_texts",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "6",
-      "when": 1793506244021,
-      "tag": "0003_tax_documents",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "6",
-      "when": 1793506259023,
-      "tag": "0004_tax_documents_triggers",
       "breakpoints": true
     }
   ]

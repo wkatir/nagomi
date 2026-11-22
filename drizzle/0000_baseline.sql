@@ -49,6 +49,7 @@ CREATE TABLE `category_translations` (
 	`category_id` integer NOT NULL,
 	`locale` text NOT NULL,
 	`name` text NOT NULL,
+	`description` text,
 	`seo_title` text,
 	`seo_description` text,
 	PRIMARY KEY(`category_id`, `locale`),
@@ -59,6 +60,9 @@ CREATE TABLE `concern_translations` (
 	`concern_id` integer NOT NULL,
 	`locale` text NOT NULL,
 	`name` text NOT NULL,
+	`description` text,
+	`seo_title` text,
+	`seo_description` text,
 	PRIMARY KEY(`concern_id`, `locale`),
 	FOREIGN KEY (`concern_id`) REFERENCES `concerns`(`id`) ON UPDATE no action ON DELETE no action
 );
@@ -372,6 +376,8 @@ CREATE TABLE `routines` (
 	`status` text DEFAULT 'draft' NOT NULL,
 	`is_featured` integer DEFAULT false NOT NULL,
 	`position` integer DEFAULT 0 NOT NULL,
+	`concern_id` integer,
+	FOREIGN KEY (`concern_id`) REFERENCES `concerns`(`id`) ON UPDATE no action ON DELETE no action,
 	CONSTRAINT "routines_slug" CHECK("routines"."slug" not glob '*[^a-z0-9-]*' and "routines"."slug" not glob '-*' and "routines"."slug" not glob '*-' and "routines"."slug" not glob '*--*' and length("routines"."slug") between 1 and 80),
 	CONSTRAINT "routines_status" CHECK("routines"."status" in ('draft', 'published', 'archived'))
 );
@@ -730,6 +736,7 @@ CREATE TABLE `store_settings` (
 	`min_shelf_life_days` integer,
 	`expiry_warning_days` integer,
 	`return_window_days` integer,
+	`founding_year` integer,
 	`updated_at` text DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')) NOT NULL,
 	CONSTRAINT "store_settings_single_row" CHECK("store_settings"."id" = 1),
 	CONSTRAINT "store_settings_currency" CHECK(length("store_settings"."currency") = 3),
