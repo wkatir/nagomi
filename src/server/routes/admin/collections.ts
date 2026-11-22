@@ -13,7 +13,7 @@ import {
 	pagedCollections,
 } from "../../domain/catalog-lists";
 import { inList, nonEmpty } from "../../domain/d1";
-import { mediaUrl } from "../../domain/images";
+import { mediaAvailable, mediaView } from "../../domain/media-files";
 import { productTextIn } from "../../domain/product-text";
 import { readSettings } from "../../domain/settings";
 import { canMoveStatus } from "../../domain/status";
@@ -60,9 +60,6 @@ const collectionFields = z.object({
 	coverMediaId: z.number().int().positive().nullable(),
 });
 
-const mediaView = (file: typeof mediaFiles.$inferSelect | undefined) =>
-	file ? { ...file, url: mediaUrl(file.r2Key) } : null;
-
 async function collectionDetails(db: Db, ids: number[]) {
 	if (ids.length === 0) return [];
 	const { defaultLocale } = await readSettings(db);
@@ -107,12 +104,6 @@ async function collectionDetails(db: Db, ids: number[]) {
 			.map(({ collectionId: _, ...item }) => item),
 	}));
 }
-
-const mediaExists = async (db: Db, id: number | null | undefined) =>
-	id == null ||
-	Boolean(
-		await db.query.mediaFiles.findFirst({ where: eq(mediaFiles.id, id) }),
-	);
 
 async function productsAvailable(db: Db, ids: number[]) {
 	if (ids.length === 0) return true;
@@ -179,7 +170,7 @@ export const collectionsRouter = new Hono<AdminEnv>()
 				db.query.collections.findFirst({
 					where: eq(collections.slug, fields.slug),
 				}),
-				mediaExists(db, fields.coverMediaId),
+				mediaAvailable(db, [fields.coverMediaId]),
 				productsAvailable(db, ids),
 			]);
 			if (taken) return c.json({ error: "duplicate_slug" }, 409);
@@ -233,7 +224,7 @@ export const collectionsRouter = new Hono<AdminEnv>()
 				});
 				if (taken) return c.json({ error: "duplicate_slug" }, 409);
 			}
-			if (!(await mediaExists(db, patch.coverMediaId)))
+			if (!(await mediaAvailable(db, [patch.coverMediaId])))
 				return c.json({ error: "reference_unavailable" }, 409);
 			const moving =
 				patch.status !== undefined && patch.status !== stored.status;

@@ -10,7 +10,7 @@ import { idParam, invalidRequest, patchOf, validate } from "#/server/validate";
 import { audit } from "../../domain/audit";
 import { statusAudit } from "../../domain/audit-actions";
 import { inList, nonEmpty } from "../../domain/d1";
-import { mediaUrl } from "../../domain/images";
+import { mediaAvailable, mediaView } from "../../domain/media-files";
 import { readSettings } from "../../domain/settings";
 import { canMoveStatus } from "../../domain/status";
 import {
@@ -55,9 +55,6 @@ const slideState = z
 		path: ["endsOn"],
 	});
 
-const mediaView = (file: typeof mediaFiles.$inferSelect | undefined) =>
-	file ? { ...file, url: mediaUrl(file.r2Key) } : null;
-
 async function slideDetails(db: Db, ids: number[]) {
 	if (ids.length === 0) return [];
 	// Batched selects need unique column names (see loadCatalog): images are read apart.
@@ -86,18 +83,6 @@ async function slideDetails(db: Db, ids: number[]) {
 		mobileImage: image(slide.mobileMediaId),
 		translations: texts.filter((t) => t.slideId === slide.id),
 	}));
-}
-
-async function mediaAvailable(db: Db, ids: (number | null | undefined)[]) {
-	const wanted = [
-		...new Set(ids.filter((id): id is number => typeof id === "number")),
-	];
-	if (wanted.length === 0) return true;
-	const found = await db
-		.select({ id: mediaFiles.id })
-		.from(mediaFiles)
-		.where(inList(mediaFiles.id, wanted));
-	return found.length === wanted.length;
 }
 
 export const homeSlidesRouter = new Hono<AdminEnv>()
