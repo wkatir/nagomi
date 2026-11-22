@@ -1,36 +1,35 @@
 # Terms and conditions
 
-These terms apply to purchases in this store. The seller's details (legal name, tax ID, address and contact) are at the end of this page. You can print or save it at any time.
+These terms govern purchases at the Nagomi online store, run by [Razón social pendiente] (tax ID [NIT pendiente]), at [Dirección pendiente], El Salvador. By creating an account or placing an order you accept these terms and the [privacy notice](/pages/privacy).
 
-## Orders
-1. Choose your products and tap the button to order on WhatsApp. Before you send the order, you see a summary with each product, its price and the subtotal.
-2. On WhatsApp we send you the shipping cost, the estimated delivery date and the total to pay. The order is confirmed when you accept it.
-3. We confirm that we received your order no later than the next day, with the breakdown of products and prices, shipping, the total and the delivery time.
+## Prices
+All prices are in US dollars (US$) and include 13% VAT (IVA). Your order summary shows how much of the total is VAT. Shipping is shown separately before you confirm your purchase.
 
-## Prices and payment
-Prices are in US dollars. The price shown on each product is what you pay for it; shipping is added separately and confirmed before your order is final.
+## Your account
+You can shop with an account or as a guest. If you create an account, you are responsible for keeping your password secret and your details up to date. We may suspend an account used for fraud.
 
-We accept bank transfer, cash on delivery and cash. Payment must be made by the holder of the payment method.
+## Orders and availability
+An order is confirmed once we receive payment or, for cash on delivery, once we confirm it with you. Stock is limited: if a product sells out before your order is confirmed, we let you know and refund what you paid for it. We may limit the number of units of the same product per order.
 
-## Delivery
-The cost and date of delivery depend on your address and are confirmed on WhatsApp. More details in [Shipping and returns](/en/pages/shipping-returns).
+## Payment methods
+- **Credit or debit card**, through a certified payment gateway. Nagomi never receives or stores your card details.
+- **Bank transfer.** We hold your order while we receive the transfer.
+- **Cash on delivery**, only in and around San Salvador and on orders up to US$150.
 
-## Right of withdrawal and returns
-You have 8 days from the day you receive your order to cancel the purchase, no questions asked. You can open the box to check the product; to return it, it must be unused and keep its safety seal, if it has one, its box and its labels. The return shipping is on you. We refund everything you paid within 15 days of your message, and give you a reference number for every return or complaint.
+## Shipping
+We deliver across El Salvador. Fees and times are in our [shipping policy](/pages/shipping). Delivery times count from the moment the order is confirmed.
 
-## Warranty and payment reversals
-If a product arrives damaged, expired, defective or is not what you ordered, we will replace it or refund you, and we cover the shipping. We reverse your payment within 15 days of your claim when you exercise your right of withdrawal, when you do not receive the product, when it does not match your order or is defective, or when there is a billing error.
+## Right of withdrawal
+Under El Salvador's Consumer Protection Law, you have **8 days from delivery** to withdraw from the purchase without giving a reason. The product must be unused, complete and in its original packaging. We refund what you paid for the product; the return shipping is on you. See [returns and warranty](/pages/returns-warranty) for details.
 
-## Using the products
-These are cosmetic products. Read the directions and warnings on the packaging before use. If you notice irritation or any other reaction, stop using the product and see a health professional.
+## Warranty
+Every product has a warranty against manufacturing defects from the delivery date: **12 months** on keyboards, mice, headphones and lighting, and **6 months** on desk mats and accessories. Each product page states its warranty.
 
-## Complaints and questions
-Message us on WhatsApp or write to the email at the end of this page. You can also contact El Salvador's consumer protection agency, the Defensoría del Consumidor: call center 910 or [defensoria.gob.sv](https://www.defensoria.gob.sv).
+## Complaints
+If there is a problem with your purchase, email hola@nagomi.example and we will sort it out with you. You may also contact El Salvador's consumer protection agency (Defensoría del Consumidor).
 
-## Site security
-The connection to this site is encrypted (HTTPS). The site has no certification from a certifying entity. We do not take payments on the site or ask for card details.
+## Governing law
+These terms are governed by the laws of El Salvador. Any dispute will be submitted to the competent courts of El Salvador, without prejudice to your rights as a consumer.
 
-## Changes to these terms
-If we change these terms, the new version applies to orders placed afterwards. Your order is governed by the version you accepted when you placed it.
-
-These terms are governed by the laws of El Salvador, including the Consumer Protection Law (Ley de Protección al Consumidor).
+## Changes
+We may update these terms. The version in force is the one published on this page; each order is governed by the version you accepted when placing it.

@@ -1,206 +1,76 @@
 {
-  "concerns": {
-    "oily-acne": {
-      "es": {
-        "description": "Limpiadores, tónicos y cremas ligeras para la piel con brillo o con tendencia a las imperfecciones. Elígelos uno por uno o sigue una rutina completa, en el orden en que se usan.",
-        "seoTitle": "Productos para piel grasa e imperfecciones",
-        "seoDescription": "Limpiadores, tónicos y cremas ligeras para piel con brillo o con tendencia a imperfecciones. Compra en El Salvador, por producto o en rutina completa."
-      },
-      "en": {
-        "description": "Cleansers, toners and light moisturizers for shiny skin or skin prone to blemishes. Pick them one by one or follow a complete routine, in the order they are used.",
-        "seoTitle": "Products for oily and blemish-prone skin",
-        "seoDescription": "Cleansers, toners and light moisturizers for shiny or blemish-prone skin. Shop in El Salvador, product by product or as a complete routine."
-      }
-    },
-    "sensitive": {
-      "es": {
-        "description": "Limpiadores, cremas y protección solar indicados para piel sensible. Elígelos uno por uno o sigue una rutina completa, en el orden en que se usan.",
-        "seoTitle": "Productos para piel sensible",
-        "seoDescription": "Limpiadores, cremas y protección solar indicados para piel sensible. Compra en El Salvador, por producto o en rutina completa."
-      },
-      "en": {
-        "description": "Cleansers, moisturizers and sun protection indicated for sensitive skin. Pick them one by one or follow a complete routine, in the order they are used.",
-        "seoTitle": "Products for sensitive skin",
-        "seoDescription": "Cleansers, moisturizers and sun protection indicated for sensitive skin. Shop in El Salvador, product by product or as a complete routine."
-      }
-    },
-    "hydration": {
-      "es": {
-        "description": "Sérums, cremas hidratantes y brumas para la hidratación de todos los días. Elígelos uno por uno o combínalos en una rutina completa.",
-        "seoTitle": "Productos para hidratar la piel",
-        "seoDescription": "Sérums, cremas hidratantes y brumas para la hidratación diaria. Compra en El Salvador, por producto o en rutina completa."
-      },
-      "en": {
-        "description": "Serums, moisturizers and mists for everyday hydration. Pick them one by one or combine them in a complete routine.",
-        "seoTitle": "Products to hydrate your skin",
-        "seoDescription": "Serums, moisturizers and mists for everyday hydration. Shop in El Salvador, product by product or as a complete routine."
-      }
-    },
-    "dark-spots": {
-      "es": {
-        "description": "Sérums, cremas y protección solar para el tono desigual y las marcas de la piel. Elígelos uno por uno o sigue una rutina completa, en el orden en que se usan.",
-        "seoTitle": "Productos para manchas y tono de la piel",
-        "seoDescription": "Sérums, cremas y protección solar para el tono desigual y las marcas de la piel. Compra en El Salvador, por producto o en rutina completa."
-      },
-      "en": {
-        "description": "Serums, moisturizers and sun protection for uneven tone and marks on the skin. Pick them one by one or follow a complete routine, in the order they are used.",
-        "seoTitle": "Products for dark spots and skin tone",
-        "seoDescription": "Serums, moisturizers and sun protection for uneven tone and marks on the skin. Shop in El Salvador, product by product or as a complete routine."
-      }
-    },
-    "pores": {
-      "es": {
-        "description": "Limpiadores, tónicos y pads para el cuidado de los poros y el brillo. Elígelos uno por uno o sigue una rutina completa, en el orden en que se usan.",
-        "seoTitle": "Productos para el cuidado de los poros",
-        "seoDescription": "Limpiadores, tónicos y pads para el cuidado de los poros y el brillo. Compra en El Salvador, por producto o en rutina completa."
-      },
-      "en": {
-        "description": "Cleansers, toners and pads to care for pores and shine. Pick them one by one or follow a complete routine, in the order they are used.",
-        "seoTitle": "Products for pore care",
-        "seoDescription": "Cleansers, toners and pads to care for pores and shine. Shop in El Salvador, product by product or as a complete routine."
-      }
-    },
-    "sun-protection": {
-      "es": {
-        "description": "Protectores solares y esencias solares para usar cada mañana. Combínalos con tu limpieza y tu crema en una rutina completa.",
-        "seoTitle": "Protector solar para uso diario",
-        "seoDescription": "Protectores solares y esencias solares para usar cada mañana. Compra en El Salvador, por producto o en rutina completa."
-      },
-      "en": {
-        "description": "Sunscreens and sun essences to use every morning. Combine them with your cleanser and moisturizer in a complete routine.",
-        "seoTitle": "Sunscreen for everyday use",
-        "seoDescription": "Sunscreens and sun essences to use every morning. Shop in El Salvador, product by product or as a complete routine."
-      }
-    },
-    "firmness": {
-      "es": {
-        "description": "Sérums, cremas y mascarillas indicados para la firmeza de la piel. Elígelos uno por uno o combínalos en una rutina completa.",
-        "seoTitle": "Productos para la firmeza de la piel",
-        "seoDescription": "Sérums, cremas y mascarillas indicados para la firmeza de la piel. Compra en El Salvador, por producto o en rutina completa."
-      },
-      "en": {
-        "description": "Serums, moisturizers and masks indicated for skin firmness. Pick them one by one or combine them in a complete routine.",
-        "seoTitle": "Products for skin firmness",
-        "seoDescription": "Serums, moisturizers and masks indicated for skin firmness. Shop in El Salvador, product by product or as a complete routine."
-      }
-    }
-  },
   "categories": {
-    "cleansing-oil": {
+    "teclados": {
       "es": {
-        "description": "Aceites que retiran el maquillaje y el protector solar. Son el primer paso de la limpieza y van antes del limpiador.",
-        "seoTitle": "Aceites limpiadores para el rostro",
-        "seoDescription": "Aceites limpiadores que retiran el maquillaje y el protector solar. Compra en El Salvador, uno por uno o en rutina completa."
+        "description": "Teclados mecánicos en formatos 60 %, 65 % y 75 %, con switches lineales, placas hot-swap y conexión por cable, 2.4 GHz o Bluetooth. También keycaps de PBT para darle a tu teclado un estilo propio.",
+        "seoTitle": "Teclados mecánicos y keycaps en El Salvador",
+        "seoDescription": "Teclados mecánicos compactos, hot-swap e inalámbricos, y sets de keycaps PBT. Envío a todo El Salvador con garantía de 12 meses."
       },
       "en": {
-        "description": "Oils that remove makeup and sunscreen. They are the first step of cleansing and go before the cleanser.",
-        "seoTitle": "Cleansing oils for the face",
-        "seoDescription": "Cleansing oils that remove makeup and sunscreen. Shop in El Salvador, one by one or as a complete routine."
+        "description": "Mechanical keyboards in 60%, 65% and 75% layouts, with linear switches, hot-swap boards and wired, 2.4 GHz or Bluetooth connectivity. Plus PBT keycaps to give your keyboard a style of its own.",
+        "seoTitle": "Mechanical keyboards and keycaps in El Salvador",
+        "seoDescription": "Compact, hot-swap and wireless mechanical keyboards, plus PBT keycap sets. Shipping across El Salvador with a 12-month warranty."
       }
     },
-    "cleanser": {
+    "ratones": {
       "es": {
-        "description": "Limpiadores para el rostro, para usar en la mañana y en la noche. Van después del aceite limpiador, si lo usas.",
-        "seoTitle": "Limpiadores faciales",
-        "seoDescription": "Limpiadores faciales para la mañana y la noche. Compra en El Salvador, uno por uno o en rutina completa."
+        "description": "Ratones ultraligeros para jugar, silenciosos para trabajar y verticales para cuidar tu muñeca. Conexión 2.4 GHz o Bluetooth y sensores precisos.",
+        "seoTitle": "Ratones gaming, inalámbricos y ergonómicos",
+        "seoDescription": "Ratones ultraligeros, silenciosos y verticales con conexión inalámbrica. Compra en línea en El Salvador con garantía de 12 meses."
       },
       "en": {
-        "description": "Face cleansers to use in the morning and at night. They go after the cleansing oil, if you use one.",
-        "seoTitle": "Face cleansers",
-        "seoDescription": "Face cleansers for morning and night. Shop in El Salvador, one by one or as a complete routine."
+        "description": "Ultralight mice for gaming, silent ones for work and vertical ones to look after your wrist. 2.4 GHz or Bluetooth connectivity and precise sensors.",
+        "seoTitle": "Gaming, wireless and ergonomic mice",
+        "seoDescription": "Ultralight, silent and vertical mice with wireless connectivity. Shop online in El Salvador with a 12-month warranty."
       }
     },
-    "toner": {
+    "alfombrillas": {
       "es": {
-        "description": "Tónicos que se usan después de limpiar y antes del sérum.",
-        "seoTitle": "Tónicos faciales",
-        "seoDescription": "Tónicos faciales para usar después de limpiar y antes del sérum. Compra en El Salvador, uno por uno o en rutina completa."
+        "description": "Alfombrillas XL de tela y de cuero vegano con diseños inspirados en Japón: flores de cerezo, el monte Fuji y la gran ola. Bases antideslizantes y bordes cosidos.",
+        "seoTitle": "Alfombrillas de escritorio XL y desk mats",
+        "seoDescription": "Desk mats XL de tela y cuero vegano con diseños japoneses, base antideslizante y bordes cosidos. Envío a todo El Salvador."
       },
       "en": {
-        "description": "Toners used after cleansing and before the serum.",
-        "seoTitle": "Face toners",
-        "seoDescription": "Face toners to use after cleansing and before the serum. Shop in El Salvador, one by one or as a complete routine."
+        "description": "XL cloth and vegan leather desk mats with Japanese-inspired designs: cherry blossoms, Mount Fuji and the great wave. Non-slip bases and stitched edges.",
+        "seoTitle": "XL desk mats and mouse pads",
+        "seoDescription": "XL cloth and vegan leather desk mats with Japanese designs, non-slip bases and stitched edges. Shipping across El Salvador."
       }
     },
-    "toner-pad": {
+    "audifonos": {
       "es": {
-        "description": "Pads humedecidos que se usan después de limpiar, en el mismo paso que el tónico.",
-        "seoTitle": "Pads faciales",
-        "seoDescription": "Pads faciales humedecidos para usar después de limpiar. Compra en El Salvador, uno por uno o en rutina completa."
+        "description": "Audífonos inalámbricos over-ear para escuchar música durante horas y headsets gaming con micrófono y sonido envolvente virtual.",
+        "seoTitle": "Audífonos inalámbricos y headsets gaming",
+        "seoDescription": "Audífonos Bluetooth con hasta 40 horas de batería y headsets gaming con micrófono. Compra en El Salvador con garantía de 12 meses."
       },
       "en": {
-        "description": "Pre-soaked pads used after cleansing, in the same step as the toner.",
-        "seoTitle": "Face toner pads",
-        "seoDescription": "Pre-soaked face pads to use after cleansing. Shop in El Salvador, one by one or as a complete routine."
+        "description": "Wireless over-ear headphones for hours of music and gaming headsets with a microphone and virtual surround sound.",
+        "seoTitle": "Wireless headphones and gaming headsets",
+        "seoDescription": "Bluetooth headphones with up to 40 hours of battery and gaming headsets with a mic. Shop in El Salvador with a 12-month warranty."
       }
     },
-    "serum": {
+    "iluminacion": {
       "es": {
-        "description": "Sérums y ampollas con una función específica, como hidratar o unificar el tono. Van después del tónico y antes de la crema.",
-        "seoTitle": "Sérums y ampollas faciales",
-        "seoDescription": "Sérums y ampollas faciales para usar después del tónico y antes de la crema. Compra en El Salvador, uno por uno o en rutina completa."
+        "description": "Barras de luz RGB, lámparas de monitor sin reflejos y tiras LED que se sincronizan con tu música, para trabajar con buena luz y darle ambiente a tu setup.",
+        "seoTitle": "Iluminación RGB y lámparas para escritorio",
+        "seoDescription": "Barras RGB, lámparas de monitor y tiras LED para tu setup. Envío a todo El Salvador, gratis desde US$50."
       },
       "en": {
-        "description": "Serums and ampoules with a specific function, such as hydrating or evening out tone. They go after the toner and before the moisturizer.",
-        "seoTitle": "Face serums and ampoules",
-        "seoDescription": "Face serums and ampoules to use after the toner and before the moisturizer. Shop in El Salvador, one by one or as a complete routine."
+        "description": "RGB light bars, glare-free monitor lamps and LED strips that sync with your music, so you work in good light and set the mood of your setup.",
+        "seoTitle": "RGB lighting and desk lamps",
+        "seoDescription": "RGB light bars, monitor lamps and LED strips for your setup. Shipping across El Salvador, free from US$50."
       }
     },
-    "mist": {
+    "accesorios": {
       "es": {
-        "description": "Brumas para refrescar e hidratar la piel durante el día.",
-        "seoTitle": "Brumas faciales",
-        "seoDescription": "Brumas faciales para refrescar e hidratar la piel durante el día. Compra en El Salvador, una por una o en rutina completa."
+        "description": "Soportes para audífonos, organizadores de cables, cables en espiral y reposamuñecas: los detalles que dejan tu escritorio ordenado y cómodo.",
+        "seoTitle": "Accesorios para tu escritorio y setup",
+        "seoDescription": "Soportes, organizadores de cables, cables en espiral y reposamuñecas para tu setup. Compra en línea en El Salvador."
       },
       "en": {
-        "description": "Mists to refresh and hydrate the skin during the day.",
-        "seoTitle": "Face mists",
-        "seoDescription": "Face mists to refresh and hydrate the skin during the day. Shop in El Salvador, one by one or as a complete routine."
-      }
-    },
-    "moisturizer": {
-      "es": {
-        "description": "Cremas hidratantes para la mañana y la noche. Van después del sérum y, en la mañana, antes del protector solar.",
-        "seoTitle": "Cremas hidratantes faciales",
-        "seoDescription": "Cremas hidratantes faciales para la mañana y la noche. Compra en El Salvador, una por una o en rutina completa."
-      },
-      "en": {
-        "description": "Moisturizers for morning and night. They go after the serum and, in the morning, before the sunscreen.",
-        "seoTitle": "Face moisturizers",
-        "seoDescription": "Face moisturizers for morning and night. Shop in El Salvador, one by one or as a complete routine."
-      }
-    },
-    "sunscreen": {
-      "es": {
-        "description": "Protectores solares y esencias solares. Son el último paso de la rutina de la mañana, después de la crema.",
-        "seoTitle": "Protectores solares para el rostro",
-        "seoDescription": "Protectores solares y esencias solares para el rostro. Compra en El Salvador, uno por uno o en rutina completa."
-      },
-      "en": {
-        "description": "Sunscreens and sun essences. They are the last step of the morning routine, after the moisturizer.",
-        "seoTitle": "Sunscreens for the face",
-        "seoDescription": "Sunscreens and sun essences for the face. Shop in El Salvador, one by one or as a complete routine."
-      }
-    },
-    "mask": {
-      "es": {
-        "description": "Mascarillas para usar después de limpiar, con la frecuencia que indica cada producto.",
-        "seoTitle": "Mascarillas faciales",
-        "seoDescription": "Mascarillas faciales para usar después de limpiar. Compra en El Salvador, una por una o en rutina completa."
-      },
-      "en": {
-        "description": "Masks to use after cleansing, as often as each product indicates.",
-        "seoTitle": "Face masks",
-        "seoDescription": "Face masks to use after cleansing. Shop in El Salvador, one by one or as a complete routine."
+        "description": "Headphone stands, cable organisers, coiled cables and wrist rests: the details that keep your desk tidy and comfortable.",
+        "seoTitle": "Desk and setup accessories",
+        "seoDescription": "Stands, cable organisers, coiled cables and wrist rests for your setup. Shop online in El Salvador."
       }
     }
-  },
-  "routines": {
-    "oily-acne-prone-skin": "oily-acne",
-    "sensitive-skin": "sensitive",
-    "pores-and-shine": "pores",
-    "dark-spots-and-tone": "dark-spots",
-    "three-step-morning": "sun-protection",
-    "double-cleanse-and-protect": "sun-protection"
   }
 }

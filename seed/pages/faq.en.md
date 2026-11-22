@@ -1,25 +1,31 @@
-# FAQ
+# Frequently asked questions
 
 ## How do I place an order?
-Add products to your cart and tap the button to order on WhatsApp. A chat opens with your order already written: just send the message. We reply with the shipping cost, the delivery date and the total, and confirm your order no later than the next day.
+Add your products to the cart, choose your address and payment method, and confirm. You can shop with your account or as a guest. We email you when your order is confirmed and when it ships.
 
 ## How can I pay?
-By bank transfer, in cash or cash on delivery. When we confirm your order on WhatsApp, we tell you how to pay.
+By credit or debit card through a secure payment gateway, by bank transfer or, in the San Salvador metro area, in cash on delivery for orders up to US$150.
 
-## How much is shipping?
-It depends on your address. We confirm it on WhatsApp before your order is final, together with the estimated delivery date.
+## Do prices include VAT?
+Yes. Every price includes 13% VAT (IVA), and the order summary shows how much of it is tax.
 
-## Are the products authentic?
-Yes. Every product reaches you new, unopened and in its original packaging.
+## How much is shipping and how long does it take?
+US$3.50 in the San Salvador metro area, delivered in 24 to 48 hours, and US$5.00 elsewhere in the country, in 2 to 4 business days. It is free on orders from US$50. See our [shipping policy](/pages/shipping) for details.
 
-## How do I know when my products expire?
-Before delivery, we tell you the batch and expiry date of every product. If you want to know before you order, ask us on WhatsApp.
+## What warranty do the products have?
+12 months on keyboards, mice, headphones and lighting, and 6 months on desk mats and accessories, against manufacturing defects.
 
 ## Can I return a product?
-Yes. You have 8 days from delivery to return an unused product, no questions asked; you can open the box to check it. The return shipping is on you, and we refund what you paid. If something arrives damaged, expired or is not what you ordered, we will replace it or refund you, and we cover the shipping. All the details are in [Shipping and returns](/en/pages/shipping-returns).
+Yes. You have 8 days from delivery to return it unused and in its original packaging. The whole process is in [returns and warranty](/pages/returns-warranty).
 
-## Can I order a sold-out product?
-Not yet: while it is sold out you can't add it to your cart. Message us on WhatsApp if you want to know when it's back.
+## What is a hot-swap keyboard?
+A keyboard whose switches you can change without soldering: just pull them out with the included tool and put in new ones. It is ideal if you want to try different typing feels.
 
-## I am not sure what to choose. Can you help?
-Yes. Message us on WhatsApp with what you're looking for and your skin type, and we'll suggest what to use and in what order. This is cosmetic guidance: if you have a skin condition, see a dermatologist.
+## Do the keyboards work with a Mac?
+Most of them do. Each product page lists its compatibility. If in doubt, ask us before you buy.
+
+## What is a set?
+A group of products that go together, such as a keyboard, mouse and desk mat, for less than buying them separately.
+
+## Can I order a product that is sold out?
+While it is sold out you cannot add it to the cart. Write to us and we will let you know when it is back.

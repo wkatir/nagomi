@@ -1,37 +1,39 @@
 # Aviso de privacidad
 
-Este aviso explica qué datos tuyos usamos y para qué. La empresa responsable de tus datos aparece al final de esta página.
+Este aviso explica qué datos personales tratamos en Nagomi, para qué los usamos y cómo puedes ejercer tus derechos, de acuerdo con la Ley para la Protección de Datos Personales de El Salvador.
 
-## Qué datos usamos
-- Tu nombre, tu número de WhatsApp y tu dirección de entrega, para preparar, confirmar y entregar tus pedidos.
-- Tu correo, si nos lo das.
-- Los productos que compras, tus pagos, devoluciones y la versión de estos textos que aceptaste.
+## Responsable del tratamiento
+El responsable de tus datos es [Razón social pendiente], que opera la tienda en línea Nagomi en El Salvador. NIT: [NIT pendiente]. Domicilio: [Dirección pendiente]. Para cualquier asunto de privacidad puedes escribirnos a hola@nagomi.example.
+
+## Qué datos recogemos
+- **Datos de tu cuenta:** nombre, correo electrónico y contraseña (guardada cifrada; nunca la vemos).
+- **Datos de contacto y entrega:** teléfono, departamento, municipio, dirección, punto de referencia y el nombre de quien recibe.
+- **Datos de tus pedidos:** productos, montos, método de pago elegido, estado del pedido e historial de compras.
+- **Datos de pago:** si pagas con tarjeta, los datos de la tarjeta los recibe directamente la pasarela de pago; Nagomi no los guarda. De una transferencia guardamos solo la referencia para conciliarla.
+- **Datos técnicos:** la dirección IP y los datos de tu sesión, para mantenerte conectado y proteger tu cuenta.
 
 ## Para qué los usamos
-- Para atender tus pedidos, entregas, devoluciones y garantías, y responder tus preguntas.
-- Para cumplir obligaciones legales, como guardar el registro de cada compra.
-- Para enviarte ofertas por WhatsApp, solo si nos das permiso por separado. Puedes retirarlo cuando quieras escribiéndonos.
+1. Crear y administrar tu cuenta.
+2. Procesar, entregar y dar seguimiento a tus pedidos, incluidas devoluciones y garantías.
+3. Atender tus consultas y reclamos.
+4. Cumplir obligaciones legales, contables y tributarias.
+5. Proteger la tienda contra fraudes y accesos no autorizados.
+6. Solo si nos das tu permiso: enviarte novedades y ofertas por correo electrónico o por WhatsApp.
+
+## Base para tratarlos
+Tratamos tus datos porque son necesarios para cumplir el contrato de compra que celebras con nosotros, para cumplir obligaciones legales y, en el caso de las comunicaciones comerciales, porque nos das tu consentimiento expreso. Puedes retirar ese consentimiento cuando quieras, sin que afecte tus compras.
 
 ## Con quién los compartimos
-- Con el servicio de entrega, solo lo necesario para llevar tu pedido.
-- Con los servicios que usamos para operar: el alojamiento de la tienda y WhatsApp, donde conversamos contigo.
-- Con autoridades, solo cuando la ley lo exige.
-
-No vendemos tus datos.
+Solo con quienes necesitamos para atender tu pedido: la empresa de mensajería que lo entrega, la pasarela de pago que procesa tu tarjeta y los proveedores tecnológicos que alojan la tienda. Cada uno recibe solo los datos indispensables. No vendemos ni alquilamos tus datos. También podemos entregarlos a una autoridad cuando la ley lo exija.
 
 ## Cuánto tiempo los guardamos
-Guardamos el registro de tus compras durante 10 años, como pide la Ley de Protección al Consumidor. Los datos para ofertas los usamos hasta que retires tu permiso.
+Los datos de tu cuenta, mientras la mantengas activa. Los de tus pedidos, durante el tiempo que exigen las leyes mercantiles y tributarias. Los de comunicaciones comerciales, hasta que retires tu permiso. Después los eliminamos o los anonimizamos.
 
 ## Tus derechos
-Puedes pedir acceso, rectificación, cancelación, oposición, portabilidad, olvido y limitación del uso de tus datos. Escríbenos por WhatsApp o al correo que aparece al final de esta página. Es gratis y te respondemos en un máximo de 20 días hábiles. Si no quedas conforme, puedes acudir a la Agencia de Ciberseguridad del Estado.
+Tienes derecho a **acceder** a tus datos, **rectificarlos** si son inexactos, **cancelarlos** cuando ya no sean necesarios, **oponerte** a un tratamiento y pedir su **portabilidad** en un formato de uso común. Para ejercerlos, escríbenos a hola@nagomi.example desde el correo de tu cuenta, indicando qué derecho quieres ejercer. Te respondemos en un plazo máximo de 10 días hábiles. Si no estás conforme con la respuesta, puedes acudir a la autoridad competente en protección de datos.
 
-## Cookies y almacenamiento
-Solo guardamos en tu navegador lo que la tienda necesita para funcionar. No usamos cookies de publicidad ni de análisis.
+## Seguridad
+La tienda usa conexión cifrada (HTTPS), las contraseñas se guardan cifradas y el acceso a los datos está limitado al personal que los necesita para su trabajo.
 
-- **Idioma** (cookie `PARAGLIDE_LOCALE`): recuerda el idioma que elegiste. Dura hasta 400 días.
-- **Carrito** (almacenamiento local `eclalune:cart:v1`): guarda los productos y las cantidades de tu carrito, sin datos personales, hasta que lo vacíes.
-- **Aviso de cookies** (almacenamiento local `eclalune:cookie-notice:v1`): recuerda que ya leíste este aviso.
-- **Posición en la página** (almacenamiento de sesión): te devuelve al mismo punto cuando vuelves atrás y se borra al cerrar la pestaña.
-- **Sesión del equipo** (cookies `__Secure-better-auth`): solo para quienes administran la tienda; nunca se usan con clientes.
-
-Si algún día usamos herramientas de medición o de publicidad, te pediremos permiso antes de activarlas y podrás cambiar tu elección cuando quieras.
+## Cambios a este aviso
+Si cambiamos este aviso, publicaremos la nueva versión en esta página con su fecha. Guardamos qué versión aceptaste al crear tu cuenta o hacer un pedido.

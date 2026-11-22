@@ -1,25 +1,31 @@
 # Preguntas frecuentes
 
 ## ¿Cómo hago un pedido?
-Agrega tus productos al carrito y toca el botón para pedir por WhatsApp. Se abre un chat con tu pedido ya escrito: solo envía el mensaje. Te respondemos con el costo del envío, la fecha de entrega y el total, y confirmamos tu pedido a más tardar el día siguiente.
+Agrega tus productos al carrito, elige tu dirección y tu forma de pago, y confirma. Puedes comprar con tu cuenta o como invitado. Te avisamos por correo cuando tu pedido se confirma y cuando sale.
 
 ## ¿Cómo puedo pagar?
-Con transferencia bancaria, en efectivo o con pago contra entrega. Al confirmar tu pedido te decimos por WhatsApp cómo pagar.
+Con tarjeta de crédito o débito a través de una pasarela segura, por transferencia bancaria o, en San Salvador y alrededores, en efectivo contra entrega en pedidos de hasta US$150.
 
-## ¿Cuánto cuesta el envío?
-Depende de tu dirección. Te lo confirmamos por WhatsApp antes de cerrar el pedido, junto con la fecha estimada de entrega.
+## ¿Los precios incluyen IVA?
+Sí. Todos los precios incluyen el IVA del 13 %, y en el resumen del pedido ves cuánto corresponde al impuesto.
 
-## ¿Los productos son originales?
-Sí. Cada producto te llega nuevo, sin abrir y en su empaque original.
+## ¿Cuánto cuesta el envío y cuánto tarda?
+US$3.50 en San Salvador y alrededores, con entrega en 24 a 48 horas, y US$5.00 en el resto del país, en 2 a 4 días hábiles. Es gratis en pedidos desde US$50. Los detalles están en [políticas de envío](/pages/shipping).
 
-## ¿Cómo sé cuándo vence lo que compro?
-Antes de la entrega te decimos el lote y la fecha de vencimiento de cada producto. Si quieres saberlo antes de pedir, pregúntanos por WhatsApp.
+## ¿Qué garantía tienen los productos?
+12 meses en teclados, ratones, audífonos e iluminación, y 6 meses en alfombrillas y accesorios, contra defectos de fabricación.
 
 ## ¿Puedo devolver un producto?
-Sí. Tienes 8 días desde la entrega para devolver un producto sin usar, sin dar explicaciones; puedes abrir la caja para revisarlo. El envío de la devolución corre por tu cuenta y te devolvemos lo que pagaste. Si algo llega dañado, vencido o no es lo que pediste, te lo cambiamos o te devolvemos el dinero, y el envío corre por nuestra cuenta. Todos los detalles están en [Envíos y devoluciones](/pages/shipping-returns).
+Sí. Tienes 8 días desde la entrega para devolverlo sin usar y en su empaque original. Todo el proceso está en [devoluciones y garantía](/pages/returns-warranty).
+
+## ¿Qué es un teclado hot-swap?
+Es un teclado en el que puedes cambiar los switches sin soldar: solo los sacas con la herramienta incluida y pones otros. Es ideal si quieres probar distintas sensaciones al escribir.
+
+## ¿Los teclados funcionan con Mac?
+La mayoría sí. En la ficha de cada producto verás su compatibilidad. Si tienes dudas, escríbenos antes de comprar.
+
+## ¿Qué es un set?
+Un grupo de productos que combinan entre sí, como teclado, mouse y alfombrilla, a un precio menor que si los compras por separado.
 
 ## ¿Puedo pedir un producto agotado?
-Todavía no: mientras está agotado no puedes agregarlo al carrito. Escríbenos por WhatsApp si quieres saber cuándo vuelve.
-
-## No sé qué elegir. ¿Me ayudan?
-Sí. Escríbenos por WhatsApp con lo que buscas y cómo es tu piel, y te sugerimos qué usar y en qué orden. Es orientación cosmética: si tienes una condición en la piel, consulta a un dermatólogo.
+Mientras está agotado no puedes agregarlo al carrito. Escríbenos y te avisamos cuando vuelva.

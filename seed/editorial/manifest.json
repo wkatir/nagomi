@@ -1,0 +1,35 @@
+[
+  {
+    "file": "hero.webp",
+    "alt": {
+      "es": "Escritorio de noche con un monitor que muestra el monte Fuji y una pagoda bajo cerezos, teclado con luz violeta, mouse, audífonos y una ventana iluminada por la luna",
+      "en": "Night desk setup with a monitor showing Mount Fuji and a pagoda under cherry blossoms, a violet-lit keyboard, mouse, headphones and a moonlit window"
+    },
+    "credit": "Nagomi",
+    "sourceUrl": "https://nagomi.example",
+    "license": "Imagen propia de Nagomi, generada para la tienda",
+    "licenseUrl": "https://nagomi.example"
+  },
+  {
+    "file": "combo-banner.webp",
+    "alt": {
+      "es": "Teclado, mouse y alfombrilla con detalles de flor de cerezo bajo luz violeta",
+      "en": "Keyboard, mouse and desk mat with cherry blossom details under violet light"
+    },
+    "credit": "Nagomi",
+    "sourceUrl": "https://nagomi.example",
+    "license": "Imagen propia de Nagomi, generada para la tienda",
+    "licenseUrl": "https://nagomi.example"
+  },
+  {
+    "file": "sidebar-torii.webp",
+    "alt": {
+      "es": "Puerta torii junto a un lago de noche, con luna llena y siluetas de árboles en tonos violeta",
+      "en": "Torii gate by a lake at night, with a full moon and tree silhouettes in violet tones"
+    },
+    "credit": "Nagomi",
+    "sourceUrl": "https://nagomi.example",
+    "license": "Imagen propia de Nagomi, generada para la tienda",
+    "licenseUrl": "https://nagomi.example"
+  }
+]

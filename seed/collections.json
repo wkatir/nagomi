@@ -1,58 +1,39 @@
 [
   {
-    "slug": "essentials",
+    "slug": "mas-vendidos",
     "showOnHome": true,
-    "cover": "editorial-1.webp",
     "products": [
-      "face-republic-calming-salicylic-acid-cleanser",
-      "skin1004-centella-soothing-cream",
-      "skin1004-hyalu-cica-water-fit-sun-serum"
+      "rk75-mechanical-keyboard",
+      "pulsar-x2-gaming-mouse",
+      "sakura-xl-desk-mat",
+      "rgb-light-bar",
+      "headphone-stand"
     ],
     "es": {
-      "title": "Lo esencial",
-      "description": "Limpiador, crema hidratante y protector solar: la base de cualquier rutina."
+      "title": "Más vendidos",
+      "description": "Lo que más eligen nuestros clientes para su setup."
     },
     "en": {
-      "title": "The essentials",
-      "description": "Cleanser, moisturizer and sunscreen: the base of any routine."
+      "title": "Best sellers",
+      "description": "What our customers choose most for their setup."
     }
   },
   {
-    "slug": "centella-line",
-    "showOnHome": false,
-    "cover": "editorial-2.webp",
-    "products": [
-      "skin1004-light-cleansing-oil",
-      "skin1004-centella-ampoule-foam",
-      "skin1004-centella-toning-toner",
-      "skin1004-centella-quick-calming-pad",
-      "skin1004-centella-ampoule",
-      "skin1004-centella-soothing-cream"
-    ],
-    "es": {
-      "title": "Línea Centella",
-      "description": "La línea Madagascar Centella de SKIN1004, del aceite limpiador a la crema."
-    },
-    "en": {
-      "title": "Centella line",
-      "description": "SKIN1004's Madagascar Centella line, from cleansing oil to cream."
-    }
-  },
-  {
-    "slug": "new-arrivals",
+    "slug": "setup-en-lila",
     "showOnHome": false,
     "products": [
-      "skin1004-centella-ampoule",
-      "skin1004-poremizing-deep-cleansing-foam",
-      "skin1004-poremizing-velvet-finish-sunscreen"
+      "hana-wireless-mouse",
+      "lilac-vegan-leather-desk-mat",
+      "lilac-coiled-usb-c-cable",
+      "tsuki-pbt-keycap-set"
     ],
     "es": {
-      "title": "Recién llegados",
-      "description": "Lo más reciente en la tienda."
+      "title": "Setup en lila",
+      "description": "Mouse, alfombrilla, cable y keycaps en tonos lila y violeta."
     },
     "en": {
-      "title": "New arrivals",
-      "description": "The latest additions to the store."
+      "title": "Lilac setup",
+      "description": "Mouse, desk mat, cable and keycaps in lilac and violet tones."
     }
   }
 ]

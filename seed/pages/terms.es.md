@@ -1,36 +1,35 @@
 # Términos y condiciones
 
-Estos términos aplican a las compras en esta tienda. Los datos del vendedor (razón social, NIT, dirección y contacto) aparecen al final de esta página. Puedes imprimirla o guardarla cuando quieras.
+Estos términos regulan las compras en la tienda en línea Nagomi, operada por [Razón social pendiente] (NIT [NIT pendiente]), con domicilio en [Dirección pendiente], El Salvador. Al crear una cuenta o hacer un pedido aceptas estos términos y el [aviso de privacidad](/pages/privacy).
 
-## Pedidos
-1. Eliges tus productos y tocas el botón para pedir por WhatsApp. Antes de enviar el pedido ves un resumen con cada producto, su precio y el subtotal.
-2. Por WhatsApp te enviamos el costo del envío, la fecha estimada de entrega y el total a pagar. El pedido queda confirmado cuando lo aceptas.
-3. Te confirmamos la recepción del pedido a más tardar el día siguiente, con el desglose de productos y precios, el envío, el total y el tiempo de entrega.
+## Precios
+Todos los precios están en dólares de los Estados Unidos (US$) e incluyen el IVA del 13 %. En el resumen de tu pedido verás cuánto del total corresponde al IVA. El costo de envío se muestra aparte antes de que confirmes tu compra.
 
-## Precios y pagos
-Los precios están en dólares de Estados Unidos. El precio que ves en cada producto es el que pagas por él; el envío se suma aparte y te lo confirmamos antes de cerrar el pedido.
+## Tu cuenta
+Puedes comprar con una cuenta o como invitado. Si creas una cuenta, eres responsable de mantener tu contraseña en secreto y de que tus datos estén al día. Podemos suspender una cuenta que se use para fraudes.
 
-Aceptamos transferencia bancaria, pago contra entrega y efectivo. El pago debe hacerlo la persona titular del medio de pago.
+## Pedidos y disponibilidad
+Un pedido queda confirmado cuando recibimos el pago o, en pago contra entrega, cuando lo confirmamos contigo. Las existencias son limitadas: si un producto se agota antes de confirmar tu pedido, te avisamos y te devolvemos lo que hayas pagado por él. Podemos limitar la cantidad de unidades de un mismo producto por pedido.
 
-## Entregas
-El costo y la fecha de entrega dependen de tu dirección y te los confirmamos por WhatsApp. Más detalles en [Envíos y devoluciones](/pages/shipping-returns).
+## Formas de pago
+- **Tarjeta de crédito o débito**, a través de una pasarela de pago certificada. Nagomi no recibe ni guarda los datos de tu tarjeta.
+- **Transferencia bancaria.** Reservamos tu pedido mientras recibimos la transferencia.
+- **Pago contra entrega en efectivo**, solo en San Salvador y alrededores y en pedidos de hasta US$150.
 
-## Derecho de retracto y devoluciones
-Tienes 8 días desde que recibes tu pedido para dejar sin efecto la compra, sin dar explicaciones. Puedes abrir la caja para revisar el producto; para devolverlo no debe estar usado y debe conservar su sello de seguridad, si lo trae, su caja y sus etiquetas. El envío de la devolución corre por tu cuenta. Te devolvemos todo lo que pagaste en un máximo de 15 días desde que nos avisas, y te damos un número de gestión para cada devolución o reclamo.
+## Envíos
+Entregamos en todo El Salvador. Los costos y tiempos están en nuestra [política de envíos](/pages/shipping). Los plazos se cuentan desde que el pedido queda confirmado.
 
-## Garantía y reversión de pagos
-Si un producto llega dañado, vencido, defectuoso o no corresponde a lo que pediste, te lo cambiamos o te devolvemos el dinero, y el envío corre por nuestra cuenta. Reversamos el pago en un máximo de 15 días desde tu reclamo cuando ejerces tu derecho de retracto, cuando no recibes el producto, cuando no corresponde a lo pedido o es defectuoso, o cuando hay un error en el cobro.
+## Derecho de retracto
+De acuerdo con la Ley de Protección al Consumidor, tienes **8 días desde que recibes tu pedido** para arrepentirte de la compra sin dar explicaciones. El producto debe estar sin usar, completo y en su empaque original. Te devolvemos lo que pagaste por el producto; el costo del envío de la devolución corre por tu cuenta. Los detalles están en [devoluciones y garantía](/pages/returns-warranty).
 
-## Uso de los productos
-Son productos cosméticos. Lee las instrucciones y precauciones del empaque antes de usarlos. Si notas irritación u otra reacción, deja de usarlos y consulta a un profesional de la salud.
+## Garantía
+Cada producto tiene garantía contra defectos de fabricación desde la fecha de entrega: **12 meses** en teclados, ratones, audífonos e iluminación, y **6 meses** en alfombrillas y accesorios. La garantía de cada producto se indica en su página.
 
-## Reclamos y dudas
-Escríbenos por WhatsApp o al correo que aparece al final de esta página. También puedes acudir a la Defensoría del Consumidor: centro de llamadas 910 o [defensoria.gob.sv](https://www.defensoria.gob.sv).
+## Reclamos
+Si tienes un problema con tu compra, escríbenos a hola@nagomi.example y lo resolvemos contigo. También puedes acudir a la Defensoría del Consumidor.
 
-## Seguridad del sitio
-La conexión con este sitio está cifrada (HTTPS). El sitio no cuenta con certificación de una entidad certificadora. No cobramos pagos dentro del sitio ni pedimos datos de tarjeta.
+## Ley aplicable
+Estos términos se rigen por las leyes de El Salvador. Cualquier controversia se someterá a los tribunales competentes de El Salvador, sin perjuicio de tus derechos como consumidor.
 
-## Cambios a estos términos
-Si cambiamos estos términos, la versión nueva aplica a los pedidos que se hagan después. Tu pedido se rige por la versión que aceptaste al hacerlo.
-
-Estos términos se rigen por las leyes de El Salvador, incluida la Ley de Protección al Consumidor.
+## Cambios
+Podemos actualizar estos términos. La versión vigente es la publicada en esta página; cada pedido se rige por la versión que aceptaste al hacerlo.

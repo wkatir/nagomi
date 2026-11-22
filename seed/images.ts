@@ -16,25 +16,21 @@ async function seedImage(path: string, file: string) {
   return { key: mediaKey(await sha256Hex(bytes), info.contentType), byteSize: bytes.byteLength, ...info }
 }
 
-type CatalogProduct = { brand: string; name: string; image: string; lifestyle?: boolean }
+type CatalogProduct = { sku: string; es: { name: string }; en: { name: string } }
 type EditorialEntry = { file: string; alt: Record<string, string>; credit: string; sourceUrl: string; license: string; licenseUrl: string }
 
-// Alt text is the brand and product name (the same in every locale) until better copy
-// exists.
-const catalogFiles = (products: CatalogProduct[], brandName: (slug: string) => string) =>
-  products.flatMap((p, i) =>
-    [
-      { file: `${p.image}.webp`, kind: 'packshot' },
-      ...(p.lifestyle ? [{ file: `${p.image}-life.webp`, kind: 'lifestyle' }] : []),
-    ].map((photo, position) => ({ productId: i + 1, position, kind: photo.kind, file: photo.file, path: join(IMAGES_DIR, photo.file), alt: `${brandName(p.brand)} ${p.name}` })),
-  )
+const catalogFiles = (products: CatalogProduct[]) =>
+  products.map((p, i) => {
+    const file = `${p.sku.toLowerCase()}.webp`
+    return { productId: i + 1, position: 0, kind: 'packshot', file, path: join(IMAGES_DIR, file), alt: { es: p.es.name, en: p.en.name } as Record<string, string> }
+  })
 
 // Every file the catalogue and seed/editorial/manifest.json name; the missing ones are
 // reported together.
-export async function seedPhotos(products: CatalogProduct[], brandName: (slug: string) => string) {
+export async function seedPhotos(products: CatalogProduct[]) {
   const hasManifest = existsSync(EDITORIAL_MANIFEST)
   const entries = hasManifest ? (JSON.parse(readFileSync(EDITORIAL_MANIFEST, 'utf8')) as EditorialEntry[]) : []
-  const catalog = catalogFiles(products, brandName)
+  const catalog = catalogFiles(products)
   const editorial = entries.map((e) => ({ ...e, path: join(EDITORIAL_DIR, e.file) }))
   const missing = [...new Set([...(hasManifest ? [] : [EDITORIAL_MANIFEST]), ...[...catalog, ...editorial].map((f) => f.path).filter((path) => !existsSync(path))])]
   if (missing.length) throw new Error(`${missing.length} seed files are missing:\n${missing.map((path) => `  ${path}`).join('\n')}`)
