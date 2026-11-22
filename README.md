@@ -31,7 +31,7 @@ Docente: Carmen Celia Morales Samayoa.
 - Carrito persistente en el servidor, que se une al de la cuenta al iniciar sesión.
 - Compra como invitado o con cuenta (perfil, direcciones guardadas, historial de pedidos).
 - Checkout de una página con datos de El Salvador: teléfono `+503`, los 14 departamentos y 44 municipios, envío por zona y envío gratis desde un monto configurable.
-- Pagos con tarjeta vía Wompi El Salvador, transferencia bancaria o contra entrega (limitado por zona y monto).
+- Pagos con tarjeta vía Wompi El Salvador, transferencia bancaria o contra entrega (limitado por zona y monto). En modo demostración y sin llaves de Wompi, la tarjeta se paga en una pasarela de prueba interna (`/pago-prueba/<código>`) que simula el cobro sin procesar dinero real.
 - Cupones de descuento (porcentaje o monto fijo, monto mínimo, vigencia, primera compra, límite por cliente).
 - Seguimiento del pedido en `/pedido/<código>` con su historial de estados.
 - Español (idioma base) e inglés (`/en`).
@@ -84,7 +84,7 @@ bun run dev                      # http://localhost:4600
 ```
 
 - `BETTER_AUTH_SECRET` debe tener al menos 32 caracteres aleatorios (por ejemplo `bunx auth@latest secret` u `openssl rand -base64 32`).
-- `WOMPI_CLIENT_ID` y `WOMPI_CLIENT_SECRET` son opcionales; sin ellos el pago con tarjeta aparece como no disponible. `GOOGLE_CLIENT_ID` y `GOOGLE_CLIENT_SECRET` también son opcionales (inicio de sesión con Google para el personal).
+- `WOMPI_CLIENT_ID` y `WOMPI_CLIENT_SECRET` son opcionales; sin ellos el pago con tarjeta usa la pasarela de prueba si la tienda está en modo demostración, y aparece como no disponible si no lo está. `GOOGLE_CLIENT_ID` y `GOOGLE_CLIENT_SECRET` también son opcionales (inicio de sesión con Google para el personal).
 - `admin:create` acepta `--role admin|support` (por defecto `admin`). La contraseña se toma de `ADMIN_PASSWORD` o se genera y se muestra una sola vez.
 - La tienda está en `/`, el panel en `/admin` y la cuenta del cliente en `/account`.
 - `bun run db:reset` borra el estado local de D1 para empezar de cero. `db:seed` y `media:seed` se pueden ejecutar más de una vez.

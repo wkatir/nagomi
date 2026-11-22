@@ -44,6 +44,7 @@ Toda la API está bajo `/api`. Los textos se piden con `locale` (`es` o `en`) y 
 | `/cart` | Carrito: `GET`, `POST /cart/items`, `PATCH` y `DELETE /cart/items/:id`, `PUT` y `DELETE /cart/coupon`. |
 | `POST /checkout` | Crea el pedido. |
 | `GET /orders/:code`, `POST /orders/:code/pay` | Consulta del pedido y nuevo enlace de pago con tarjeta. |
+| `POST /orders/:code/demo-payment` | Pago en la pasarela de prueba (solo en modo demostración sin llaves de Wompi). |
 | `POST /payments/wompi/webhook` | Notificación de pago de Wompi. |
 | `POST /stock-alerts` | Aviso de reposición. |
 
@@ -69,7 +70,7 @@ Bajo `/api/admin`, con sesión de personal. Módulos: `dashboard`, `products`, `
 - El carrito vive en el servidor (`carts`, `cart_items`), identificado por la cookie httpOnly `nagomi_cart` (60 días). No guarda precios: cada lectura lo valora con el catálogo actual (`priceCart`, `src/server/domain/cart.ts`).
 - Al iniciar sesión, el carrito de invitado se une al del cliente sumando cantidades, cada una limitada al stock y a `max_quantity_per_line`.
 - Totales: subtotal, descuento del cupón, envío según el municipio (tarifa de la zona, gratis desde `free_shipping_from` sobre subtotal menos descuento) y el IVA incluido (`total × tasa / (1 + tasa)`, tasa 13 %).
-- Métodos de pago con su motivo de no disponibilidad: tarjeta requiere las llaves de Wompi; transferencia, los datos bancarios; contra entrega, una dirección en la zona metropolitana y un total de hasta US$150.
+- Métodos de pago con su motivo de no disponibilidad: tarjeta requiere un proveedor (`provider`: `wompi` o `demo`); transferencia, los datos bancarios; contra entrega, una dirección en la zona metropolitana y un total de hasta US$150.
 - `POST /api/checkout` valida cada campo (`422 invalid_fields` con un código por campo), responde `409 cart_changed` si una línea dejó de estar disponible y `409 promotion_invalid` con el motivo. Está limitado por IP (`ORDER_LIMITER`, 10 por minuto) y es idempotente: un reintento con la misma `idempotencyKey` devuelve el mismo pedido.
 - El checkout exige aceptar el aviso de privacidad y los términos, y ofrece consentimientos opcionales de marketing por correo y WhatsApp. Cada consentimiento apunta a la versión exacta de la página mostrada.
 - La página `/pedido/<código>` lee el pedido de la API, nunca de la URL. El navegador que lo creó lo abre con una cookie firmada; otro navegador necesita el correo del pedido.
@@ -109,6 +110,16 @@ La máquina de estados está en `src/server/domain/order-state.ts` y la misma ta
 - Verificación del webhook: el encabezado `wompi_hash` debe ser el HMAC-SHA256 (hexadecimal en minúsculas) del cuerpo sin modificar, firmado con el API Secret; si no coincide se responde `401 invalid_signature`.
 - Un identificador de transacción ya registrado no cambia nada; un resultado rechazado no registra nada; el pedido debe ser con tarjeta y con exactamente el mismo total (`409 amount_mismatch`). El pago queda confirmado y el pedido pasa a `paid` en el mismo batch. La redirección del navegador nunca cambia el pedido.
 - Secretos: `WOMPI_CLIENT_ID` (App ID) y `WOMPI_CLIENT_SECRET` (API Secret), ambos o ninguno. En modo de desarrollo del panel de Wompi se aprueba toda tarjeta de prueba excepto con CVV 111.
+- El registro del resultado (`recordCardPayment`, `src/server/domain/card-payments.ts`) es el mismo para Wompi y para la pasarela de prueba.
+
+### Pasarela de prueba
+
+- Proveedor de tarjeta (`cardProvider`, `src/server/payments/demo-card.ts`): `wompi` si están las llaves; `demo` si no están y `store_settings.demo_store` está activo; sin proveedor en otro caso (`not_configured`). Las opciones de pago del carrito y `GET /api/store` informan el proveedor activo.
+- Con `demo`, el checkout crea el pedido igual que con Wompi (pendiente, stock tomado, pago pendiente `recorded_by = 'demo'`) y redirige a `/pago-prueba/<código>` (`/en/pago-prueba/<código>` en inglés), rotulada como simulación académica.
+- Tarjetas de prueba: `4242 4242 4242 4242` y `5555 5555 5555 4444` aprobadas, `4000 0000 0000 0002` rechazada; cualquier vencimiento futuro y CVC de 3 o 4 dígitos. El número se valida con Luhn y cualquier otra tarjeta se rechaza (`not_test_card`).
+- `POST /api/orders/:code/demo-payment` exige la cookie firmada del navegador que hizo el pedido o la sesión del cliente dueño (el correo no basta), está limitado con `ORDER_LIMITER`, y comprueba que el pedido esté pendiente, sea con tarjeta, que la pasarela esté activa y que el monto enviado sea el total guardado (`409 amount_mismatch`).
+- La referencia del pago es `DEMO-<intento>`, única e idempotente: repetir el mismo intento devuelve el mismo resultado. Aprobada, confirma el pago y el pedido pasa a `paid`; rechazada, registra un pago `failed` y el pedido sigue pendiente, con el aviso en `/pedido/<código>?pago=tarjeta`.
+- El número de tarjeta nunca se guarda ni se registra en logs: solo la marca y los últimos 4 dígitos en la referencia del pago. El panel muestra el pago con el proveedor «Pasarela de prueba».
 
 ## Roles y permisos
 
