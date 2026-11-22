@@ -18,7 +18,7 @@
     {
       "binding": "DB",
       "database_name": "nagomi",
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      "database_id": "34af1df9-4e56-40ac-9aa9-b7cd6d21fd86",
       "migrations_dir": "drizzle"
     }
   ],
