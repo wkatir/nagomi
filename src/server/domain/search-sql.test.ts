@@ -25,7 +25,9 @@ function seeded() {
 			searchKey: searchKey("Crème Lab", "creme-lab"),
 		})
 		.run();
-	db.insert(categories).values({ slug: "serum", routineStep: 1 }).run();
+	db.insert(categories)
+		.values({ slug: "teclados", icon: "keyboard", sortOrder: 1 })
+		.run();
 	db.insert(products)
 		.values({ slug: "ampoule", brandId: 1, categoryId: 1 })
 		.run();
@@ -40,9 +42,9 @@ function seeded() {
 	db.insert(variants)
 		.values({
 			productId: 1,
-			sku: "CL-AMP-30",
+			sku: "TEC-030",
 			gtin: "04006381333931",
-			searchKey: searchKey("CL-AMP-30", "04006381333931"),
+			searchKey: searchKey("TEC-030", "04006381333931"),
 		})
 		.run();
 	db.insert(suppliers)
@@ -106,7 +108,7 @@ describe("accent- and case-insensitive admin search", () => {
 	});
 
 	test("products by SKU or barcode", () => {
-		expect(bySku("cl-amp")).toBe(1);
+		expect(bySku("tec-03")).toBe(1);
 		expect(bySku("6381333931")).toBe(1);
 		expect(bySku("XX-1")).toBe(0);
 	});

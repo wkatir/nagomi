@@ -2,16 +2,20 @@ import { z } from "zod";
 import { PRODUCT_STATUSES } from "#/lib/enums";
 import { pagedSearch } from "#/lib/list";
 
-export const ROUTINE_SORTS = [
-	"title",
+export const BUNDLE_SORTS = [
+	"name",
 	"position",
-	"steps",
+	"items",
+	"price",
 	"featured",
 	"status",
 ] as const;
 
-export const routineListSearch = pagedSearch(ROUTINE_SORTS, {
+export const BUNDLE_MAX_ITEMS = 12;
+export const BUNDLE_MIN_ITEMS = 2;
+
+export const bundleListSearch = pagedSearch(BUNDLE_SORTS, {
 	sort: "position",
 	dir: "asc",
 }).extend({ status: z.enum(PRODUCT_STATUSES).optional() });
-export type RoutineListSearch = z.infer<typeof routineListSearch>;
+export type BundleListSearch = z.infer<typeof bundleListSearch>;

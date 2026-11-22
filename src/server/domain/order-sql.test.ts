@@ -47,15 +47,15 @@ describe("paymentStatusIs", () => {
 		for (const { name } of triggers) raw.exec(`drop trigger "${name}"`);
 		raw.exec(`
 INSERT INTO brands (slug, name, search_key) VALUES ('b', 'Brand', 'brand');
-INSERT INTO categories (slug, routine_step) VALUES ('c', 1);
+INSERT INTO categories (slug, icon, sort_order) VALUES ('c', 'package', 1);
 INSERT INTO products (slug, brand_id, category_id) VALUES ('p', 1, 1);
-INSERT INTO variants (product_id, sku, price, search_key) VALUES (1, 'SKU1', 1000, 'sku1'), (1, 'SKU2', 1000, 'sku2'), (1, 'SKU3', 1000, 'sku3');
+INSERT INTO variants (product_id, sku, price, search_key) VALUES (1, 'SKU-001', 1000, 'sku1'), (1, 'SKU-002', 1000, 'sku2'), (1, 'SKU-003', 1000, 'sku3');
 INSERT INTO suppliers (name, search_key) VALUES ('S', 's');
 INSERT INTO purchase_orders (supplier_id, reference, status, ordered_on) VALUES (1, 'PO', 'ordered', '2026-01-01');
 INSERT INTO purchase_order_items (purchase_order_id, variant_id, quantity, unit_cost) VALUES (1, 1, 1000, 700);
 INSERT INTO purchase_receipts (purchase_order_id, received_on, created_by) VALUES (1, '2026-01-02', 'u');
 INSERT INTO purchase_receipt_lines (receipt_id, purchase_order_item_id, quantity, allocated_shipping_e4) VALUES (1, 1, 1000, 0);
-INSERT INTO lots (variant_id, receipt_line_id, expires_on, unit_cost_e4) VALUES (1, 1, '2099-12-31', 70000);
+INSERT INTO lots (variant_id, receipt_line_id, unit_cost_e4) VALUES (1, 1, 70000);
 `);
 		const next = random(7);
 		const pick = <T>(values: readonly T[]) =>

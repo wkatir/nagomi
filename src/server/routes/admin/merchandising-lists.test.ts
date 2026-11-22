@@ -4,9 +4,11 @@ import { Hono } from "hono";
 import { d1, migratedDatabase } from "#/db/test-database";
 import type { AdminEnv } from "#/server/auth";
 
-const env: { DB?: ReturnType<typeof d1> } = {};
+const env: { DB?: ReturnType<typeof d1>; BETTER_AUTH_URL: string } = {
+	BETTER_AUTH_URL: "http://localhost",
+};
 mock.module("cloudflare:workers", () => ({ env }));
-const { routinesRouter } = await import("./routines");
+const { bundlesRouter } = await import("./bundles");
 const { collectionsRouter } = await import("./collections");
 
 const app = new Hono<AdminEnv>()
@@ -14,7 +16,7 @@ const app = new Hono<AdminEnv>()
 		c.set("adminUserId", "admin");
 		await next();
 	})
-	.route("/routines", routinesRouter)
+	.route("/bundles", bundlesRouter)
 	.route("/collections", collectionsRouter);
 
 type Page<T> = {
@@ -52,17 +54,18 @@ beforeEach(() => {
 	db.exec(`
 insert into store_settings (id, name, currency, default_locale) values (1, 'Store', 'USD', 'es');
 insert into brands (slug, name, search_key) values ('b', 'Brand', 'brand b');
-insert into categories (slug, routine_step) values ('serum', 1);
-insert into concerns (slug, position, status) values ('acne', 0, 'active'), ('dryness', 1, 'archived');
+insert into categories (slug, icon, sort_order) values ('teclados', 'keyboard', 1);
 insert into products (slug, brand_id, category_id) values ('p1', 1, 1), ('p2', 1, 1), ('p3', 1, 1), ('p4', 1, 1);
-insert into variants (product_id, sku, price, search_key) values (1, 'SKU1', 1000, 'sku1'), (2, 'SKU2', 1000, 'sku2'), (3, 'SKU3', 1000, 'sku3');
+insert into variants (product_id, sku, price, search_key) values (1, 'SKU-001', 1000, 'sku1'), (2, 'SKU-002', 1000, 'sku2'), (3, 'SKU-003', 1000, 'sku3');
 update variants set status = 'archived' where id = 3;
+update products set status = 'published' where id in (1, 2);
 update products set status = 'archived' where id = 4;
 insert into media_files (r2_key, content_type, byte_size, width, height) values ('${cover}', 'image/webp', 1, 1, 1);
 
-insert into routines (slug, status, is_featured, position) values ('morning', 'published', 1, 2), ('night', 'draft', 0, 1), ('summer', 'archived', 0, 3), ('minimal', 'draft', 0, 2);
-insert into routine_translations (routine_id, locale, title) values (1, 'es', 'Rutina de mañana'), (1, 'en', 'Morning routine'), (2, 'es', 'Rutina de noche'), (3, 'en', 'Summer routine'), (4, 'es', 'Ágil');
-insert into routine_items (routine_id, variant_id, position) values (1, 1, 1), (1, 2, 2), (3, 1, 1), (4, 1, 1);
+insert into bundles (slug, status, is_featured, position, price) values ('sakura', 'draft', 1, 2, 1500), ('noche', 'draft', 0, 1, 1500), ('verano', 'archived', 0, 3, 1500), ('mini', 'draft', 0, 2, 1500);
+insert into bundle_translations (bundle_id, locale, name) values (1, 'es', 'Set de mañana'), (1, 'en', 'Morning set'), (2, 'es', 'Set de noche'), (3, 'en', 'Summer set'), (4, 'es', 'Ágil');
+insert into bundle_items (bundle_id, variant_id, position) values (1, 1, 1), (1, 2, 2), (3, 1, 1), (4, 1, 1);
+update bundles set status = 'published' where id = 1;
 
 insert into collections (slug, status, position, show_on_home, cover_media_id) values ('essentials', 'published', 2, 1, 1), ('new', 'draft', 1, 0, null), ('old', 'archived', 3, 0, null), ('best-sellers', 'draft', 2, 1, null);
 insert into collection_translations (collection_id, locale, title) values (1, 'es', 'Los esenciales'), (1, 'en', 'Essentials'), (2, 'es', 'Novedades'), (3, 'en', 'Old ones'), (4, 'es', 'Éxitos de ventas');
@@ -71,345 +74,274 @@ insert into collection_products (collection_id, product_id, position) values (1,
 	env.DB = d1(db);
 });
 
-describe("GET /routines", () => {
-	type Routine = {
+describe("GET /bundles", () => {
+	type Bundle = {
 		id: number;
 		slug: string;
-		title: string | null;
+		name: string | null;
 		status: string;
 		isFeatured: boolean;
 		position: number;
-		steps: number;
+		price: number;
+		items: number;
 	};
 
-	test("is a page in the order the store shows, with the title in the default language and the steps", async () => {
-		const page = await list<Routine>("routines");
-		expect(page).toMatchObject({
-			total: 4,
-			page: 1,
-			pageSize: 25,
-			pageCount: 1,
-		});
+	test("is a page in the order the store shows, with the name in the default language, the price and the items", async () => {
+		const page = await list<Bundle>("bundles");
+		expect(page).toMatchObject({ total: 4, page: 1, pageSize: 25 });
 		expect(page.items).toEqual([
 			{
 				id: 2,
-				slug: "night",
-				title: "Rutina de noche",
+				slug: "noche",
+				name: "Set de noche",
 				status: "draft",
 				isFeatured: false,
 				position: 1,
-				steps: 0,
+				price: 1500,
+				items: 0,
 			},
 			{
 				id: 1,
-				slug: "morning",
-				title: "Rutina de mañana",
+				slug: "sakura",
+				name: "Set de mañana",
 				status: "published",
 				isFeatured: true,
 				position: 2,
-				steps: 2,
+				price: 1500,
+				items: 2,
 			},
 			{
 				id: 4,
-				slug: "minimal",
-				title: "Ágil",
+				slug: "mini",
+				name: "Ágil",
 				status: "draft",
 				isFeatured: false,
 				position: 2,
-				steps: 1,
+				price: 1500,
+				items: 1,
 			},
 			{
 				id: 3,
-				slug: "summer",
-				title: null,
+				slug: "verano",
+				name: null,
 				status: "archived",
 				isFeatured: false,
 				position: 3,
-				steps: 1,
+				price: 1500,
+				items: 1,
 			},
 		]);
 	});
 
-	test.each([
-		// No title first, then "Ágil" with the A's.
-		["title", "asc", [3, 4, 1, 2]],
-		["title", "desc", [2, 1, 4, 3]],
-		["position", "asc", [2, 1, 4, 3]],
-		["position", "desc", [3, 4, 1, 2]],
-		["steps", "asc", [2, 3, 4, 1]],
-		["steps", "desc", [1, 4, 3, 2]],
-		["featured", "asc", [2, 3, 4, 1]],
-		["featured", "desc", [1, 4, 3, 2]],
-		["status", "asc", [3, 2, 4, 1]],
-		["status", "desc", [1, 4, 2, 3]],
-	])("sorts by %s %s", async (sort, dir, expected) => {
-		expect(
-			ids(await list<Routine>("routines", `sort=${sort}&dir=${dir}`)),
-		).toEqual(expected);
+	test("narrows to a status and searches the name without accents or case", async () => {
+		expect(ids(await list<Bundle>("bundles", "status=draft"))).toEqual([2, 4]);
+		expect(ids(await list<Bundle>("bundles", "q=MA%C3%91ANA"))).toEqual([1]);
+		expect(ids(await list<Bundle>("bundles", "q=agil"))).toEqual([4]);
+		expect(ids(await list<Bundle>("bundles", "q=sakura"))).toEqual([1]);
 	});
 
-	test.each([
-		["draft", [2, 4]],
-		["published", [1]],
-		["archived", [3]],
-	])("narrows to the %s ones and reports the total", async (status, expected) => {
-		const page = await list<Routine>("routines", `status=${status}`);
-		expect(ids(page)).toEqual(expected);
-		expect(page.total).toBe(expected.length);
-	});
-
-	test("searches the title in the default language and the slug without accents or case", async () => {
-		expect(ids(await list<Routine>("routines", "q=noche"))).toEqual([2]);
-		expect(ids(await list<Routine>("routines", "q=MA%C3%91ANA"))).toEqual([1]);
-		expect(ids(await list<Routine>("routines", "q=manana"))).toEqual([1]);
-		expect(ids(await list<Routine>("routines", "q=agil"))).toEqual([4]);
-		expect(ids(await list<Routine>("routines", "q=%C3%81GIL"))).toEqual([4]);
-		// The English title is not searched, but the slug is.
-		expect(ids(await list<Routine>("routines", "q=summer"))).toEqual([3]);
-		expect(ids(await list<Routine>("routines", "q=morning"))).toEqual([1]);
-		const both = await list<Routine>("routines", "q=rutina&status=draft");
-		expect(ids(both)).toEqual([2]);
-		expect(both.total).toBe(1);
-		expect(await list<Routine>("routines", "q=zzz")).toMatchObject({
-			items: [],
-			total: 0,
-			pageCount: 1,
-		});
-	});
-
-	test.each([
-		"sort=slug",
-		"status=active",
-		"pageSize=30",
-	])("refuses the query %s", async (query) => {
-		expect((await app.request(`/routines?${query}`)).status).toBe(400);
-	});
-});
-
-describe("GET /routines/options", () => {
-	test("is the routines titled in the default language, with their status", async () => {
-		expect(await get<Option[]>("routines/options")).toEqual([
+	test("the options are the bundles named in the default language", async () => {
+		expect(await get<Option[]>("bundles/options")).toEqual([
 			{ id: 4, name: "Ágil", status: "draft" },
-			{ id: 1, name: "Rutina de mañana", status: "published" },
-			{ id: 2, name: "Rutina de noche", status: "draft" },
+			{ id: 1, name: "Set de mañana", status: "published" },
+			{ id: 2, name: "Set de noche", status: "draft" },
 		]);
 	});
 });
 
-describe("routine steps", () => {
-	type Detail = { items: { variantId: number; position: number }[] };
-	const steps = (id: number) =>
+describe("bundle items", () => {
+	const items = (id: number) =>
 		db
 			.query(
-				`select variant_id as variantId from routine_items where routine_id = ${id} order by position`,
+				`select variant_id as variantId, quantity from bundle_items where bundle_id = ${id} order by position`,
 			)
-			.all()
-			.map((row) => (row as { variantId: number }).variantId);
+			.all();
 
-	test("are replaced in the order given", async () => {
-		const res = await send("PUT", "/routines/2/items", { variantIds: [2, 1] });
-		expect(res.status).toBe(200);
-		const body = (await res.json()) as Detail;
-		expect(body.items.map((i) => [i.variantId, i.position])).toEqual([
-			[2, 1],
-			[1, 2],
-		]);
-		expect(steps(2)).toEqual([2, 1]);
-	});
-
-	test("move up and down by sending the list in the new order", async () => {
-		const res = await send("PUT", "/routines/1/items", { variantIds: [2, 1] });
-		expect(res.status).toBe(200);
-		expect(steps(1)).toEqual([2, 1]);
-		await send("PUT", "/routines/1/items", { variantIds: [1, 2] });
-		expect(steps(1)).toEqual([1, 2]);
-	});
-
-	test("can be emptied while the routine is a draft", async () => {
-		const res = await send("PUT", "/routines/4/items", { variantIds: [] });
-		expect(res.status).toBe(200);
-		expect(steps(4)).toEqual([]);
-	});
-
-	test("keep at least one while the routine is published", async () => {
-		const res = await send("PUT", "/routines/1/items", { variantIds: [] });
-		expect(await refusal(res)).toEqual({
-			status: 409,
-			error: "routine_requires_items",
+	test("are replaced in the order given, with their quantities", async () => {
+		const res = await send("PUT", "/bundles/2/items", {
+			items: [
+				{ variantId: 2, quantity: 1 },
+				{ variantId: 1, quantity: 2 },
+			],
 		});
-		expect(steps(1)).toEqual([1, 2]);
+		expect(res.status).toBe(200);
+		expect(await res.json()).toMatchObject({
+			itemsTotal: 3000,
+			saving: 1500,
+		});
+		expect(items(2)).toEqual([
+			{ variantId: 2, quantity: 1 },
+			{ variantId: 1, quantity: 2 },
+		]);
 	});
 
-	test("refuse a size that is archived or does not exist, and change nothing", async () => {
-		for (const variantIds of [[1, 3], [99]]) {
-			const res = await send("PUT", "/routines/1/items", { variantIds });
-			expect(await refusal(res)).toEqual({
-				status: 409,
-				error: "variant_unavailable",
-			});
-		}
-		expect(steps(1)).toEqual([1, 2]);
+	test("of a published bundle can change while the rule still holds", async () => {
+		const res = await send("PUT", "/bundles/1/items", {
+			items: [
+				{ variantId: 2, quantity: 2 },
+				{ variantId: 1, quantity: 1 },
+			],
+		});
+		expect(res.status).toBe(200);
+		expect(items(1)).toEqual([
+			{ variantId: 2, quantity: 2 },
+			{ variantId: 1, quantity: 1 },
+		]);
 	});
 
-	test("refuse a size twice and more than twelve", async () => {
+	test("are at least two distinct ones, all for sale", async () => {
 		expect(
-			(await send("PUT", "/routines/2/items", { variantIds: [1, 1] })).status,
-		).toBe(400);
-		const thirteen = Array.from({ length: 13 }, (_, n) => n + 1);
+			await refusal(
+				await send("PUT", "/bundles/2/items", {
+					items: [{ variantId: 1, quantity: 1 }],
+				}),
+			),
+		).toEqual({ status: 409, error: "bundle_requires_two_items" });
 		expect(
-			(await send("PUT", "/routines/2/items", { variantIds: thirteen })).status,
+			(
+				await send("PUT", "/bundles/2/items", {
+					items: [
+						{ variantId: 1, quantity: 1 },
+						{ variantId: 1, quantity: 2 },
+					],
+				})
+			).status,
 		).toBe(400);
+		const unavailable = await send("PUT", "/bundles/2/items", {
+			items: [
+				{ variantId: 1, quantity: 1 },
+				{ variantId: 3, quantity: 1 },
+			],
+		});
+		expect((await unavailable.json()) as unknown).toEqual({
+			error: "bundle_item_unavailable",
+			variantIds: [3],
+		});
+		expect(items(2)).toEqual([]);
 	});
 
-	test("belong to a routine that exists", async () => {
-		const res = await send("PUT", "/routines/99/items", { variantIds: [1] });
-		expect(await refusal(res)).toEqual({ status: 404, error: "not_found" });
+	test("cost more together than the bundle", async () => {
+		const res = await send("PUT", "/bundles/2/items", {
+			items: [
+				{ variantId: 1, quantity: 1 },
+				{ variantId: 2, quantity: 1 },
+			],
+		});
+		expect(res.status).toBe(200);
+		const expensive = await send("PATCH", "/bundles/2", { price: 2000 });
+		expect(expensive.status).toBe(409);
+		expect((await expensive.json()) as unknown).toEqual({
+			error: "bundle_price_not_below_items",
+			price: 2000,
+			itemsTotal: 2000,
+		});
+		expect((await send("PATCH", "/bundles/2", { price: 1999 })).status).toBe(
+			200,
+		);
+	});
+
+	test("belong to a bundle that exists", async () => {
+		const res = await send("PUT", "/bundles/99/items", { items: [] });
+		expect(res.status).toBe(404);
 	});
 });
 
-describe("PATCH /routines/:id", () => {
-	const status = (id: number) =>
-		(
-			db.query(`select status from routines where id = ${id}`).get() as {
-				status: string;
-			}
-		).status;
-
-	test("publishes a draft that has its title and a step", async () => {
-		await send("PUT", "/routines/2/items", { variantIds: [1] });
-		const res = await send("PATCH", "/routines/2", { status: "published" });
+describe("PATCH /bundles/:id", () => {
+	test("publishes a bundle with two items, its text and a price below them", async () => {
+		const single = await send("PATCH", "/bundles/4", { status: "published" });
+		expect(await refusal(single)).toEqual({
+			status: 409,
+			error: "bundle_requires_two_items",
+		});
+		await send("PUT", "/bundles/4/items", {
+			items: [
+				{ variantId: 1, quantity: 1 },
+				{ variantId: 2, quantity: 1 },
+			],
+		});
+		const res = await send("PATCH", "/bundles/4", { status: "published" });
 		expect(res.status).toBe(200);
-		expect(status(2)).toBe("published");
+		expect(await res.json()).toMatchObject({ status: "published" });
 	});
 
-	test("refuses to publish a draft without steps", async () => {
-		const res = await send("PATCH", "/routines/2", { status: "published" });
-		expect(await refusal(res)).toEqual({
-			status: 409,
-			error: "routine_requires_items",
-		});
-		expect(status(2)).toBe("draft");
-	});
-
-	test("refuses to publish a draft without its title in the default language", async () => {
+	test("refuses to publish without the default language's text", async () => {
 		db.exec(
-			"update routine_translations set locale = 'en' where routine_id = 4",
+			"insert into bundle_items (bundle_id, variant_id, position) values (3, 2, 2)",
 		);
-		const res = await send("PATCH", "/routines/4", { status: "published" });
-		expect(await refusal(res)).toEqual({
-			status: 409,
-			error: "publish_requires_default_translation",
-		});
+		db.exec("update bundles set status = 'draft' where id = 3");
+		expect(
+			await refusal(await send("PATCH", "/bundles/3", { status: "published" })),
+		).toEqual({ status: 409, error: "publish_requires_default_translation" });
 	});
 
-	test("takes a published routine back to draft", async () => {
-		expect(
-			(await send("PATCH", "/routines/1", { status: "draft" })).status,
-		).toBe(200);
-		expect(status(1)).toBe("draft");
-	});
-
-	test("archives a routine and restores it as a draft, but never publishes it straight away", async () => {
-		expect(
-			(await send("PATCH", "/routines/1", { status: "archived" })).status,
-		).toBe(200);
-		const direct = await send("PATCH", "/routines/1", { status: "published" });
-		expect(await refusal(direct)).toEqual({
-			status: 409,
-			error: "invalid_transition",
-		});
-		expect(
-			(await send("PATCH", "/routines/1", { status: "draft" })).status,
-		).toBe(200);
-		expect(status(1)).toBe("draft");
-	});
-
-	test("locks the slug of a published routine but not of a draft", async () => {
-		const locked = await send("PATCH", "/routines/1", { slug: "evening" });
+	test("locks the slug of a published bundle but not of a draft", async () => {
+		const locked = await send("PATCH", "/bundles/1", { slug: "otro" });
 		expect(await refusal(locked)).toEqual({
 			status: 409,
 			error: "slug_locked",
 		});
-		const draft = await send("PATCH", "/routines/2", { slug: "evening" });
-		expect(draft.status).toBe(200);
-		expect(await draft.json()).toMatchObject({ id: 2, slug: "evening" });
-		const taken = await send("PATCH", "/routines/4", { slug: "evening" });
+		expect((await send("PATCH", "/bundles/2", { slug: "otro" })).status).toBe(
+			200,
+		);
+		const taken = await send("PATCH", "/bundles/4", { slug: "otro" });
 		expect(await refusal(taken)).toEqual({
 			status: 409,
 			error: "duplicate_slug",
 		});
 	});
 
-	test("features a routine", async () => {
-		const res = await send("PATCH", "/routines/2", { isFeatured: true });
-		expect(await res.json()).toMatchObject({ id: 2, isFeatured: true });
-	});
-
-	test("sets the need a routine answers, and clears it", async () => {
-		const set = await send("PATCH", "/routines/2", { concernId: 1 });
-		expect(await set.json()).toMatchObject({ id: 2, concernId: 1 });
-		const cleared = await send("PATCH", "/routines/2", { concernId: null });
-		expect(await cleared.json()).toMatchObject({ id: 2, concernId: null });
-	});
-
-	test("refuses a need that does not exist or is archived", async () => {
-		const missing = await send("PATCH", "/routines/2", { concernId: 99 });
-		expect(await refusal(missing)).toEqual({
+	test("archives a bundle and restores it as a draft, but never publishes it straight away", async () => {
+		expect(
+			(await send("PATCH", "/bundles/1", { status: "archived" })).status,
+		).toBe(200);
+		const direct = await send("PATCH", "/bundles/1", { status: "published" });
+		expect(await refusal(direct)).toEqual({
 			status: 409,
-			error: "reference_unavailable",
-		});
-		const archived = await send("PATCH", "/routines/2", { concernId: 2 });
-		expect(await refusal(archived)).toEqual({
-			status: 409,
-			error: "reference_unavailable",
+			error: "invalid_transition",
 		});
 		expect(
-			db.query("select concern_id from routines where id = 2").get(),
-		).toEqual({ concern_id: null });
-	});
-
-	test("a published routine can change its need without touching its address", async () => {
-		const res = await send("PATCH", "/routines/1", { concernId: 1 });
-		expect(await res.json()).toMatchObject({
-			id: 1,
-			slug: "morning",
-			concernId: 1,
-		});
+			(await send("PATCH", "/bundles/1", { status: "draft" })).status,
+		).toBe(200);
 	});
 });
 
-describe("POST /routines", () => {
-	const draft = (extra: object) => ({
-		slug: "weekend",
-		translations: { es: { title: "Fin de semana", description: null } },
-		...extra,
-	});
-
-	test("starts without a need by default", async () => {
-		const res = await send("POST", "/routines", draft({}));
+describe("POST /bundles", () => {
+	test("creates a draft with its price, texts and items", async () => {
+		const res = await send("POST", "/bundles", {
+			slug: "calma",
+			price: 1800,
+			translations: { es: { name: "Set Calma" }, en: { name: "Calm Set" } },
+			items: [
+				{ variantId: 1, quantity: 1 },
+				{ variantId: 2, quantity: 1 },
+			],
+		});
 		expect(res.status).toBe(201);
 		expect(await res.json()).toMatchObject({
-			slug: "weekend",
-			concernId: null,
+			slug: "calma",
+			status: "draft",
+			price: 1800,
+			itemsTotal: 2000,
+			saving: 200,
 		});
 	});
 
-	test("starts with the need it answers", async () => {
-		const res = await send("POST", "/routines", draft({ concernId: 1 }));
-		expect(res.status).toBe(201);
-		expect(await res.json()).toMatchObject({ concernId: 1 });
-	});
-
-	test("refuses an archived need and creates nothing", async () => {
-		const res = await send("POST", "/routines", draft({ concernId: 2 }));
+	test("refuses a price that is not below its items, and writes nothing", async () => {
+		const res = await send("POST", "/bundles", {
+			slug: "caro",
+			price: 2500,
+			translations: { es: { name: "Caro" } },
+			items: [
+				{ variantId: 1, quantity: 1 },
+				{ variantId: 2, quantity: 1 },
+			],
+		});
 		expect(await refusal(res)).toEqual({
 			status: 409,
-			error: "reference_unavailable",
+			error: "bundle_price_not_below_items",
 		});
 		expect(
-			db
-				.query("select count(*) as n from routines where slug = 'weekend'")
-				.get(),
+			db.query("select count(*) as n from bundles where slug = 'caro'").get(),
 		).toEqual({ n: 0 });
 	});
 });

@@ -16,8 +16,7 @@ export type ConfirmationInput = {
 		unitPrice: number;
 		brandName: string;
 		productName: string;
-		sizeValue: number | null;
-		sizeUnit: "ml" | "g" | "units" | null;
+		optionLabel: string | null;
 	}[];
 	subtotal: number;
 	discount: number;
@@ -45,12 +44,6 @@ export function confirmationMessage(input: ConfirmationInput): string {
 	const intl = intlLocale(input.locale, input.countryCode);
 	const money = (n: number) => formatMoney(n, input.currency, intl);
 	const date = (d: string) => formatCalendarDate(d, intl);
-	const size = (l: ConfirmationInput["lines"][number]) =>
-		l.sizeValue === null || l.sizeUnit === null
-			? null
-			: l.sizeUnit === "units"
-				? m.size_units({ value: String(l.sizeValue) }, opts)
-				: `${l.sizeValue} ${l.sizeUnit}`;
 	const method = [methodLabel[input.shippingMethod]({}, opts), input.zoneName]
 		.filter(Boolean)
 		.join(", ");
@@ -74,7 +67,7 @@ export function confirmationMessage(input: ConfirmationInput): string {
 		),
 		...input.lines.map((l) =>
 			[
-				`• ${l.quantity} × ${[l.brandName, l.productName, size(l)].filter(Boolean).join(" ")}`,
+				`• ${l.quantity} × ${[l.brandName, l.productName, l.optionLabel].filter(Boolean).join(" ")}`,
 				money(l.quantity * l.unitPrice),
 			].join(": "),
 		),

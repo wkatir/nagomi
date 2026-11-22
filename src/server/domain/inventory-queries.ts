@@ -1,19 +1,8 @@
-import {
-	and,
-	count,
-	eq,
-	or,
-	type SQL,
-	type SQLWrapper,
-	sql,
-} from "drizzle-orm";
+import { and, count, eq, or, type SQLWrapper, sql } from "drizzle-orm";
 import type { Db } from "#/db";
 import { schema } from "#/db";
-import { addDays, daysBetween } from "#/lib/dates";
 import type { Locale } from "#/lib/enums";
 import type { LotListSearch, StockListSearch } from "#/lib/schemas/inventory";
-import { formatExpiry } from "./expiry";
-import { isExpired } from "./fefo";
 import { pageWindow, sortBy, toPaged } from "./list-query";
 import { e4ToMinor } from "./receiving";
 import { searchPatterns } from "./search";
@@ -31,29 +20,19 @@ const {
 	variants,
 } = schema;
 
-type Clock = { today: string; expiryWarningDays: number; locale: Locale };
+export type StockClock = { locale: Locale; lowStockThreshold: number };
 
-const lastDayToWarn = (clock: Clock) =>
-	addDays(clock.today, clock.expiryWarningDays);
-
-function stockPerSize(db: Db, clock: Clock) {
+function stockPerVariant(db: Db) {
 	const quantity = inventoryMovements.quantity;
-	const inLots = (condition: SQL, per: SQL | typeof quantity) =>
-		sql<number>`coalesce(sum(case when ${condition} then ${per} else 0 end), 0)`;
-	const sellable = sql`${lots.expiresOn} >= ${clock.today}`;
-	const expiring = sql`${lots.expiresOn} >= ${clock.today} and ${lots.expiresOn} <= ${lastDayToWarn(clock)}`;
-	const expired = sql`${lots.expiresOn} < ${clock.today}`;
-	const value = sql`${quantity} * ${lots.unitCostE4}`;
 	return db
 		.select({
 			variantId: lots.variantId,
 			units: sql<number>`coalesce(sum(${quantity}), 0)`.as("units"),
-			onHand: inLots(sellable, quantity).as("on_hand"),
-			onHandValueE4: inLots(sellable, value).as("on_hand_value_e4"),
-			expiringUnits: inLots(expiring, quantity).as("expiring_units"),
-			expiringValueE4: inLots(expiring, value).as("expiring_value_e4"),
-			expiredUnits: inLots(expired, quantity).as("expired_units"),
-			expiredValueE4: inLots(expired, value).as("expired_value_e4"),
+			onHand: sql<number>`coalesce(sum(${quantity}), 0)`.as("on_hand"),
+			onHandValueE4:
+				sql<number>`coalesce(sum(${quantity} * ${lots.unitCostE4}), 0)`.as(
+					"on_hand_value_e4",
+				),
 		})
 		.from(lots)
 		.innerJoin(inventoryMovements, eq(inventoryMovements.lotId, lots.id))
@@ -61,45 +40,54 @@ function stockPerSize(db: Db, clock: Clock) {
 		.as("stock");
 }
 
-type Stock = ReturnType<typeof stockPerSize>;
+type Stock = ReturnType<typeof stockPerVariant>;
 
-// A size with no lot has no row in the stock.
+// A variant with no lot has no row in the stock.
 const orZero = (column: SQLWrapper) => sql<number>`coalesce(${column}, 0)`;
 
-function stockWhere(stock: Stock, query: StockListSearch) {
+const lowPoint = (clock: StockClock) =>
+	sql<number>`coalesce(${variants.reorderPoint}, ${clock.lowStockThreshold})`;
+
+export const isLowStock = (
+	onHand: number,
+	reorderPoint: number | null,
+	lowStockThreshold: number,
+) => onHand <= (reorderPoint ?? lowStockThreshold);
+
+function stockWhere(stock: Stock, clock: StockClock, query: StockListSearch) {
 	const onHand = orZero(stock.onHand);
 	const views = {
-		low: sql`${variants.reorderPoint} is not null and ${onHand} <= ${variants.reorderPoint}`,
+		low: sql`${onHand} <= ${lowPoint(clock)}`,
 		out: sql`${onHand} = 0`,
-		expiring: sql`${orZero(stock.expiringUnits)} > 0`,
-		expired: sql`${orZero(stock.expiredUnits)} > 0`,
 	};
 	return and(
 		or(eq(variants.status, "active"), sql`${orZero(stock.units)} <> 0`),
 		query.view ? views[query.view] : undefined,
-		query.q ? sizeSearch(query.q) : undefined,
+		query.q ? variantSearch(query.q) : undefined,
 	);
 }
 
 const productLabel = sql`(${brands.name} || ' ' || coalesce(${productTranslations.name}, '')) collate nocase`;
 
-const sizeSearch = (q: string) =>
+const variantSearch = (q: string) =>
 	searchMatch(q, [
 		productTranslations.searchKey,
 		brands.searchKey,
 		variants.searchKey,
 	]);
 
-export async function pagedStock(db: Db, clock: Clock, query: StockListSearch) {
-	const stock = stockPerSize(db, clock);
-	const where = stockWhere(stock, query);
+export async function pagedStock(
+	db: Db,
+	clock: StockClock,
+	query: StockListSearch,
+) {
+	const stock = stockPerVariant(db);
+	const where = stockWhere(stock, clock, query);
 	const sortColumns = {
 		product: productLabel,
 		sku: variants.sku,
 		onHand: orZero(stock.onHand),
 		stockValue: orZero(stock.onHandValueE4),
-		expiringUnits: orZero(stock.expiringUnits),
-		expiredUnits: orZero(stock.expiredUnits),
 		reorderPoint: variants.reorderPoint,
 	};
 	const [rows, [counted]] = await db.batch([
@@ -111,16 +99,11 @@ export async function pagedStock(db: Db, clock: Clock, query: StockListSearch) {
 				name: sql<string | null>`${productTranslations.name}`.as(
 					"product_name",
 				),
-				sizeValue: variants.sizeValue,
-				sizeUnit: variants.sizeUnit,
+				optionLabel: variants.optionLabel,
 				variantStatus: variants.status,
 				reorderPoint: variants.reorderPoint,
 				onHand: orZero(stock.onHand).as("sellable_units"),
 				onHandValueE4: orZero(stock.onHandValueE4).as("sellable_value_e4"),
-				expiringUnits: orZero(stock.expiringUnits).as("expiring_total"),
-				expiringValueE4: orZero(stock.expiringValueE4).as("expiring_value"),
-				expiredUnits: orZero(stock.expiredUnits).as("expired_total"),
-				expiredValueE4: orZero(stock.expiredValueE4).as("expired_value"),
 			})
 			.from(variants)
 			.innerJoin(products, eq(products.id, variants.productId))
@@ -152,37 +135,22 @@ export async function pagedStock(db: Db, clock: Clock, query: StockListSearch) {
 			.leftJoin(stock, eq(stock.variantId, variants.id))
 			.where(where),
 	]);
-	const items = rows.map(
-		({
-			onHandValueE4,
-			expiringValueE4,
-			expiredValueE4,
-			variantStatus,
-			...row
-		}) => ({
-			...row,
-			variantStatus,
-			stockValue: e4ToMinor(onHandValueE4),
-			expiringValue: e4ToMinor(expiringValueE4),
-			expiredValue: e4ToMinor(expiredValueE4),
-			belowReorderPoint:
-				row.reorderPoint !== null && row.onHand <= row.reorderPoint,
-		}),
-	);
+	const items = rows.map(({ onHandValueE4, variantStatus, ...row }) => ({
+		...row,
+		variantStatus,
+		stockValue: e4ToMinor(onHandValueE4),
+		lowStock: isLowStock(row.onHand, row.reorderPoint, clock.lowStockThreshold),
+	}));
 	return toPaged(items, counted.total, query);
 }
 
-export async function stockSummary(db: Db, clock: Clock) {
-	const stock = stockPerSize(db, clock);
+export async function stockSummary(db: Db, clock: StockClock) {
+	const stock = stockPerVariant(db);
 	const [[sums], [low]] = await db.batch([
 		db
 			.select({
 				units: sql<number>`coalesce(sum(${stock.onHand}), 0)`,
 				valueE4: sql<number>`coalesce(sum(${stock.onHandValueE4}), 0)`,
-				expiringUnits: sql<number>`coalesce(sum(${stock.expiringUnits}), 0)`,
-				expiringValueE4: sql<number>`coalesce(sum(${stock.expiringValueE4}), 0)`,
-				expiredUnits: sql<number>`coalesce(sum(${stock.expiredUnits}), 0)`,
-				expiredValueE4: sql<number>`coalesce(sum(${stock.expiredValueE4}), 0)`,
 			})
 			.from(stock),
 		db
@@ -192,7 +160,7 @@ export async function stockSummary(db: Db, clock: Clock) {
 			.where(
 				and(
 					eq(variants.status, "active"),
-					sql`${variants.reorderPoint} is not null and ${orZero(stock.onHand)} <= ${variants.reorderPoint}`,
+					sql`${orZero(stock.onHand)} <= ${lowPoint(clock)}`,
 				),
 			),
 	]);
@@ -200,11 +168,7 @@ export async function stockSummary(db: Db, clock: Clock) {
 	return {
 		units: sums.units,
 		value: e4ToMinor(sums.valueE4),
-		expiringUnits: sums.expiringUnits,
-		expiringValue: e4ToMinor(sums.expiringValueE4),
-		expiredUnits: sums.expiredUnits,
-		expiredValue: e4ToMinor(sums.expiredValueE4),
-		belowReorderPoint: low.total,
+		lowStock: low.total,
 	};
 }
 
@@ -231,20 +195,18 @@ const codeMatch = (q: string) =>
 		),
 	);
 
-export async function pagedLots(db: Db, clock: Clock, query: LotListSearch) {
+export async function pagedLots(
+	db: Db,
+	clock: StockClock,
+	query: LotListSearch,
+) {
 	const balance = lotBalance(db);
 	const where = and(
 		sql`${balance.available} > 0`,
-		query.view === "expiring"
-			? sql`${lots.expiresOn} >= ${clock.today} and ${lots.expiresOn} <= ${lastDayToWarn(clock)}`
-			: undefined,
-		query.view === "expired"
-			? sql`${lots.expiresOn} < ${clock.today}`
-			: undefined,
-		query.q ? or(sizeSearch(query.q), codeMatch(query.q)) : undefined,
+		query.q ? or(variantSearch(query.q), codeMatch(query.q)) : undefined,
 	);
 	const sortColumns = {
-		expiresOn: lots.expiresOn,
+		receivedAt: lots.id,
 		product: productLabel,
 		sku: variants.sku,
 		code: sql`${lots.code} collate nocase`,
@@ -258,8 +220,7 @@ export async function pagedLots(db: Db, clock: Clock, query: LotListSearch) {
 				// Columns of a batch are read by name: the three ids need a name of their own.
 				lotId: sql<number>`${lots.id}`.as("lot_id"),
 				code: lots.code,
-				expiresOn: lots.expiresOn,
-				expiryPrecision: lots.expiryPrecision,
+				receivedAt: lots.createdAt,
 				unitCostE4: lots.unitCostE4,
 				variantId: sql<number>`${variants.id}`.as("variant_id"),
 				sku: variants.sku,
@@ -267,8 +228,7 @@ export async function pagedLots(db: Db, clock: Clock, query: LotListSearch) {
 				name: sql<string | null>`${productTranslations.name}`.as(
 					"product_name",
 				),
-				sizeValue: variants.sizeValue,
-				sizeUnit: variants.sizeUnit,
+				optionLabel: variants.optionLabel,
 				available: balance.available,
 				received: balance.received,
 				purchaseOrderId: sql<number>`${purchaseOrders.id}`.as(
@@ -320,17 +280,10 @@ export async function pagedLots(db: Db, clock: Clock, query: LotListSearch) {
 			)
 			.where(where),
 	]);
-	const items = rows.map(({ unitCostE4, expiryPrecision, ...lot }) => {
-		const daysLeft = daysBetween(clock.today, lot.expiresOn);
-		return {
-			...lot,
-			expiry: formatExpiry(lot.expiresOn, expiryPrecision),
-			unitCost: e4ToMinor(unitCostE4),
-			value: e4ToMinor(lot.available * unitCostE4),
-			daysLeft,
-			expired: isExpired(lot.expiresOn, clock.today),
-			expiringSoon: daysLeft <= clock.expiryWarningDays,
-		};
-	});
+	const items = rows.map(({ unitCostE4, ...lot }) => ({
+		...lot,
+		unitCost: e4ToMinor(unitCostE4),
+		value: e4ToMinor(lot.available * unitCostE4),
+	}));
 	return toPaged(items, counted.total, query);
 }

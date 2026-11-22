@@ -9,6 +9,7 @@ import {
 	ZONE_MAX_POSITION,
 	zoneListSearch,
 } from "#/lib/schemas/shipping";
+import { SV_MUNICIPALITIES } from "#/lib/sv-locations";
 import type { AdminEnv } from "#/server/auth";
 import { idParam, invalidRequest, validate } from "#/server/validate";
 import { audit } from "../../domain/audit";
@@ -25,7 +26,8 @@ import {
 	translations,
 } from "./catalog-inputs";
 
-const { shippingZones, shippingZoneTranslations } = schema;
+const { shippingZoneMunicipalities, shippingZones, shippingZoneTranslations } =
+	schema;
 
 const money = z.number().int().min(0).max(ZONE_MAX_AMOUNT);
 const days = z.number().int().min(0).max(ZONE_MAX_DAYS);
@@ -38,8 +40,7 @@ const zoneText = z.object({
 const zoneFields = z.object({
 	method: z.enum(SHIPPING_METHODS),
 	fee: money,
-	// Merchandise total after discount that waives the fee; null: never free.
-	freeFrom: money.nullable(),
+	coversRest: z.boolean(),
 	deliveryDaysMin: days,
 	deliveryDaysMax: days,
 	position: z.number().int().min(0).max(ZONE_MAX_POSITION),
@@ -53,10 +54,40 @@ const daysOutOfOrder = {
 };
 const zoneState = zoneFields.refine(daysInOrder, daysOutOfOrder);
 
+const municipalities = z
+	.array(z.enum(SV_MUNICIPALITIES as [string, ...string[]]))
+	.max(SV_MUNICIPALITIES.length)
+	.refine((x) => new Set(x).size === x.length, "Duplicate municipality");
+
 const createInput = zoneFields
-	.extend({ slug, translations: translations(zoneText) })
-	.partial({ position: true, status: true })
+	.extend({
+		slug,
+		translations: translations(zoneText),
+		municipalities: municipalities.default([]),
+	})
+	.partial({ position: true, status: true, coversRest: true })
 	.refine(daysInOrder, daysOutOfOrder);
+
+async function municipalitiesTaken(db: Db, wanted: string[], zoneId: number) {
+	if (wanted.length === 0) return [];
+	const rows = await db
+		.select({
+			municipality: shippingZoneMunicipalities.municipality,
+			zoneId: shippingZoneMunicipalities.zoneId,
+		})
+		.from(shippingZoneMunicipalities);
+	return rows
+		.filter((r) => r.zoneId !== zoneId && wanted.includes(r.municipality))
+		.map((r) => r.municipality);
+}
+
+const coverageRefused = (
+	coversRest: boolean | undefined,
+	municipalities: string[] | undefined,
+) =>
+	coversRest === true &&
+	municipalities !== undefined &&
+	municipalities.length > 0;
 
 async function written(db: Db, id: number) {
 	const zone = await zoneDetail(db, id);
@@ -79,7 +110,13 @@ export const shippingRouter = new Hono<AdminEnv>()
 	})
 	.post("/", validate("json", createInput), async (c) => {
 		const db = getDb();
-		const { translations, ...zone } = c.req.valid("json");
+		const {
+			translations,
+			municipalities: places,
+			...zone
+		} = c.req.valid("json");
+		if (coverageRefused(zone.coversRest, places))
+			return c.json({ error: "zone_covers_rest" }, 409);
 		const { defaultLocale } = await readSettings(db);
 		if (!translations[defaultLocale])
 			return c.json({ error: "publish_requires_default_translation" }, 409);
@@ -87,9 +124,15 @@ export const shippingRouter = new Hono<AdminEnv>()
 			where: eq(shippingZones.slug, zone.slug),
 		});
 		if (exists) return c.json({ error: "duplicate_slug" }, 409);
+		const taken = await municipalitiesTaken(db, places, 0);
+		if (taken.length > 0)
+			return c.json({ error: "municipality_in_other_zone", taken }, 409);
 		const zoneId = sql<number>`(select id from shipping_zones where slug = ${zone.slug})`;
 		await db.batch([
 			db.insert(shippingZones).values(zone),
+			...places.map((municipality) =>
+				db.insert(shippingZoneMunicipalities).values({ zoneId, municipality }),
+			),
 			...translationEntries(translations).map(([locale, text]) =>
 				db.insert(shippingZoneTranslations).values({ zoneId, locale, ...text }),
 			),
@@ -98,7 +141,7 @@ export const shippingRouter = new Hono<AdminEnv>()
 				action: "shipping_zone.create",
 				entityType: "shipping_zone",
 				entityId: zoneId,
-				data: { ...zone, translations },
+				data: { ...zone, translations, municipalities: places },
 			}),
 		]);
 		const created = await db.query.shippingZones.findFirst({
@@ -115,19 +158,41 @@ export const shippingRouter = new Hono<AdminEnv>()
 			"json",
 			zoneFields
 				.partial()
-				.extend({ translations: translations(zoneText).optional() })
+				.extend({
+					translations: translations(zoneText).optional(),
+					municipalities: municipalities.optional(),
+				})
 				.refine((v) => Object.keys(v).length > 0, "Nothing to change"),
 		),
 		async (c) => {
 			const db = getDb();
 			const { id } = c.req.valid("param");
-			const { translations: texts, ...patch } = c.req.valid("json");
+			const {
+				translations: texts,
+				municipalities: places,
+				...patch
+			} = c.req.valid("json");
 			const stored = await db.query.shippingZones.findFirst({
 				where: eq(shippingZones.id, id),
 			});
 			if (!stored) return c.json({ error: "not_found" }, 404);
 			const state = zoneState.safeParse({ ...stored, ...patch });
 			if (!state.success) return invalidRequest(c, state.error);
+			const current =
+				places ??
+				(
+					await db
+						.select({ m: shippingZoneMunicipalities.municipality })
+						.from(shippingZoneMunicipalities)
+						.where(eq(shippingZoneMunicipalities.zoneId, id))
+				).map((r) => r.m);
+			if (coverageRefused(state.data.coversRest, current))
+				return c.json({ error: "zone_covers_rest" }, 409);
+			if (places) {
+				const taken = await municipalitiesTaken(db, places, id);
+				if (taken.length > 0)
+					return c.json({ error: "municipality_in_other_zone", taken }, 409);
+			}
 			if (patch.status === "active" && stored.status !== "active") {
 				const { defaultLocale } = await readSettings(db);
 				const named =
@@ -149,8 +214,21 @@ export const shippingRouter = new Hono<AdminEnv>()
 							before: stored,
 							patch,
 							...(texts ? { translations: texts } : {}),
+							...(places ? { municipalities: places } : {}),
 						}),
 					}),
+					...(places
+						? [
+								db
+									.delete(shippingZoneMunicipalities)
+									.where(eq(shippingZoneMunicipalities.zoneId, id)),
+								...places.map((municipality) =>
+									db
+										.insert(shippingZoneMunicipalities)
+										.values({ zoneId: id, municipality }),
+								),
+							]
+						: []),
 					...(Object.keys(patch).length > 0
 						? [
 								db

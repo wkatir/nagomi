@@ -3,10 +3,9 @@ import type { Db } from "#/db";
 import { schema } from "#/db";
 import type { Locale } from "#/lib/enums";
 import type { BrandListSearch } from "#/lib/schemas/brands";
+import type { BundleListSearch } from "#/lib/schemas/bundles";
 import type { CategoryListSearch } from "#/lib/schemas/categories";
 import type { CollectionListSearch } from "#/lib/schemas/collections";
-import type { ConcernListSearch } from "#/lib/schemas/concerns";
-import type { RoutineListSearch } from "#/lib/schemas/routines";
 import { qualified } from "./d1";
 import { mediaUrl } from "./images";
 import { pageWindow, sortBy, toPaged } from "./list-query";
@@ -19,14 +18,11 @@ const {
 	collectionProducts,
 	collections,
 	collectionTranslations,
-	concernTranslations,
-	concerns,
+	bundleItems,
+	bundles,
+	bundleTranslations,
 	mediaFiles,
-	productConcerns,
 	products,
-	routineItems,
-	routines,
-	routineTranslations,
 } = schema;
 
 const totalOf = (rows: { total: number }[]) => {
@@ -37,7 +33,6 @@ const totalOf = (rows: { total: number }[]) => {
 
 const brandProducts = sql<number>`(select count(*) from ${products} where ${qualified(products.brandId)} = ${qualified(brands.id)} and ${qualified(products.status)} <> 'archived')`;
 const categoryProducts = sql<number>`(select count(*) from ${products} where ${qualified(products.categoryId)} = ${qualified(categories.id)} and ${qualified(products.status)} <> 'archived')`;
-const concernProducts = sql<number>`(select count(*) from ${productConcerns} pc join ${products} p on p.id = pc.product_id where pc.concern_id = ${qualified(concerns.id)} and p.status <> 'archived')`;
 
 export async function pagedBrands(db: Db, query: BrandListSearch) {
 	const where = and(
@@ -99,7 +94,7 @@ export async function pagedCategories(
 	);
 	const sorts = {
 		name: foldedText(categoryTranslations.name),
-		routineStep: categories.routineStep,
+		sortOrder: categories.sortOrder,
 		products: categoryProducts,
 		status: categories.status,
 	};
@@ -109,7 +104,8 @@ export async function pagedCategories(
 				id: categories.id,
 				slug: categories.slug,
 				name: categoryTranslations.name,
-				routineStep: categories.routineStep,
+				sortOrder: categories.sortOrder,
+				icon: categories.icon,
 				status: categories.status,
 				products: categoryProducts,
 			})
@@ -140,134 +136,73 @@ export const categoryOptions = (db: Db, defaultLocale: Locale) =>
 		.innerJoin(categoryTranslations, categoryName(defaultLocale))
 		.orderBy(asc(foldedText(categoryTranslations.name)), asc(categories.id));
 
-const concernName = (defaultLocale: Locale) =>
+const bundleItemCount = sql<number>`(select count(*) from ${bundleItems} where ${qualified(bundleItems.bundleId)} = ${qualified(bundles.id)})`;
+const bundleName = (defaultLocale: Locale) =>
 	and(
-		eq(concernTranslations.concernId, concerns.id),
-		eq(concernTranslations.locale, defaultLocale),
+		eq(bundleTranslations.bundleId, bundles.id),
+		eq(bundleTranslations.locale, defaultLocale),
 	);
 
-export async function pagedConcerns(
+export async function pagedBundles(
 	db: Db,
 	defaultLocale: Locale,
-	query: ConcernListSearch,
+	query: BundleListSearch,
 ) {
 	const where = and(
-		query.status ? eq(concerns.status, query.status) : undefined,
+		query.status ? eq(bundles.status, query.status) : undefined,
 		query.q
 			? searchMatch(query.q, [
-					foldedText(concernTranslations.name),
-					concerns.slug,
+					foldedText(bundleTranslations.name),
+					bundles.slug,
 				])
 			: undefined,
 	);
 	const sorts = {
-		name: foldedText(concernTranslations.name),
-		position: concerns.position,
-		products: concernProducts,
-		status: concerns.status,
+		name: foldedText(bundleTranslations.name),
+		position: bundles.position,
+		items: bundleItemCount,
+		price: bundles.price,
+		featured: bundles.isFeatured,
+		status: bundles.status,
 	};
 	const [items, counted] = await db.batch([
 		db
 			.select({
-				id: concerns.id,
-				slug: concerns.slug,
-				name: concernTranslations.name,
-				position: concerns.position,
-				status: concerns.status,
-				products: concernProducts,
+				id: bundles.id,
+				slug: bundles.slug,
+				name: bundleTranslations.name,
+				status: bundles.status,
+				isFeatured: bundles.isFeatured,
+				position: bundles.position,
+				price: bundles.price,
+				items: bundleItemCount,
 			})
-			.from(concerns)
-			.leftJoin(concernTranslations, concernName(defaultLocale))
+			.from(bundles)
+			.leftJoin(bundleTranslations, bundleName(defaultLocale))
 			.where(where)
-			.orderBy(...sortBy(sorts, query.sort, query.dir, concerns.id))
+			.orderBy(...sortBy(sorts, query.sort, query.dir, bundles.id))
 			.limit(pageWindow(query).limit)
 			.offset(pageWindow(query).offset),
 		db
 			.select({ total: count() })
-			.from(concerns)
-			.leftJoin(concernTranslations, concernName(defaultLocale))
+			.from(bundles)
+			.leftJoin(bundleTranslations, bundleName(defaultLocale))
 			.where(where),
 	]);
 	return toPaged(items, totalOf(counted), query);
 }
 
 // An archived one may lack the default-language name.
-export const concernOptions = (db: Db, defaultLocale: Locale) =>
+export const bundleOptions = (db: Db, defaultLocale: Locale) =>
 	db
 		.select({
-			id: concerns.id,
-			name: concernTranslations.name,
-			status: concerns.status,
+			id: bundles.id,
+			name: bundleTranslations.name,
+			status: bundles.status,
 		})
-		.from(concerns)
-		.innerJoin(concernTranslations, concernName(defaultLocale))
-		.orderBy(asc(foldedText(concernTranslations.name)), asc(concerns.id));
-
-const routineSteps = sql<number>`(select count(*) from ${routineItems} where ${qualified(routineItems.routineId)} = ${qualified(routines.id)})`;
-const routineTitle = (defaultLocale: Locale) =>
-	and(
-		eq(routineTranslations.routineId, routines.id),
-		eq(routineTranslations.locale, defaultLocale),
-	);
-
-export async function pagedRoutines(
-	db: Db,
-	defaultLocale: Locale,
-	query: RoutineListSearch,
-) {
-	const where = and(
-		query.status ? eq(routines.status, query.status) : undefined,
-		query.q
-			? searchMatch(query.q, [
-					foldedText(routineTranslations.title),
-					routines.slug,
-				])
-			: undefined,
-	);
-	const sorts = {
-		title: foldedText(routineTranslations.title),
-		position: routines.position,
-		steps: routineSteps,
-		featured: routines.isFeatured,
-		status: routines.status,
-	};
-	const [items, counted] = await db.batch([
-		db
-			.select({
-				id: routines.id,
-				slug: routines.slug,
-				title: routineTranslations.title,
-				status: routines.status,
-				isFeatured: routines.isFeatured,
-				position: routines.position,
-				steps: routineSteps,
-			})
-			.from(routines)
-			.leftJoin(routineTranslations, routineTitle(defaultLocale))
-			.where(where)
-			.orderBy(...sortBy(sorts, query.sort, query.dir, routines.id))
-			.limit(pageWindow(query).limit)
-			.offset(pageWindow(query).offset),
-		db
-			.select({ total: count() })
-			.from(routines)
-			.leftJoin(routineTranslations, routineTitle(defaultLocale))
-			.where(where),
-	]);
-	return toPaged(items, totalOf(counted), query);
-}
-
-// An archived one may lack the default-language title.
-export const routineOptions = (db: Db, defaultLocale: Locale) =>
-	db
-		.select({
-			id: routines.id,
-			name: routineTranslations.title,
-			status: routines.status,
-		})
-		.from(routines)
-		.innerJoin(routineTranslations, routineTitle(defaultLocale))
-		.orderBy(asc(foldedText(routineTranslations.title)), asc(routines.id));
+		.from(bundles)
+		.innerJoin(bundleTranslations, bundleName(defaultLocale))
+		.orderBy(asc(foldedText(bundleTranslations.name)), asc(bundles.id));
 
 const collectionCount = sql<number>`(select count(*) from ${collectionProducts} where ${qualified(collectionProducts.collectionId)} = ${qualified(collections.id)})`;
 const collectionTitle = (defaultLocale: Locale) =>

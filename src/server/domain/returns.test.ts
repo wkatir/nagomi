@@ -2,7 +2,6 @@ import { describe, expect, test } from "bun:test";
 import {
 	fullReturn,
 	planReturn,
-	RestockExpiredLotError,
 	ReturnExceedsSoldError,
 	ReturnLotRequiredError,
 	returnMovements,
@@ -10,21 +9,18 @@ import {
 
 // Order item 10 left from lots 1 (2 units) and 2 (1 unit); item 11 from lot 3 (3 units),
 // one of which already came back.
-const today = "2026-10-05";
 const sold = [
-	{ orderItemId: 10, lotId: 1, expiresOn: "2027-05-31", sold: 2, returned: 0 },
-	{ orderItemId: 10, lotId: 2, expiresOn: "2027-06-30", sold: 1, returned: 0 },
-	{ orderItemId: 11, lotId: 3, expiresOn: "2027-01-01", sold: 3, returned: 1 },
+	{ orderItemId: 10, lotId: 1, sold: 2, returned: 0 },
+	{ orderItemId: 10, lotId: 2, sold: 1, returned: 0 },
+	{ orderItemId: 11, lotId: 3, sold: 3, returned: 1 },
 ];
 
 describe("planReturn", () => {
 	test("uses the only lot a line left from", () => {
 		expect(
-			planReturn(
-				sold,
-				[{ orderItemId: 11, quantity: 2, disposition: "restock" }],
-				today,
-			),
+			planReturn(sold, [
+				{ orderItemId: 11, quantity: 2, disposition: "restock" },
+			]),
 		).toEqual([
 			{ orderItemId: 11, lotId: 3, quantity: 2, disposition: "restock" },
 		]);
@@ -32,18 +28,14 @@ describe("planReturn", () => {
 
 	test("needs the lot when a line left from several", () => {
 		expect(() =>
-			planReturn(
-				sold,
-				[{ orderItemId: 10, quantity: 1, disposition: "restock" }],
-				today,
-			),
+			planReturn(sold, [
+				{ orderItemId: 10, quantity: 1, disposition: "restock" },
+			]),
 		).toThrow(ReturnLotRequiredError);
 		expect(
-			planReturn(
-				sold,
-				[{ orderItemId: 10, lotId: 2, quantity: 1, disposition: "write_off" }],
-				today,
-			),
+			planReturn(sold, [
+				{ orderItemId: 10, lotId: 2, quantity: 1, disposition: "write_off" },
+			]),
 		).toEqual([
 			{ orderItemId: 10, lotId: 2, quantity: 1, disposition: "write_off" },
 		]);
@@ -51,59 +43,41 @@ describe("planReturn", () => {
 
 	test("never returns more than sold minus already returned", () => {
 		expect(() =>
-			planReturn(
-				sold,
-				[{ orderItemId: 11, quantity: 3, disposition: "restock" }],
-				today,
-			),
+			planReturn(sold, [
+				{ orderItemId: 11, quantity: 3, disposition: "restock" },
+			]),
 		).toThrow(ReturnExceedsSoldError);
 		expect(() =>
-			planReturn(
-				sold,
-				[
-					{ orderItemId: 11, quantity: 1, disposition: "restock" },
-					{ orderItemId: 11, quantity: 2, disposition: "write_off" },
-				],
-				today,
-			),
+			planReturn(sold, [
+				{ orderItemId: 11, quantity: 1, disposition: "restock" },
+				{ orderItemId: 11, quantity: 2, disposition: "write_off" },
+			]),
 		).toThrow(ReturnExceedsSoldError);
 		expect(() =>
-			planReturn(
-				sold,
-				[{ orderItemId: 99, quantity: 1, disposition: "restock" }],
-				today,
-			),
+			planReturn(sold, [
+				{ orderItemId: 99, quantity: 1, disposition: "restock" },
+			]),
 		).toThrow(ReturnExceedsSoldError);
 		// Lot 1 is item 10's: item 11 has nothing to return to it.
 		expect(() =>
-			planReturn(
-				sold,
-				[{ orderItemId: 11, lotId: 1, quantity: 1, disposition: "restock" }],
-				today,
-			),
+			planReturn(sold, [
+				{ orderItemId: 11, lotId: 1, quantity: 1, disposition: "restock" },
+			]),
 		).toThrow(ReturnExceedsSoldError);
 	});
 
 	test("merges repeated lines and keeps dispositions apart", () => {
 		expect(
-			planReturn(
-				sold,
-				[
-					{ orderItemId: 10, lotId: 1, quantity: 1, disposition: "restock" },
-					{ orderItemId: 10, lotId: 1, quantity: 1, disposition: "write_off" },
-				],
-				today,
-			),
+			planReturn(sold, [
+				{ orderItemId: 10, lotId: 1, quantity: 1, disposition: "restock" },
+				{ orderItemId: 10, lotId: 1, quantity: 1, disposition: "write_off" },
+			]),
 		).toHaveLength(2);
 		expect(
-			planReturn(
-				sold,
-				[
-					{ orderItemId: 10, lotId: 1, quantity: 1, disposition: "restock" },
-					{ orderItemId: 10, lotId: 1, quantity: 1, disposition: "restock" },
-				],
-				today,
-			),
+			planReturn(sold, [
+				{ orderItemId: 10, lotId: 1, quantity: 1, disposition: "restock" },
+				{ orderItemId: 10, lotId: 1, quantity: 1, disposition: "restock" },
+			]),
 		).toEqual([
 			{ orderItemId: 10, lotId: 1, quantity: 2, disposition: "restock" },
 		]);
@@ -112,7 +86,7 @@ describe("planReturn", () => {
 
 describe("fullReturn", () => {
 	test("returns every unit still out to its lot", () => {
-		expect(fullReturn(sold, today)).toEqual([
+		expect(fullReturn(sold)).toEqual([
 			{ orderItemId: 10, lotId: 1, quantity: 2, disposition: "restock" },
 			{ orderItemId: 10, lotId: 2, quantity: 1, disposition: "restock" },
 			{ orderItemId: 11, lotId: 3, quantity: 2, disposition: "restock" },
@@ -121,46 +95,15 @@ describe("fullReturn", () => {
 
 	test("is empty when every unit already came back", () => {
 		expect(
-			fullReturn(
-				[
-					{
-						orderItemId: 1,
-						lotId: 1,
-						expiresOn: "2027-01-01",
-						sold: 1,
-						returned: 1,
-					},
-				],
-				today,
-			),
+			fullReturn([
+				{
+					orderItemId: 1,
+					lotId: 1,
+					sold: 1,
+					returned: 1,
+				},
+			]),
 		).toEqual([]);
-	});
-
-	test("writes off units of a lot that expired meanwhile", () => {
-		expect(fullReturn(sold, "2027-06-01")).toEqual([
-			{ orderItemId: 10, lotId: 1, quantity: 2, disposition: "write_off" },
-			{ orderItemId: 10, lotId: 2, quantity: 1, disposition: "restock" },
-			{ orderItemId: 11, lotId: 3, quantity: 2, disposition: "write_off" },
-		]);
-	});
-});
-
-describe("expired lots", () => {
-	test("a unit of an expired lot can only be written off", () => {
-		expect(() =>
-			planReturn(
-				sold,
-				[{ orderItemId: 11, quantity: 1, disposition: "restock" }],
-				"2027-01-02",
-			),
-		).toThrow(RestockExpiredLotError);
-		expect(
-			planReturn(
-				sold,
-				[{ orderItemId: 11, quantity: 1, disposition: "write_off" }],
-				"2027-01-02",
-			),
-		).toHaveLength(1);
 	});
 });
 

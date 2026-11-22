@@ -3,36 +3,49 @@ import { beforeEach, describe, expect, mock, test } from "bun:test";
 import { Hono } from "hono";
 import { d1, migratedDatabase } from "#/db/test-database";
 
-const env: { DB?: ReturnType<typeof d1> } = {};
+const env: { DB?: ReturnType<typeof d1>; BETTER_AUTH_URL: string } = {
+	BETTER_AUTH_URL: "http://localhost",
+};
 mock.module("cloudflare:workers", () => ({ env }));
 const { storeCatalog } = await import("./store-catalog");
 
 const app = new Hono().route("/", storeCatalog);
 
-type Routine = {
-	slug: string;
-	title: string;
-	total: number;
-	steps: { sku: string }[];
-};
-type Page = {
+type Bundle = {
 	slug: string;
 	name: string;
+	price: number;
+	itemsTotal: number;
+	saving: number;
+	items: { sku: string; quantity: number }[];
+};
+type CategoryPage = {
+	slug: string;
+	name: string;
+	subtitle: string | null;
+	icon: string;
 	description: string | null;
 	seoTitle: string | null;
 	seoDescription: string | null;
 	productCount: number;
-	routines: Routine[];
 };
-type CategoryPage = Omit<Page, "routines">;
 type Listing = {
-	items: { slug: string }[];
+	items: { slug: string; shortSpecs: string | null; badge: string | null }[];
 	total: number;
-	facets: { skinType: { slug: string; count: number; selected: boolean }[] };
+	facets: { brand: { slug: string; count: number; selected: boolean }[] };
 };
 type Product = {
-	variants: { sku: string; gtin: string | null }[];
-	routines: Routine[];
+	shortSpecs: string | null;
+	warrantyMonths: number;
+	badge: string | null;
+	specs: { label: string; value: string }[];
+	variants: { sku: string; gtin: string | null; optionLabel: string | null }[];
+	bundles: Bundle[];
+};
+type Home = {
+	featuredBundles: Bundle[];
+	featuredProducts: { slug: string }[];
+	categories: { slug: string }[];
 };
 const get = async <T>(path: string) => {
 	const res = await app.request(path);
@@ -41,118 +54,55 @@ const get = async <T>(path: string) => {
 
 let db: Database;
 
-// Two published products (p1: a cleanser for acne, p2: a serum for acne and pores) and a
-// draft one (p3). The routine r-acne answers acne and is for sale; r-hidden also answers
-// acne but has a step that is not for sale; r-other answers pores; r-draft is a draft.
+// Two published keyboards (p1 by Akko, p2 by Royal Kludge, featured) and a draft mouse
+// (p3). The bundle set-a is for sale; set-draft is a draft.
 beforeEach(() => {
 	db = migratedDatabase();
 	db.exec(`
-insert into store_settings (id, name, currency, default_locale, time_zone, country_code, order_code_prefix, max_quantity_per_line, expiry_warning_days) values (1, 'Store', 'USD', 'es', 'America/El_Salvador', 'SV', 'ECL', 20, 180);
-insert into brands (slug, name, search_key) values ('b', 'Brand', 'brand b');
-insert into categories (slug, routine_step) values ('cleanser', 1), ('serum', 2), ('mask', 3);
-insert into category_translations (category_id, locale, name, description, seo_title, seo_description) values
-	(1, 'es', 'Limpiador', 'Van primero.', 'Limpiadores faciales', 'Compra limpiadores.'),
-	(1, 'en', 'Cleanser', 'They go first.', null, null),
-	(2, 'es', 'Sérum', null, null, null),
-	(3, 'es', 'Mascarilla', null, null, null);
-insert into concerns (slug, position) values ('acne', 0), ('pores', 1), ('dryness', 2);
-insert into concern_translations (concern_id, locale, name, description, seo_title, seo_description) values
-	(1, 'es', 'Acné', 'Para la piel con brillo.', 'Piel con acné', 'Productos para el acné.'),
-	(1, 'en', 'Acne', 'For shiny skin.', null, null),
-	(2, 'es', 'Poros', null, null, null),
-	(3, 'es', 'Resequedad', null, null, null);
-insert into products (slug, brand_id, category_id) values ('p1', 1, 1), ('p2', 1, 2), ('p3', 1, 3);
-insert into product_translations (product_id, locale, name, search_key) values (1, 'es', 'Producto 1', 'producto 1'), (2, 'es', 'Producto 2', 'producto 2'), (3, 'es', 'Producto 3', 'producto 3');
-insert into variants (product_id, sku, price, search_key, gtin) values (1, 'P1', 1000, 'p1', '00012345678905'), (2, 'P2', 2000, 'p2', null), (3, 'P3', 3000, 'p3', null);
+insert into store_settings (id, name, currency, default_locale, time_zone, country_code, order_code_prefix, max_quantity_per_line, low_stock_threshold) values (1, 'Nagomi', 'USD', 'es', 'America/El_Salvador', 'SV', 'NAG', 20, 5);
+insert into brands (slug, name, search_key) values ('akko', 'Akko', 'akko'), ('royal-kludge', 'Royal Kludge', 'royal kludge');
+insert into categories (slug, icon, sort_order) values ('teclados', 'keyboard', 1), ('ratones', 'mouse', 2);
+insert into category_translations (category_id, locale, name, subtitle, description, seo_title, seo_description) values (1, 'es', 'Teclados', 'Mecánicos y custom', 'Para escribir y jugar.', 'Teclados mecánicos', 'Compra teclados.'), (1, 'en', 'Keyboards', 'Mechanical and custom', 'To type and play.', null, null), (2, 'es', 'Ratones', null, null, null, null);
+insert into products (slug, brand_id, category_id, warranty_months, is_featured, badge) values ('p1', 1, 1, 12, 0, null), ('p2', 2, 1, 12, 1, 'best_seller'), ('p3', 1, 2, 12, 0, null);
+insert into product_translations (product_id, locale, name, search_key, short_specs) values (1, 'es', 'Teclado Sakura', 'teclado sakura', '65% · Hot-swap'), (2, 'es', 'Teclado RK75', 'teclado rk75', '75% · RGB'), (3, 'es', 'Mouse Hana', 'mouse hana', null);
+insert into product_specs (id, product_id, position) values (1, 1, 2), (2, 1, 1);
+insert into product_spec_translations (spec_id, locale, label, value) values (1, 'es', 'Switches', 'Hot-swap'), (2, 'es', 'Formato', '65%'), (2, 'en', 'Layout', '65%');
+insert into variants (product_id, sku, price, search_key, gtin, option_label) values (1, 'TEC-002', 7499, 'tec-002', '00012345678905', 'Rosa'), (2, 'TEC-001', 8999, 'tec-001', null, null), (3, 'RAT-002', 2499, 'rat-002', null, null);
 update products set status = 'published' where id in (1, 2);
-insert into product_concerns (product_id, concern_id) values (1, 1), (2, 1), (2, 2), (3, 3);
-insert into product_skin_types (product_id, skin_type) values (1, 'oily'), (1, 'combination'), (2, 'dry');
-insert into routines (slug, status, concern_id) values ('r-acne', 'published', 1), ('r-hidden', 'published', 1), ('r-other', 'published', 2), ('r-draft', 'draft', 1);
-insert into routine_translations (routine_id, locale, title) values (1, 'es', 'Rutina acné'), (2, 'es', 'Rutina oculta'), (3, 'es', 'Rutina poros'), (4, 'es', 'Borrador');
-insert into routine_items (routine_id, variant_id, position) values (1, 1, 1), (1, 2, 2), (2, 1, 1), (2, 3, 2), (3, 2, 1), (4, 1, 1);
+insert into bundles (slug, price, is_featured) values ('set-a', 15000, 1), ('set-draft', 100, 0);
+insert into bundle_translations (bundle_id, locale, name) values (1, 'es', 'Set A'), (2, 'es', 'Borrador');
+insert into bundle_items (bundle_id, variant_id, quantity, position) values (1, 1, 1, 1), (1, 2, 1, 2), (2, 1, 1, 1), (2, 3, 1, 2);
+update bundles set status = 'published' where slug = 'set-a';
 `);
 	env.DB = d1(db);
 });
 
-describe("GET /concerns/:slug", () => {
-	test("is the need's text, how many products it has and the routines that answer it", async () => {
-		const { status, body } = await get<Page>("/concerns/acne?locale=es");
-		expect(status).toBe(200);
-		expect(body).toMatchObject({
-			slug: "acne",
-			name: "Acné",
-			description: "Para la piel con brillo.",
-			seoTitle: "Piel con acné",
-			seoDescription: "Productos para el acné.",
-			productCount: 2,
-		});
-		expect(body.routines).toHaveLength(1);
-		expect(body.routines[0]).toMatchObject({
-			slug: "r-acne",
-			title: "Rutina acné",
-			total: 3000,
-		});
-		expect(body.routines[0].steps.map((s) => s.sku)).toEqual(["P1", "P2"]);
-	});
-
-	test("reads the text in the page's language, else in the store's", async () => {
-		const english = await get<Page>("/concerns/acne?locale=en");
-		expect(english.body).toMatchObject({
-			name: "Acne",
-			description: "For shiny skin.",
-			seoTitle: null,
-		});
-		const fallback = await get<Page>("/concerns/pores?locale=en");
-		expect(fallback.body).toMatchObject({ name: "Poros", description: null });
-	});
-
-	test("a need without a published product has no page", async () => {
-		expect((await get("/concerns/dryness?locale=es")).status).toBe(404);
-		expect((await get("/concerns/unknown?locale=es")).status).toBe(404);
-	});
-
-	test("an archived need has no page", async () => {
-		db.exec("update concerns set status = 'archived' where slug = 'acne'");
-		expect((await get("/concerns/acne?locale=es")).status).toBe(404);
-	});
-
-	test("a need no routine answers has an empty list", async () => {
-		db.exec("update routines set concern_id = null");
-		expect((await get<Page>("/concerns/acne?locale=es")).body.routines).toEqual(
-			[],
-		);
-	});
-
-	test("archiving a need removes its page but keeps its routines in the routine list", async () => {
-		db.exec("update concerns set status = 'archived' where slug = 'pores'");
-		const { body } = await get<Routine[]>("/routines?locale=es");
-		expect(body.map((r) => r.slug).sort()).toEqual(["r-acne", "r-other"]);
-		expect((await get("/concerns/pores?locale=es")).status).toBe(404);
-	});
-});
-
 describe("GET /categories/:slug", () => {
-	test("is the type's text and how many products it has", async () => {
+	test("is the category's text, its tile, and how many products it has", async () => {
 		const { status, body } = await get<CategoryPage>(
-			"/categories/cleanser?locale=es",
+			"/categories/teclados?locale=es",
 		);
 		expect(status).toBe(200);
 		expect(body).toEqual({
-			slug: "cleanser",
-			name: "Limpiador",
-			description: "Van primero.",
-			seoTitle: "Limpiadores faciales",
-			seoDescription: "Compra limpiadores.",
-			productCount: 1,
+			slug: "teclados",
+			name: "Teclados",
+			subtitle: "Mecánicos y custom",
+			icon: "keyboard",
+			description: "Para escribir y jugar.",
+			seoTitle: "Teclados mecánicos",
+			seoDescription: "Compra teclados.",
+			productCount: 2,
 		});
 		expect(
-			(await get<CategoryPage>("/categories/cleanser?locale=en")).body
-				.description,
-		).toBe("They go first.");
+			(await get<CategoryPage>("/categories/teclados?locale=en")).body,
+		).toMatchObject({
+			description: "To type and play.",
+			subtitle: "Mechanical and custom",
+		});
 	});
 
-	test("a type with only a draft product has no page", async () => {
-		expect((await get("/categories/mask?locale=es")).status).toBe(404);
+	test("a category with only a draft product has no page", async () => {
+		expect((await get("/categories/ratones?locale=es")).status).toBe(404);
 		expect((await get("/categories/unknown?locale=es")).status).toBe(404);
 	});
 });
@@ -160,53 +110,79 @@ describe("GET /categories/:slug", () => {
 describe("GET /products", () => {
 	const slugs = (body: Listing) => body.items.map((i) => i.slug);
 
-	test("refines by skin type and counts the values left", async () => {
+	test("refines by brand, counts the values left, and shows the card line and badge", async () => {
 		const { status, body } = await get<Listing>(
-			"/products?locale=es&skinType=oily&skinType=dry",
+			"/products?locale=es&brand=akko",
 		);
 		expect(status).toBe(200);
-		expect(slugs(body).sort()).toEqual(["p1", "p2"]);
-		expect(
-			body.facets.skinType.map((v) => [v.slug, v.count, v.selected]),
-		).toEqual([
-			["dry", 1, true],
-			["oily", 1, true],
-			["combination", 1, false],
-		]);
-		expect(
-			slugs((await get<Listing>("/products?locale=es&skinType=dry")).body),
-		).toEqual(["p2"]);
-	});
-
-	test("refuses a skin type that does not exist", async () => {
-		expect((await get("/products?locale=es&skinType=scaly")).status).toBe(400);
-	});
-
-	test("lists several needs as alternatives", async () => {
-		const { body } = await get<Listing>(
-			"/products?locale=es&concern=pores&concern=acne",
+		expect(slugs(body)).toEqual(["p1"]);
+		expect(body.items[0]).toMatchObject({
+			shortSpecs: "65% · Hot-swap",
+			badge: null,
+		});
+		expect(body.facets.brand.map((v) => [v.slug, v.count, v.selected])).toEqual(
+			[
+				["akko", 1, true],
+				["royal-kludge", 1, false],
+			],
 		);
-		expect(slugs(body).sort()).toEqual(["p1", "p2"]);
-		expect(
-			(await get<Listing>("/products?locale=es&concern=pores")).body.total,
-		).toBe(1);
+	});
+
+	test("puts the featured products first", async () => {
+		const { body } = await get<Listing>("/products?locale=es");
+		expect(slugs(body)).toEqual(["p2", "p1"]);
+		expect(body.items[0].badge).toBe("best_seller");
 	});
 });
 
 describe("GET /products/:slug", () => {
-	test("has the routines it is in with their steps, and the sizes with their barcode", async () => {
-		const { status, body } = await get<Product>("/products/p1?locale=es");
+	test("has its specs in order, its warranty, the variants with their option and the bundles it is in", async () => {
+		const { status, body } = await get<Product>("/products/p1?locale=en");
 		expect(status).toBe(200);
+		expect(body).toMatchObject({
+			shortSpecs: "65% · Hot-swap",
+			warrantyMonths: 12,
+			specs: [
+				{ label: "Layout", value: "65%" },
+				{ label: "Switches", value: "Hot-swap" },
+			],
+		});
 		expect(body.variants[0]).toMatchObject({
-			sku: "P1",
+			sku: "TEC-002",
 			gtin: "00012345678905",
+			optionLabel: "Rosa",
 		});
-		expect(body.routines).toHaveLength(1);
-		expect(body.routines[0]).toMatchObject({
-			slug: "r-acne",
-			title: "Rutina acné",
-			total: 3000,
+		expect(body.bundles).toHaveLength(1);
+		expect(body.bundles[0]).toMatchObject({
+			slug: "set-a",
+			name: "Set A",
+			price: 15000,
+			itemsTotal: 7499 + 8999,
+			saving: 7499 + 8999 - 15000,
 		});
-		expect(body.routines[0].steps).toHaveLength(2);
+	});
+});
+
+describe("GET /bundles", () => {
+	test("lists the published bundles with their price, the sum of their items and the saving", async () => {
+		const { body } = await get<Bundle[]>("/bundles?locale=es");
+		expect(body.map((b) => b.slug)).toEqual(["set-a"]);
+		expect(body[0].items.map((i) => [i.sku, i.quantity])).toEqual([
+			["TEC-002", 1],
+			["TEC-001", 1],
+		]);
+		expect((await get<Bundle>("/bundles/set-a?locale=es")).body.saving).toBe(
+			1498,
+		);
+		expect((await get("/bundles/set-draft?locale=es")).status).toBe(404);
+	});
+});
+
+describe("GET /home", () => {
+	test("has the featured bundles and products and the categories in their order", async () => {
+		const { body } = await get<Home>("/home?locale=es");
+		expect(body.featuredBundles.map((b) => b.slug)).toEqual(["set-a"]);
+		expect(body.featuredProducts.map((p) => p.slug)).toEqual(["p2"]);
+		expect(body.categories.map((c) => c.slug)).toEqual(["teclados"]);
 	});
 });

@@ -84,56 +84,50 @@ describe("sitemap entries", () => {
 	);
 
 	// Published, draft and archived rows of each kind, written the way the triggers allow (a
-	// product is published once it has a priced variant). Only the oil is for sale: the
-	// draft cream and the retired product, with their needs, brands and routines, are not.
+	// product is published once it has a priced variant). Only the keyboard is for sale: the
+	// draft mouse and the retired product, with their brands and bundles, are not.
 	function seeded() {
 		const raw = migratedDatabase();
 		raw.exec(`
 insert into brands (slug, name, search_key) values ('skin1004', 'SKIN1004', 'skin1004'), ('face-republic', 'Face Republic', 'face'), ('old-brand', 'Old', 'old');
-insert into categories (slug, routine_step) values ('cleanser', 1), ('unused', 2);
+insert into categories (slug, icon, sort_order) values ('cleanser', 'package', 1), ('unused', 'package', 2);
 insert into category_translations (category_id, locale, name) values (1, 'es', 'Limpiador'), (2, 'es', 'Sin uso');
-insert into concerns (slug) values ('pores'), ('dryness');
-insert into concern_translations (concern_id, locale, name) values (1, 'es', 'Poros'), (2, 'es', 'Resequedad');
 insert into products (slug, brand_id, category_id) values ('oil', 1, 1), ('draft-cream', 2, 1), ('retired', 3, 1);
 insert into product_translations (product_id, locale, name, search_key) values (1, 'es', 'Aceite', 'aceite'), (2, 'es', 'Crema', 'crema'), (3, 'es', 'Retirado', 'retirado');
-insert into variants (product_id, sku, price, search_key) values (1, 'OIL', 1551, 'oil'), (3, 'RET', 900, 'ret');
+insert into variants (product_id, sku, price, search_key) values (1, 'OIL-001', 1551, 'oil'), (3, 'RET-001', 900, 'ret'), (1, 'OIL-002', 1000, 'oil 2');
 update products set status = 'published', updated_at = '2026-10-11T12:00:00Z' where slug = 'oil';
 update products set status = 'archived' where slug = 'retired';
-insert into product_concerns (product_id, concern_id) values (1, 1), (2, 2);
 insert into pages (slug, is_published, updated_at) values ('terms', 1, '2026-10-05T00:00:00Z'), ('draft-page', 0, '2026-10-05T00:00:00Z');
-insert into routines (slug, status) values ('morning', 'draft'), ('evening', 'published'), ('hidden', 'published');
-insert into routine_translations (routine_id, locale, title) values (1, 'es', 'Mañana'), (2, 'es', 'Noche'), (3, 'es', 'Oculta');
-insert into routine_items (routine_id, variant_id, position) values (1, 1, 1), (2, 1, 1), (3, 2, 1);
+insert into bundles (slug, price) values ('morning', 100), ('evening', 100);
+insert into bundle_translations (bundle_id, locale, name) values (1, 'es', 'Mañana'), (2, 'es', 'Noche');
+insert into bundle_items (bundle_id, variant_id, position) values (1, 1, 1), (2, 1, 1), (2, 3, 2);
+update bundles set status = 'published' where slug = 'evening';
 `);
 		return drizzle(d1(raw) as unknown as D1Database, {
 			schema,
 		}) as unknown as Db;
 	}
 
-	test("lists what has something to show: the fixed pages, then needs, types, brands and routines, products and pages", async () => {
+	test("lists what has something to show: the fixed pages, then categories, brands and bundles, products and pages", async () => {
 		expect(await sitemapEntries(seeded(), context)).toEqual([
 			{ path: "/" },
 			{ path: "/products" },
-			{ path: "/routines" },
-			{ path: "/company" },
-			{ path: "/needs/pores" },
+			{ path: "/sets" },
 			{ path: "/categories/cleanser" },
 			{ path: "/brands/skin1004" },
-			{ path: "/routines/evening" },
+			{ path: "/sets/evening" },
 			{ path: "/products/oil", lastmod: "2026-10-11T12:00:00Z" },
 			{ path: "/pages/terms", lastmod: "2026-10-05T00:00:00Z" },
 		]);
 	});
 
-	test("leaves out the needs, types, brands and routines nothing is for sale under", async () => {
+	test("leaves out the categories, brands and bundles nothing is for sale under", async () => {
 		const paths = (await sitemapEntries(seeded(), context)).map((e) => e.path);
 		for (const gone of [
-			"/needs/dryness",
 			"/categories/unused",
 			"/brands/face-republic",
 			"/brands/old-brand",
-			"/routines/morning",
-			"/routines/hidden",
+			"/sets/morning",
 			"/pages/draft-page",
 			"/products/draft-cream",
 			"/products/retired",
@@ -146,21 +140,21 @@ describe("llms.txt", () => {
 	test("title, summary and only the sections that have lines", () => {
 		expect(
 			llmsTxt({
-				name: "Eclalune",
-				summary: "Beauty and personal care.",
+				name: "Nagomi",
+				summary: "Computer peripherals and desk setups.",
 				sections: [
 					{
 						title: "Products",
 						lines: ["[Oil](https://shop.example/products/oil)"],
 					},
-					{ title: "Routines", lines: [] },
+					{ title: "Sets", lines: [] },
 				],
 			}),
 		).toBe(
 			[
-				"# Eclalune",
+				"# Nagomi",
 				"",
-				"> Beauty and personal care.",
+				"> Computer peripherals and desk setups.",
 				"",
 				"## Products",
 				"",

@@ -5,9 +5,9 @@ import { dayRange, fromAfterTo, fromNotAfterTo } from "./dates";
 // verb that is not listed.
 export const AUDIT_ENTITY_TYPES = [
 	"brand",
+	"bundle",
 	"category",
 	"collection",
-	"concern",
 	"customer",
 	"home_slide",
 	"inventory_movement",
@@ -21,7 +21,6 @@ export const AUDIT_ENTITY_TYPES = [
 	"purchase_order",
 	"purchase_receipt",
 	"return",
-	"routine",
 	"shipping_zone",
 	"store_promise",
 	"store_settings",

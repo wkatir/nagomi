@@ -1,21 +1,19 @@
 import { describe, expect, test } from "bun:test";
 import { BRAND_SORTS, brandListSearch } from "./brands";
+import { BUNDLE_SORTS, bundleListSearch } from "./bundles";
 import { CATEGORY_SORTS, categoryListSearch } from "./categories";
 import { COLLECTION_SORTS, collectionListSearch } from "./collections";
-import { CONCERN_SORTS, concernListSearch } from "./concerns";
-import { ROUTINE_SORTS, routineListSearch } from "./routines";
 
 const base = { page: 1, pageSize: 25, dir: "asc" } as const;
 
 describe("what an empty search of each list is", () => {
-	test("brands by name, categories by routine step, needs, routines and collections in the order the store shows them", () => {
+	test("brands by name, categories, bundles and collections in the order the store shows them", () => {
 		expect(brandListSearch.parse({})).toEqual({ ...base, sort: "name" });
 		expect(categoryListSearch.parse({})).toEqual({
 			...base,
-			sort: "routineStep",
+			sort: "sortOrder",
 		});
-		expect(concernListSearch.parse({})).toEqual({ ...base, sort: "position" });
-		expect(routineListSearch.parse({})).toEqual({ ...base, sort: "position" });
+		expect(bundleListSearch.parse({})).toEqual({ ...base, sort: "position" });
 		expect(collectionListSearch.parse({})).toEqual({
 			...base,
 			sort: "position",
@@ -32,11 +30,10 @@ describe.each([
 		["active", "archived"],
 		"published",
 	],
-	["needs", concernListSearch, CONCERN_SORTS, ["active", "archived"], "draft"],
 	[
-		"routines",
-		routineListSearch,
-		ROUTINE_SORTS,
+		"bundles",
+		bundleListSearch,
+		BUNDLE_SORTS,
 		["draft", "published", "archived"],
 		"active",
 	],
@@ -79,12 +76,12 @@ describe.each([
 
 test("the sorts are the columns each list can order by", () => {
 	expect(BRAND_SORTS).toEqual(["name", "country", "products", "status"]);
-	expect(CATEGORY_SORTS).toEqual(["name", "routineStep", "products", "status"]);
-	expect(CONCERN_SORTS).toEqual(["name", "position", "products", "status"]);
-	expect(ROUTINE_SORTS).toEqual([
-		"title",
+	expect(CATEGORY_SORTS).toEqual(["name", "sortOrder", "products", "status"]);
+	expect(BUNDLE_SORTS).toEqual([
+		"name",
 		"position",
-		"steps",
+		"items",
+		"price",
 		"featured",
 		"status",
 	]);

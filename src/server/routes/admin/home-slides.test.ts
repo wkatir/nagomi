@@ -4,7 +4,9 @@ import { Hono } from "hono";
 import { d1, migratedDatabase } from "#/db/test-database";
 import type { AdminEnv } from "#/server/auth";
 
-const env: { DB?: ReturnType<typeof d1> } = {};
+const env: { DB?: ReturnType<typeof d1>; BETTER_AUTH_URL: string } = {
+	BETTER_AUTH_URL: "http://localhost",
+};
 mock.module("cloudflare:workers", () => ({ env }));
 const { homeSlidesRouter } = await import("./home-slides");
 
@@ -52,17 +54,9 @@ beforeEach(() => {
 	db = migratedDatabase();
 	db.exec(`
 insert into store_settings (id, name, currency, default_locale) values (1, 'Store', 'USD', 'es');
-insert into media_files (r2_key, content_type, byte_size, width, height) values
-	('${key(1)}', 'image/png', 100, 1600, 900),
-	('${key(2)}', 'image/png', 100, 800, 1000);
-insert into home_slides (id, status, position, desktop_media_id, mobile_media_id, link_path, updated_at) values
-	(1, 'published', 2, 1, 2, '/products', '2000-01-01T00:00:00Z'),
-	(2, 'draft', 0, 1, NULL, '/', '2000-01-01T00:00:00Z'),
-	(3, 'archived', 1, 1, NULL, '/', '2000-01-01T00:00:00Z');
-insert into home_slide_translations (slide_id, locale, title, body, cta_label, image_alt) values
-	(1, 'es', 'Hola', 'Cuerpo', 'Ver', 'Alt es'),
-	(1, 'en', 'Hello', NULL, NULL, 'Alt en'),
-	(3, 'es', 'Tres', NULL, NULL, 'Alt tres');
+insert into media_files (r2_key, content_type, byte_size, width, height) values ('${key(1)}', 'image/png', 100, 1600, 900), ('${key(2)}', 'image/png', 100, 800, 1000);
+insert into home_slides (id, status, position, desktop_media_id, mobile_media_id, link_path, updated_at) values (1, 'published', 2, 1, 2, '/products', '2000-01-01T00:00:00Z'), (2, 'draft', 0, 1, NULL, '/', '2000-01-01T00:00:00Z'), (3, 'archived', 1, 1, NULL, '/', '2000-01-01T00:00:00Z');
+insert into home_slide_translations (slide_id, locale, title, body, cta_label, image_alt) values (1, 'es', 'Hola', 'Cuerpo', 'Ver', 'Alt es'), (1, 'en', 'Hello', NULL, NULL, 'Alt en'), (3, 'es', 'Tres', NULL, NULL, 'Alt tres');
 `);
 	env.DB = d1(db);
 });

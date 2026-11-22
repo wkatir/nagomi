@@ -1,4 +1,4 @@
-import type { SIZE_UNITS, SkinType } from "#/db/schema";
+import type { ProductBadge } from "#/lib/enums";
 import { searchKey } from "./search";
 
 // Pure: the published catalogue is small enough to be read whole and refined in memory
@@ -27,7 +27,7 @@ export type CatalogVariant = {
 	sku: string;
 	// GTIN-14.
 	gtin: string | null;
-	size: { value: number; unit: (typeof SIZE_UNITS)[number] } | null;
+	optionLabel: string | null;
 	price: number;
 	compareAtPrice: number | null;
 	availability: Availability;
@@ -39,12 +39,14 @@ export type CatalogEntry = {
 	slug: string;
 	name: string;
 	tagline: string | null;
+	shortSpecs: string | null;
+	isFeatured: boolean;
+	badge: ProductBadge | null;
+	warrantyMonths: number;
 	brand: Named;
-	category: Named & { routineStep: number };
-	concerns: Named[];
-	skinTypes: SkinType[];
+	category: Named & { sortOrder: number };
 	collections: { slug: string; position: number }[];
-	routines: string[];
+	bundles: string[];
 	// Cheapest first: shownVariant relies on it.
 	variants: [CatalogVariant, ...CatalogVariant[]];
 	packshot: CatalogImage | null;
@@ -58,13 +60,15 @@ export type ProductCard = {
 	slug: string;
 	name: string;
 	tagline: string | null;
+	shortSpecs: string | null;
+	isFeatured: boolean;
+	badge: ProductBadge | null;
 	brand: Named;
 	category: Named;
-	concerns: Named[];
 	sku: string;
 	price: number;
 	compareAtPrice: number | null;
-	size: CatalogVariant["size"];
+	optionLabel: string | null;
 	variantsCount: number;
 	availability: Availability;
 	maxQuantity: number;
@@ -89,13 +93,15 @@ export function toCard(e: CatalogEntry): ProductCard {
 		slug: e.slug,
 		name: e.name,
 		tagline: e.tagline,
+		shortSpecs: e.shortSpecs,
+		isFeatured: e.isFeatured,
+		badge: e.badge,
 		brand: e.brand,
 		category: { slug: e.category.slug, name: e.category.name },
-		concerns: e.concerns,
 		sku: first.sku,
 		price: first.price,
 		compareAtPrice: first.compareAtPrice,
-		size: first.size,
+		optionLabel: first.optionLabel,
 		variantsCount: e.variants.length,
 		availability: first.availability,
 		maxQuantity: first.maxQuantity,
@@ -108,8 +114,6 @@ export function toCard(e: CatalogEntry): ProductCard {
 export type CatalogFilter = {
 	q?: string;
 	category: string[];
-	concern: string[];
-	skinType: string[];
 	brand: string[];
 	collection: string[];
 	// Minor units, inclusive, on the price a card shows.
@@ -124,8 +128,6 @@ export type CatalogFilter = {
 // Each in display order.
 export type FacetDimensions = {
 	category: Named[];
-	concern: Named[];
-	skinType: Named[];
 	brand: Named[];
 	collection: Named[];
 };
@@ -134,16 +136,12 @@ export type FacetValue = Named & { count: number; selected: boolean };
 
 type Refinement =
 	| "category"
-	| "concern"
-	| "skinType"
 	| "brand"
 	| "collection"
 	| "price"
 	| "availability";
 const REFINEMENTS: Refinement[] = [
 	"category",
-	"concern",
-	"skinType",
 	"brand",
 	"collection",
 	"price",
@@ -158,12 +156,6 @@ function predicates(
 ): Record<Refinement, (e: CatalogEntry) => boolean> {
 	return {
 		category: (e) => anyOf(f.category, [e.category.slug]),
-		concern: (e) =>
-			anyOf(
-				f.concern,
-				e.concerns.map((c) => c.slug),
-			),
-		skinType: (e) => anyOf(f.skinType, e.skinTypes),
 		brand: (e) => anyOf(f.brand, [e.brand.slug]),
 		collection: (e) =>
 			anyOf(
@@ -208,7 +200,8 @@ function comparator(
 			case "featured":
 				return (a, b) =>
 					(only ? positionIn(a) - positionIn(b) : 0) ||
-					a.category.routineStep - b.category.routineStep ||
+					Number(b.isFeatured) - Number(a.isFeatured) ||
+					a.category.sortOrder - b.category.sortOrder ||
 					byName(a, b);
 			case "newest":
 				return (a, b) =>
@@ -257,7 +250,7 @@ export function queryCatalog(
 		scoped.filter((e) => REFINEMENTS.every((r) => r === except || test[r](e)));
 
 	const facet = (
-		key: "category" | "concern" | "skinType" | "brand" | "collection",
+		key: "category" | "brand" | "collection",
 		valuesOf: (e: CatalogEntry) => string[],
 	): FacetValue[] => {
 		const found = new Set(scoped.flatMap(valuesOf));
@@ -286,8 +279,6 @@ export function queryCatalog(
 		pageCount: Math.max(1, Math.ceil(items.length / f.pageSize)),
 		facets: {
 			category: facet("category", (e) => [e.category.slug]),
-			concern: facet("concern", (e) => e.concerns.map((c) => c.slug)),
-			skinType: facet("skinType", (e) => e.skinTypes),
 			brand: facet("brand", (e) => [e.brand.slug]),
 			collection: facet("collection", (e) => e.collections.map((c) => c.slug)),
 			availability: AVAILABILITIES.map((value) => ({

@@ -1,5 +1,4 @@
 import { addDays, daysBetween } from "#/lib/dates";
-import { isExpired } from "./fefo";
 import { e4ToMinor } from "./receiving";
 
 // Every intermediate figure is returned so the back office can explain the suggestion.
@@ -9,9 +8,6 @@ type ReorderParams = {
 	today: string;
 	lookbackWeeks: number;
 	targetWeeks: number;
-	// A new lot is expected to arrive with at least this much life left. Null: the order is
-	// not capped by shelf life.
-	minShelfLifeDays: number | null;
 };
 
 export type ReorderInput = {
@@ -23,7 +19,7 @@ export type ReorderInput = {
 	// Fulfilled units net of returns, by local fulfilment day.
 	sales: { day: string; units: number }[];
 	firstReceivedOn: string | null;
-	lots: { expiresOn: string; available: number }[];
+	lots: { available: number }[];
 	// Confirmed orders not fulfilled yet: they take stock first.
 	committed: number;
 	// Of the latest lot bought at a price (free units excluded), in `_e4` units.
@@ -51,16 +47,12 @@ const REORDER_REASONS = [
 	"backordered",
 	"below_reorder_point",
 	"stockout_within_lead_time",
-	"stock_expiring_unsold",
-	"capped_by_shelf_life",
-	"min_shelf_life_not_set",
 	"no_sales_in_lookback",
 	"no_cost",
 	"no_price",
 	"lead_time_unknown",
 	"short_history",
 	"rounded_to_pack_or_minimum",
-	"rounded_above_shelf_life_cap",
 ] as const;
 type ReorderReason = (typeof REORDER_REASONS)[number];
 
@@ -69,39 +61,8 @@ const MIN_OBSERVED_DAYS = 14;
 const round = (n: number, decimals: number) =>
 	Math.round(n * 10 ** decimals) / 10 ** decimals;
 
-// Committed units leave first, then demand takes `rate` units a day first-expired-first-out;
-// a lot sells through its expiry date.
-export function projectedExpiringUnits(
-	lots: { expiresOn: string; available: number }[],
-	committed: number,
-	rate: number,
-	today: string,
-): number {
-	const ordered = lots
-		.filter((l) => l.available > 0 && !isExpired(l.expiresOn, today))
-		.sort((a, b) => a.expiresOn.localeCompare(b.expiresOn));
-	let committedLeft = committed;
-	let elapsed = 0;
-	let expiring = 0;
-	for (const lot of ordered) {
-		const taken = Math.min(lot.available, committedLeft);
-		committedLeft -= taken;
-		const units = lot.available - taken;
-		if (units === 0) continue;
-		if (rate === 0) {
-			expiring += units;
-			continue;
-		}
-		const window = Math.max(0, daysBetween(today, lot.expiresOn) + 1 - elapsed);
-		const sold = Math.min(units, rate * window);
-		expiring += units - sold;
-		elapsed += sold / rate;
-	}
-	return Math.round(expiring);
-}
-
 export function reorderSuggestion(input: ReorderInput, params: ReorderParams) {
-	const { today, lookbackWeeks, targetWeeks, minShelfLifeDays } = params;
+	const { today, lookbackWeeks, targetWeeks } = params;
 	const leadTimeDays = input.leadTimeDays ?? 0;
 	const lookbackDays = lookbackWeeks * 7;
 	const firstDay = addDays(today, -(lookbackDays - 1));
@@ -125,39 +86,16 @@ export function reorderSuggestion(input: ReorderInput, params: ReorderParams) {
 	const daysObserved = Math.max(daysOnSale, minimumDays);
 	const rate = unitsSold / daysObserved;
 
-	const onHand = input.lots
-		.filter((l) => !isExpired(l.expiresOn, today))
-		.reduce((n, l) => n + l.available, 0);
+	const onHand = input.lots.reduce((n, l) => n + l.available, 0);
 	const backorders = Math.max(0, input.committed - onHand);
-	const expiring =
-		rate > 0
-			? projectedExpiringUnits(input.lots, input.committed, rate, today)
-			: null;
-	const usable = onHand - input.committed - (expiring ?? 0);
+	const usable = onHand - input.committed;
 	const daysOfCover = rate > 0 ? Math.max(0, usable) / rate : null;
 
 	const reorderPoint = input.reorderPoint ?? Math.ceil(rate * leadTimeDays);
 	const orderUpTo = reorderPoint + Math.ceil(rate * 7 * targetWeeks);
 	const gap = Math.max(0, orderUpTo - usable);
-	// The new lot arrives after the lead time with at least the minimum shelf life and
-	// starts selling once the usable stock is gone; it first fills backorders.
-	const runOut = rate > 0 ? Math.max(0, usable) / rate : null;
-	const shelfLifeCap =
-		rate > 0 && runOut !== null && minShelfLifeDays !== null
-			? Math.floor(
-					rate *
-						Math.max(
-							0,
-							leadTimeDays + minShelfLifeDays - Math.max(leadTimeDays, runOut),
-						),
-				) + backorders
-			: null;
 	const topUpQuantity =
-		rate > 0
-			? Math.min(gap, shelfLifeCap ?? gap)
-			: input.reorderPoint !== null
-				? gap
-				: backorders;
+		rate > 0 || input.reorderPoint !== null ? gap : backorders;
 	// A point derived from no sales is 0: only backorders put the variant below it.
 	const belowReorderPoint =
 		input.reorderPoint !== null || rate > 0
@@ -193,19 +131,12 @@ export function reorderSuggestion(input: ReorderInput, params: ReorderParams) {
 	if (backorders > 0) reasons.push("backordered");
 	if (belowReorderPoint) reasons.push("below_reorder_point");
 	if (runsOutFirst) reasons.push("stockout_within_lead_time");
-	if (expiring !== null && expiring > 0) reasons.push("stock_expiring_unsold");
-	if (shelfLifeCap !== null && shelfLifeCap < gap)
-		reasons.push("capped_by_shelf_life");
-	if (rate > 0 && minShelfLifeDays === null)
-		reasons.push("min_shelf_life_not_set");
 	if (unitsSold === 0) reasons.push("no_sales_in_lookback");
 	if (unitCost === null) reasons.push("no_cost");
 	if (input.price === null) reasons.push("no_price");
 	if (input.leadTimeDays === null) reasons.push("lead_time_unknown");
 	if (shortHistory && unitsSold > 0) reasons.push("short_history");
 	if (toOrder !== suggestedQuantity) reasons.push("rounded_to_pack_or_minimum");
-	if (shelfLifeCap !== null && toOrder > shelfLifeCap)
-		reasons.push("rounded_above_shelf_life_cap");
 
 	return {
 		variantId: input.variantId,
@@ -217,7 +148,6 @@ export function reorderSuggestion(input: ReorderInput, params: ReorderParams) {
 		onHand,
 		committed: input.committed,
 		backorders,
-		projectedExpiringUnits: expiring,
 		usable,
 		daysOfCover: daysOfCover === null ? null : round(daysOfCover, 1),
 		stockoutOn:
@@ -230,7 +160,6 @@ export function reorderSuggestion(input: ReorderInput, params: ReorderParams) {
 		belowReorderPoint,
 		orderUpTo,
 		gap,
-		shelfLifeCap,
 		topUpQuantity,
 		suggestedQuantity,
 		leadTimeDays: input.leadTimeDays,

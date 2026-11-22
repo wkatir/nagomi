@@ -3,7 +3,6 @@ import { Hono } from "hono";
 import { z } from "zod";
 import { type Db, getDb, schema } from "#/db";
 import { MOVEMENT_REASONS } from "#/db/schema";
-import { storeToday } from "#/lib/dates";
 import type { Feed } from "#/lib/list";
 import {
 	lotListSearch,
@@ -15,7 +14,6 @@ import type { AdminEnv } from "#/server/auth";
 import { validate } from "#/server/validate";
 import { audit } from "../../domain/audit";
 import { nextId, withinLocalDays } from "../../domain/d1";
-import { formatExpiry } from "../../domain/expiry";
 import { lotStock } from "../../domain/inventory";
 import {
 	pagedLots,
@@ -64,15 +62,12 @@ export async function listMovements(
 			note: inventoryMovements.note,
 			lotId: lots.id,
 			lotCode: lots.code,
-			expiresOn: lots.expiresOn,
-			expiryPrecision: lots.expiryPrecision,
 			unitCostE4: lots.unitCostE4,
 			variantId: variants.id,
 			sku: variants.sku,
 			brand: brands.name,
 			name: productTranslations.name,
-			sizeValue: variants.sizeValue,
-			sizeUnit: variants.sizeUnit,
+			optionLabel: variants.optionLabel,
 			orderItemId: inventoryMovements.orderItemId,
 			returnLineId: inventoryMovements.returnLineId,
 			orderCode,
@@ -112,9 +107,8 @@ export async function listMovements(
 		.limit(limit + 1);
 	const { page, nextCursor } = pageOf(rows, limit);
 	return {
-		items: page.map(({ unitCostE4, expiryPrecision, ...m }) => ({
+		items: page.map(({ unitCostE4, ...m }) => ({
 			...m,
-			expiry: formatExpiry(m.expiresOn, expiryPrecision),
 			unitCost: e4ToMinor(unitCostE4),
 			value: e4ToMinor(m.quantity * unitCostE4),
 		})),
@@ -145,12 +139,8 @@ const adjustInput = z
 	});
 
 async function stockClock(db: Db) {
-	const { timeZone, expiryWarningDays, defaultLocale } = await getSettings(db);
-	return {
-		today: storeToday(timeZone),
-		expiryWarningDays,
-		locale: defaultLocale,
-	};
+	const { lowStockThreshold, defaultLocale } = await getSettings(db);
+	return { lowStockThreshold, locale: defaultLocale };
 }
 
 export const inventoryRouter = new Hono<AdminEnv>()

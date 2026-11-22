@@ -1,7 +1,7 @@
-import { and, asc, eq, gte, inArray, isNotNull, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, isNotNull, sql } from "drizzle-orm";
 import type { Db } from "#/db";
 import { schema } from "#/db";
-import { type Locale, SKIN_TYPES } from "#/db/schema";
+import type { Locale } from "#/db/schema";
 import { storeToday } from "#/lib/dates";
 import { type CatalogContext, pickLocale } from "./catalog";
 import type {
@@ -29,21 +29,17 @@ const {
 	collectionProducts,
 	collections,
 	collectionTranslations,
-	concerns,
-	concernTranslations,
+	bundleItems,
+	bundles,
 	inventoryMovements,
 	lots,
 	mediaFiles,
 	orderItems,
 	orders,
-	productConcerns,
 	productImages,
 	productImageTranslations,
-	productSkinTypes,
 	products,
 	productTranslations,
-	routineItems,
-	routines,
 	variants,
 } = schema;
 
@@ -91,12 +87,12 @@ export function textOf<T extends { locale: Locale }>(
 	return text;
 }
 
-export type VisibleRoutine = {
+export type VisibleBundle = {
 	id: number;
 	slug: string;
 	isFeatured: boolean;
-	concern: string | null;
-	steps: { sku: string; productId: number }[];
+	price: number;
+	items: { sku: string; productId: number; quantity: number }[];
 };
 
 // One D1 batch, whatever the catalogue size.
@@ -109,15 +105,12 @@ export async function loadCatalog(db: Db, context: CatalogContext) {
 		sizes,
 		stock,
 		promised,
-		tags,
-		concernTexts,
 		memberships,
 		collectionRows,
 		collectionTexts,
 		photos,
 		alts,
-		routineRows,
-		skinTypeRows,
+		bundleRows,
 	] = await db.batch([
 		// Column names must be unique within a batched select: D1 returns batch rows as
 		// objects keyed by name, so drizzle would misplace a repeated one.
@@ -126,13 +119,16 @@ export async function loadCatalog(db: Db, context: CatalogContext) {
 				id: products.id,
 				slug: products.slug,
 				createdAt: products.createdAt,
+				isFeatured: products.isFeatured,
+				badge: products.badge,
+				warrantyMonths: products.warrantyMonths,
 				brand: {
 					slug: sql<string>`${brands.slug}`.as("brand_slug"),
 					name: brands.name,
 				},
 				categoryId: products.categoryId,
 				categorySlug: sql<string>`${categories.slug}`.as("category_slug"),
-				routineStep: categories.routineStep,
+				categorySortOrder: categories.sortOrder,
 			})
 			.from(products)
 			.innerJoin(brands, eq(brands.id, products.brandId))
@@ -144,7 +140,7 @@ export async function loadCatalog(db: Db, context: CatalogContext) {
 				locale: productTranslations.locale,
 				name: productTranslations.name,
 				tagline: productTranslations.tagline,
-				keyIngredients: productTranslations.keyIngredients,
+				shortSpecs: productTranslations.shortSpecs,
 			})
 			.from(productTranslations)
 			.innerJoin(products, eq(products.id, productTranslations.productId))
@@ -159,8 +155,7 @@ export async function loadCatalog(db: Db, context: CatalogContext) {
 				productId: variants.productId,
 				sku: variants.sku,
 				gtin: variants.gtin,
-				sizeValue: variants.sizeValue,
-				sizeUnit: variants.sizeUnit,
+				optionLabel: variants.optionLabel,
 				price: variants.price,
 				compareAtPrice: variants.compareAtPrice,
 			})
@@ -183,7 +178,7 @@ export async function loadCatalog(db: Db, context: CatalogContext) {
 			.innerJoin(inventoryMovements, eq(inventoryMovements.lotId, lots.id))
 			.innerJoin(variants, eq(variants.id, lots.variantId))
 			.innerJoin(products, eq(products.id, variants.productId))
-			.where(and(published, gte(lots.expiresOn, context.today)))
+			.where(published)
 			.groupBy(lots.variantId),
 		db
 			.select({
@@ -194,22 +189,6 @@ export async function loadCatalog(db: Db, context: CatalogContext) {
 			.innerJoin(orders, eq(orders.id, orderItems.orderId))
 			.where(holdsStock(context.holdStart))
 			.groupBy(orderItems.variantId),
-		db
-			.select({
-				productId: productConcerns.productId,
-				id: concerns.id,
-				slug: concerns.slug,
-				position: concerns.position,
-			})
-			.from(productConcerns)
-			.innerJoin(concerns, eq(concerns.id, productConcerns.concernId))
-			.innerJoin(products, eq(products.id, productConcerns.productId))
-			.where(and(published, eq(concerns.status, "active")))
-			.orderBy(asc(concerns.position), asc(concerns.id)),
-		db
-			.select()
-			.from(concernTranslations)
-			.where(inArray(concernTranslations.locale, locales)),
 		db
 			.select({
 				productId: collectionProducts.productId,
@@ -278,34 +257,21 @@ export async function loadCatalog(db: Db, context: CatalogContext) {
 			),
 		db
 			.select({
-				id: routines.id,
-				slug: routines.slug,
-				isFeatured: routines.isFeatured,
-				concern: sql<string | null>`${concerns.slug}`.as(
-					"routine_concern_slug",
-				),
-				variantId: routineItems.variantId,
+				id: bundles.id,
+				slug: bundles.slug,
+				isFeatured: bundles.isFeatured,
+				price: bundles.price,
+				variantId: bundleItems.variantId,
+				quantity: bundleItems.quantity,
 			})
-			.from(routines)
-			.innerJoin(routineItems, eq(routineItems.routineId, routines.id))
-			.leftJoin(
-				concerns,
-				and(eq(concerns.id, routines.concernId), eq(concerns.status, "active")),
-			)
-			.where(eq(routines.status, "published"))
+			.from(bundles)
+			.innerJoin(bundleItems, eq(bundleItems.bundleId, bundles.id))
+			.where(eq(bundles.status, "published"))
 			.orderBy(
-				asc(routines.position),
-				asc(routines.id),
-				asc(routineItems.position),
+				asc(bundles.position),
+				asc(bundles.id),
+				asc(bundleItems.position),
 			),
-		db
-			.select({
-				productId: productSkinTypes.productId,
-				skinType: productSkinTypes.skinType,
-			})
-			.from(productSkinTypes)
-			.innerJoin(products, eq(products.id, productSkinTypes.productId))
-			.where(published),
 	]);
 
 	const named = <T extends { locale: Locale }>(
@@ -319,12 +285,6 @@ export async function loadCatalog(db: Db, context: CatalogContext) {
 			`Category ${slug}`,
 			(t) => t.name,
 		);
-	const concernName = (id: number, slug: string) =>
-		named(
-			concernTexts.filter((t) => t.concernId === id),
-			`Concern ${slug}`,
-			(t) => t.name,
-		);
 	const collectionTitle = (id: number, slug: string) =>
 		named(
 			collectionTexts.filter((t) => t.collectionId === id),
@@ -334,29 +294,28 @@ export async function loadCatalog(db: Db, context: CatalogContext) {
 	const onHand = new Map(stock.map((s) => [s.variantId, s.onHand]));
 	const committed = new Map(promised.map((s) => [s.variantId, s.committed]));
 	const sizesOf = groupBy(sizes, (v) => v.productId);
-	const tagsOf = groupBy(tags, (t) => t.productId);
 	const membershipsOf = groupBy(memberships, (m) => m.productId);
-	const skinTypesOf = groupBy(skinTypeRows, (s) => s.productId);
 	const photosOf = groupBy(photos, (p) => p.productId);
 	const altsOf = groupBy(alts, (a) => a.imageId);
 	const collectionById = new Map(collectionRows.map((c) => [c.id, c]));
 
 	const productOfVariant = new Map(sizes.map((v) => [v.id, v]));
-	const visibleRoutines: VisibleRoutine[] = [
-		...groupBy(routineRows, (r) => r.id).values(),
-	].flatMap((items) => {
-		const [first] = items;
-		const steps = items.map((i) => productOfVariant.get(i.variantId));
-		if (steps.some((s) => s === undefined)) return [];
+	const visibleBundles: VisibleBundle[] = [
+		...groupBy(bundleRows, (r) => r.id).values(),
+	].flatMap((rows) => {
+		const [first] = rows;
+		const items = rows.map((i) => productOfVariant.get(i.variantId));
+		if (items.some((s) => s === undefined)) return [];
 		return [
 			{
 				id: first.id,
 				slug: first.slug,
 				isFeatured: first.isFeatured,
-				concern: first.concern,
-				steps: (steps as typeof sizes).map((s) => ({
+				price: first.price,
+				items: (items as typeof sizes).map((s, i) => ({
 					sku: s.sku,
 					productId: s.productId,
+					quantity: rows[i].quantity,
 				})),
 			},
 		];
@@ -372,10 +331,7 @@ export async function loadCatalog(db: Db, context: CatalogContext) {
 			return {
 				sku: v.sku,
 				gtin: v.gtin,
-				size:
-					v.sizeValue !== null && v.sizeUnit !== null
-						? { value: v.sizeValue, unit: v.sizeUnit }
-						: null,
+				optionLabel: v.optionLabel,
 				price: v.price as number,
 				compareAtPrice: v.compareAtPrice,
 				availability: unitsAvailability(sellable),
@@ -384,7 +340,9 @@ export async function loadCatalog(db: Db, context: CatalogContext) {
 		});
 		const [cheapest, ...others] = variantsForSale;
 		if (!cheapest)
-			throw new Error(`Published product ${p.slug} has no active priced size`);
+			throw new Error(
+				`Published product ${p.slug} has no active priced variant`,
+			);
 		const text = textOf(
 			texts.filter((t) => t.productId === p.id),
 			context,
@@ -406,14 +364,10 @@ export async function loadCatalog(db: Db, context: CatalogContext) {
 					?.alt ?? `${p.brand.name} ${text.name}`;
 			return mediaImage(image, alt);
 		};
-		const productConcernsNamed = (tagsOf.get(p.id) ?? []).map((t) => ({
-			slug: t.slug,
-			name: concernName(t.id, t.slug),
-		}));
 		const category = {
 			slug: p.categorySlug,
 			name: categoryName(p.categoryId, p.categorySlug),
-			routineStep: p.routineStep,
+			sortOrder: p.categorySortOrder,
 		};
 		return [
 			{
@@ -421,20 +375,20 @@ export async function loadCatalog(db: Db, context: CatalogContext) {
 				slug: p.slug,
 				name: text.name,
 				tagline: text.tagline,
+				shortSpecs: text.shortSpecs,
+				isFeatured: p.isFeatured,
+				badge: p.badge,
+				warrantyMonths: p.warrantyMonths,
 				brand: p.brand,
 				category,
-				concerns: productConcernsNamed,
-				skinTypes: SKIN_TYPES.filter((s) =>
-					(skinTypesOf.get(p.id) ?? []).some((r) => r.skinType === s),
-				),
 				collections: (membershipsOf.get(p.id) ?? []).map((m) => {
 					const collection = collectionById.get(m.collectionId);
 					if (!collection)
 						throw new Error(`Collection ${m.collectionId} is not published`);
 					return { slug: collection.slug, position: m.position };
 				}),
-				routines: visibleRoutines
-					.filter((r) => r.steps.some((s) => s.productId === p.id))
+				bundles: visibleBundles
+					.filter((r) => r.items.some((s) => s.productId === p.id))
 					.map((r) => r.slug),
 				variants: [cheapest, ...others],
 				packshot: photo("packshot"),
@@ -445,9 +399,9 @@ export async function loadCatalog(db: Db, context: CatalogContext) {
 					text.name,
 					fallbackName === text.name ? null : fallbackName,
 					category.name,
-					...productConcernsNamed.map((c) => c.name),
-					text.keyIngredients,
+					text.shortSpecs,
 					...variantsForSale.map((v) => v.sku),
+					...variantsForSale.map((v) => v.optionLabel),
 				),
 			},
 		];
@@ -460,21 +414,9 @@ export async function loadCatalog(db: Db, context: CatalogContext) {
 	const dimensions: FacetDimensions = {
 		category: unique(entries.map((e) => e.category))
 			.sort(
-				(a, b) =>
-					a.routineStep - b.routineStep || collator.compare(a.name, b.name),
+				(a, b) => a.sortOrder - b.sortOrder || collator.compare(a.name, b.name),
 			)
 			.map(({ slug, name }) => ({ slug, name })),
-		concern: unique(
-			tags.map((t) => ({
-				slug: t.slug,
-				name: concernName(t.id, t.slug),
-				position: t.position,
-			})),
-		)
-			.sort((a, b) => a.position - b.position)
-			.map(({ slug, name }) => ({ slug, name })),
-		// The name is the value itself, which the page translates.
-		skinType: SKIN_TYPES.map((s): Named => ({ slug: s, name: s })),
 		brand: unique(entries.map((e) => e.brand)).sort((a, b) =>
 			collator.compare(a.name, b.name),
 		),
@@ -482,7 +424,7 @@ export async function loadCatalog(db: Db, context: CatalogContext) {
 			(c): Named => ({ slug: c.slug, name: collectionTitle(c.id, c.slug) }),
 		),
 	};
-	return { entries, dimensions, routines: visibleRoutines };
+	return { entries, dimensions, bundles: visibleBundles };
 }
 
 export type LoadedCatalog = Awaited<ReturnType<typeof loadCatalog>>;

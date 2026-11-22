@@ -4,7 +4,9 @@ import { Hono } from "hono";
 import { d1, migratedDatabase } from "#/db/test-database";
 import type { AdminEnv } from "#/server/auth";
 
-const env: { DB?: ReturnType<typeof d1> } = {};
+const env: { DB?: ReturnType<typeof d1>; BETTER_AUTH_URL: string } = {
+	BETTER_AUTH_URL: "http://localhost",
+};
 mock.module("cloudflare:workers", () => ({ env }));
 const { settingsRouter } = await import("./settings");
 
@@ -32,24 +34,32 @@ const stored = () =>
 beforeEach(() => {
 	db = migratedDatabase();
 	db.exec(`
-insert into store_settings (id, name, currency, default_locale, time_zone, country_code, order_code_prefix, max_quantity_per_line, expiry_warning_days)
-	values (1, 'Store', 'USD', 'es', 'America/El_Salvador', 'SV', 'EC', 10, 60);
+insert into store_settings (id, name, currency, default_locale, time_zone, country_code, order_code_prefix, max_quantity_per_line, low_stock_threshold) values (1, 'Store', 'USD', 'es', 'America/El_Salvador', 'SV', 'EC', 10, 5);
 `);
 	env.DB = d1(db);
 });
 
 describe("GET /settings", () => {
-	test("answers the settings with the accepted payment methods in their order", async () => {
-		db.exec(
-			"insert into store_payment_methods (method) values ('cash'), ('bank_transfer')",
-		);
+	test("answers the settings with the payment methods in their order and their limits", async () => {
+		db.exec(`
+insert into shipping_zones (id, slug, method, fee, delivery_days_min, delivery_days_max) values (1, 'metro', 'own_delivery', 350, 1, 2);
+insert into store_payment_methods (method, position, max_total, shipping_zone_id) values ('cash_on_delivery', 2, 15000, 1), ('card', 1, null, null);
+`);
 		const res = await send("GET", "");
 		expect(res.status).toBe(200);
 		expect(await body(res)).toMatchObject({
 			name: "Store",
 			currency: "USD",
 			defaultLocale: "es",
-			acceptedPaymentMethods: ["bank_transfer", "cash"],
+			paymentOptions: [
+				{ method: "card", maxTotal: null, shippingZoneSlug: null },
+				{
+					method: "cash_on_delivery",
+					maxTotal: 15000,
+					shippingZoneId: 1,
+					shippingZoneSlug: "metro",
+				},
+			],
 		});
 	});
 });
@@ -57,7 +67,7 @@ describe("GET /settings", () => {
 describe("PATCH /settings", () => {
 	test("changes the fields given and leaves the others, as one card of the screen does", async () => {
 		const res = await send("PATCH", "", {
-			legalName: "Eclalune S.A.",
+			legalName: "Nagomi S.A.",
 			taxIdLabel: "NIT",
 			taxId: "0614-010101-101-0",
 			address: "San Salvador",
@@ -68,7 +78,7 @@ describe("PATCH /settings", () => {
 		expect(stored()).toMatchObject({
 			name: "Store",
 			currency: "USD",
-			legal_name: "Eclalune S.A.",
+			legal_name: "Nagomi S.A.",
 			tax_id_label: "NIT",
 			tax_id: "0614-010101-101-0",
 			address: "San Salvador",
@@ -80,7 +90,7 @@ describe("PATCH /settings", () => {
 	});
 
 	test("stores a blank optional text as null", async () => {
-		await send("PATCH", "", { legalName: "Eclalune", phone: "2222-2222" });
+		await send("PATCH", "", { legalName: "Nagomi", phone: "2222-2222" });
 		const res = await send("PATCH", "", { legalName: "  ", phone: "" });
 		expect(res.status).toBe(200);
 		expect(stored()).toMatchObject({ legal_name: null, phone: null });
@@ -106,7 +116,13 @@ describe("PATCH /settings", () => {
 			["currency", "XXX1"],
 			["orderCodePrefix", "ec"],
 			["maxQuantityPerLine", 0],
-			["expiryWarningDays", 3651],
+			["lowStockThreshold", -1],
+			["frequentCustomerMinOrders", 1],
+			["inactiveCustomerDays", 0],
+			["followupPendingPaymentHours", 0],
+			["freeShippingFrom", -1],
+			["instagramUrl", "http://instagram.com/nagomi"],
+			["youtubeUrl", "not a url"],
 			["returnWindowDays", 366],
 			["foundingYear", 1899],
 			["whatsappNumber", "123"],
@@ -158,40 +174,87 @@ describe("PATCH /settings", () => {
 		expect(stored().time_zone).toBe("America/El_Salvador");
 	});
 
-	test("replaces the accepted payment methods, and an empty list clears them", async () => {
+	test("stores the thresholds, the follow-up deadlines and the social links", async () => {
+		const res = await send("PATCH", "", {
+			freeShippingFrom: 5000,
+			lowStockThreshold: 5,
+			frequentCustomerMinOrders: 3,
+			inactiveCustomerDays: 90,
+			followupPendingPaymentHours: 48,
+			followupPaidUnshippedHours: 24,
+			followupShippedUndeliveredHours: 96,
+			discordUrl: "https://discord.gg/nagomi",
+			instagramUrl: "https://instagram.com/nagomi.sv",
+		});
+		expect(res.status).toBe(200);
+		expect(stored()).toMatchObject({
+			free_shipping_from: 5000,
+			low_stock_threshold: 5,
+			frequent_customer_min_orders: 3,
+			inactive_customer_days: 90,
+			followup_pending_payment_hours: 48,
+			followup_paid_unshipped_hours: 24,
+			followup_shipped_undelivered_hours: 96,
+			discord_url: "https://discord.gg/nagomi",
+			instagram_url: "https://instagram.com/nagomi.sv",
+		});
+	});
+
+	test("replaces the payment methods in the order given, and an empty list clears them", async () => {
+		db.exec(
+			"insert into shipping_zones (id, slug, method, fee, delivery_days_min, delivery_days_max) values (1, 'metro', 'own_delivery', 350, 1, 2)",
+		);
 		await send("PATCH", "", {
-			acceptedPaymentMethods: ["cash", "payment_link"],
+			paymentOptions: [
+				{ method: "card", maxTotal: null, shippingZoneId: null },
+				{ method: "cash_on_delivery", maxTotal: 15000, shippingZoneId: 1 },
+			],
 		});
 		expect(
 			db
-				.query("select method from store_payment_methods order by method")
+				.query(
+					"select method, position, max_total, shipping_zone_id from store_payment_methods order by position",
+				)
 				.all(),
-		).toEqual([{ method: "cash" }, { method: "payment_link" }]);
-		await send("PATCH", "", { acceptedPaymentMethods: ["bank_transfer"] });
-		expect(db.query("select method from store_payment_methods").all()).toEqual([
-			{ method: "bank_transfer" },
+		).toEqual([
+			{ method: "card", position: 0, max_total: null, shipping_zone_id: null },
+			{
+				method: "cash_on_delivery",
+				position: 1,
+				max_total: 15000,
+				shipping_zone_id: 1,
+			},
 		]);
-		const res = await send("PATCH", "", { acceptedPaymentMethods: [] });
+		const res = await send("PATCH", "", { paymentOptions: [] });
 		expect(res.status).toBe(200);
-		expect(await body(res)).toMatchObject({ acceptedPaymentMethods: [] });
+		expect(await body(res)).toMatchObject({ paymentOptions: [] });
 		expect(db.query("select method from store_payment_methods").all()).toEqual(
 			[],
 		);
 	});
 
 	test("leaves the payment methods alone when the patch does not name them", async () => {
-		await send("PATCH", "", { acceptedPaymentMethods: ["cash"] });
+		await send("PATCH", "", {
+			paymentOptions: [
+				{ method: "cash", maxTotal: null, shippingZoneId: null },
+			],
+		});
 		await send("PATCH", "", { name: "Other" });
 		expect(db.query("select method from store_payment_methods").all()).toEqual([
 			{ method: "cash" },
 		]);
 	});
 
-	test("refuses a method twice", async () => {
-		const res = await send("PATCH", "", {
-			acceptedPaymentMethods: ["cash", "cash"],
+	test("refuses a method twice, and a zone that does not exist", async () => {
+		const cash = { method: "cash", maxTotal: null, shippingZoneId: null };
+		expect(
+			(await send("PATCH", "", { paymentOptions: [cash, cash] })).status,
+		).toBe(400);
+		const zone = await send("PATCH", "", {
+			paymentOptions: [{ ...cash, shippingZoneId: 9 }],
 		});
-		expect(res.status).toBe(400);
+		expect(zone.status).toBe(409);
+		expect(await body(zone)).toEqual({ error: "unknown_shipping_zone" });
 	});
 
 	test("writes one audit event with what it replaced", async () => {
@@ -302,8 +365,7 @@ describe("promises", () => {
 	beforeEach(() => {
 		db.exec(`
 insert into store_promises (id, slug, position) values (1, 'free', 1), (2, 'returns', 0);
-insert into store_promise_translations (promise_id, locale, title, body) values
-	(1, 'es', 'Envío gratis', NULL), (2, 'en', 'Returns', 'Easy');
+insert into store_promise_translations (promise_id, locale, title, body) values (1, 'es', 'Envío gratis', NULL), (2, 'en', 'Returns', 'Easy');
 `);
 	});
 
@@ -402,13 +464,9 @@ insert into store_promise_translations (promise_id, locale, title, body) values
 describe("pages", () => {
 	beforeEach(() => {
 		db.exec(`
-insert into users (id, name, email) values ('admin', 'Wilmer', 'w@example.com');
+insert into users (id, name, email, role) values ('admin', 'Wilmer', 'w@example.com', 'admin');
 insert into pages (id, slug, is_published) values (1, 'privacy', 1), (2, 'terms', 1);
-insert into page_versions (page_id, locale, version, title, body_markdown, created_at, created_by) values
-	(1, 'es', 1, 'Privacidad', 'v1', '2026-10-01T10:00:00Z', NULL),
-	(1, 'es', 2, 'Privacidad', 'v2', '2026-10-02T10:00:00Z', 'admin'),
-	(1, 'en', 1, 'Privacy', 'en v1', '2026-10-01T10:00:00Z', NULL),
-	(2, 'es', 1, 'Términos', 't1', '2026-10-01T10:00:00Z', NULL);
+insert into page_versions (page_id, locale, version, title, body_markdown, created_at, created_by) values (1, 'es', 1, 'Privacidad', 'v1', '2026-10-01T10:00:00Z', NULL), (1, 'es', 2, 'Privacidad', 'v2', '2026-10-02T10:00:00Z', 'admin'), (1, 'en', 1, 'Privacy', 'en v1', '2026-10-01T10:00:00Z', NULL), (2, 'es', 1, 'Términos', 't1', '2026-10-01T10:00:00Z', NULL);
 `);
 	});
 

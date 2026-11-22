@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, sql } from "drizzle-orm";
+import { and, asc, desc, eq, isNotNull, sql } from "drizzle-orm";
 import type { Db } from "#/db";
 import { schema } from "#/db";
 import type { Locale } from "#/db/schema";
@@ -82,4 +82,29 @@ export async function publishedPageTitles(db: Db, locale: Locale) {
 		.where(and(eq(pages.isPublished, true), eq(pageVersions.locale, locale)))
 		.orderBy(asc(pages.slug), desc(pageVersions.version));
 	return rows.filter((r, i) => rows.findIndex((x) => x.slug === r.slug) === i);
+}
+
+export async function footerPages(db: Db) {
+	const rows = await db
+		.select({
+			slug: pages.slug,
+			position: pages.footerPosition,
+			locale: pageVersions.locale,
+			title: pageVersions.title,
+			version: pageVersions.version,
+		})
+		.from(pages)
+		.innerJoin(pageVersions, eq(pageVersions.pageId, pages.id))
+		.where(and(eq(pages.isPublished, true), isNotNull(pages.footerPosition)))
+		.orderBy(asc(pages.footerPosition), desc(pageVersions.version));
+	const latest = rows.filter(
+		(r, i) =>
+			rows.findIndex((x) => x.slug === r.slug && x.locale === r.locale) === i,
+	);
+	return [...new Set(latest.map((r) => r.slug))].map((slug) => ({
+		slug,
+		titles: Object.fromEntries(
+			latest.filter((r) => r.slug === slug).map((r) => [r.locale, r.title]),
+		) as Partial<Record<Locale, string>>,
+	}));
 }

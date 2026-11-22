@@ -3,6 +3,7 @@ import { Hono } from "hono";
 import { z } from "zod";
 import { getDb, schema } from "#/db";
 import { ARCHIVABLE_STATUSES } from "#/db/schema";
+import { CATEGORY_ICONS } from "#/lib/enums";
 import { categoryListSearch } from "#/lib/schemas/categories";
 import type { AdminEnv } from "#/server/auth";
 import { idParam, validate } from "#/server/validate";
@@ -25,13 +26,15 @@ const { categories, categoryTranslations, products } = schema;
 
 const categoryText = z.object({
 	name: requiredText(80),
+	subtitle: optionalText(80).optional(),
 	description: optionalText(1000).optional(),
 	...seoFields,
 });
 const categoryFields = z.object({
 	slug,
 	// Orders the catalogue.
-	routineStep: z.number().int().min(1).max(20),
+	sortOrder: z.number().int().min(0).max(1000),
+	icon: z.enum(CATEGORY_ICONS),
 	status: z.enum(ARCHIVABLE_STATUSES),
 });
 
@@ -80,6 +83,7 @@ export const categoriesRouter = new Hono<AdminEnv>()
 			"json",
 			categoryFields
 				.omit({ status: true })
+				.partial({ sortOrder: true })
 				.extend({ translations: translations(categoryText) }),
 		),
 		async (c) => {

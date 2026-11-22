@@ -4,13 +4,13 @@ import { pagedSearch } from "#/lib/list";
 
 export const CATEGORY_SORTS = [
 	"name",
-	"routineStep",
+	"sortOrder",
 	"products",
 	"status",
 ] as const;
 
 export const categoryListSearch = pagedSearch(CATEGORY_SORTS, {
-	sort: "routineStep",
+	sort: "sortOrder",
 	dir: "asc",
 }).extend({ status: z.enum(ARCHIVABLE_STATUSES).optional() });
 export type CategoryListSearch = z.infer<typeof categoryListSearch>;

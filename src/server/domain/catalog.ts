@@ -12,17 +12,16 @@ const {
 	brands,
 	categories,
 	categoryTranslations,
-	concerns,
-	concernTranslations,
+	bundleItems,
+	bundles,
+	bundleTranslations,
 	mediaFiles,
-	productConcerns,
 	productImages,
 	productImageTranslations,
 	products,
+	productSpecs,
+	productSpecTranslations,
 	productTranslations,
-	routineItems,
-	routines,
-	routineTranslations,
 	variants,
 } = schema;
 
@@ -49,23 +48,23 @@ export function pickLocale<T extends { locale: Locale }>(
 
 export async function listCatalog(
 	db: Db,
-	{ locale, fallback, today, holdStart, maxQuantityPerLine }: CatalogContext,
+	{ locale, fallback, holdStart, maxQuantityPerLine }: CatalogContext,
 	filter?: { slugs?: string[]; variantIds?: number[]; skus?: string[] },
 ) {
 	const rows = await db
 		.select({
 			productId: products.id,
 			slug: products.slug,
-			inci: products.inci,
-			sanitaryRegistration: products.sanitaryRegistration,
+			warrantyMonths: products.warrantyMonths,
+			isFeatured: products.isFeatured,
+			badge: products.badge,
 			brand: brands.name,
 			categoryId: categories.id,
 			categorySlug: categories.slug,
-			routineStep: categories.routineStep,
+			categorySortOrder: categories.sortOrder,
 			variantId: variants.id,
 			sku: variants.sku,
-			sizeValue: variants.sizeValue,
-			sizeUnit: variants.sizeUnit,
+			optionLabel: variants.optionLabel,
 			price: variants.price,
 			compareAtPrice: variants.compareAtPrice,
 		})
@@ -88,46 +87,35 @@ export async function listCatalog(
 				filter?.skus ? inList(variants.sku, filter.skus) : undefined,
 			),
 		)
-		.orderBy(asc(categories.routineStep), asc(products.slug));
+		.orderBy(asc(categories.sortOrder), asc(products.slug));
 	if (rows.length === 0) return [];
 
 	const productIds = [...new Set(rows.map((r) => r.productId))];
 	const categoryIds = [...new Set(rows.map((r) => r.categoryId))];
 	const variantIds = rows.map((r) => r.variantId);
-	const [texts, categoryTexts, images, tags, stock, promised] =
-		await Promise.all([
-			db
-				.select()
-				.from(productTranslations)
-				.where(inList(productTranslations.productId, productIds)),
-			db
-				.select()
-				.from(categoryTranslations)
-				.where(inList(categoryTranslations.categoryId, categoryIds)),
-			db
-				.select(productPhotoColumns)
-				.from(productImages)
-				.innerJoin(mediaFiles, eq(mediaFiles.id, productImages.mediaFileId))
-				.where(
-					and(
-						inList(productImages.productId, productIds),
-						eq(productImages.status, "active"),
-					),
-				)
-				.orderBy(asc(productImages.position), asc(productImages.id)),
-			db
-				.select({ productId: productConcerns.productId, slug: concerns.slug })
-				.from(productConcerns)
-				.innerJoin(concerns, eq(concerns.id, productConcerns.concernId))
-				.where(
-					and(
-						inList(productConcerns.productId, productIds),
-						eq(concerns.status, "active"),
-					),
+	const [texts, categoryTexts, images, stock, promised] = await Promise.all([
+		db
+			.select()
+			.from(productTranslations)
+			.where(inList(productTranslations.productId, productIds)),
+		db
+			.select()
+			.from(categoryTranslations)
+			.where(inList(categoryTranslations.categoryId, categoryIds)),
+		db
+			.select(productPhotoColumns)
+			.from(productImages)
+			.innerJoin(mediaFiles, eq(mediaFiles.id, productImages.mediaFileId))
+			.where(
+				and(
+					inList(productImages.productId, productIds),
+					eq(productImages.status, "active"),
 				),
-			onHandByVariant(db, today, variantIds),
-			committedByVariant(db, holdStart, variantIds),
-		]);
+			)
+			.orderBy(asc(productImages.position), asc(productImages.id)),
+		onHandByVariant(db, variantIds),
+		committedByVariant(db, holdStart, variantIds),
+	]);
 	const alts =
 		images.length === 0
 			? []
@@ -172,22 +160,19 @@ export async function listCatalog(
 			brand: r.brand,
 			name: text.name,
 			tagline: text.tagline,
+			shortSpecs: text.shortSpecs,
 			description: text.description,
-			howToUse: text.howToUse,
-			keyIngredients: text.keyIngredients,
 			seoTitle: text.seoTitle,
 			seoDescription: text.seoDescription,
-			inci: r.inci,
-			sanitaryRegistration: r.sanitaryRegistration,
+			warrantyMonths: r.warrantyMonths,
+			isFeatured: r.isFeatured,
+			badge: r.badge,
 			category: {
 				slug: r.categorySlug,
-				routineStep: r.routineStep,
+				sortOrder: r.categorySortOrder,
 				name: categoryText.name,
 			},
-			size:
-				r.sizeValue && r.sizeUnit
-					? { value: r.sizeValue, unit: r.sizeUnit }
-					: null,
+			optionLabel: r.optionLabel,
 			price: r.price as number,
 			compareAtPrice: r.compareAtPrice,
 			availability: unitsAvailability(sellable),
@@ -212,13 +197,11 @@ export async function listCatalog(
 							fallback,
 						)?.alt ?? `${r.brand} ${text.name}`,
 				})),
-			concerns: tags
-				.filter((t) => t.productId === r.productId)
-				.map((t) => t.slug),
+			productId: r.productId,
 			variantId: r.variantId,
 		};
 	});
-	// Stable sort: sold out last, otherwise in routine order.
+	// Stable sort: sold out last, otherwise in category order.
 	return list.sort(
 		(a, b) =>
 			Number(a.availability === "sold_out") -
@@ -228,76 +211,109 @@ export async function listCatalog(
 
 export type CatalogProduct = Awaited<ReturnType<typeof listCatalog>>[number];
 
-export async function listConcerns(db: Db, locale: Locale, fallback: Locale) {
-	const [rows, texts] = await Promise.all([
-		db
-			.select()
-			.from(concerns)
-			.where(eq(concerns.status, "active"))
-			.orderBy(asc(concerns.position)),
-		db.select().from(concernTranslations),
-	]);
-	return rows.map((c) => {
+export async function listSpecs(
+	db: Db,
+	productId: number,
+	locale: Locale,
+	fallback: Locale,
+) {
+	const rows = await db
+		.select()
+		.from(productSpecs)
+		.where(eq(productSpecs.productId, productId))
+		.orderBy(asc(productSpecs.position));
+	if (rows.length === 0) return [];
+	const texts = await db
+		.select()
+		.from(productSpecTranslations)
+		.where(
+			inList(
+				productSpecTranslations.specId,
+				rows.map((r) => r.id),
+			),
+		);
+	return rows.map((r) => {
 		const text = pickLocale(
-			texts.filter((t) => t.concernId === c.id),
+			texts.filter((t) => t.specId === r.id),
 			locale,
 			fallback,
 		);
 		if (!text)
 			throw new Error(
-				`Concern ${c.slug} has no translation for ${locale} or ${fallback}`,
+				`Spec ${r.id} has no translation for ${locale} or ${fallback}`,
 			);
-		return { slug: c.slug, name: text.name };
+		return { label: text.label, value: text.value };
 	});
 }
 
-export async function listRoutines(db: Db, context: CatalogContext) {
+export async function listBundles(
+	db: Db,
+	context: CatalogContext,
+	filter?: { slug?: string },
+) {
 	const { locale, fallback } = context;
 	const rs = await db
 		.select()
-		.from(routines)
-		.where(eq(routines.status, "published"))
-		.orderBy(asc(routines.position));
+		.from(bundles)
+		.where(
+			and(
+				eq(bundles.status, "published"),
+				filter?.slug ? eq(bundles.slug, filter.slug) : undefined,
+			),
+		)
+		.orderBy(asc(bundles.position));
 	if (rs.length === 0) return [];
 	const ids = rs.map((r) => r.id);
 	const [texts, items] = await Promise.all([
 		db
 			.select()
-			.from(routineTranslations)
-			.where(inList(routineTranslations.routineId, ids)),
+			.from(bundleTranslations)
+			.where(inList(bundleTranslations.bundleId, ids)),
 		db
 			.select()
-			.from(routineItems)
-			.where(inList(routineItems.routineId, ids))
-			.orderBy(asc(routineItems.position)),
+			.from(bundleItems)
+			.where(inList(bundleItems.bundleId, ids))
+			.orderBy(asc(bundleItems.position)),
 	]);
 	const products = await listCatalog(db, context, {
 		variantIds: [...new Set(items.map((i) => i.variantId))],
 	});
 	return rs.flatMap((r) => {
 		const text = pickLocale(
-			texts.filter((t) => t.routineId === r.id),
+			texts.filter((t) => t.bundleId === r.id),
 			locale,
 			fallback,
 		);
 		if (!text)
 			throw new Error(
-				`Routine ${r.slug} has no translation for ${locale} or ${fallback}`,
+				`Bundle ${r.slug} has no translation for ${locale} or ${fallback}`,
 			);
-		const steps = items
-			.filter((i) => i.routineId === r.id)
-			.map((i) => products.find((p) => p.variantId === i.variantId));
-		if (steps.some((s) => s === undefined)) return [];
+		const lines = items
+			.filter((i) => i.bundleId === r.id)
+			.map((i) => ({
+				quantity: i.quantity,
+				product: products.find((p) => p.variantId === i.variantId),
+			}));
+		if (lines.some((l) => l.product === undefined)) return [];
+		const itemsTotal = lines.reduce(
+			(sum, l) => sum + l.quantity * (l.product as CatalogProduct).price,
+			0,
+		);
 		return [
 			{
 				slug: r.slug,
 				isFeatured: r.isFeatured,
-				title: text.title,
+				name: text.name,
 				description: text.description,
 				seoTitle: text.seoTitle,
 				seoDescription: text.seoDescription,
-				products: steps as CatalogProduct[],
+				price: r.price,
+				itemsTotal,
+				saving: itemsTotal - r.price,
+				items: lines as { quantity: number; product: CatalogProduct }[],
 			},
 		];
 	});
 }
+
+export type CatalogBundle = Awaited<ReturnType<typeof listBundles>>[number];

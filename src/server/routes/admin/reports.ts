@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { z } from "zod";
 import { type Db, getDb } from "#/db";
-import { addDays, daysBetween, storeToday } from "#/lib/dates";
+import { addDays, storeToday } from "#/lib/dates";
 import {
 	GRANULARITIES,
 	type Granularity,
@@ -12,9 +12,8 @@ import {
 } from "#/lib/schemas/reports";
 import type { AdminEnv } from "#/server/auth";
 import { validate } from "#/server/validate";
-import { formatExpiry } from "../../domain/expiry";
 import { groupBy } from "../../domain/group-by";
-import { e4ToMinor } from "../../domain/receiving";
+import { isLowStock } from "../../domain/inventory-queries";
 import { byPriority, reorderSuggestion } from "../../domain/reorder";
 import {
 	loadLossMovements,
@@ -26,7 +25,6 @@ import {
 	loadVariants,
 } from "../../domain/report-data";
 import {
-	expiresWithin,
 	periodStart,
 	periods,
 	returnsSummary,
@@ -48,9 +46,7 @@ export const rangeQuery = z.object(rangeFields).refine(validRange, rangeIssue);
 export const salesQuery = z
 	.object({ ...rangeFields, granularity: z.enum(GRANULARITIES) })
 	.refine(validRange, rangeIssue);
-export const stockQuery = z.object({
-	expiryWindowDays: z.coerce.number().int().min(1).max(3650).optional(),
-});
+export const stockQuery = z.object({});
 export const reorderQuery = z.object(reorderFields);
 
 export const reorderVariant = (v: {
@@ -109,34 +105,21 @@ export async function lossesReport(db: Db, settings: StoreSettings, q: Range) {
 	};
 }
 
-export async function stockReport(
-	db: Db,
-	settings: StoreSettings,
-	q: z.infer<typeof stockQuery>,
-) {
+export async function stockReport(db: Db, settings: StoreSettings) {
 	const asOf = today(settings);
-	const expiryWindowDays = q.expiryWindowDays ?? settings.expiryWarningDays;
 	const [balances, variants] = await Promise.all([
 		loadLotBalances(db),
 		loadVariants(db, settings.defaultLocale),
 	]);
-	const { total, byVariant } = stockPosition(balances, asOf, expiryWindowDays);
-	const named = new Map(variants.map((v) => [v.variantId, v]));
+	const { total, byVariant } = stockPosition(balances);
 	return {
 		asOf,
-		expiryWindowDays,
+		lowStockThreshold: settings.lowStockThreshold,
 		totals: total,
 		variants: variants
 			.filter((v) => v.variantStatus === "active" || byVariant.has(v.variantId))
 			.map((v) => {
-				const stock = byVariant.get(v.variantId) ?? {
-					onHand: 0,
-					value: 0,
-					atRiskUnits: 0,
-					atRiskValue: 0,
-					expiredUnits: 0,
-					expiredValue: 0,
-				};
+				const stock = byVariant.get(v.variantId) ?? { onHand: 0, value: 0 };
 				return {
 					variantId: v.variantId,
 					sku: v.sku,
@@ -145,31 +128,12 @@ export async function stockReport(
 					variantStatus: v.variantStatus,
 					productStatus: v.productStatus,
 					reorderPoint: v.reorderPoint,
-					belowReorderPoint:
-						v.reorderPoint !== null && stock.onHand <= v.reorderPoint,
+					lowStock: isLowStock(
+						stock.onHand,
+						v.reorderPoint,
+						settings.lowStockThreshold,
+					),
 					...stock,
-				};
-			}),
-		expiringLots: balances
-			.filter(
-				(l) =>
-					l.available > 0 && expiresWithin(l.expiresOn, asOf, expiryWindowDays),
-			)
-			.map((l) => {
-				const v = named.get(l.variantId);
-				if (!v) throw new Error(`Lot ${l.lotId} has no variant`);
-				return {
-					lotId: l.lotId,
-					code: l.code,
-					variantId: l.variantId,
-					sku: v.sku,
-					brand: v.brand,
-					name: v.name,
-					expiresOn: l.expiresOn,
-					expiry: formatExpiry(l.expiresOn, l.expiryPrecision),
-					daysLeft: daysBetween(asOf, l.expiresOn),
-					available: l.available,
-					value: e4ToMinor(l.available * l.unitCostE4),
 				};
 			}),
 	};
@@ -201,7 +165,6 @@ export async function reorderReport(
 		today: asOf,
 		lookbackWeeks: q.lookbackWeeks,
 		targetWeeks: q.targetWeeks,
-		minShelfLifeDays: settings.minShelfLifeDays,
 	};
 	return {
 		asOf,
@@ -279,9 +242,7 @@ export const reportsRouter = new Hono<AdminEnv>()
 	})
 	.get("/stock", validate("query", stockQuery), async (c) => {
 		const db = getDb();
-		return c.json(
-			await stockReport(db, await getSettings(db), c.req.valid("query")),
-		);
+		return c.json(await stockReport(db, await getSettings(db)));
 	})
 	.get("/reorder", validate("query", reorderQuery), async (c) => {
 		const db = getDb();

@@ -8,13 +8,12 @@ export const STOCK_SORTS = [
 	"sku",
 	"onHand",
 	"stockValue",
-	"expiringUnits",
-	"expiredUnits",
 	"reorderPoint",
 ] as const;
 
-// `low`: at or under the reorder point; `out`: none left to sell.
-export const STOCK_VIEWS = ["low", "out", "expiring", "expired"] as const;
+// `low`: at or under the variant's reorder point, or the store's low stock threshold when
+// the variant has none; `out`: none left to sell.
+export const STOCK_VIEWS = ["low", "out"] as const;
 
 // `q` is a product, a brand or a SKU.
 export const stockListSearch = pagedSearch(STOCK_SORTS, {
@@ -26,7 +25,7 @@ export const stockListSearch = pagedSearch(STOCK_SORTS, {
 export type StockListSearch = z.infer<typeof stockListSearch>;
 
 export const LOT_SORTS = [
-	"expiresOn",
+	"receivedAt",
 	"product",
 	"sku",
 	"code",
@@ -35,14 +34,10 @@ export const LOT_SORTS = [
 	"value",
 ] as const;
 
-export const LOT_VIEWS = ["expiring", "expired"] as const;
-
 // `q` is a product, a brand, a SKU or a lot code.
 export const lotListSearch = pagedSearch(LOT_SORTS, {
-	sort: "expiresOn",
+	sort: "receivedAt",
 	dir: "asc",
-}).extend({
-	view: z.enum(LOT_VIEWS).optional(),
 });
 export type LotListSearch = z.infer<typeof lotListSearch>;
 

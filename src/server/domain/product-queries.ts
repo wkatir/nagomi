@@ -1,4 +1,4 @@
-import { and, count, eq, gte, max, min, sql } from "drizzle-orm";
+import { and, count, eq, max, min, sql } from "drizzle-orm";
 import type { Db } from "#/db";
 import { schema } from "#/db";
 import type { Locale } from "#/lib/enums";
@@ -17,7 +17,6 @@ const {
 	lots,
 	orderItems,
 	orders,
-	productConcerns,
 	productTranslations,
 	products,
 	variants,
@@ -25,7 +24,7 @@ const {
 
 type ProductFilter = Pick<
 	ProductListSearch,
-	"q" | "status" | "brandId" | "categoryId" | "concernId"
+	"q" | "status" | "brandId" | "categoryId"
 >;
 
 // For a query that joins the products to their brand and to their default-locale text
@@ -35,9 +34,6 @@ export const productFilter = (db: Db, filter: ProductFilter) =>
 		filter.status ? eq(products.status, filter.status) : undefined,
 		filter.brandId ? eq(products.brandId, filter.brandId) : undefined,
 		filter.categoryId ? eq(products.categoryId, filter.categoryId) : undefined,
-		filter.concernId
-			? sql`exists (select 1 from ${productConcerns} pc where pc.product_id = ${qualified(products.id)} and pc.concern_id = ${filter.concernId})`
-			: undefined,
 		filter.q ? productSearch(db, filter.q) : undefined,
 	);
 
@@ -67,7 +63,6 @@ export async function pagedProducts(
 		})
 		.from(lots)
 		.innerJoin(inventoryMovements, eq(inventoryMovements.lotId, lots.id))
-		.where(gte(lots.expiresOn, clock.today))
 		.groupBy(lots.variantId)
 		.as("on_hand");
 	const held = db
@@ -124,7 +119,9 @@ export async function pagedProducts(
 					sql<string>`coalesce(${categoryTranslations.name}, ${categories.slug})`.as(
 						"category_name",
 					),
-				sizes: sql<number>`coalesce(${sizes.total}, 0)`.as("size_count"),
+				variantCount: sql<number>`coalesce(${sizes.total}, 0)`.as(
+					"variant_count",
+				),
 				priceFrom: sizes.priceFrom,
 				priceTo: sizes.priceTo,
 				stock: stock.as("stock_units"),

@@ -74,9 +74,6 @@ function download(
 	});
 }
 
-const size = (value: number | null, unit: string | null) =>
-	value === null || unit === null ? null : `${value} ${unit}`;
-
 async function context(db: Db) {
 	const settings = await getSettings(db);
 	const money = (n: number | null) =>
@@ -188,7 +185,7 @@ export const exportsRouter = new Hono<AdminEnv>()
 				"sku",
 				"brand",
 				"product",
-				"size",
+				"option",
 				"quantity",
 				"returned",
 				"kept",
@@ -214,7 +211,7 @@ export const exportsRouter = new Hono<AdminEnv>()
 							i.sku,
 							i.brandName,
 							i.name,
-							size(i.sizeValue, i.sizeUnit),
+							i.optionLabel,
 							i.quantity,
 							i.returned,
 							i.quantity - i.returned,
@@ -228,7 +225,7 @@ export const exportsRouter = new Hono<AdminEnv>()
 	})
 	.get("/customers.csv", validate("query", customerFilters), async (c) => {
 		const db = getDb();
-		const { q } = c.req.valid("query");
+		const filters = c.req.valid("query");
 		const { settings, money, at } = await context(db);
 		return download(
 			settings,
@@ -245,11 +242,14 @@ export const exportsRouter = new Hono<AdminEnv>()
 				"balance",
 				"first_order_at",
 				"last_order_at",
+				"segment",
+				"has_account",
+				"marketing_email",
 				"marketing_whatsapp",
 				"notes",
 			],
 			await paged<number>(async (cursor) => {
-				const page = await listCustomers(db, q, cursor, PAGE);
+				const page = await listCustomers(db, filters, cursor, PAGE);
 				return {
 					next: page.nextCursor,
 					rows: page.customers.map((x) => [
@@ -264,6 +264,10 @@ export const exportsRouter = new Hono<AdminEnv>()
 						money(x.balance),
 						at(x.firstOrderAt),
 						at(x.lastOrderAt),
+						x.segment,
+						x.hasAccount,
+						x.consents.find((k) => k.purpose === "marketing_email")?.granted ??
+							null,
 						x.consents.find((k) => k.purpose === "marketing_whatsapp")
 							?.granted ?? null,
 						x.notes,
@@ -289,7 +293,6 @@ export const exportsRouter = new Hono<AdminEnv>()
 				"sku",
 				"lot_id",
 				"lot_code",
-				"expiry",
 				"order_code",
 				"unit_cost",
 				"value",
@@ -315,7 +318,6 @@ export const exportsRouter = new Hono<AdminEnv>()
 						m.sku,
 						m.lotId,
 						m.lotCode,
-						m.expiry,
 						m.orderCode,
 						money(m.unitCost),
 						money(m.value),
@@ -553,10 +555,10 @@ export const exportsRouter = new Hono<AdminEnv>()
 			]),
 		);
 	})
-	.get("/reports/stock.csv", validate("query", stockQuery), async (c) => {
+	.get("/reports/stock.csv", validate("query", stockQuery), async () => {
 		const db = getDb();
 		const { settings, money } = await context(db);
-		const r = await stockReport(db, settings, c.req.valid("query"));
+		const r = await stockReport(db, settings);
 		return download(
 			settings,
 			"stock",
@@ -567,12 +569,8 @@ export const exportsRouter = new Hono<AdminEnv>()
 				"variant_status",
 				"on_hand",
 				"value_at_cost",
-				"expiring_units",
-				"expiring_value",
-				"expired_units",
-				"expired_value",
 				"reorder_point",
-				"below_reorder_point",
+				"low_stock",
 			],
 			once(
 				r.variants.map((v) => [
@@ -582,12 +580,8 @@ export const exportsRouter = new Hono<AdminEnv>()
 					v.variantStatus,
 					v.onHand,
 					money(v.value),
-					v.atRiskUnits,
-					money(v.atRiskValue),
-					v.expiredUnits,
-					money(v.expiredValue),
 					v.reorderPoint,
-					v.belowReorderPoint,
+					v.lowStock,
 				]),
 			),
 		);
@@ -616,13 +610,11 @@ export const exportsRouter = new Hono<AdminEnv>()
 				"per_week",
 				"on_hand",
 				"committed",
-				"projected_expiring",
 				"usable",
 				"days_of_cover",
 				"stockout_on",
 				"reorder_point",
 				"order_up_to",
-				"shelf_life_cap",
 				"unit_price",
 				"unit_cost",
 				"unit_margin",
@@ -646,13 +638,11 @@ export const exportsRouter = new Hono<AdminEnv>()
 					v.ratePerWeek,
 					v.onHand,
 					v.committed,
-					v.projectedExpiringUnits,
 					v.usable,
 					v.daysOfCover,
 					v.stockoutOn,
 					v.reorderPoint,
 					v.orderUpTo,
-					v.shelfLifeCap,
 					money(v.unitPrice),
 					money(v.unitCost),
 					money(v.unitMargin),

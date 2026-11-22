@@ -3,10 +3,10 @@ import { alias } from "drizzle-orm/sqlite-core";
 import { Hono } from "hono";
 import { z } from "zod";
 import { type Db, getDb, schema } from "#/db";
-import { type Locale, SKIN_TYPES, SLUG_REGEX } from "#/db/schema";
+import { type Locale, SLUG_REGEX } from "#/db/schema";
 import { withinDays } from "#/lib/dates";
 import { localeQuery, validate } from "#/server/validate";
-import { type CatalogContext, pickLocale } from "../domain/catalog";
+import { type CatalogContext, listSpecs, pickLocale } from "../domain/catalog";
 import {
 	AVAILABILITIES,
 	availabilityOf,
@@ -29,7 +29,7 @@ import {
 	localesOf,
 	mediaImage,
 	textOf,
-	type VisibleRoutine,
+	type VisibleBundle,
 } from "../domain/storefront-catalog";
 
 const {
@@ -37,8 +37,6 @@ const {
 	brandTranslations,
 	categories,
 	categoryTranslations,
-	concerns,
-	concernTranslations,
 	collectionProducts,
 	collections,
 	collectionTranslations,
@@ -48,9 +46,8 @@ const {
 	productImages,
 	productImageTranslations,
 	products,
-	productSkinTypes,
 	productTranslations,
-	routineTranslations,
+	bundleTranslations,
 	variants,
 } = schema;
 
@@ -64,15 +61,12 @@ const repeated = <T extends z.ZodType<unknown, string>>(item: T) =>
 		.transform((v) => (v === undefined ? [] : Array.isArray(v) ? v : [v]))
 		.pipe(z.array(item).max(20));
 const slugList = repeated(z.string().regex(SLUG_REGEX).max(80));
-const skinTypeList = repeated(z.enum(SKIN_TYPES));
 const minorUnits = z.coerce.number().int().min(0).max(100_000_000);
 
 const productsQuery = localeQuery
 	.extend({
 		q: z.string().trim().max(80).optional(),
 		category: slugList,
-		concern: slugList,
-		skinType: skinTypeList,
 		brand: slugList,
 		collection: slugList,
 		minPrice: minorUnits.optional(),
@@ -97,45 +91,56 @@ async function context(db: Db, locale: Locale) {
 	return { settings, context: catalogContext(settings, locale) };
 }
 
-function routineTexts(db: Db, ids: number[], c: CatalogContext) {
+function bundleTexts(db: Db, ids: number[], c: CatalogContext) {
 	return db
 		.select()
-		.from(routineTranslations)
+		.from(bundleTranslations)
 		.where(
 			and(
-				inList(routineTranslations.routineId, ids),
-				inArray(routineTranslations.locale, localesOf(c)),
+				inList(bundleTranslations.bundleId, ids),
+				inArray(bundleTranslations.locale, localesOf(c)),
 			),
 		);
 }
 
-function routineView(
-	routine: VisibleRoutine,
-	texts: (typeof routineTranslations.$inferSelect)[],
+function bundleView(
+	bundle: VisibleBundle,
+	texts: (typeof bundleTranslations.$inferSelect)[],
 	catalog: LoadedCatalog,
 	c: CatalogContext,
 ) {
 	const text = textOf(
-		texts.filter((t) => t.routineId === routine.id),
+		texts.filter((t) => t.bundleId === bundle.id),
 		c,
-		`Routine ${routine.slug}`,
+		`Bundle ${bundle.slug}`,
 	);
-	const steps = routine.steps.map((step, index) => {
-		const entry = catalog.entries.find((e) => e.id === step.productId);
-		const variant = entry?.variants.find((v) => v.sku === step.sku);
+	const items = bundle.items.map((item, index) => {
+		const entry = catalog.entries.find((e) => e.id === item.productId);
+		const variant = entry?.variants.find((v) => v.sku === item.sku);
 		if (!entry || !variant)
-			throw new Error(`Routine ${routine.slug}: ${step.sku} is not for sale`);
-		return { position: index + 1, ...variant, product: toCard(entry) };
+			throw new Error(`Bundle ${bundle.slug}: ${item.sku} is not for sale`);
+		return {
+			position: index + 1,
+			quantity: item.quantity,
+			...variant,
+			product: toCard(entry),
+		};
 	});
+	const itemsTotal = items.reduce((n, i) => n + i.quantity * i.price, 0);
 	return {
-		slug: routine.slug,
-		isFeatured: routine.isFeatured,
-		title: text.title,
+		slug: bundle.slug,
+		isFeatured: bundle.isFeatured,
+		name: text.name,
 		description: text.description,
 		seoTitle: text.seoTitle,
 		seoDescription: text.seoDescription,
-		steps,
-		total: steps.reduce((n, s) => n + s.price, 0),
+		items,
+		price: bundle.price,
+		itemsTotal,
+		saving: itemsTotal - bundle.price,
+		availability: items.every((i) => i.availability === "in_stock")
+			? ("in_stock" as const)
+			: ("sold_out" as const),
 	};
 }
 
@@ -295,10 +300,12 @@ export const storeCatalog = new Hono()
 				publishedCollections(db, ctx),
 				publishedPromises(db, settings),
 			]);
-		const featured = catalog.routines.find((r) => r.isFeatured) ?? null;
-		const featuredTexts = featured
-			? await routineTexts(db, [featured.id], ctx)
-			: [];
+		const featuredBundles = catalog.bundles.filter((r) => r.isFeatured);
+		const featuredTexts = await bundleTexts(
+			db,
+			featuredBundles.map((b) => b.id),
+			ctx,
+		);
 		const ordered = sortEntries(catalog.entries, locale);
 		return c.json({
 			slides: slides
@@ -339,9 +346,10 @@ export const storeCatalog = new Hono()
 						.slice(0, HOME_COLLECTION_PRODUCTS)
 						.map(toCard),
 				})),
-			featuredRoutine: featured
-				? routineView(featured, featuredTexts, catalog, ctx)
-				: null,
+			featuredBundles: featuredBundles.map((b) =>
+				bundleView(b, featuredTexts, catalog, ctx),
+			),
+			featuredProducts: ordered.filter((e) => e.isFeatured).map(toCard),
 			categories: catalog.dimensions.category.map((category) => {
 				const inCategory = ordered.filter(
 					(e) => e.category.slug === category.slug,
@@ -377,75 +385,69 @@ export const storeCatalog = new Hono()
 			const catalog = await loadCatalog(db, ctx);
 			const entry = catalog.entries.find((e) => e.slug === slug);
 			if (!entry) return c.json({ error: "not_found" }, 404);
-			const routines = catalog.routines.filter((r) =>
-				entry.routines.includes(r.slug),
+			const inBundles = catalog.bundles.filter((r) =>
+				entry.bundles.includes(r.slug),
 			);
-			const [[product], texts, images, alts, routineTextRows, skinTypes] =
-				await db.batch([
-					db
-						.select({
-							inci: products.inci,
-							sanitaryRegistration: products.sanitaryRegistration,
-							updatedAt: products.updatedAt,
-						})
-						.from(products)
-						.where(eq(products.id, entry.id)),
-					db
-						.select()
-						.from(productTranslations)
-						.where(
-							and(
-								eq(productTranslations.productId, entry.id),
-								inArray(productTranslations.locale, localesOf(ctx)),
-							),
+			const [[product], texts, images, alts, bundleTextRows] = await db.batch([
+				db
+					.select({
+						updatedAt: products.updatedAt,
+					})
+					.from(products)
+					.where(eq(products.id, entry.id)),
+				db
+					.select()
+					.from(productTranslations)
+					.where(
+						and(
+							eq(productTranslations.productId, entry.id),
+							inArray(productTranslations.locale, localesOf(ctx)),
 						),
-					db
-						.select({
-							id: productImages.id,
-							kind: productImages.kind,
-							r2Key: mediaFiles.r2Key,
-							width: mediaFiles.width,
-							height: mediaFiles.height,
-							sku: variants.sku,
-						})
-						.from(productImages)
-						.innerJoin(mediaFiles, eq(mediaFiles.id, productImages.mediaFileId))
-						.leftJoin(variants, eq(variants.id, productImages.variantId))
-						.where(
-							and(
-								eq(productImages.productId, entry.id),
-								eq(productImages.status, "active"),
-							),
-						)
-						.orderBy(asc(productImages.position), asc(productImages.id)),
-					db
-						.select({
-							imageId: productImageTranslations.imageId,
-							locale: productImageTranslations.locale,
-							alt: productImageTranslations.alt,
-						})
-						.from(productImageTranslations)
-						.innerJoin(
-							productImages,
-							eq(productImages.id, productImageTranslations.imageId),
-						)
-						.where(
-							and(
-								eq(productImages.productId, entry.id),
-								inArray(productImageTranslations.locale, localesOf(ctx)),
-							),
-						),
-					routineTexts(
-						db,
-						routines.map((r) => r.id),
-						ctx,
 					),
-					db
-						.select({ skinType: productSkinTypes.skinType })
-						.from(productSkinTypes)
-						.where(eq(productSkinTypes.productId, entry.id)),
-				]);
+				db
+					.select({
+						id: productImages.id,
+						kind: productImages.kind,
+						r2Key: mediaFiles.r2Key,
+						width: mediaFiles.width,
+						height: mediaFiles.height,
+						sku: variants.sku,
+					})
+					.from(productImages)
+					.innerJoin(mediaFiles, eq(mediaFiles.id, productImages.mediaFileId))
+					.leftJoin(variants, eq(variants.id, productImages.variantId))
+					.where(
+						and(
+							eq(productImages.productId, entry.id),
+							eq(productImages.status, "active"),
+						),
+					)
+					.orderBy(asc(productImages.position), asc(productImages.id)),
+				db
+					.select({
+						imageId: productImageTranslations.imageId,
+						locale: productImageTranslations.locale,
+						alt: productImageTranslations.alt,
+					})
+					.from(productImageTranslations)
+					.innerJoin(
+						productImages,
+						eq(productImages.id, productImageTranslations.imageId),
+					)
+					.where(
+						and(
+							eq(productImages.productId, entry.id),
+							inArray(productImageTranslations.locale, localesOf(ctx)),
+						),
+					),
+				bundleTexts(
+					db,
+					inBundles.map((r) => r.id),
+					ctx,
+				),
+			]);
 			if (!product) return c.json({ error: "not_found" }, 404);
+			const specs = await listSpecs(db, entry.id, ctx.locale, ctx.fallback);
 			const text = textOf(texts, ctx, `Product ${slug}`);
 			const forSale = new Set(entry.variants.map((v) => v.sku));
 			const collectionNames = new Map(
@@ -455,23 +457,17 @@ export const storeCatalog = new Hono()
 				slug: entry.slug,
 				name: text.name,
 				tagline: text.tagline,
+				shortSpecs: text.shortSpecs,
 				description: text.description,
-				howToUse: text.howToUse,
-				// Lists, one item per line.
-				keyIngredients: text.keyIngredients,
-				benefits: text.benefits,
-				cautions: text.cautions,
-				skinTypes: SKIN_TYPES.filter((s) =>
-					skinTypes.some((r) => r.skinType === s),
-				),
+				specs,
+				warrantyMonths: entry.warrantyMonths,
+				isFeatured: entry.isFeatured,
+				badge: entry.badge,
 				seoTitle: text.seoTitle,
 				seoDescription: text.seoDescription,
-				inci: product.inci,
-				sanitaryRegistration: product.sanitaryRegistration,
 				brand: entry.brand,
 				category: entry.category,
-				concerns: entry.concerns,
-				// Cheapest first; the first is the default size.
+				// Cheapest first; the first is the default variant.
 				variants: entry.variants,
 				availability: availabilityOf(entry),
 				images: images
@@ -488,8 +484,8 @@ export const storeCatalog = new Hono()
 						kind: i.kind,
 						sku: i.sku,
 					})),
-				routines: routines.map((r) =>
-					routineView(r, routineTextRows, catalog, ctx),
+				bundles: inBundles.map((r) =>
+					bundleView(r, bundleTextRows, catalog, ctx),
 				),
 				collections: entry.collections.map((x) => {
 					const name = collectionNames.get(x.slug);
@@ -516,53 +512,6 @@ export const storeCatalog = new Hono()
 		const { context: ctx } = await context(db, locale);
 		return c.json(await storeNavigation(db, ctx));
 	})
-	// Like the menu and the sitemap, only a concern with a published product has a page.
-	.get(
-		"/concerns/:slug",
-		validate("param", slugParam),
-		validate("query", localeQuery),
-		async (c) => {
-			const db = getDb();
-			const { slug } = c.req.valid("param");
-			const { locale } = c.req.valid("query");
-			const { context: ctx } = await context(db, locale);
-			const catalog = await loadCatalog(db, ctx);
-			const concern = catalog.dimensions.concern.find((x) => x.slug === slug);
-			if (!concern) return c.json({ error: "not_found" }, 404);
-			const answering = catalog.routines.filter((r) => r.concern === slug);
-			const [texts, routineTextRows] = await Promise.all([
-				db
-					.select(getTableColumns(concernTranslations))
-					.from(concernTranslations)
-					.innerJoin(concerns, eq(concerns.id, concernTranslations.concernId))
-					.where(
-						and(
-							eq(concerns.slug, slug),
-							inArray(concernTranslations.locale, localesOf(ctx)),
-						),
-					),
-				routineTexts(
-					db,
-					answering.map((r) => r.id),
-					ctx,
-				),
-			]);
-			const text = textOf(texts, ctx, `Concern ${slug}`);
-			return c.json({
-				slug,
-				name: concern.name,
-				description: text.description,
-				seoTitle: text.seoTitle,
-				seoDescription: text.seoDescription,
-				productCount: catalog.entries.filter((e) =>
-					e.concerns.some((x) => x.slug === slug),
-				).length,
-				routines: answering.map((r) =>
-					routineView(r, routineTextRows, catalog, ctx),
-				),
-			});
-		},
-	)
 	.get(
 		"/categories/:slug",
 		validate("param", slugParam),
@@ -589,9 +538,16 @@ export const storeCatalog = new Hono()
 					),
 				);
 			const text = textOf(texts, ctx, `Category ${slug}`);
+			const [row] = await db
+				.select({ icon: categories.icon })
+				.from(categories)
+				.where(eq(categories.slug, slug));
+			if (!row) return c.json({ error: "not_found" }, 404);
 			return c.json({
 				slug,
 				name: category.name,
+				subtitle: text.subtitle,
+				icon: row.icon,
 				description: text.description,
 				seoTitle: text.seoTitle,
 				seoDescription: text.seoDescription,
@@ -654,22 +610,22 @@ export const storeCatalog = new Hono()
 			});
 		},
 	)
-	.get("/routines", validate("query", localeQuery), async (c) => {
+	.get("/bundles", validate("query", localeQuery), async (c) => {
 		const db = getDb();
 		const { locale } = c.req.valid("query");
 		const { context: ctx } = await context(db, locale);
 		const catalog = await loadCatalog(db, ctx);
-		const texts = await routineTexts(
+		const texts = await bundleTexts(
 			db,
-			catalog.routines.map((r) => r.id),
+			catalog.bundles.map((r) => r.id),
 			ctx,
 		);
 		return c.json(
-			catalog.routines.map((r) => routineView(r, texts, catalog, ctx)),
+			catalog.bundles.map((r) => bundleView(r, texts, catalog, ctx)),
 		);
 	})
 	.get(
-		"/routines/:slug",
+		"/bundles/:slug",
 		validate("param", slugParam),
 		validate("query", localeQuery),
 		async (c) => {
@@ -678,9 +634,9 @@ export const storeCatalog = new Hono()
 			const { locale } = c.req.valid("query");
 			const { context: ctx } = await context(db, locale);
 			const catalog = await loadCatalog(db, ctx);
-			const routine = catalog.routines.find((r) => r.slug === slug);
-			if (!routine) return c.json({ error: "not_found" }, 404);
-			const texts = await routineTexts(db, [routine.id], ctx);
-			return c.json(routineView(routine, texts, catalog, ctx));
+			const bundle = catalog.bundles.find((r) => r.slug === slug);
+			if (!bundle) return c.json({ error: "not_found" }, 404);
+			const texts = await bundleTexts(db, [bundle.id], ctx);
+			return c.json(bundleView(bundle, texts, catalog, ctx));
 		},
 	);

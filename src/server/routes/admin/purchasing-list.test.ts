@@ -12,7 +12,9 @@ import {
 	seedSupply,
 } from "./supply-fixtures";
 
-const env: { DB?: ReturnType<typeof d1> } = {};
+const env: { DB?: ReturnType<typeof d1>; BETTER_AUTH_URL: string } = {
+	BETTER_AUTH_URL: "http://localhost",
+};
 mock.module("cloudflare:workers", () => ({ env }));
 const { purchasingRouter } = await import("./purchasing");
 
@@ -94,7 +96,6 @@ beforeEach(() => {
 				unitCost: 650,
 				received: 8,
 				lotCode: "L1",
-				expiresOn: "2027-05-31",
 			},
 		],
 	});
@@ -356,11 +357,10 @@ describe("GET /purchase-orders/:id", () => {
 				{
 					id: 4,
 					variantId: OIL_50,
-					sku: "OIL-50",
+					sku: "OIL-001",
 					brand: "Brand",
 					name: "Aceite",
-					sizeValue: 50,
-					sizeUnit: "ml",
+					optionLabel: null,
 					quantity: 20,
 					received: 8,
 					unitCost: 650,
@@ -378,7 +378,6 @@ describe("GET /purchase-orders/:id", () => {
 							purchaseOrderItemId: 4,
 							quantity: 8,
 							lotCode: "L1",
-							expiry: "2027-05-31",
 							landedUnitCost: 650,
 						},
 					],
@@ -397,7 +396,7 @@ describe("GET /purchase-orders/:id", () => {
 		expect(body.status).toBe("draft");
 		expect(body.receipts).toEqual([]);
 		expect(body.items.map((i) => [i.sku, i.quantity, i.received])).toEqual([
-			["OIL-50", 10, 0],
+			["OIL-001", 10, 0],
 			["OIL-100", 5, 0],
 		]);
 	});

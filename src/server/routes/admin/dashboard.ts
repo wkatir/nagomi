@@ -25,7 +25,6 @@ export const dashboardRouter = new Hono().get(
 		"query",
 		z.object({
 			days: z.coerce.number().int().min(1).max(365).default(30),
-			expiryWindowDays: z.coerce.number().int().min(1).max(3650).optional(),
 		}),
 	),
 	async (c) => {
@@ -49,7 +48,7 @@ export const dashboardRouter = new Hono().get(
 				loadSales(db, range),
 				loadBookings(db, range),
 				lossesReport(db, settings, { from: range.from, to: range.to }),
-				stockReport(db, settings, { expiryWindowDays: query.expiryWindowDays }),
+				stockReport(db, settings),
 				pendingCount(),
 				// Consumer law: confirm by the next calendar day, so a pending order placed
 				// before yesterday is late (and no longer holds stock).
@@ -78,13 +77,10 @@ export const dashboardRouter = new Hono().get(
 			}),
 			topProducts: salesByProduct(sales).slice(0, 5),
 			stock: {
-				expiryWindowDays: stock.expiryWindowDays,
 				...stock.totals,
-				belowReorderPoint: stock.variants.filter(
-					(v) => reorderVariant(v) && v.belowReorderPoint,
-				).length,
+				lowStock: stock.variants.filter((v) => reorderVariant(v) && v.lowStock)
+					.length,
 			},
-			expiring: stock.expiringLots,
 		});
 	},
 );

@@ -7,24 +7,21 @@ import { qualified } from "./d1";
 const {
 	categories,
 	categoryTranslations,
-	concerns,
-	concernTranslations,
 	pages,
 	pageVersions,
-	productConcerns,
 	productImages,
 	productImageTranslations,
 	products,
 	productTranslations,
-	routines,
-	routineTranslations,
+	bundles,
+	bundleTranslations,
 	shippingZones,
 	shippingZoneTranslations,
 	storePromises,
 	storePromiseTranslations,
 } = schema;
 
-// Includes archived categories and concerns a published product still uses. The default
+// Includes archived categories a published product still uses. The default
 // locale is the fallback of every text, so it must cover them all.
 export async function untranslated(db: Db, locale: Locale) {
 	const missing = (type: string) => (rows: { slug: string }[]) =>
@@ -98,25 +95,25 @@ export async function untranslated(db: Db, locale: Locale) {
 			)
 			.then(missing("page")),
 		db
-			.select({ slug: routines.slug })
-			.from(routines)
+			.select({ slug: bundles.slug })
+			.from(bundles)
 			.where(
 				and(
-					eq(routines.status, "published"),
+					eq(bundles.status, "published"),
 					notExists(
 						db
 							.select()
-							.from(routineTranslations)
+							.from(bundleTranslations)
 							.where(
 								and(
-									eq(routineTranslations.routineId, qualified(routines.id)),
-									eq(routineTranslations.locale, locale),
+									eq(bundleTranslations.bundleId, qualified(bundles.id)),
+									eq(bundleTranslations.locale, locale),
 								),
 							),
 					),
 				),
 			)
-			.then(missing("routine")),
+			.then(missing("bundle")),
 		db
 			.select({ slug: shippingZones.slug })
 			.from(shippingZones)
@@ -163,31 +160,6 @@ export async function untranslated(db: Db, locale: Locale) {
 				),
 			)
 			.then(missing("category")),
-		db
-			.select({ slug: concerns.slug })
-			.from(concerns)
-			.where(
-				and(
-					or(
-						eq(concerns.status, "active"),
-						usedByPublished(
-							sql`exists (select 1 from ${productConcerns} pc where pc.product_id = "products"."id" and pc.concern_id = "concerns"."id")`,
-						),
-					),
-					notExists(
-						db
-							.select()
-							.from(concernTranslations)
-							.where(
-								and(
-									eq(concernTranslations.concernId, qualified(concerns.id)),
-									eq(concernTranslations.locale, locale),
-								),
-							),
-					),
-				),
-			)
-			.then(missing("concern")),
 		db
 			.select({ slug: products.slug })
 			.from(productImages)

@@ -22,13 +22,13 @@ import {
 import { storeToday } from "#/lib/dates";
 import { calendarDate } from "#/lib/schemas/dates";
 import { orderListSearch } from "#/lib/schemas/orders";
-import type { AdminEnv } from "#/server/auth";
+import { type AdminEnv, seesCosts } from "#/server/auth";
 import { idParam, validate } from "#/server/validate";
 import { audit } from "../../domain/audit";
 import { listCatalog } from "../../domain/catalog";
 import { confirmationMessage } from "../../domain/confirmation";
 import { insertIfExists, nextId, nonEmpty, qualified } from "../../domain/d1";
-import { allocateFefo, InsufficientStockError } from "../../domain/fefo";
+import { allocateFifo, InsufficientStockError } from "../../domain/fifo";
 import { idempotencyKey, requestHash } from "../../domain/idempotency";
 import { linesBeyondStock, lotStock, stockFits } from "../../domain/inventory";
 import { newOrderCode } from "../../domain/order-code";
@@ -40,7 +40,6 @@ import { normalizePhone } from "../../domain/phone";
 import {
 	fullReturn,
 	planReturn,
-	RestockExpiredLotError,
 	ReturnExceedsSoldError,
 	type ReturnLinePlan,
 	ReturnLotRequiredError,
@@ -214,11 +213,10 @@ function linesAsRead(
 			l.sku,
 			l.brandName,
 			l.productName,
-			l.sizeValue,
-			l.sizeUnit,
+			l.optionLabel,
 		]),
 	);
-	return sql`(select count(*) from order_items where order_id = ${orderId}) = ${lines.length} and not exists (select 1 from order_items oi where oi.order_id = ${orderId} and not exists (select 1 from json_each(${expected}) j where json_extract(j.value, '$[0]') is oi.id and json_extract(j.value, '$[1]') is oi.variant_id and json_extract(j.value, '$[2]') is oi.quantity and json_extract(j.value, '$[3]') is oi.unit_price and json_extract(j.value, '$[4]') is oi.sku and json_extract(j.value, '$[5]') is oi.brand_name and json_extract(j.value, '$[6]') is oi.product_name and json_extract(j.value, '$[7]') is oi.size_value and json_extract(j.value, '$[8]') is oi.size_unit))`;
+	return sql`(select count(*) from order_items where order_id = ${orderId}) = ${lines.length} and not exists (select 1 from order_items oi where oi.order_id = ${orderId} and not exists (select 1 from json_each(${expected}) j where json_extract(j.value, '$[0]') is oi.id and json_extract(j.value, '$[1]') is oi.variant_id and json_extract(j.value, '$[2]') is oi.quantity and json_extract(j.value, '$[3]') is oi.unit_price and json_extract(j.value, '$[4]') is oi.sku and json_extract(j.value, '$[5]') is oi.brand_name and json_extract(j.value, '$[6]') is oi.product_name and json_extract(j.value, '$[7]') is oi.option_label))`;
 }
 
 const insufficientStock = (
@@ -288,7 +286,6 @@ async function soldLots(db: Db, orderId: number): Promise<SoldLot[]> {
 			.select({
 				orderItemId: inventoryMovements.orderItemId,
 				lotId: inventoryMovements.lotId,
-				expiresOn: lots.expiresOn,
 				sold: sql<number>`-sum(${inventoryMovements.quantity})`,
 			})
 			.from(inventoryMovements)
@@ -317,7 +314,6 @@ async function soldLots(db: Db, orderId: number): Promise<SoldLot[]> {
 		return {
 			orderItemId: s.orderItemId,
 			lotId: s.lotId,
-			expiresOn: s.expiresOn,
 			sold: s.sold,
 			returned:
 				returned.find(
@@ -391,7 +387,15 @@ export const ordersRouter = new Hono<AdminEnv>()
 		const { id } = c.req.valid("param");
 		const detail = await orderDetail(db, id);
 		if (!detail) return c.json({ error: "not_found" }, 404);
-		return c.json(detail);
+		const costs = seesCosts(c);
+		return c.json({
+			...detail,
+			movements: detail.movements.map((m) => ({
+				...m,
+				unitCost: costs ? m.unitCost : null,
+			})),
+			cost: costs ? detail.cost : null,
+		});
 	})
 	.post("/", validate("json", createInput), async (c) => {
 		const db = getDb();
@@ -487,8 +491,7 @@ export const ordersRouter = new Hono<AdminEnv>()
 							sku: l.product.sku,
 							brandName: l.product.brand,
 							productName: l.product.name,
-							sizeValue: l.product.size?.value ?? null,
-							sizeUnit: l.product.size?.unit ?? null,
+							optionLabel: l.product.optionLabel,
 						},
 						ours,
 					),
@@ -683,8 +686,7 @@ export const ordersRouter = new Hono<AdminEnv>()
 										sku: product.sku,
 										brandName: product.brand,
 										productName: product.name,
-										sizeValue: product.size?.value ?? null,
-										sizeUnit: product.size?.unit ?? null,
+										optionLabel: product.optionLabel,
 									},
 									stillPending,
 								);
@@ -789,7 +791,7 @@ export const ordersRouter = new Hono<AdminEnv>()
 				zone = {
 					id: row.zone.id,
 					name: row.name,
-					fee: zoneFee(row.zone, merchandise),
+					fee: zoneFee(row.zone, merchandise, settings.freeShippingFrom),
 				};
 			}
 			const shipping = zone
@@ -1056,7 +1058,7 @@ export const ordersRouter = new Hono<AdminEnv>()
 		if (!canTransition(order.status, "fulfilled"))
 			return invalidTransition(c, "fulfill");
 		const itemsOfOrder = eq(orderItems.orderId, id);
-		const [items, stock, settings] = await Promise.all([
+		const [items, stock] = await Promise.all([
 			db.select().from(orderItems).where(itemsOfOrder),
 			lotStock(
 				db,
@@ -1068,16 +1070,13 @@ export const ordersRouter = new Hono<AdminEnv>()
 						.where(itemsOfOrder),
 				),
 			),
-			getSettings(db),
 		]);
-		const today = storeToday(settings.timeZone);
 		let movements: (typeof inventoryMovements.$inferInsert)[];
 		try {
 			movements = items.flatMap((item) =>
-				allocateFefo(
+				allocateFifo(
 					stock.filter((s) => s.variantId === item.variantId),
 					item.quantity,
-					today,
 				).map((a) => ({
 					lotId: a.lotId,
 					kind: "sale" as const,
@@ -1181,11 +1180,8 @@ export const ordersRouter = new Hono<AdminEnv>()
 				.select({ id: orders.id })
 				.from(orders)
 				.where(unchanged);
-			const { timeZone } = await getSettings(db);
 			const plan =
-				from === "fulfilled"
-					? fullReturn(await soldLots(db, id), storeToday(timeZone))
-					: [];
+				from === "fulfilled" ? fullReturn(await soldLots(db, id)) : [];
 			const back =
 				plan.length > 0
 					? returnStatements(
@@ -1248,14 +1244,9 @@ export const ordersRouter = new Hono<AdminEnv>()
 			if (!order) return c.json({ error: "not_found" }, 404);
 			if (!(SHIPPED_STATUSES as readonly string[]).includes(order.status))
 				return invalidTransition(c, "return");
-			const { timeZone } = await getSettings(db);
 			let plan: ReturnLinePlan[];
 			try {
-				plan = planReturn(
-					await soldLots(db, id),
-					input.lines,
-					storeToday(timeZone),
-				);
+				plan = planReturn(await soldLots(db, id), input.lines);
 			} catch (e) {
 				if (e instanceof ReturnExceedsSoldError)
 					return c.json(
@@ -1267,8 +1258,6 @@ export const ordersRouter = new Hono<AdminEnv>()
 						{ error: "return_lot_required", orderItemId: e.orderItemId },
 						400,
 					);
-				if (e instanceof RestockExpiredLotError)
-					return c.json({ error: "restock_expired_lot", lotId: e.lotId }, 409);
 				throw e;
 			}
 			const stillAsRead = db

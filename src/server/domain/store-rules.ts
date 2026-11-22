@@ -3,7 +3,7 @@ export const REQUIRED_SETTINGS = [
 	"countryCode",
 	"orderCodePrefix",
 	"maxQuantityPerLine",
-	"expiryWarningDays",
+	"lowStockThreshold",
 ] as const;
 
 // Consumer law requires the seller's legal identity to be shown before the purchase.

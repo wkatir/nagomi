@@ -4,7 +4,9 @@ import { Hono } from "hono";
 import { d1, migratedDatabase } from "#/db/test-database";
 import type { AdminEnv } from "#/server/auth";
 
-const env: { DB?: ReturnType<typeof d1> } = {};
+const env: { DB?: ReturnType<typeof d1>; BETTER_AUTH_URL: string } = {
+	BETTER_AUTH_URL: "http://localhost",
+};
 mock.module("cloudflare:workers", () => ({ env }));
 const { mediaFilesRouter } = await import("./media");
 
@@ -30,7 +32,7 @@ beforeEach(() => {
 	db.exec(`
 insert into store_settings (id, name, currency, default_locale) values (1, 'Store', 'USD', 'es');
 insert into brands (slug, name, search_key) values ('b', 'Brand', 'brand b');
-insert into categories (slug, routine_step) values ('c', 1);
+insert into categories (slug, icon, sort_order) values ('c', 'package', 1);
 insert into products (slug, brand_id, category_id) values ('p', 1, 1), ('q', 1, 1);
 `);
 	env.DB = d1(db);
@@ -138,13 +140,8 @@ describe("GET /media/:id/usage", () => {
 	test("lists the slides that show it, as the wide picture, the phone one or both", async () => {
 		files(3);
 		db.exec(`
-insert into home_slides (id, status, desktop_media_id, mobile_media_id, link_path) values
-	(1, 'published', 1, 2, '/'),
-	(2, 'draft', 2, 1, '/'),
-	(3, 'archived', 1, 1, '/'),
-	(4, 'published', 3, NULL, '/');
-insert into home_slide_translations (slide_id, locale, title, image_alt) values
-	(1, 'es', 'Uno', 'a'), (1, 'en', 'One', 'a'), (3, 'en', 'Three', 'a');
+insert into home_slides (id, status, desktop_media_id, mobile_media_id, link_path) values (1, 'published', 1, 2, '/'), (2, 'draft', 2, 1, '/'), (3, 'archived', 1, 1, '/'), (4, 'published', 3, NULL, '/');
+insert into home_slide_translations (slide_id, locale, title, image_alt) values (1, 'es', 'Uno', 'a'), (1, 'en', 'One', 'a'), (3, 'en', 'Three', 'a');
 `);
 		expect((await usage(1)).slides).toEqual([
 			{
@@ -164,10 +161,8 @@ insert into home_slide_translations (slide_id, locale, title, image_alt) values
 	test("lists the collections it covers", async () => {
 		files(2);
 		db.exec(`
-insert into collections (id, slug, status, cover_media_id) values
-	(1, 'essentials', 'published', 1), (2, 'gifts', 'archived', 1), (3, 'other', 'draft', 2);
-insert into collection_translations (collection_id, locale, title) values
-	(1, 'es', 'Esenciales'), (2, 'en', 'Gifts');
+insert into collections (id, slug, status, cover_media_id) values (1, 'essentials', 'published', 1), (2, 'gifts', 'archived', 1), (3, 'other', 'draft', 2);
+insert into collection_translations (collection_id, locale, title) values (1, 'es', 'Esenciales'), (2, 'en', 'Gifts');
 `);
 		expect((await usage(1)).collections).toEqual([
 			{ id: 1, slug: "essentials", status: "published", title: "Esenciales" },
@@ -178,10 +173,7 @@ insert into collection_translations (collection_id, locale, title) values
 	test("lists the product photos made from it, archived ones included", async () => {
 		files(2);
 		db.exec(`
-insert into product_images (id, product_id, media_file_id, kind, position, status) values
-	(1, 1, 1, 'packshot', 1, 'active'),
-	(2, 2, 1, 'lifestyle', 1, 'archived'),
-	(3, 2, 2, 'texture', 2, 'active');
+insert into product_images (id, product_id, media_file_id, kind, position, status) values (1, 1, 1, 'packshot', 1, 'active'), (2, 2, 1, 'lifestyle', 1, 'archived'), (3, 2, 2, 'detail', 2, 'active');
 insert into product_translations (product_id, locale, name, search_key) values (1, 'es', 'Aceite', 'aceite');
 `);
 		expect((await usage(1)).photos).toEqual([

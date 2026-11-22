@@ -52,66 +52,45 @@ describe("periods", () => {
 });
 
 describe("stockPosition", () => {
-	test("values sellable stock at lot cost and keeps expired units apart", () => {
-		const { total, byVariant } = stockPosition(
-			[
-				{
-					lotId: 1,
-					variantId: 1,
-					expiresOn: "2026-10-05",
-					available: 2,
-					unitCostE4: 80_000,
-				},
-				{
-					lotId: 2,
-					variantId: 1,
-					expiresOn: "2026-10-06",
-					available: 3,
-					unitCostE4: 80_050,
-				},
-				{
-					lotId: 3,
-					variantId: 1,
-					expiresOn: "2027-06-30",
-					available: 4,
-					unitCostE4: 85_000,
-				},
-				{
-					lotId: 4,
-					variantId: 2,
-					expiresOn: "2026-12-31",
-					available: 1,
-					unitCostE4: 160_745,
-				},
-				{
-					lotId: 5,
-					variantId: 2,
-					expiresOn: "2026-11-01",
-					available: 0,
-					unitCostE4: 1,
-				},
-			],
-			"2026-10-06",
-			90,
-		);
+	test("values the stock at lot cost", () => {
+		const { total, byVariant } = stockPosition([
+			{
+				lotId: 1,
+				variantId: 1,
+				available: 2,
+				unitCostE4: 80_000,
+			},
+			{
+				lotId: 2,
+				variantId: 1,
+				available: 3,
+				unitCostE4: 80_050,
+			},
+			{
+				lotId: 3,
+				variantId: 1,
+				available: 4,
+				unitCostE4: 85_000,
+			},
+			{
+				lotId: 4,
+				variantId: 2,
+				available: 1,
+				unitCostE4: 160_745,
+			},
+			{
+				lotId: 5,
+				variantId: 2,
+				available: 0,
+				unitCostE4: 1,
+			},
+		]);
 		expect(total).toEqual({
-			onHand: 8,
-			// 3 x 8.005 + 4 x 8.50 + 16.0745 = 74.0895
-			value: 7409,
-			// Lot 2 (expires today) and lot 4 (86 days): 24.015 + 16.0745
-			atRiskUnits: 4,
-			atRiskValue: 4009,
-			expiredUnits: 2,
-			expiredValue: 1600,
+			onHand: 10,
+			// 2 x 8.00 + 3 x 8.005 + 4 x 8.50 + 16.0745 = 90.0895
+			value: 9009,
 		});
-		expect(byVariant.get(2)).toEqual({
-			onHand: 1,
-			value: 1607,
-			atRiskUnits: 1,
-			atRiskValue: 1607,
-			expiredUnits: 0,
-			expiredValue: 0,
-		});
+		expect(byVariant.get(2)).toEqual({ onHand: 1, value: 1607 });
 	});
 });
 
@@ -124,7 +103,7 @@ describe("stockLosses", () => {
 				quantity: -1,
 				unitCostE4: 160_745,
 			},
-			{ kind: "waste", reason: "expired", quantity: -2, unitCostE4: 80_000 },
+			{ kind: "waste", reason: "damaged", quantity: -2, unitCostE4: 80_000 },
 			{
 				kind: "waste",
 				reason: "customer_return",
@@ -150,7 +129,7 @@ describe("stockLosses", () => {
 				cost: 4007,
 				byReason: [
 					{ reason: "customer_return", units: 2, cost: 2407 },
-					{ reason: "expired", units: 2, cost: 1600 },
+					{ reason: "damaged", units: 2, cost: 1600 },
 				],
 			},
 			adjustments: { units: 1, value: -300 },

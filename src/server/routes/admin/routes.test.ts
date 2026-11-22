@@ -4,12 +4,13 @@ import { Hono } from "hono";
 import { d1, migratedDatabase } from "#/db/test-database";
 import type { AdminEnv } from "#/server/auth";
 
-const env: { DB?: ReturnType<typeof d1> } = {};
+const env: { DB?: ReturnType<typeof d1>; BETTER_AUTH_URL: string } = {
+	BETTER_AUTH_URL: "http://localhost",
+};
 mock.module("cloudflare:workers", () => ({ env }));
 const { shippingRouter } = await import("./shipping");
 const { purchasingRouter } = await import("./purchasing");
 const { categoriesRouter } = await import("./categories");
-const { concernsRouter } = await import("./concerns");
 
 const app = new Hono<AdminEnv>()
 	.use(async (c, next) => {
@@ -18,8 +19,7 @@ const app = new Hono<AdminEnv>()
 	})
 	.route("/shipping-zones", shippingRouter)
 	.route("/purchase-orders", purchasingRouter)
-	.route("/categories", categoriesRouter)
-	.route("/concerns", concernsRouter);
+	.route("/categories", categoriesRouter);
 
 const send = (method: string, path: string, body: unknown) =>
 	app.request(path, {
@@ -84,13 +84,8 @@ describe.each([
 	{
 		path: "categories",
 		insert:
-			"insert into categories (slug, routine_step, status) values ('serum', 1, 'archived')",
+			"insert into categories (slug, icon, sort_order, status) values ('keyboard', 'package', 1, 'archived')",
 		text: "insert into category_translations (category_id, locale, name) values (1, ?, ?)",
-	},
-	{
-		path: "concerns",
-		insert: "insert into concerns (slug, status) values ('pores', 'archived')",
-		text: "insert into concern_translations (concern_id, locale, name) values (1, ?, ?)",
 	},
 ])("PATCH /$path/:id", ({ path, insert, text }) => {
 	const archived = (texts: [locale: string, name: string][]) => {
@@ -125,7 +120,7 @@ describe.each([
 describe("POST /purchase-orders/:id/receive", () => {
 	const receipt = {
 		receivedOn: "2026-10-01",
-		lots: [{ purchaseOrderItemId: 1, quantity: 1, expiresOn: "2027-10" }],
+		lots: [{ purchaseOrderItemId: 1, quantity: 1 }],
 	};
 
 	test("refuses a receipt without its shipping cost", async () => {

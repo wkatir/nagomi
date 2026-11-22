@@ -112,19 +112,15 @@ export function receiptOutcome(
 
 export type ReceiptDateProblem =
 	| "received_on_in_future"
-	| "received_before_ordered"
-	| "lot_expired_at_receipt";
+	| "received_before_ordered";
 
 export function receiptDateProblem(input: {
 	receivedOn: string;
 	orderedOn: string | null;
 	today: string;
-	expiries: string[];
 }): ReceiptDateProblem | null {
 	if (input.receivedOn > input.today) return "received_on_in_future";
 	if (input.orderedOn !== null && input.receivedOn < input.orderedOn)
 		return "received_before_ordered";
-	if (input.expiries.some((e) => e < input.receivedOn))
-		return "lot_expired_at_receipt";
 	return null;
 }

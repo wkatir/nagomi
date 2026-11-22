@@ -5,11 +5,12 @@ import { d1, migratedDatabase } from "#/db/test-database";
 import type { AdminEnv } from "#/server/auth";
 import { searchKey } from "../../domain/search";
 
-const env: { DB?: ReturnType<typeof d1> } = {};
+const env: { DB?: ReturnType<typeof d1>; BETTER_AUTH_URL: string } = {
+	BETTER_AUTH_URL: "http://localhost",
+};
 mock.module("cloudflare:workers", () => ({ env }));
 const { brandsRouter } = await import("./brands");
 const { categoriesRouter } = await import("./categories");
-const { concernsRouter } = await import("./concerns");
 
 const app = new Hono<AdminEnv>()
 	.use(async (c, next) => {
@@ -17,8 +18,7 @@ const app = new Hono<AdminEnv>()
 		await next();
 	})
 	.route("/brands", brandsRouter)
-	.route("/categories", categoriesRouter)
-	.route("/concerns", concernsRouter);
+	.route("/categories", categoriesRouter);
 
 type Page<T> = {
 	items: T[];
@@ -58,7 +58,6 @@ function product(o: {
 	brand: number;
 	category: number;
 	status: "draft" | "published" | "archived";
-	concern?: number;
 }) {
 	const id = ++productId;
 	db.exec(
@@ -69,15 +68,11 @@ function product(o: {
 			`insert into product_translations (product_id, locale, name, search_key) values (${id}, 'es', 'Producto ${id}', 'producto ${id}')`,
 		);
 		db.exec(
-			`insert into variants (product_id, sku, price, search_key) values (${id}, 'SKU${id}', 1000, 'sku${id}')`,
+			`insert into variants (product_id, sku, price, search_key) values (${id}, 'SKU-00${id}', 1000, 'sku-00${id}')`,
 		);
 	}
 	if (o.status !== "draft")
 		db.exec(`update products set status = '${o.status}' where id = ${id}`);
-	if (o.concern)
-		db.exec(
-			`insert into product_concerns (product_id, concern_id) values (${id}, ${o.concern})`,
-		);
 }
 
 beforeEach(() => {
@@ -112,7 +107,7 @@ beforeEach(() => {
 	) => {
 		const { lastInsertRowid } = db
 			.prepare(
-				"insert into categories (slug, routine_step, status) values (?, ?, ?)",
+				"insert into categories (slug, icon, sort_order, status) values (?, 'package', ?, ?)",
 			)
 			.run(slug, step, status);
 		for (const [locale, name] of names)
@@ -120,41 +115,21 @@ beforeEach(() => {
 				"insert into category_translations (category_id, locale, name) values (?, ?, ?)",
 			).run(lastInsertRowid, locale, name);
 	};
-	category("serum", 2, [
-		["es", "Sérum"],
-		["en", "Serum"],
+	category("keyboard", 2, [
+		["es", "Teclado"],
+		["en", "Keyboard"],
 	]);
 	category("cleanser", 1, [["es", "Limpiador"]]);
 	// Archived, named only in English: it has no name in the store's language.
 	category("sunscreen", 5, [["en", "Sunscreen"]], "archived");
 	category("acids", 2, [["es", "Ácidos exfoliantes"]]);
 
-	const concern = (
-		slug: string,
-		position: number,
-		names: [locale: string, name: string][],
-		status = "active",
-	) => {
-		const { lastInsertRowid } = db
-			.prepare("insert into concerns (slug, position, status) values (?, ?, ?)")
-			.run(slug, position, status);
-		for (const [locale, name] of names)
-			db.prepare(
-				"insert into concern_translations (concern_id, locale, name) values (?, ?, ?)",
-			).run(lastInsertRowid, locale, name);
-	};
-	concern("acne", 2, [["es", "Acné"]]);
-	concern("pores", 1, [["es", "Poros"]]);
-	concern("dryness", 3, [["es", "Resequedad"]], "archived");
-	concern("dark-spots", 2, [["es", "Pigmentación"]]);
-
 	// Brand 1 has a published and a draft product, brand 2 only an archived one, brand 3 a
 	// draft. Category 1 has the published and the draft one, category 2 the archived one.
-	// Concern 1 has all three of the first products, concern 4 the last.
-	product({ brand: 1, category: 1, status: "published", concern: 1 });
-	product({ brand: 1, category: 1, status: "draft", concern: 1 });
-	product({ brand: 2, category: 2, status: "archived", concern: 1 });
-	product({ brand: 3, category: 4, status: "draft", concern: 4 });
+	product({ brand: 1, category: 1, status: "published" });
+	product({ brand: 1, category: 1, status: "draft" });
+	product({ brand: 2, category: 2, status: "archived" });
+	product({ brand: 3, category: 4, status: "draft" });
 });
 
 describe("GET /brands", () => {
@@ -354,12 +329,13 @@ describe("GET /categories", () => {
 		id: number;
 		slug: string;
 		name: string | null;
-		routineStep: number;
+		sortOrder: number;
+		icon: string;
 		status: string;
 		products: number;
 	};
 
-	test("is a page in the order of the routine, with the name in the default language", async () => {
+	test("is a page in the store's order, with the name in the default language", async () => {
 		const page = await list<Category>("categories");
 		expect(page).toMatchObject({
 			total: 4,
@@ -372,16 +348,18 @@ describe("GET /categories", () => {
 				id: 2,
 				slug: "cleanser",
 				name: "Limpiador",
-				routineStep: 1,
+				sortOrder: 1,
+				icon: "package",
 				status: "active",
 				// Its only product is archived.
 				products: 0,
 			},
 			{
 				id: 1,
-				slug: "serum",
-				name: "Sérum",
-				routineStep: 2,
+				slug: "keyboard",
+				name: "Teclado",
+				sortOrder: 2,
+				icon: "package",
 				status: "active",
 				products: 2,
 			},
@@ -389,7 +367,8 @@ describe("GET /categories", () => {
 				id: 4,
 				slug: "acids",
 				name: "Ácidos exfoliantes",
-				routineStep: 2,
+				sortOrder: 2,
+				icon: "package",
 				status: "active",
 				products: 1,
 			},
@@ -397,7 +376,8 @@ describe("GET /categories", () => {
 				id: 3,
 				slug: "sunscreen",
 				name: null,
-				routineStep: 5,
+				sortOrder: 5,
+				icon: "package",
 				status: "archived",
 				products: 0,
 			},
@@ -408,8 +388,8 @@ describe("GET /categories", () => {
 		// A category with no name sorts first; "Ácidos" sorts with the A's.
 		["name", "asc", [3, 4, 2, 1]],
 		["name", "desc", [1, 2, 4, 3]],
-		["routineStep", "asc", [2, 1, 4, 3]],
-		["routineStep", "desc", [3, 4, 1, 2]],
+		["sortOrder", "asc", [2, 1, 4, 3]],
+		["sortOrder", "desc", [3, 4, 1, 2]],
 		["products", "asc", [2, 3, 4, 1]],
 		["products", "desc", [1, 4, 3, 2]],
 		["status", "asc", [1, 2, 4, 3]],
@@ -432,8 +412,8 @@ describe("GET /categories", () => {
 		expect(ids(await list<Category>("categories", "q=%C3%81CIDOS"))).toEqual([
 			4,
 		]);
-		expect(ids(await list<Category>("categories", "q=serum"))).toEqual([1]);
-		expect(ids(await list<Category>("categories", "q=S%C3%89RUM"))).toEqual([
+		expect(ids(await list<Category>("categories", "q=keyboard"))).toEqual([1]);
+		expect(ids(await list<Category>("categories", "q=TECLADO"))).toEqual([
 			1,
 		]);
 		// The English name is not searched, but the slug is.
@@ -454,14 +434,14 @@ describe("GET /categories/options", () => {
 		expect(await get<Option[]>("categories/options")).toEqual([
 			{ id: 4, name: "Ácidos exfoliantes", status: "active" },
 			{ id: 2, name: "Limpiador", status: "active" },
-			{ id: 1, name: "Sérum", status: "active" },
+			{ id: 1, name: "Teclado", status: "active" },
 		]);
 	});
 
 	test("follows the store's default language", async () => {
 		db.exec("update store_settings set default_locale = 'en'");
 		expect(await get<Option[]>("categories/options")).toEqual([
-			{ id: 1, name: "Serum", status: "active" },
+			{ id: 1, name: "Keyboard", status: "active" },
 			{ id: 3, name: "Sunscreen", status: "archived" },
 		]);
 	});
@@ -484,164 +464,10 @@ describe("PATCH /categories/:id", () => {
 	});
 });
 
-describe("GET /concerns", () => {
-	type Concern = {
-		id: number;
-		slug: string;
-		name: string | null;
-		position: number;
-		status: string;
-		products: number;
-	};
-
-	test("is a page in the order the store shows, with product counts", async () => {
-		const page = await list<Concern>("concerns");
-		expect(page).toMatchObject({
-			total: 4,
-			page: 1,
-			pageSize: 25,
-			pageCount: 1,
-		});
-		expect(page.items).toEqual([
-			{
-				id: 2,
-				slug: "pores",
-				name: "Poros",
-				position: 1,
-				status: "active",
-				products: 0,
-			},
-			{
-				id: 1,
-				slug: "acne",
-				name: "Acné",
-				position: 2,
-				status: "active",
-				// The archived product with the need is not counted.
-				products: 2,
-			},
-			{
-				id: 4,
-				slug: "dark-spots",
-				name: "Pigmentación",
-				position: 2,
-				status: "active",
-				products: 1,
-			},
-			{
-				id: 3,
-				slug: "dryness",
-				name: "Resequedad",
-				position: 3,
-				status: "archived",
-				products: 0,
-			},
-		]);
-	});
-
-	test.each([
-		["name", "asc", [1, 4, 2, 3]],
-		["name", "desc", [3, 2, 4, 1]],
-		["position", "asc", [2, 1, 4, 3]],
-		["position", "desc", [3, 4, 1, 2]],
-		["products", "asc", [2, 3, 4, 1]],
-		["products", "desc", [1, 4, 3, 2]],
-		["status", "asc", [1, 2, 4, 3]],
-		["status", "desc", [3, 4, 2, 1]],
-	])("sorts by %s %s", async (sort, dir, expected) => {
-		expect(
-			ids(await list<Concern>("concerns", `sort=${sort}&dir=${dir}`)),
-		).toEqual(expected);
-	});
-
-	test("narrows to a status, searches without accents and reports the total", async () => {
-		const archived = await list<Concern>("concerns", "status=archived");
-		expect(ids(archived)).toEqual([3]);
-		expect(archived.total).toBe(1);
-		expect(ids(await list<Concern>("concerns", "q=acne"))).toEqual([1]);
-		expect(ids(await list<Concern>("concerns", "q=ACN%C3%89"))).toEqual([1]);
-		expect(ids(await list<Concern>("concerns", "q=dark"))).toEqual([4]);
-		expect(ids(await list<Concern>("concerns", "q=pigmentacion"))).toEqual([4]);
-		expect(ids(await list<Concern>("concerns", "q=PIGMENTACI%C3%93N"))).toEqual(
-			[4],
-		);
-		const both = await list<Concern>("concerns", "q=e&status=active");
-		expect(ids(both)).toEqual([2, 1, 4]);
-		expect(both.total).toBe(3);
-	});
-});
-
-describe("GET /concerns/options", () => {
-	test("is the needs named in the default language, with their status", async () => {
-		expect(await get<Option[]>("concerns/options")).toEqual([
-			{ id: 1, name: "Acné", status: "active" },
-			{ id: 4, name: "Pigmentación", status: "active" },
-			{ id: 2, name: "Poros", status: "active" },
-			{ id: 3, name: "Resequedad", status: "archived" },
-		]);
-	});
-});
-
-describe("PATCH /concerns/:id", () => {
-	test("archives a need even when products have it, and restores it", async () => {
-		const archive = await patch("/concerns/1", { status: "archived" });
-		expect(archive.status).toBe(200);
-		expect(await archive.json()).toMatchObject({ id: 1, status: "archived" });
-		const restore = await patch("/concerns/1", { status: "active" });
-		expect(restore.status).toBe(200);
-		expect(await restore.json()).toMatchObject({ id: 1, status: "active" });
-	});
-});
-
-describe("PUT /concerns/:id/translations/:locale", () => {
-	test("stores the intro and the search engine text next to the name", async () => {
-		const res = await put("/concerns/1/translations/es", {
-			name: "Acné",
-			description: "  Para la piel con brillo.  ",
-			seoTitle: "Productos para el acné",
-			seoDescription: "Compra en El Salvador.",
-		});
-		expect(res.status).toBe(200);
-		expect(await res.json()).toMatchObject({
-			concernId: 1,
-			locale: "es",
-			description: "Para la piel con brillo.",
-			seoTitle: "Productos para el acné",
-			seoDescription: "Compra en El Salvador.",
-		});
-		const stored = await get<{
-			translations: { locale: string; description: string | null }[];
-		}>("concerns/1");
-		expect(stored.translations).toMatchObject([
-			{ locale: "es", description: "Para la piel con brillo." },
-		]);
-	});
-
-	test("clears the intro when it is sent blank", async () => {
-		await put("/concerns/1/translations/es", {
-			name: "Acné",
-			description: "Para la piel con brillo.",
-		});
-		const res = await put("/concerns/1/translations/es", {
-			name: "Acné",
-			description: "  ",
-		});
-		expect(await res.json()).toMatchObject({ description: null });
-	});
-
-	test("refuses an intro past 1000 characters", async () => {
-		const res = await put("/concerns/1/translations/es", {
-			name: "Acné",
-			description: "x".repeat(1001),
-		});
-		expect(res.status).toBe(400);
-	});
-});
-
 describe("PUT /categories/:id/translations/:locale", () => {
 	test("stores the intro of the product type page", async () => {
 		const res = await put("/categories/1/translations/es", {
-			name: "Sérum",
+			name: "Teclado",
 			description: "Van después del tónico.",
 		});
 		expect(res.status).toBe(200);

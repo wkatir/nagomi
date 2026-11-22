@@ -13,7 +13,7 @@ export const PRODUCT_SORTS = [
 
 const id = z.coerce.number().int().positive();
 
-// `q` matches the name, the brand, the SKU or barcode of any size, and the slug.
+// `q` matches the name, the brand, the SKU or barcode of any variant, and the slug.
 export const productListSearch = pagedSearch(PRODUCT_SORTS, {
 	sort: "createdAt",
 	dir: "desc",
@@ -21,24 +21,23 @@ export const productListSearch = pagedSearch(PRODUCT_SORTS, {
 	status: z.enum(PRODUCT_STATUSES).optional(),
 	brandId: id.optional(),
 	categoryId: id.optional(),
-	concernId: id.optional(),
 });
 export type ProductListSearch = z.infer<typeof productListSearch>;
 
 // Shared by the API and the forms.
 export const PRODUCT_LIMITS = {
 	slug: 80,
-	sanitaryRegistration: 60,
-	inci: 4000,
-	sku: 40,
+	sku: 7,
+	optionLabel: 60,
 	alt: 250,
 	name: 200,
 	tagline: 300,
+	shortSpecs: 120,
 	description: 4000,
-	howToUse: 4000,
-	keyIngredients: 2000,
-	benefits: 2000,
-	cautions: 2000,
+	specLabel: 60,
+	specValue: 200,
+	specs: 20,
+	warrantyMonths: 120,
 	seoTitle: 70,
 	seoDescription: 160,
 } as const;

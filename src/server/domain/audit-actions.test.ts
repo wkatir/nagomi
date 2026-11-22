@@ -13,15 +13,15 @@ describe("statusAudit", () => {
 	const base = { before: { name: "A" }, patch: { name: "B" } };
 
 	test("records from and to when the status moves", () => {
-		expect(statusAudit("routine", 7, "draft", "published", base)).toEqual({
-			action: "routine.status",
-			entityType: "routine",
+		expect(statusAudit("bundle", 7, "draft", "published", base)).toEqual({
+			action: "bundle.status",
+			entityType: "bundle",
 			entityId: 7,
 			data: { ...base, from: "draft", to: "published" },
 		});
-		expect(statusAudit("routine", 7, "published", "archived", base)).toEqual({
-			action: "routine.archive",
-			entityType: "routine",
+		expect(statusAudit("bundle", 7, "published", "archived", base)).toEqual({
+			action: "bundle.archive",
+			entityType: "bundle",
 			entityId: 7,
 			data: { ...base, from: "published", to: "archived" },
 		});
@@ -29,9 +29,9 @@ describe("statusAudit", () => {
 
 	test("leaves the data as given when the status does not move", () => {
 		for (const to of [undefined, "draft"])
-			expect(statusAudit("routine", 7, "draft", to, base)).toEqual({
-				action: "routine.update",
-				entityType: "routine",
+			expect(statusAudit("bundle", 7, "draft", to, base)).toEqual({
+				action: "bundle.update",
+				entityType: "bundle",
 				entityId: 7,
 				data: base,
 			});

@@ -1,4 +1,4 @@
-import { and, asc, eq, getTableColumns, sql } from "drizzle-orm";
+import { and, asc, desc, eq, getTableColumns, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { z } from "zod";
 import { type Db, getDb, schema } from "#/db";
@@ -7,16 +7,15 @@ import {
 	now,
 	PRODUCT_STATUSES,
 	type ProductStatus,
-	SIZE_UNITS,
-	SKIN_TYPES,
 } from "#/db/schema";
 import { storeToday } from "#/lib/dates";
+import { LOCALES, PRODUCT_BADGES, SKU_REGEX } from "#/lib/enums";
 import { PRODUCT_LIMITS, productListSearch } from "#/lib/schemas/products";
-import type { AdminEnv } from "#/server/auth";
+import { type AdminEnv, seesCosts } from "#/server/auth";
 import { idParam, invalidRequest, validate } from "#/server/validate";
 import { audit } from "../../domain/audit";
 import { statusAudit } from "../../domain/audit-actions";
-import { inList, insertIfExists, qualified } from "../../domain/d1";
+import { inList, qualified } from "../../domain/d1";
 import { InvalidGtinError, normalizeGtin } from "../../domain/gtin";
 import { mediaUrl } from "../../domain/images";
 import {
@@ -50,18 +49,19 @@ const {
 	brands,
 	categories,
 	collectionProducts,
-	concerns,
 	inventoryMovements,
 	lots,
 	mediaFiles,
-	productConcerns,
+	priceHistory,
 	productImages,
 	productImageTranslations,
 	products,
-	productSkinTypes,
+	productSpecs,
+	productSpecTranslations,
 	productTranslations,
 	purchaseOrderItems,
 	purchaseOrders,
+	users,
 	variants,
 } = schema;
 
@@ -69,40 +69,31 @@ const {
 const productText = z.object({
 	name: requiredText(PRODUCT_LIMITS.name),
 	tagline: optionalText(PRODUCT_LIMITS.tagline).optional(),
+	shortSpecs: optionalText(PRODUCT_LIMITS.shortSpecs).optional(),
 	description: optionalText(PRODUCT_LIMITS.description).optional(),
-	howToUse: optionalText(PRODUCT_LIMITS.howToUse).optional(),
-	// Lists, one item per line.
-	keyIngredients: optionalText(PRODUCT_LIMITS.keyIngredients).optional(),
-	benefits: optionalText(PRODUCT_LIMITS.benefits).optional(),
-	cautions: optionalText(PRODUCT_LIMITS.cautions).optional(),
 	...seoFields,
 });
 
-const concernIds = z
-	.array(z.number().int().positive())
-	.max(20)
-	.refine((ids) => new Set(ids).size === ids.length, "Duplicate concern");
-const skinTypes = z
-	.array(z.enum(SKIN_TYPES))
-	.max(SKIN_TYPES.length)
-	.refine((s) => new Set(s).size === s.length, "Duplicate skin type");
 const productFields = z.object({
 	slug,
 	brandId: z.number().int().positive(),
 	categoryId: z.number().int().positive(),
-	// As printed on the pack, so not translated.
-	inci: optionalText(PRODUCT_LIMITS.inci),
-	sanitaryRegistration: optionalText(PRODUCT_LIMITS.sanitaryRegistration),
-	concernIds,
-	skinTypes,
+	warrantyMonths: z.number().int().min(0).max(PRODUCT_LIMITS.warrantyMonths),
+	isFeatured: z.boolean(),
+	badge: z.enum(PRODUCT_BADGES).nullable(),
 });
 
-const sku = z
-	.string()
-	.trim()
-	.toUpperCase()
-	.regex(/^[A-Z0-9]+(?:[-_.][A-Z0-9]+)*$/)
-	.max(PRODUCT_LIMITS.sku);
+const specText = z.object({
+	label: requiredText(PRODUCT_LIMITS.specLabel),
+	value: requiredText(PRODUCT_LIMITS.specValue),
+});
+const specsInput = z.object({
+	specs: z
+		.array(z.object({ translations: translations(specText) }))
+		.max(PRODUCT_LIMITS.specs),
+});
+
+const sku = z.string().trim().toUpperCase().regex(SKU_REGEX);
 const gtin = z
 	.string()
 	.max(20)
@@ -120,8 +111,7 @@ const variantFields = z.object({
 	sku,
 	price: z.number().int().positive().max(100_000_000).nullable(),
 	compareAtPrice: z.number().int().positive().max(100_000_000).nullable(),
-	sizeValue: z.number().int().positive().max(100_000).nullable(),
-	sizeUnit: z.enum(SIZE_UNITS).nullable(),
+	optionLabel: optionalText(PRODUCT_LIMITS.optionLabel),
 	gtin,
 
 	reorderPoint: z.number().int().min(0).max(100_000).nullable(),
@@ -132,8 +122,6 @@ const variantState = z
 	.object({
 		price: z.number().nullable(),
 		compareAtPrice: z.number().nullable(),
-		sizeValue: z.number().nullable(),
-		sizeUnit: z.string().nullable(),
 	})
 	.refine(
 		(v) =>
@@ -143,25 +131,19 @@ const variantState = z
 			message: "compareAtPrice must be greater than price",
 			path: ["compareAtPrice"],
 		},
-	)
-	.refine((v) => (v.sizeValue === null) === (v.sizeUnit === null), {
-		message: "sizeValue and sizeUnit go together",
-		path: ["sizeUnit"],
-	});
+	);
 
 const newVariantFields = variantFields.omit({ status: true }).partial({
 	price: true,
 	compareAtPrice: true,
-	sizeValue: true,
-	sizeUnit: true,
+	optionLabel: true,
 	gtin: true,
 	reorderPoint: true,
 });
 const withNulls = (input: z.output<typeof newVariantFields>) => ({
 	price: null,
 	compareAtPrice: null,
-	sizeValue: null,
-	sizeUnit: null,
+	optionLabel: null,
 	gtin: null,
 	reorderPoint: null,
 	...input,
@@ -182,14 +164,13 @@ const listQuery = z.object({
 	status: z.enum(PRODUCT_STATUSES).optional(),
 	brandId: z.coerce.number().int().positive().optional(),
 	categoryId: z.coerce.number().int().positive().optional(),
-	concernId: z.coerce.number().int().positive().optional(),
 });
 
 async function referencesAvailable(
 	db: Db,
-	refs: { brandId?: number; categoryId?: number; concernIds?: number[] },
+	refs: { brandId?: number; categoryId?: number },
 ) {
-	const [brand, category, found] = await Promise.all([
+	const [brand, category] = await Promise.all([
 		refs.brandId === undefined
 			? true
 			: db.query.brands
@@ -210,19 +191,36 @@ async function referencesAvailable(
 						),
 					})
 					.then(Boolean),
-		refs.concernIds?.length
-			? db
-					.select({ id: concerns.id })
-					.from(concerns)
-					.where(
-						and(
-							inList(concerns.id, refs.concernIds),
-							eq(concerns.status, "active"),
-						),
-					)
-			: [],
 	]);
-	return brand && category && found.length === (refs.concernIds?.length ?? 0);
+	return brand && category;
+}
+
+async function specsOf(db: Db, productId: number) {
+	const rows = await db
+		.select()
+		.from(productSpecs)
+		.where(eq(productSpecs.productId, productId))
+		.orderBy(asc(productSpecs.position));
+	const texts =
+		rows.length === 0
+			? []
+			: await db
+					.select()
+					.from(productSpecTranslations)
+					.where(
+						inList(
+							productSpecTranslations.specId,
+							rows.map((r) => r.id),
+						),
+					);
+	return rows.map((r) => ({
+		position: r.position,
+		translations: Object.fromEntries(
+			texts
+				.filter((t) => t.specId === r.id)
+				.map((t) => [t.locale, { label: t.label, value: t.value }]),
+		),
+	}));
 }
 
 async function productDetail(db: Db, id: number) {
@@ -231,57 +229,41 @@ async function productDetail(db: Db, id: number) {
 	});
 	if (!product) return null;
 	const { defaultLocale } = await readSettings(db);
-	const [
-		translations,
-		productVariants,
-		tags,
-		images,
-		memberships,
-		skins,
-		missing,
-	] = await Promise.all([
-		db
-			.select()
-			.from(productTranslations)
-			.where(eq(productTranslations.productId, id)),
-		db
-			.select({
-				...getTableColumns(variants),
-				skuEditable: skuIsFree(
-					qualified(variants.productId),
-					qualified(variants.id),
-				).mapWith(Boolean),
-				// Expired lots too: what archiving the size would leave without a home
-				// (variant_has_stock).
-				onHand: sql<number>`coalesce((select sum(m.quantity) from lots l join inventory_movements m on m.lot_id = l.id where l.variant_id = ${qualified(variants.id)}), 0)`,
-			})
-			.from(variants)
-			.where(eq(variants.productId, id))
-			.orderBy(asc(variants.id)),
-		db
-			.select({ concernId: productConcerns.concernId })
-			.from(productConcerns)
-			.where(eq(productConcerns.productId, id)),
-		db
-			.select(productPhotoColumns)
-			.from(productImages)
-			.innerJoin(mediaFiles, eq(mediaFiles.id, productImages.mediaFileId))
-			.where(eq(productImages.productId, id))
-			.orderBy(
-				asc(productImages.status),
-				asc(productImages.position),
-				asc(productImages.id),
-			),
-		db
-			.select({ collectionId: collectionProducts.collectionId })
-			.from(collectionProducts)
-			.where(eq(collectionProducts.productId, id)),
-		db
-			.select({ skinType: productSkinTypes.skinType })
-			.from(productSkinTypes)
-			.where(eq(productSkinTypes.productId, id)),
-		publishMissing(db, id, defaultLocale),
-	]);
+	const [translations, productVariants, specs, images, memberships, missing] =
+		await Promise.all([
+			db
+				.select()
+				.from(productTranslations)
+				.where(eq(productTranslations.productId, id)),
+			db
+				.select({
+					...getTableColumns(variants),
+					skuEditable: skuIsFree(
+						qualified(variants.productId),
+						qualified(variants.id),
+					).mapWith(Boolean),
+					onHand: sql<number>`coalesce((select sum(m.quantity) from lots l join inventory_movements m on m.lot_id = l.id where l.variant_id = ${qualified(variants.id)}), 0)`,
+				})
+				.from(variants)
+				.where(eq(variants.productId, id))
+				.orderBy(asc(variants.id)),
+			specsOf(db, id),
+			db
+				.select(productPhotoColumns)
+				.from(productImages)
+				.innerJoin(mediaFiles, eq(mediaFiles.id, productImages.mediaFileId))
+				.where(eq(productImages.productId, id))
+				.orderBy(
+					asc(productImages.status),
+					asc(productImages.position),
+					asc(productImages.id),
+				),
+			db
+				.select({ collectionId: collectionProducts.collectionId })
+				.from(collectionProducts)
+				.where(eq(collectionProducts.productId, id)),
+			publishMissing(db, id, defaultLocale),
+		]);
 	const alts =
 		images.length === 0
 			? []
@@ -299,8 +281,7 @@ async function productDetail(db: Db, id: number) {
 		publishMissing: missing,
 		translations: translations.map(withoutSearchKey),
 		variants: productVariants.map(withoutSearchKey),
-		concernIds: tags.map((t) => t.concernId),
-		skinTypes: SKIN_TYPES.filter((s) => skins.some((r) => r.skinType === s)),
+		specs,
 		// Collections are edited from the collection (PUT /collections/:id/products).
 		collectionIds: memberships.map((m) => m.collectionId),
 		images: images.map((i) => ({
@@ -330,8 +311,7 @@ export const productsRouter = new Hono<AdminEnv>()
 				name: productTranslations.name,
 				variantId: variants.id,
 				sku: variants.sku,
-				sizeValue: variants.sizeValue,
-				sizeUnit: variants.sizeUnit,
+				optionLabel: variants.optionLabel,
 				price: variants.price,
 				compareAtPrice: variants.compareAtPrice,
 				gtin: variants.gtin,
@@ -354,7 +334,7 @@ export const productsRouter = new Hono<AdminEnv>()
 			.orderBy(asc(brands.name), asc(products.slug), asc(variants.id));
 		const today = storeToday(timeZone);
 		const [stock, promised, landed] = await Promise.all([
-			stockByVariant(db, today),
+			stockByVariant(db),
 			committedByVariant(db, pendingHoldStart(today, timeZone)),
 			latestLandedCostE4(db),
 		]);
@@ -370,8 +350,8 @@ export const productsRouter = new Hono<AdminEnv>()
 					onHand,
 					committed: held,
 					available: sellableUnits(onHand, held),
-					expired: units?.expired ?? 0,
-					latestUnitCost: cost === undefined ? null : e4ToMinor(cost),
+					latestUnitCost:
+						cost === undefined || !seesCosts(c) ? null : e4ToMinor(cost),
 				};
 			}),
 		);
@@ -393,17 +373,92 @@ export const productsRouter = new Hono<AdminEnv>()
 		const product = await productDetail(getDb(), id);
 		return product ? c.json(product) : c.json({ error: "not_found" }, 404);
 	})
+	.get("/:id/price-history", validate("param", idParam), async (c) => {
+		const db = getDb();
+		const { id } = c.req.valid("param");
+		const product = await db.query.products.findFirst({
+			where: eq(products.id, id),
+		});
+		if (!product) return c.json({ error: "not_found" }, 404);
+		const rows = await db
+			.select({
+				id: priceHistory.id,
+				variantId: priceHistory.variantId,
+				sku: variants.sku,
+				oldPrice: priceHistory.oldPrice,
+				newPrice: priceHistory.newPrice,
+				changedAt: priceHistory.changedAt,
+				changedBy: priceHistory.changedBy,
+				changedByName: users.name,
+			})
+			.from(priceHistory)
+			.innerJoin(variants, eq(variants.id, priceHistory.variantId))
+			.leftJoin(users, eq(users.id, priceHistory.changedBy))
+			.where(eq(variants.productId, id))
+			.orderBy(desc(priceHistory.id));
+		return c.json(rows);
+	})
+	.put(
+		"/:id/specs",
+		validate("param", idParam),
+		validate("json", specsInput),
+		async (c) => {
+			const db = getDb();
+			const { id } = c.req.valid("param");
+			const { specs } = c.req.valid("json");
+			const product = await db.query.products.findFirst({
+				where: eq(products.id, id),
+			});
+			if (!product) return c.json({ error: "not_found" }, 404);
+			const { defaultLocale } = await readSettings(db);
+			if (specs.some((spec) => !spec.translations[defaultLocale]))
+				return c.json({ error: "spec_requires_default_translation" }, 409);
+			const ofProduct = db
+				.select({ id: productSpecs.id })
+				.from(productSpecs)
+				.where(eq(productSpecs.productId, id));
+			const specId = (position: number) =>
+				sql<number>`(select id from product_specs where product_id = ${id} and position = ${position})`;
+			await db.batch([
+				db
+					.delete(productSpecTranslations)
+					.where(sql`${productSpecTranslations.specId} in ${ofProduct}`),
+				db.delete(productSpecs).where(eq(productSpecs.productId, id)),
+				...specs.flatMap((spec, index) => [
+					db
+						.insert(productSpecs)
+						.values({ productId: id, position: index + 1 }),
+					...LOCALES.flatMap((locale) => {
+						const text = spec.translations[locale];
+						return text
+							? [
+									db.insert(productSpecTranslations).values({
+										specId: specId(index + 1),
+										locale,
+										...text,
+									}),
+								]
+							: [];
+					}),
+				]),
+				db.update(products).set({ updatedAt: now }).where(eq(products.id, id)),
+				audit(db, {
+					actorUserId: c.var.adminUserId,
+					action: "product.update",
+					entityType: "product",
+					entityId: id,
+					data: { specs },
+				}),
+			]);
+			return c.json(await specsOf(db, id));
+		},
+	)
 	.post(
 		"/",
 		validate(
 			"json",
 			productFields
-				.partial({
-					inci: true,
-					sanitaryRegistration: true,
-					concernIds: true,
-					skinTypes: true,
-				})
+				.partial({ warrantyMonths: true, isFeatured: true, badge: true })
 				.extend({
 					translations: translations(productText),
 					variant: newVariantInput.optional(),
@@ -413,18 +468,16 @@ export const productsRouter = new Hono<AdminEnv>()
 			const db = getDb();
 			const {
 				translations: texts,
-				concernIds: tags = [],
-				skinTypes: skins = [],
-				variant: size,
+				variant: firstVariant,
 				...fields
 			} = c.req.valid("json");
-			const variant = size && withNulls(size);
+			const variant = firstVariant && withNulls(firstVariant);
 			const { defaultLocale } = await getSettings(db);
 			if (!texts[defaultLocale])
 				return c.json({ error: "publish_requires_default_translation" }, 409);
 			const [taken, available] = await Promise.all([
 				db.query.products.findFirst({ where: eq(products.slug, fields.slug) }),
-				referencesAvailable(db, { ...fields, concernIds: tags }),
+				referencesAvailable(db, fields),
 			]);
 			if (taken) return c.json({ error: "duplicate_slug" }, 409);
 			if (!available) return c.json({ error: "reference_unavailable" }, 409);
@@ -439,23 +492,12 @@ export const productsRouter = new Hono<AdminEnv>()
 						searchKey: searchKey(text.name),
 					}),
 				),
-				...tags.map((concernId) =>
-					db.insert(productConcerns).values({ productId, concernId }),
-				),
-				...skins.map((skinType) =>
-					db.insert(productSkinTypes).values({ productId, skinType }),
-				),
 				audit(db, {
 					actorUserId: c.var.adminUserId,
 					action: "product.create",
 					entityType: "product",
 					entityId: productId,
-					data: {
-						...fields,
-						concernIds: tags,
-						skinTypes: skins,
-						translations: texts,
-					},
+					data: { ...fields, translations: texts },
 				}),
 				...(variant
 					? [
@@ -464,6 +506,7 @@ export const productsRouter = new Hono<AdminEnv>()
 								...variant,
 								productId,
 								searchKey: searchKey(variant.sku, variant.gtin),
+								updatedBy: c.var.adminUserId,
 							}),
 							audit(db, {
 								actorUserId: c.var.adminUserId,
@@ -497,11 +540,7 @@ export const productsRouter = new Hono<AdminEnv>()
 		async (c) => {
 			const db = getDb();
 			const { id } = c.req.valid("param");
-			const {
-				concernIds: tags,
-				skinTypes: skins,
-				...patch
-			} = c.req.valid("json");
+			const patch = c.req.valid("json");
 			const stored = await db.query.products.findFirst({
 				where: eq(products.id, id),
 			});
@@ -527,7 +566,6 @@ export const productsRouter = new Hono<AdminEnv>()
 				brandId: patch.brandId ?? (publishing ? stored.brandId : undefined),
 				categoryId:
 					patch.categoryId ?? (publishing ? stored.categoryId : undefined),
-				concernIds: tags,
 			});
 			if (!available) return c.json({ error: "reference_unavailable" }, 409);
 			const { defaultLocale } = await getSettings(db);
@@ -558,52 +596,10 @@ export const productsRouter = new Hono<AdminEnv>()
 						...statusAudit("product", id, stored.status, patch.status, {
 							before: stored,
 							patch,
-							concernIds: tags,
-							skinTypes: skins,
 						}),
 					},
 					stillAsRead,
 				),
-				...(tags
-					? [
-							db
-								.delete(productConcerns)
-								.where(
-									and(
-										eq(productConcerns.productId, id),
-										sql`exists ${stillAsRead}`,
-									),
-								),
-							...tags.map((concernId) =>
-								insertIfExists(
-									db,
-									productConcerns,
-									{ productId: id, concernId },
-									stillAsRead,
-								),
-							),
-						]
-					: []),
-				...(skins
-					? [
-							db
-								.delete(productSkinTypes)
-								.where(
-									and(
-										eq(productSkinTypes.productId, id),
-										sql`exists ${stillAsRead}`,
-									),
-								),
-							...skins.map((skinType) =>
-								insertIfExists(
-									db,
-									productSkinTypes,
-									{ productId: id, skinType },
-									stillAsRead,
-								),
-							),
-						]
-					: []),
 				db
 					.update(products)
 					.set({ ...patch, updatedAt: now })
@@ -697,6 +693,7 @@ export const productsRouter = new Hono<AdminEnv>()
 						...variant,
 						productId: id,
 						searchKey: searchKey(variant.sku, variant.gtin),
+						updatedBy: c.var.adminUserId,
 					})
 					.returning(),
 				db.update(products).set({ updatedAt: now }).where(eq(products.id, id)),
@@ -803,6 +800,7 @@ export const productsRouter = new Hono<AdminEnv>()
 					.update(variants)
 					.set({
 						...patch,
+						updatedBy: c.var.adminUserId,
 						...(patch.sku !== undefined || patch.gtin !== undefined
 							? {
 									searchKey: searchKey(

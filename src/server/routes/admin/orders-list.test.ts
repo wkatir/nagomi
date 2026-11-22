@@ -5,7 +5,9 @@ import { d1, migratedDatabase } from "#/db/test-database";
 import type { AdminEnv } from "#/server/auth";
 import { searchKey } from "../../domain/search";
 
-const env: { DB?: ReturnType<typeof d1> } = {};
+const env: { DB?: ReturnType<typeof d1>; BETTER_AUTH_URL: string } = {
+	BETTER_AUTH_URL: "http://localhost",
+};
 mock.module("cloudflare:workers", () => ({ env }));
 const { ordersRouter } = await import("./orders");
 
@@ -62,7 +64,7 @@ function order(o: {
 		`insert into orders (id, code, idempotency_key, request_hash, locale, channel, status, subtotal, total, search_key, customer_name, customer_id, created_at, confirmed_at, delivered_at, cancelled_at, cancel_reason, payment_method) values (${id}, '${o.code}', 'k${id}', 'h', 'es', '${o.channel ?? "whatsapp"}', 'pending', ${o.total}, ${o.total}, '${searchKey(o.code, o.name)}', ${o.name ? `'${o.name}'` : "NULL"}, ${o.customerId ?? "NULL"}, '${o.createdAt}', NULL, NULL, NULL, NULL, NULL)`,
 	);
 	db.exec(
-		`insert into order_items (order_id, variant_id, quantity, unit_price, sku, brand_name, product_name) values (${id}, 1, 1, ${o.total}, 'OIL', 'Brand', 'Aceite')`,
+		`insert into order_items (order_id, variant_id, quantity, unit_price, sku, brand_name, product_name) values (${id}, 1, 1, ${o.total}, 'OIL-001', 'Brand', 'Aceite')`,
 	);
 	if (status !== "pending") {
 		db.exec(
@@ -96,18 +98,18 @@ beforeEach(() => {
 	nextId = 0;
 	db = migratedDatabase();
 	db.exec(`
-insert into store_settings (id, name, currency, default_locale, time_zone, country_code, order_code_prefix, max_quantity_per_line, expiry_warning_days) values (1, 'Store', 'USD', 'es', 'America/El_Salvador', 'SV', 'ECL', 20, 180);
+insert into store_settings (id, name, currency, default_locale, time_zone, country_code, order_code_prefix, max_quantity_per_line, low_stock_threshold) values (1, 'Store', 'USD', 'es', 'America/El_Salvador', 'SV', 'ECL', 20, 5);
 insert into customers (name, phone_e164, search_key) values ('Ana Pérez', '+50371234567', 'ana perez 50371234567');
 insert into brands (slug, name, search_key) values ('b', 'Brand', 'brand b');
-insert into categories (slug, routine_step) values ('cleanser', 1);
+insert into categories (slug, icon, sort_order) values ('cleanser', 'package', 1);
 insert into products (slug, brand_id, category_id) values ('oil', 1, 1);
-insert into variants (product_id, sku, price, search_key) values (1, 'OIL', 1500, 'oil');
+insert into variants (product_id, sku, price, search_key) values (1, 'OIL-001', 1500, 'oil');
 insert into suppliers (name, search_key) values ('Supplier', 'supplier');
 insert into purchase_orders (supplier_id, reference, status, ordered_on) values (1, 'PO-1', 'ordered', '2026-01-01');
 insert into purchase_order_items (purchase_order_id, variant_id, quantity, unit_cost) values (1, 1, 50, 700);
 insert into purchase_receipts (purchase_order_id, received_on, created_by) values (1, '2026-01-02', 'u');
 insert into purchase_receipt_lines (receipt_id, purchase_order_item_id, quantity, allocated_shipping_e4) values (1, 1, 50, 0);
-insert into lots (variant_id, receipt_line_id, expires_on, unit_cost_e4) values (1, 1, '2099-12-31', 70000);
+insert into lots (variant_id, receipt_line_id, unit_cost_e4) values (1, 1, 70000);
 insert into inventory_movements (lot_id, kind, quantity, created_by) values (1, 'receive', 50, 'u');
 `);
 	env.DB = d1(db);

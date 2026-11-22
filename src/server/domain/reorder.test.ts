@@ -2,7 +2,6 @@ import { describe, expect, test } from "bun:test";
 import {
 	byPriority,
 	orderQuantity,
-	projectedExpiringUnits,
 	type ReorderInput,
 	reorderSuggestion,
 } from "./reorder";
@@ -12,7 +11,6 @@ const params = {
 	today: TODAY,
 	lookbackWeeks: 8,
 	targetWeeks: 4,
-	minShelfLifeDays: 180,
 };
 
 // 28 kept units over the 56 days ending today: 0.5 a day.
@@ -27,28 +25,13 @@ const base: ReorderInput = {
 	reorderPoint: null,
 	sales: steady,
 	firstReceivedOn: "2026-01-10",
-	lots: [{ expiresOn: "2027-06-30", available: 10 }],
+	lots: [{ available: 10 }],
 	committed: 2,
 	latestUnitCostE4: 160_745,
 	leadTimeDays: 7,
 	packSize: null,
 	minOrderQuantity: null,
 };
-
-describe("projectedExpiringUnits", () => {
-	test("committed units leave first, then demand runs first-expired-first-out", () => {
-		const lots = [
-			{ expiresOn: "2026-10-15", available: 6 },
-			{ expiresOn: "2027-06-30", available: 2 },
-			{ expiresOn: "2026-10-01", available: 9 },
-		];
-		// 10 sellable days for the first lot at 0.5 a day: 5 of 6 sell.
-		expect(projectedExpiringUnits(lots, 0, 0.5, TODAY)).toBe(1);
-		// Two committed units take from the first lot: the other 4 sell in 8 days.
-		expect(projectedExpiringUnits(lots, 2, 0.5, TODAY)).toBe(0);
-		expect(projectedExpiringUnits(lots, 0, 0, TODAY)).toBe(8);
-	});
-});
 
 describe("reorderSuggestion", () => {
 	test("covered: shows the top-up but suggests nothing above the reorder point", () => {
@@ -61,7 +44,6 @@ describe("reorderSuggestion", () => {
 			onHand: 10,
 			committed: 2,
 			backorders: 0,
-			projectedExpiringUnits: 0,
 			usable: 8,
 			daysOfCover: 16,
 			stockoutOn: "2026-10-22",
@@ -70,7 +52,6 @@ describe("reorderSuggestion", () => {
 			belowReorderPoint: false,
 			orderUpTo: 18,
 			gap: 10,
-			shelfLifeCap: 85,
 			topUpQuantity: 10,
 			suggestedQuantity: 0,
 			unitCost: 1607,
@@ -83,37 +64,32 @@ describe("reorderSuggestion", () => {
 		expect(s.weeklyUnits.reduce((a, b) => a + b, 0)).toBe(28);
 	});
 
-	test("below the owner's reorder point with stock that will expire", () => {
+	test("below the owner's reorder point", () => {
 		const s = reorderSuggestion(
 			{
 				...base,
 				reorderPoint: 8,
 				committed: 0,
-				lots: [
-					{ expiresOn: "2026-10-15", available: 6 },
-					{ expiresOn: "2027-06-30", available: 2 },
-				],
+				lots: [{ available: 6 }, { available: 2 }],
 			},
 			params,
 		);
 		expect(s).toMatchObject({
-			projectedExpiringUnits: 1,
-			usable: 7,
-			daysOfCover: 14,
+			usable: 8,
+			daysOfCover: 16,
 			reorderPointSource: "variant",
 			belowReorderPoint: true,
 			orderUpTo: 22,
-			gap: 15,
-			shelfLifeCap: 86,
-			suggestedQuantity: 15,
-			urgency: 1,
-			// 3.5 units a week x 7.93 margin
-			priorityScore: 2776,
-			reasons: ["below_reorder_point", "stock_expiring_unsold"],
+			gap: 14,
+			suggestedQuantity: 14,
+			urgency: 0.875,
+			// 0.875 x 3.5 units a week x 7.93 margin
+			priorityScore: 2429,
+			reasons: ["below_reorder_point"],
 		});
 	});
 
-	test("backorders and a short shelf life cap the order", () => {
+	test("backorders are filled first and the order covers the target weeks", () => {
 		const s = reorderSuggestion(
 			{
 				...base,
@@ -124,7 +100,7 @@ describe("reorderSuggestion", () => {
 				committed: 3,
 				leadTimeDays: 14,
 			},
-			{ ...params, targetWeeks: 8, minShelfLifeDays: 30 },
+			{ ...params, targetWeeks: 8 },
 		);
 		expect(s).toMatchObject({
 			ratePerDay: 2,
@@ -136,16 +112,13 @@ describe("reorderSuggestion", () => {
 			reorderPoint: 28,
 			orderUpTo: 140,
 			gap: 143,
-			// 30 days of shelf life at 2 a day, plus the 3 backordered units.
-			shelfLifeCap: 63,
-			suggestedQuantity: 63,
+			suggestedQuantity: 143,
 			urgency: 1,
 			priorityScore: (14 + 3) * 900,
 			reasons: [
 				"backordered",
 				"below_reorder_point",
 				"stockout_within_lead_time",
-				"capped_by_shelf_life",
 			],
 		});
 	});
@@ -174,11 +147,10 @@ describe("reorderSuggestion", () => {
 			...base,
 			sales: [],
 			committed: 0,
-			lots: [{ expiresOn: "2027-01-01", available: 5 }],
+			lots: [{ available: 5 }],
 		};
 		expect(reorderSuggestion(idle, params)).toMatchObject({
 			ratePerDay: 0,
-			projectedExpiringUnits: null,
 			daysOfCover: null,
 			reorderPoint: 0,
 			suggestedQuantity: 0,
@@ -188,7 +160,6 @@ describe("reorderSuggestion", () => {
 			reorderSuggestion({ ...idle, reorderPoint: 6 }, params),
 		).toMatchObject({
 			suggestedQuantity: 1,
-			shelfLifeCap: null,
 			priorityScore: 0,
 		});
 		expect(
@@ -221,7 +192,6 @@ describe("reorderSuggestion", () => {
 			belowReorderPoint: false,
 			// 2 + 14 - 8
 			gap: 8,
-			shelfLifeCap: 90,
 			suggestedQuantity: 8,
 			reasons: ["stockout_within_lead_time"],
 		});
@@ -241,19 +211,6 @@ describe("reorderSuggestion", () => {
 		expect(short.daysObserved).toBe(7);
 	});
 
-	test("without a minimum shelf life the order is not capped", () => {
-		const s = reorderSuggestion(
-			{ ...base, reorderPoint: 20 },
-			{ ...params, minShelfLifeDays: null },
-		);
-		expect(s).toMatchObject({
-			shelfLifeCap: null,
-			gap: 34 - 8,
-			suggestedQuantity: 26,
-			reasons: ["below_reorder_point", "min_shelf_life_not_set"],
-		});
-	});
-
 	test("orders whole packs, at least the minimum, and flags an unknown lead time", () => {
 		expect(orderQuantity(0, 6, 12)).toBe(0);
 		expect(orderQuantity(5, null, null)).toBe(5);
@@ -270,23 +227,20 @@ describe("reorderSuggestion", () => {
 				minOrderQuantity: 24,
 				leadTimeDays: null,
 			},
-			{ ...params, minShelfLifeDays: 30 },
+			params,
 		);
-		// No lead time: counted as 0. Point 10, order up to 10 + 14 = 24, usable 10: gap 14.
-		// Cap: 0.5 x (30 - 20 days of cover) = 5 units; 24 minimum in packs of 12.
+		// No lead time: counted as 0. Point 10, order up to 10 + 14 = 24, usable 10: gap 14,
+		// raised to the minimum of 24, in packs of 12.
 		expect(s).toMatchObject({
 			leadTimeDays: null,
 			usable: 10,
 			gap: 14,
-			shelfLifeCap: 5,
-			suggestedQuantity: 5,
+			suggestedQuantity: 14,
 			orderQuantity: 24,
 			reasons: [
 				"below_reorder_point",
-				"capped_by_shelf_life",
 				"lead_time_unknown",
 				"rounded_to_pack_or_minimum",
-				"rounded_above_shelf_life_cap",
 			],
 		});
 	});

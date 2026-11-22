@@ -9,7 +9,7 @@ import { loadCatalog } from "./storefront-catalog";
 // `path` has no locale prefix.
 export type SitemapEntry = { path: string; lastmod?: string };
 
-// Needs, categories, brands and routines follow the same rule as the menu and the pages
+// Categories, brands and bundles follow the same rule as the menu and the pages
 // themselves.
 export async function sitemapEntries(
 	db: Db,
@@ -28,16 +28,14 @@ export async function sitemapEntries(
 			.orderBy(pages.slug),
 		loadCatalog(db, context),
 	]);
-	const { concern, category, brand } = catalog.dimensions;
+	const { category, brand } = catalog.dimensions;
 	return [
 		{ path: "/" },
 		{ path: "/products" },
-		{ path: "/routines" },
-		{ path: "/company" },
-		...concern.map((x) => ({ path: `/needs/${x.slug}` })),
+		{ path: "/sets" },
 		...category.map((x) => ({ path: `/categories/${x.slug}` })),
 		...brand.map((x) => ({ path: `/brands/${x.slug}` })),
-		...catalog.routines.map((r) => ({ path: `/routines/${r.slug}` })),
+		...catalog.bundles.map((r) => ({ path: `/sets/${r.slug}` })),
 		...publishedProducts.map((p) => ({
 			path: `/products/${p.slug}`,
 			lastmod: p.updatedAt,

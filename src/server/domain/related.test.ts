@@ -1,36 +1,38 @@
 import { describe, expect, test } from "bun:test";
-import type { CatalogEntry } from "./catalog-query";
+import type { CatalogEntry, CatalogVariant } from "./catalog-query";
 import { relatedProducts } from "./related";
+
+const variant = (sku: string, inStock: boolean): CatalogVariant => ({
+	sku,
+	gtin: null,
+	optionLabel: null,
+	price: 1000,
+	compareAtPrice: null,
+	availability: inStock ? "in_stock" : "sold_out",
+	maxQuantity: inStock ? 5 : 0,
+});
 
 let nextId = 1;
 const entry = (
 	slug: string,
 	category: string,
-	routineStep: number,
-	concerns: string[],
+	sortOrder: number,
+	brand: string,
 	extra: Partial<CatalogEntry> = {},
 ): CatalogEntry => ({
 	id: nextId++,
 	slug,
 	name: slug,
 	tagline: null,
-	brand: { slug: "b", name: "B" },
-	category: { slug: category, name: category, routineStep },
-	concerns: concerns.map((c) => ({ slug: c, name: c })),
-	skinTypes: [],
+	shortSpecs: null,
+	isFeatured: false,
+	badge: null,
+	warrantyMonths: 12,
+	brand: { slug: brand, name: brand },
+	category: { slug: category, name: category, sortOrder },
 	collections: [],
-	routines: [],
-	variants: [
-		{
-			sku: slug.toUpperCase(),
-			gtin: null,
-			price: 1000,
-			compareAtPrice: null,
-			size: null,
-			availability: "sold_out",
-			maxQuantity: 0,
-		},
-	],
+	bundles: [],
+	variants: [variant(slug.toUpperCase(), false)],
 	packshot: null,
 	lifestyle: null,
 	createdAt: "2026-10-01T00:00:00Z",
@@ -42,84 +44,83 @@ const slugs = (r: ReturnType<typeof relatedProducts>) =>
 	r.map((x) => x.entry.slug);
 
 describe("relatedProducts", () => {
-	const oil = entry("oil", "cleansing-oil", 1, ["acne", "sensitive"], {
-		routines: ["double-cleanse"],
+	const keyboard = entry("rk75", "teclados", 1, "royal-kludge", {
+		bundles: ["set-noche"],
 	});
-	const cleanser = entry("cleanser", "cleanser", 2, ["acne", "pores"], {
-		routines: ["double-cleanse"],
+	const mouse = entry("pulsar-x2", "ratones", 2, "pulsar", {
+		bundles: ["set-noche"],
 	});
-	const otherOil = entry("other-oil", "cleansing-oil", 1, ["dryness"]);
-	const toner = entry("toner", "toner", 3, ["sensitive"]);
-	const sunscreen = entry("sunscreen", "sunscreen", 6, [], {
-		routines: ["double-cleanse"],
+	const otherKeyboard = entry("sakura-65", "teclados", 1, "akko");
+	const sameBrand = entry("kuro-60", "teclados", 1, "royal-kludge");
+	const mat = entry("gran-ola", "alfombrillas", 3, "nagomi", {
+		bundles: ["set-noche"],
 	});
-	const balm = entry("balm", "cleansing-balm", 1, ["dryness"]);
+	const light = entry("barra-rgb", "iluminacion", 5, "luminex");
 
 	test("never lists the product itself", () => {
-		expect(slugs(relatedProducts(oil, [oil, cleanser]))).toEqual(["cleanser"]);
+		expect(slugs(relatedProducts(keyboard, [keyboard, mouse]))).toEqual([
+			"pulsar-x2",
+		]);
 	});
 
-	test("ranks steps of the same routine, then shared concerns, then category or step", () => {
-		const r = relatedProducts(oil, [oil, otherOil, toner, sunscreen, cleanser]);
-		// cleanser: routine 4 + one concern 2 + other step 1 = 7; sunscreen: 4 + 1 = 5;
-		// toner: 2 + 1 = 3; other oil: same category 1.
-		expect(slugs(r)).toEqual(["cleanser", "sunscreen", "toner", "other-oil"]);
+	test("ranks products of the same bundle first, then the same category and brand", () => {
+		const r = relatedProducts(keyboard, [
+			light,
+			otherKeyboard,
+			sameBrand,
+			mat,
+			mouse,
+		]);
+		expect(slugs(r)).toEqual([
+			"pulsar-x2",
+			"gran-ola",
+			"kuro-60",
+			"sakura-65",
+			"barra-rgb",
+		]);
 		expect(r.map((x) => x.relation)).toEqual([
 			"complement",
 			"complement",
-			"complement",
 			"alternative",
+			"alternative",
+			"complement",
 		]);
-	});
-
-	test("leaves out a product of the same step with nothing in common", () => {
-		expect(slugs(relatedProducts(oil, [balm, toner]))).toEqual(["toner"]);
 	});
 
 	test("keeps at most two per category while others are left, then fills", () => {
-		const toners = [1, 2, 3, 4].map((n) =>
-			entry(`toner-${n}`, "toner", 3, ["acne", "sensitive"]),
+		const keyboards = [1, 2, 3, 4].map((n) =>
+			entry(`teclado-${n}`, "teclados", 1, "akko"),
 		);
-		const r = relatedProducts(oil, [...toners, sunscreen, otherOil], 8);
+		const r = relatedProducts(keyboard, [...keyboards, mat, light], 8);
 		expect(slugs(r)).toEqual([
-			"toner-1",
-			"toner-2",
-			"sunscreen",
-			"other-oil",
-			"toner-3",
-			"toner-4",
+			"gran-ola",
+			"teclado-1",
+			"teclado-2",
+			"barra-rgb",
+			"teclado-3",
+			"teclado-4",
 		]);
-		expect(slugs(relatedProducts(oil, [...toners, sunscreen], 3))).toEqual([
-			"toner-1",
-			"toner-2",
-			"sunscreen",
+		expect(slugs(relatedProducts(keyboard, [...keyboards, mat], 3))).toEqual([
+			"gran-ola",
+			"teclado-1",
+			"teclado-2",
 		]);
 	});
 
 	test("puts products in stock first among equals", () => {
-		const inStock = entry("in-stock", "toner", 3, ["sensitive"], {
-			variants: [
-				{
-					sku: "IN",
-					gtin: null,
-					price: 1000,
-					compareAtPrice: null,
-					size: null,
-					availability: "in_stock",
-					maxQuantity: 5,
-				},
-			],
+		const inStock = entry("en-stock", "iluminacion", 5, "luminex", {
+			variants: [variant("ILU-009", true)],
 		});
-		expect(slugs(relatedProducts(oil, [toner, inStock]))).toEqual([
-			"in-stock",
-			"toner",
+		expect(slugs(relatedProducts(keyboard, [light, inStock]))).toEqual([
+			"en-stock",
+			"barra-rgb",
 		]);
 	});
 
 	test("returns at most the limit", () => {
 		const many = Array.from({ length: 20 }, (_, n) =>
-			entry(`p-${n}`, `c-${n}`, 2, ["acne"]),
+			entry(`p-${n}`, `c-${n}`, 2, "akko"),
 		);
-		expect(relatedProducts(oil, many)).toHaveLength(8);
+		expect(relatedProducts(keyboard, many)).toHaveLength(8);
 	});
 });

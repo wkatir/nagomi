@@ -1,10 +1,10 @@
-import { eq } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 import type { Db } from "#/db";
 import { schema } from "#/db";
 import { PAYMENT_METHODS } from "#/db/schema";
 import { REQUIRED_SETTINGS } from "./store-rules";
 
-const { storePaymentMethods, storeSettings } = schema;
+const { shippingZones, storePaymentMethods, storeSettings } = schema;
 
 type Row = typeof storeSettings.$inferSelect;
 export type StoreSettings = Omit<Row, (typeof REQUIRED_SETTINGS)[number]> & {
@@ -33,8 +33,29 @@ export async function getSettings(db: Db): Promise<StoreSettings> {
 	return row as StoreSettings;
 }
 
+export async function getPaymentOptions(db: Db) {
+	return db
+		.select({
+			method: storePaymentMethods.method,
+			position: storePaymentMethods.position,
+			maxTotal: storePaymentMethods.maxTotal,
+			shippingZoneId: storePaymentMethods.shippingZoneId,
+			shippingZoneSlug: shippingZones.slug,
+		})
+		.from(storePaymentMethods)
+		.leftJoin(
+			shippingZones,
+			eq(shippingZones.id, storePaymentMethods.shippingZoneId),
+		)
+		.orderBy(
+			asc(storePaymentMethods.position),
+			asc(storePaymentMethods.method),
+		);
+}
+
 export async function getPaymentMethods(db: Db) {
-	const rows = await db.select().from(storePaymentMethods);
-	const accepted = new Set(rows.map((r) => r.method));
-	return PAYMENT_METHODS.filter((method) => accepted.has(method));
+	const rows = await getPaymentOptions(db);
+	return rows
+		.map((r) => r.method)
+		.filter((method) => PAYMENT_METHODS.includes(method));
 }

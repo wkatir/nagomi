@@ -5,7 +5,9 @@ import { d1, migratedDatabase } from "#/db/test-database";
 import { addDays, storeToday, toDbTimestamp } from "#/lib/dates";
 import type { AdminEnv } from "#/server/auth";
 
-const env: { DB?: ReturnType<typeof d1> } = {};
+const env: { DB?: ReturnType<typeof d1>; BETTER_AUTH_URL: string } = {
+	BETTER_AUTH_URL: "http://localhost",
+};
 mock.module("cloudflare:workers", () => ({ env }));
 const { dashboardRouter } = await import("./dashboard");
 const { reportsRouter } = await import("./reports");
@@ -47,8 +49,7 @@ type Dashboard = {
 	overduePendingOrders: number;
 	byDay: Day[];
 	topProducts: { sku: string; units: number; merchandise: number }[];
-	stock: { belowReorderPoint: number; onHand: number; value: number };
-	expiring: { code: string | null; lotId: number }[];
+	stock: { lowStock: number; onHand: number; value: number };
 };
 const dashboard = async (query = ""): Promise<Dashboard> => {
 	const res = await app.request(`/dashboard${query ? `?${query}` : ""}`);
@@ -61,16 +62,16 @@ let nextOrder = 0;
 
 // [id, price] by SKU. Only OIL has stock from the start.
 const SIZES = {
-	OIL: [1, 1500],
-	B: [3, 1000],
-	C: [4, 900],
-	D: [5, 800],
-	E: [6, 700],
-	F: [7, 600],
+	"OIL-001": [1, 1500],
+	"SKB-001": [3, 1000],
+	"SKC-001": [4, 900],
+	"SKD-001": [5, 800],
+	"SKE-001": [6, 700],
+	"SKF-001": [7, 600],
 } as const;
 type Sku = keyof typeof SIZES;
 
-function sale(day: string, units = 1, sku: Sku = "OIL", shipping = 0) {
+function sale(day: string, units = 1, sku: Sku = "OIL-001", shipping = 0) {
 	const [variantId, price] = SIZES[sku];
 	const id = ++nextOrder;
 	const subtotal = units * price;
@@ -90,13 +91,19 @@ function sale(day: string, units = 1, sku: Sku = "OIL", shipping = 0) {
 
 // Ten units of the other sizes, so orders for them can be confirmed.
 function stockOtherSizes() {
-	for (const sku of ["B", "C", "D", "E", "F"] as const) {
+	for (const sku of [
+		"SKB-001",
+		"SKC-001",
+		"SKD-001",
+		"SKE-001",
+		"SKF-001",
+	] as const) {
 		const [variantId, price] = SIZES[sku];
 		db.exec(`
 insert into variants (id, product_id, sku, price, search_key) values (${variantId}, 1, '${sku}', ${price}, '${sku}');
 insert into purchase_order_items (purchase_order_id, variant_id, quantity, unit_cost) values (1, ${variantId}, 10, 500);
 insert into purchase_receipt_lines (receipt_id, purchase_order_item_id, quantity, allocated_shipping_e4) values (1, last_insert_rowid(), 10, 0);
-insert into lots (variant_id, receipt_line_id, expires_on, unit_cost_e4) values (${variantId}, last_insert_rowid(), '2099-01-01', 50000);
+insert into lots (variant_id, receipt_line_id, unit_cost_e4) values (${variantId}, last_insert_rowid(), 50000);
 insert into inventory_movements (lot_id, kind, quantity, created_by) values (last_insert_rowid(), 'receive', 10, 'u');
 `);
 	}
@@ -108,7 +115,7 @@ function pending(createdAt: string) {
 		`insert into orders (id, code, idempotency_key, request_hash, search_key, locale, channel, subtotal, total, created_at) values (${id}, 'E-${id}', 'key-${id}', 'hash', 'e-${id}', 'es', 'whatsapp', 1500, 1500, '${createdAt}')`,
 	);
 	db.exec(
-		`insert into order_items (order_id, variant_id, quantity, unit_price, sku, brand_name, product_name) values (${id}, 1, 1, 1500, 'OIL', 'SKIN1004', 'Aceite')`,
+		`insert into order_items (order_id, variant_id, quantity, unit_price, sku, brand_name, product_name) values (${id}, 1, 1, 1500, 'OIL-001', 'SKIN1004', 'Aceite')`,
 	);
 }
 
@@ -116,18 +123,18 @@ beforeEach(() => {
 	nextOrder = 0;
 	db = migratedDatabase();
 	db.exec(`
-insert into store_settings (id, name, currency, default_locale, time_zone, country_code, order_code_prefix, max_quantity_per_line, expiry_warning_days) values (1, 'Store', 'USD', 'es', '${TIME_ZONE}', 'SV', 'ECL', 20, 180);
+insert into store_settings (id, name, currency, default_locale, time_zone, country_code, order_code_prefix, max_quantity_per_line, low_stock_threshold) values (1, 'Store', 'USD', 'es', '${TIME_ZONE}', 'SV', 'ECL', 20, 5);
 insert into brands (slug, name, search_key) values ('skin1004', 'SKIN1004', 'skin1004');
-insert into categories (slug, routine_step) values ('cleanser', 1);
+insert into categories (slug, icon, sort_order) values ('cleanser', 'package', 1);
 insert into products (slug, brand_id, category_id) values ('oil', 1, 1);
-insert into variants (product_id, sku, price, reorder_point, search_key) values (1, 'OIL', 1500, 10, 'oil');
-insert into variants (product_id, sku, price, search_key) values (1, 'OIL-2', 2500, 'oil 2');
+insert into variants (product_id, sku, price, reorder_point, search_key) values (1, 'OIL-001', 1500, 10, 'oil');
+insert into variants (product_id, sku, price, search_key) values (1, 'OIL-002', 2500, 'oil 2');
 insert into suppliers (name, search_key) values ('Supplier', 'supplier');
 insert into purchase_orders (supplier_id, reference, status, ordered_on) values (1, 'PO-1', 'ordered', '2026-01-01');
 insert into purchase_order_items (purchase_order_id, variant_id, quantity, unit_cost) values (1, 1, 50, 700);
 insert into purchase_receipts (purchase_order_id, received_on, created_by) values (1, '2026-01-02', 'u');
 insert into purchase_receipt_lines (receipt_id, purchase_order_item_id, quantity, allocated_shipping_e4) values (1, 1, 50, 0);
-insert into lots (variant_id, receipt_line_id, expires_on, unit_cost_e4) values (1, 1, '${addDays(today, 30)}', 70000);
+insert into lots (variant_id, receipt_line_id, unit_cost_e4) values (1, 1, 70000);
 insert into inventory_movements (lot_id, kind, quantity, created_by) values (1, 'receive', 50, 'u');
 `);
 	env.DB = d1(db);
@@ -167,7 +174,7 @@ describe("GET /dashboard", () => {
 	});
 
 	test("puts each sale on the local day it was fulfilled", async () => {
-		sale(today, 2, "OIL", 300);
+		sale(today, 2, "OIL-001", 300);
 		sale(addDays(today, -2), 1);
 		const d = await dashboard();
 		const byDay = new Map(d.byDay.map((x) => [x.day, x]));
@@ -201,24 +208,24 @@ describe("GET /dashboard", () => {
 	test("lists the best sellers with the units and the merchandise sold", async () => {
 		sale(today, 3);
 		expect((await dashboard()).topProducts).toMatchObject([
-			{ sku: "OIL", units: 3, merchandise: 4500 },
+			{ sku: "OIL-001", units: 3, merchandise: 4500 },
 		]);
 	});
 
 	test("lists the five best sellers, the most merchandise first", async () => {
 		stockOtherSizes();
-		sale(today, 1, "F"); // 600
-		sale(today, 1, "E"); // 700
-		sale(today, 1, "D"); // 800
-		sale(today, 1, "C"); // 900
-		sale(today, 1, "B"); // 1000
-		sale(today, 1, "OIL"); // 1500
+		sale(today, 1, "SKF-001"); // 600
+		sale(today, 1, "SKE-001"); // 700
+		sale(today, 1, "SKD-001"); // 800
+		sale(today, 1, "SKC-001"); // 900
+		sale(today, 1, "SKB-001"); // 1000
+		sale(today, 1, "OIL-001"); // 1500
 		expect((await dashboard()).topProducts.map((p) => p.sku)).toEqual([
-			"OIL",
-			"B",
-			"C",
-			"D",
-			"E",
+			"OIL-001",
+			"SKB-001",
+			"SKC-001",
+			"SKD-001",
+			"SKE-001",
 		]);
 	});
 
@@ -236,16 +243,16 @@ describe("GET /dashboard", () => {
 		expect((await dashboard()).bookings).toEqual({ orders: 1, value: 3000 });
 	});
 
-	test("counts the sizes at or below their reorder point, and the lots about to expire", async () => {
-		// 50 units on hand against a point of 10: fine. Writing off 41 leaves 9.
-		expect((await dashboard()).stock.belowReorderPoint).toBe(0);
+	test("counts the variants at or below their reorder point, or the store's threshold without one", async () => {
+		// 50 units on hand against a point of 10: fine. The second variant has none against
+		// the threshold of 5: low. Writing off 41 leaves 9.
+		expect((await dashboard()).stock.lowStock).toBe(1);
 		db.exec(
 			"insert into inventory_movements (lot_id, kind, quantity, reason, created_by) values (1, 'waste', -41, 'damaged', 'u')",
 		);
 		const d = await dashboard();
 		expect(d.stock.onHand).toBe(9);
-		expect(d.stock.belowReorderPoint).toBe(1);
-		expect(d.expiring).toMatchObject([{ lotId: 1 }]);
+		expect(d.stock.lowStock).toBe(2);
 	});
 
 	test("reports the losses of the window: units written off at their lot cost", async () => {
@@ -265,17 +272,17 @@ describe("GET /dashboard", () => {
 		});
 	});
 
-	test("does not count an archived size below its reorder point", async () => {
+	test("does not count an archived variant below its reorder point", async () => {
 		db.exec(`
 insert into purchase_order_items (purchase_order_id, variant_id, quantity, unit_cost) values (1, 2, 5, 700);
 insert into purchase_receipt_lines (receipt_id, purchase_order_item_id, quantity, allocated_shipping_e4) values (1, last_insert_rowid(), 5, 0);
-insert into lots (variant_id, receipt_line_id, expires_on, unit_cost_e4) values (2, last_insert_rowid(), '2099-01-01', 70000);
+insert into lots (variant_id, receipt_line_id, unit_cost_e4) values (2, last_insert_rowid(), 70000);
 insert into inventory_movements (lot_id, kind, quantity, created_by) values (last_insert_rowid(), 'receive', 5, 'u');
 update variants set reorder_point = 10 where id = 2;
 `);
-		expect((await dashboard()).stock.belowReorderPoint).toBe(1);
+		expect((await dashboard()).stock.lowStock).toBe(1);
 		db.exec("update variants set status = 'archived' where id = 2");
-		expect((await dashboard()).stock.belowReorderPoint).toBe(0);
+		expect((await dashboard()).stock.lowStock).toBe(0);
 	});
 
 	test("refuses a window that is not 1 to 365 days", async () => {
@@ -288,7 +295,7 @@ update variants set reorder_point = 10 where id = 2;
 
 describe("the dashboard and the reports of the same days", () => {
 	test("the figures are the reports', and the days add up to the total", async () => {
-		sale(today, 2, "OIL", 300);
+		sale(today, 2, "OIL-001", 300);
 		sale(addDays(today, -2), 1);
 		sale(addDays(today, -9), 4);
 		const d = await dashboard();

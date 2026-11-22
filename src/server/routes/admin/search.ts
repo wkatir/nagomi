@@ -3,22 +3,20 @@ import { Hono } from "hono";
 import { z } from "zod";
 import { getDb, schema } from "#/db";
 import { brandListSearch } from "#/lib/schemas/brands";
+import { bundleListSearch } from "#/lib/schemas/bundles";
 import { categoryListSearch } from "#/lib/schemas/categories";
 import { collectionListSearch } from "#/lib/schemas/collections";
-import { concernListSearch } from "#/lib/schemas/concerns";
 import { customerListSearch } from "#/lib/schemas/customers";
 import { promotionListSearch } from "#/lib/schemas/promotions";
 import { purchaseListSearch } from "#/lib/schemas/purchasing";
-import { routineListSearch } from "#/lib/schemas/routines";
 import { supplierListSearch } from "#/lib/schemas/suppliers";
 import type { AdminEnv } from "#/server/auth";
 import { validate } from "#/server/validate";
 import {
 	pagedBrands,
+	pagedBundles,
 	pagedCategories,
 	pagedCollections,
-	pagedConcerns,
-	pagedRoutines,
 } from "../../domain/catalog-lists";
 import { pagedCustomers } from "../../domain/customer-queries";
 import { productSearch } from "../../domain/product-search";
@@ -27,6 +25,7 @@ import { pagedPurchases } from "../../domain/purchase-queries";
 import { searchMatch } from "../../domain/search-sql";
 import { getSettings } from "../../domain/settings";
 import { pagedSuppliers } from "../../domain/supplier-queries";
+import { searchHitsFor } from "./areas";
 
 const { brands, customers, orders, productTranslations, products } = schema;
 
@@ -53,8 +52,7 @@ export const searchRouter = new Hono<AdminEnv>().get(
 			purchasePage,
 			brandPage,
 			categoryPage,
-			concernPage,
-			routinePage,
+			bundlePage,
 			collectionPage,
 			promotionPage,
 		] = await Promise.all([
@@ -101,15 +99,10 @@ export const searchRouter = new Hono<AdminEnv>().get(
 				defaultLocale,
 				categoryListSearch.parse({ q, pageSize: 10 }),
 			),
-			pagedConcerns(
+			pagedBundles(
 				db,
 				defaultLocale,
-				concernListSearch.parse({ q, pageSize: 10 }),
-			),
-			pagedRoutines(
-				db,
-				defaultLocale,
-				routineListSearch.parse({ q, pageSize: 10 }),
+				bundleListSearch.parse({ q, pageSize: 10 }),
 			),
 			pagedCollections(
 				db,
@@ -148,11 +141,8 @@ export const searchRouter = new Hono<AdminEnv>().get(
 			categories: first(categoryPage.items).map(
 				(x): Hit => ({ id: x.id, label: x.name ?? x.slug, hint: null }),
 			),
-			concerns: first(concernPage.items).map(
+			bundles: first(bundlePage.items).map(
 				(x): Hit => ({ id: x.id, label: x.name ?? x.slug, hint: null }),
-			),
-			routines: first(routinePage.items).map(
-				(x): Hit => ({ id: x.id, label: x.title ?? x.slug, hint: null }),
 			),
 			collections: first(collectionPage.items).map(
 				(x): Hit => ({ id: x.id, label: x.title ?? x.slug, hint: null }),
@@ -161,6 +151,6 @@ export const searchRouter = new Hono<AdminEnv>().get(
 				(x): Hit => ({ id: x.id, label: x.code, hint: null }),
 			),
 		};
-		return c.json(hits);
+		return c.json(searchHitsFor(c.var.staffRole, hits));
 	},
 );

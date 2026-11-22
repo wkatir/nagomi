@@ -4,13 +4,13 @@ import { searchKey } from "../../domain/search";
 // The store's time zone is El Salvador (UTC-6).
 export function seedSupply(db: Database) {
 	db.exec(`
-insert into store_settings (id, name, currency, default_locale, time_zone, country_code, order_code_prefix, max_quantity_per_line, expiry_warning_days, min_shelf_life_days) values (1, 'Store', 'USD', 'es', 'America/El_Salvador', 'SV', 'ECL', 20, 90, 180);
-insert into users (id, name, email) values ('admin', 'Admin', 'admin@example.com');
+insert into store_settings (id, name, currency, default_locale, time_zone, country_code, order_code_prefix, max_quantity_per_line, low_stock_threshold) values (1, 'Store', 'USD', 'es', 'America/El_Salvador', 'SV', 'ECL', 20, 5);
+insert into users (id, name, email, role) values ('admin', 'Admin', 'admin@example.com', 'admin');
 insert into brands (slug, name, search_key) values ('brand', 'Brand', 'brand');
-insert into categories (slug, routine_step) values ('cleanser', 1);
+insert into categories (slug, icon, sort_order) values ('cleanser', 'package', 1);
 insert into products (slug, brand_id, category_id) values ('oil', 1, 1), ('cream', 1, 1);
 insert into product_translations (product_id, locale, name, search_key) values (1, 'es', 'Aceite', 'aceite'), (2, 'es', 'Crema', 'crema');
-insert into variants (product_id, sku, search_key, size_value, size_unit, reorder_point) values (1, 'OIL-50', 'oil-50', 50, 'ml', 10), (1, 'OIL-100', 'oil-100', 100, 'ml', NULL), (2, 'CRM-30', 'crm-30', 30, 'ml', NULL);
+insert into variants (product_id, sku, search_key, reorder_point) values (1, 'OIL-001', 'oil-50', 10), (1, 'OIL-100', 'oil-100', NULL), (2, 'CRM-001', 'crm-30', NULL);
 `);
 }
 
@@ -50,7 +50,6 @@ export type PurchaseLine = {
 	unitCost: number;
 	received?: number;
 	lotCode?: string;
-	expiresOn?: string;
 };
 
 // Written the way the API leaves it: placed, then received as far as its lines say, then
@@ -128,13 +127,12 @@ export function addPurchase(
 			const lotId = Number(
 				db
 					.prepare(
-						"insert into lots (variant_id, receipt_line_id, code, expires_on, unit_cost_e4) values (?, ?, ?, ?, ?)",
+						"insert into lots (variant_id, receipt_line_id, code, unit_cost_e4) values (?, ?, ?, ?)",
 					)
 					.run(
 						item.variantId,
 						lineId,
 						item.lotCode ?? null,
-						item.expiresOn ?? "2099-12-31",
 						item.unitCost * 100,
 					).lastInsertRowid,
 			);

@@ -6,14 +6,14 @@ import { LOCALES, type Locale } from "#/db/schema";
 import { storeToday } from "#/lib/dates";
 import { intlLocale } from "#/lib/intl";
 import { formatMoney } from "#/lib/money";
+import { SV_MUNICIPALITIES } from "#/lib/sv-locations";
 import { whatsappLink } from "#/lib/whatsapp";
 import { m } from "#/paraglide/messages";
 import { localeQuery, validate } from "#/server/validate";
 import {
 	type CatalogContext,
+	listBundles,
 	listCatalog,
-	listConcerns,
-	listRoutines,
 	pickLocale,
 } from "../domain/catalog";
 import { checkoutConsents } from "../domain/consents";
@@ -22,7 +22,11 @@ import { idempotencyKey, requestHash } from "../domain/idempotency";
 import { linesBeyondStock, stockFits } from "../domain/inventory";
 import { newOrderCode } from "../domain/order-code";
 import { promotionCodeOfOrder, returnedOfLine } from "../domain/order-sql";
-import { checkoutPageVersions, currentPageTexts } from "../domain/pages";
+import {
+	checkoutPageVersions,
+	currentPageTexts,
+	footerPages,
+} from "../domain/pages";
 import { amountOwed, paidAt, paymentSummary } from "../domain/payments";
 import { displayPhone, normalizePhone } from "../domain/phone";
 import { publishedPromises } from "../domain/promises";
@@ -35,12 +39,14 @@ import {
 import { phoneDigits, searchKey } from "../domain/search";
 import {
 	getPaymentMethods,
+	getPaymentOptions,
 	getSettings,
 	type StoreSettings,
 } from "../domain/settings";
-import { storeFreeShippingFrom } from "../domain/shipping";
+import { zoneFee, zoneForMunicipality } from "../domain/shipping";
 import { missingCheckoutSettings } from "../domain/store-rules";
 import { catalogContext } from "../domain/storefront-catalog";
+import { zoneOptions } from "../domain/zone-queries";
 import { withinLimit } from "../rate-limit";
 
 const {
@@ -51,7 +57,6 @@ const {
 	pages,
 
 	payments,
-	shippingZones,
 } = schema;
 
 // The per-line limit is checked in the handlers, since it lives in the database.
@@ -82,15 +87,10 @@ const whatsappOrder = z.object({
 	consents: z.object({
 		privacyNotice: z.literal(true),
 		terms: z.literal(true),
+		marketingEmail: z.boolean(),
 		marketingWhatsapp: z.boolean(),
 	}),
 });
-
-const activeZones = (db: Db) =>
-	db
-		.select({ method: shippingZones.method, freeFrom: shippingZones.freeFrom })
-		.from(shippingZones)
-		.where(eq(shippingZones.status, "active"));
 
 async function orderByKey(db: Db, idempotencyKey: string) {
 	const [found] = await db
@@ -190,12 +190,14 @@ export const storefront = new Hono()
 	.get("/store", async (c) => {
 		const db = getDb();
 		const s = await getSettings(db);
-		const [paymentMethods, promises, zones, legalPages] = await Promise.all([
-			getPaymentMethods(db),
-			publishedPromises(db, s),
-			activeZones(db),
-			checkoutPageVersions(db, s.defaultLocale, s.defaultLocale),
-		]);
+		const [paymentMethods, paymentOptions, promises, legalPages, footer] =
+			await Promise.all([
+				getPaymentMethods(db),
+				getPaymentOptions(db),
+				publishedPromises(db, s),
+				checkoutPageVersions(db, s.defaultLocale, s.defaultLocale),
+				footerPages(db),
+			]);
 		return c.json({
 			name: s.name,
 			currency: s.currency,
@@ -207,12 +209,21 @@ export const storefront = new Hono()
 			whatsappDisplay: s.whatsappNumber
 				? displayPhone(`+${s.whatsappNumber}`)
 				: null,
-			freeShippingFrom: storeFreeShippingFrom(zones),
+			freeShippingFrom: s.freeShippingFrom,
+			lowStockThreshold: s.lowStockThreshold,
 			maxQuantityPerLine: s.maxQuantityPerLine,
 			returnWindowDays: s.returnWindowDays,
 			checkoutOpen: missingCheckoutSettings(s).length === 0 && legalPages.ok,
 			paymentMethods,
+			paymentOptions,
 			promises,
+			footerPages: footer,
+			social: {
+				discord: s.discordUrl,
+				instagram: s.instagramUrl,
+				tiktok: s.tiktokUrl,
+				youtube: s.youtubeUrl,
+			},
 			business: {
 				foundingYear: s.foundingYear,
 				legalName: s.legalName,
@@ -224,22 +235,64 @@ export const storefront = new Hono()
 			},
 		});
 	})
+	.get(
+		"/shipping/quote",
+		validate(
+			"query",
+			localeQuery.extend({
+				municipality: z.enum(SV_MUNICIPALITIES as [string, ...string[]]),
+				merchandise: z.coerce.number().int().min(0).max(100_000_000),
+			}),
+		),
+		async (c) => {
+			const db = getDb();
+			const { locale, municipality, merchandise } = c.req.valid("query");
+			const [settings, zones] = await Promise.all([
+				getSettings(db),
+				zoneOptions(db),
+			]);
+			const zone = zoneForMunicipality(
+				zones
+					.filter((z) => z.method !== "pickup")
+					.map((z) => ({
+						zone: z,
+						coversRest: z.coversRest,
+						municipalities: z.municipalities,
+					})),
+				municipality,
+			);
+			if (!zone) return c.json({ error: "no_shipping_zone" }, 404);
+			const name = pickLocale(
+				zone.translations,
+				locale,
+				settings.defaultLocale,
+			);
+			if (!name)
+				throw new Error(
+					`Shipping zone ${zone.slug} has no ${settings.defaultLocale} name`,
+				);
+			return c.json({
+				zone: zone.slug,
+				name: name.name,
+				method: zone.method,
+				fee: zoneFee(zone, merchandise, settings.freeShippingFrom),
+				baseFee: zone.fee,
+				freeShippingFrom: settings.freeShippingFrom,
+				deliveryDaysMin: zone.deliveryDaysMin,
+				deliveryDaysMax: zone.deliveryDaysMax,
+			});
+		},
+	)
 	.get("/catalog", validate("query", localeQuery), async (c) => {
 		const db = getDb();
 		const { locale } = c.req.valid("query");
 		const settings = await getSettings(db);
 		const context = catalogContext(settings, locale);
-		const [products, concerns, routines] = await Promise.all([
+		const [products, bundles] = await Promise.all([
 			listCatalog(db, context),
-			listConcerns(db, locale, settings.defaultLocale),
-			listRoutines(db, context),
+			listBundles(db, context),
 		]);
-		const used = new Set(products.flatMap((p) => p.concerns));
-		return c.json({
-			products,
-			concerns: concerns.filter((x) => used.has(x.slug)),
-			routines,
-		});
+		return c.json({ products, bundles });
 	})
 	.get("/pages/:slug", validate("query", localeQuery), async (c) => {
 		const db = getDb();
@@ -465,8 +518,7 @@ export const storefront = new Hono()
 							sku: l.product.sku,
 							brandName: l.product.brand,
 							productName: l.product.name,
-							sizeValue: l.product.size?.value ?? null,
-							sizeUnit: l.product.size?.unit ?? null,
+							optionLabel: l.product.optionLabel,
 						},
 						ours,
 					),
@@ -511,7 +563,7 @@ export const storefront = new Hono()
 				intlLocale(order.locale, settings.countryCode),
 			);
 		const opts = { locale: order.locale };
-		const freeFrom = storeFreeShippingFrom(await activeZones(db));
+		const freeFrom = settings.freeShippingFrom;
 		const merchandise = order.subtotal - order.discount;
 		const text = [
 			m.whatsapp_order_intro({ code: order.code }, opts),
@@ -586,8 +638,7 @@ export const storefront = new Hono()
 						sku: orderItems.sku,
 						brandName: orderItems.brandName,
 						name: orderItems.productName,
-						sizeValue: orderItems.sizeValue,
-						sizeUnit: orderItems.sizeUnit,
+						optionLabel: orderItems.optionLabel,
 						quantity: orderItems.quantity,
 						unitPrice: orderItems.unitPrice,
 						returned: returnedOfLine,
@@ -647,12 +698,8 @@ export const storefront = new Hono()
 						: null,
 				shippingMethod: o.shippingMethod,
 				paymentMethod: o.paymentMethod,
-				lines: lines.map(({ sizeValue, sizeUnit, ...l }) => ({
+				lines: lines.map((l) => ({
 					...l,
-					size:
-						sizeValue !== null && sizeUnit !== null
-							? { value: sizeValue, unit: sizeUnit }
-							: null,
 					total: l.quantity * l.unitPrice,
 				})),
 				subtotal: o.subtotal,

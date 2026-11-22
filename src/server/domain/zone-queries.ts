@@ -6,23 +6,28 @@ import type { ZoneListSearch } from "#/lib/schemas/shipping";
 import { inList, qualified } from "./d1";
 import { pageWindow, sortBy, toPaged } from "./list-query";
 
-const { shippingZones, shippingZoneTranslations } = schema;
+const { shippingZoneMunicipalities, shippingZones, shippingZoneTranslations } =
+	schema;
 
 async function withTexts(db: Db, zones: (typeof shippingZones.$inferSelect)[]) {
-	const texts =
-		zones.length === 0
-			? []
-			: await db
-					.select()
-					.from(shippingZoneTranslations)
-					.where(
-						inList(
-							shippingZoneTranslations.zoneId,
-							zones.map((z) => z.id),
-						),
-					);
+	if (zones.length === 0) return [];
+	const ids = zones.map((z) => z.id);
+	const [texts, places] = await db.batch([
+		db
+			.select()
+			.from(shippingZoneTranslations)
+			.where(inList(shippingZoneTranslations.zoneId, ids)),
+		db
+			.select()
+			.from(shippingZoneMunicipalities)
+			.where(inList(shippingZoneMunicipalities.zoneId, ids))
+			.orderBy(asc(shippingZoneMunicipalities.municipality)),
+	]);
 	return zones.map((zone) => ({
 		...zone,
+		municipalities: places
+			.filter((p) => p.zoneId === zone.id)
+			.map((p) => p.municipality),
 		translations: texts.filter((t) => t.zoneId === zone.id),
 	}));
 }
@@ -69,12 +74,14 @@ export async function pagedZones(
 
 export async function zoneOptions(db: Db) {
 	const active = eq(shippingZones.status, "active");
-	const [zones, texts] = await db.batch([
+	const [zones, texts, places] = await db.batch([
 		db
 			.select({
 				id: shippingZones.id,
+				slug: shippingZones.slug,
 				method: shippingZones.method,
 				fee: shippingZones.fee,
+				coversRest: shippingZones.coversRest,
 				deliveryDaysMin: shippingZones.deliveryDaysMin,
 				deliveryDaysMax: shippingZones.deliveryDaysMax,
 			})
@@ -93,9 +100,23 @@ export async function zoneOptions(db: Db) {
 				eq(shippingZones.id, shippingZoneTranslations.zoneId),
 			)
 			.where(active),
+		db
+			.select({
+				zoneId: shippingZoneMunicipalities.zoneId,
+				municipality: shippingZoneMunicipalities.municipality,
+			})
+			.from(shippingZoneMunicipalities)
+			.innerJoin(
+				shippingZones,
+				eq(shippingZones.id, shippingZoneMunicipalities.zoneId),
+			)
+			.where(active),
 	]);
 	return zones.map((zone) => ({
 		...zone,
+		municipalities: places
+			.filter((p) => p.zoneId === zone.id)
+			.map((p) => p.municipality),
 		translations: texts.filter((t) => t.zoneId === zone.id),
 	}));
 }

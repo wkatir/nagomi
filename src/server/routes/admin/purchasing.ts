@@ -11,7 +11,6 @@ import type { AdminEnv } from "#/server/auth";
 import { idParam, validate } from "#/server/validate";
 import { audit } from "../../domain/audit";
 import { inList, insertIfExists, qualified } from "../../domain/d1";
-import { InvalidExpiryError, parseExpiry } from "../../domain/expiry";
 import { pagedPurchases, purchaseDetail } from "../../domain/purchase-queries";
 import {
 	allocateLandedCost,
@@ -93,8 +92,6 @@ const receiveInput = z.object({
 				purchaseOrderItemId: z.number().int().positive(),
 				quantity: z.number().int().positive(),
 				code: z.string().trim().min(1).max(40).optional(),
-				// As printed on the label: YYYY-MM-DD, or YYYY-MM when only the month is.
-				expiresOn: z.string(),
 			}),
 		)
 		.min(1)
@@ -442,10 +439,8 @@ export const purchasingRouter = new Hono<AdminEnv>()
 			)
 				return c.json({ error: "item_not_in_purchase_order" }, 400);
 			let outcome: ReturnType<typeof receiptOutcome>;
-			let expiries: ReturnType<typeof parseExpiry>[];
 			try {
 				outcome = receiptOutcome(items, input.lots);
-				expiries = input.lots.map((l) => parseExpiry(l.expiresOn));
 			} catch (e) {
 				if (e instanceof ReceiptExceedsOrderedError)
 					return c.json(
@@ -456,22 +451,18 @@ export const purchasingRouter = new Hono<AdminEnv>()
 						},
 						409,
 					);
-				if (e instanceof InvalidExpiryError)
-					return c.json({ error: "invalid_expiry" }, 400);
 				throw e;
 			}
 			const dateProblem = receiptDateProblem({
 				receivedOn: input.receivedOn,
 				orderedOn: po.orderedOn,
 				today: storeToday(timeZone),
-				expiries: expiries.map((e) => e.expiresOn),
 			});
 			if (dateProblem) return c.json({ error: dateProblem }, 400);
 			const lines = input.lots.map((l, index) => {
 				const item = items.find((i) => i.id === l.purchaseOrderItemId);
-				const expiry = expiries[index];
-				if (!item || !expiry) throw new Error(`Unchecked lot ${index}`);
-				return { ...l, item, expiry };
+				if (!item) throw new Error(`Unchecked lot ${index}`);
+				return { ...l, item };
 			});
 			const landed = allocateLandedCost(
 				lines.map((l) => ({ quantity: l.quantity, unitCost: l.item.unitCost })),
@@ -503,8 +494,6 @@ export const purchasingRouter = new Hono<AdminEnv>()
 							variantId: l.item.variantId,
 							receiptLineId: sql<number>`last_insert_rowid()`,
 							code: l.code ?? null,
-							expiresOn: l.expiry.expiresOn,
-							expiryPrecision: l.expiry.precision,
 							unitCostE4: cost.unitCostE4,
 						}),
 						db.insert(inventoryMovements).values({

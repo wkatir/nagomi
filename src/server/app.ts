@@ -6,6 +6,7 @@ import { apiError } from "./api-error";
 import { limitBody } from "./body-limit";
 import { requireClientIp } from "./client-ip";
 import { MAX_IMAGE_BYTES } from "./domain/images";
+import { account } from "./routes/account";
 import { admin } from "./routes/admin";
 import { IMAGE_UPLOAD_PATHS } from "./routes/admin/media";
 import { storeCatalog } from "./routes/store-catalog";
@@ -34,12 +35,14 @@ export const api = new Hono()
 	)
 	.use("/orders/*", publicBodyLimit)
 	.use("/promotions/*", publicBodyLimit)
+	.use("/account/*", publicBodyLimit)
 	// Their handlers rate limit by the client IP.
 	.use("/orders/*", requireClientIp)
 	.use("/promotions/*", requireClientIp)
 	.route("/", storefront)
 	.route("/", storeCatalog)
 	.get("/sign-in-methods", (c) => c.json(authMethods))
+	.route("/account", account)
 	.route("/admin", admin)
 	.onError(apiError);
 

@@ -5,7 +5,6 @@ import type {
 } from "#/db/schema";
 import { addDays, daysBetween } from "#/lib/dates";
 import type { Granularity } from "#/lib/schemas/reports";
-import { isExpired } from "./fefo";
 import { e4ToMinor } from "./receiving";
 
 // Every report works on the store's local calendar days (YYYY-MM-DD in
@@ -64,57 +63,23 @@ export function periods(
 type LotBalance = {
 	lotId: number;
 	variantId: number;
-	expiresOn: string;
 	available: number;
 	unitCostE4: number;
 };
 
-type StockFigures = {
-	onHand: number;
-	value: number;
-	atRiskUnits: number;
-	atRiskValue: number;
-	// To write off, not an asset.
-	expiredUnits: number;
-	expiredValue: number;
-};
+type StockFigures = { onHand: number; value: number };
 
-type StockAcc = Record<
-	"onHand" | "valueE4" | "atRisk" | "atRiskE4" | "expired" | "expiredE4",
-	number
->;
+type StockAcc = { onHand: number; valueE4: number };
 
-const emptyStock = (): StockAcc => ({
-	onHand: 0,
-	valueE4: 0,
-	atRisk: 0,
-	atRiskE4: 0,
-	expired: 0,
-	expiredE4: 0,
-});
+const emptyStock = (): StockAcc => ({ onHand: 0, valueE4: 0 });
 
 const stockFigures = (a: StockAcc): StockFigures => ({
 	onHand: a.onHand,
 	value: e4ToMinor(a.valueE4),
-	atRiskUnits: a.atRisk,
-	atRiskValue: e4ToMinor(a.atRiskE4),
-	expiredUnits: a.expired,
-	expiredValue: e4ToMinor(a.expiredE4),
 });
 
-// A lot still sells through its expiry date.
-export const expiresWithin = (
-	expiresOn: string,
-	today: string,
-	windowDays: number,
-) => !isExpired(expiresOn, today) && expiresOn <= addDays(today, windowDays);
-
 // Valued at landed lot cost.
-export function stockPosition(
-	lots: LotBalance[],
-	today: string,
-	windowDays: number,
-) {
+export function stockPosition(lots: LotBalance[]) {
 	const total = emptyStock();
 	const byVariant = new Map<number, StockAcc>();
 	for (const lot of lots) {
@@ -124,17 +89,8 @@ export function stockPosition(
 		const value = lot.available * lot.unitCostE4;
 		const acc = byVariant.get(lot.variantId) ?? emptyStock();
 		for (const a of [acc, total]) {
-			if (isExpired(lot.expiresOn, today)) {
-				a.expired += lot.available;
-				a.expiredE4 += value;
-			} else {
-				a.onHand += lot.available;
-				a.valueE4 += value;
-				if (expiresWithin(lot.expiresOn, today, windowDays)) {
-					a.atRisk += lot.available;
-					a.atRiskE4 += value;
-				}
-			}
+			a.onHand += lot.available;
+			a.valueE4 += value;
 		}
 		byVariant.set(lot.variantId, acc);
 	}

@@ -5,7 +5,6 @@ import { schema } from "#/db";
 import type { OrderStatus, ReturnDisposition, ReturnReason } from "#/db/schema";
 import type { OrderListSearch, orderFilters } from "#/lib/schemas/orders";
 import { inList, withinLocalDays } from "./d1";
-import { formatExpiry } from "./expiry";
 import { groupBy } from "./group-by";
 import { pageWindow, sortBy, toPaged } from "./list-query";
 import {
@@ -101,8 +100,7 @@ export function orderLines(db: Db, orderIds: number[]) {
 			sku: orderItems.sku,
 			brandName: orderItems.brandName,
 			name: orderItems.productName,
-			sizeValue: orderItems.sizeValue,
-			sizeUnit: orderItems.sizeUnit,
+			optionLabel: orderItems.optionLabel,
 			quantity: orderItems.quantity,
 			unitPrice: orderItems.unitPrice,
 			returned: returnedOfLine,
@@ -298,8 +296,6 @@ export async function orderDetail(db: Db, id: number) {
 					id: inventoryMovements.id,
 					lotId: inventoryMovements.lotId,
 					lotCode: lots.code,
-					expiresOn: lots.expiresOn,
-					expiryPrecision: lots.expiryPrecision,
 					unitCostE4: lots.unitCostE4,
 					kind: inventoryMovements.kind,
 					quantity: inventoryMovements.quantity,
@@ -380,9 +376,8 @@ export async function orderDetail(db: Db, id: number) {
 		payments: money.filter((p) => p.kind === "payment"),
 		refunds: money.filter((p) => p.kind === "refund"),
 		returns: groupReturns(returnRows),
-		movements: movements.map(({ unitCostE4, expiryPrecision, ...m }) => ({
+		movements: movements.map(({ unitCostE4, ...m }) => ({
 			...m,
-			expiry: formatExpiry(m.expiresOn, expiryPrecision),
 			unitCost: e4ToMinor(unitCostE4),
 		})),
 		consents,
@@ -399,8 +394,6 @@ export async function orderDetail(db: Db, id: number) {
 type DetailMovement = {
 	lotId: number;
 	lotCode: string | null;
-	expiresOn: string;
-	expiryPrecision: "day" | "month";
 	kind: string;
 	quantity: number;
 	orderItemId: number | null;
@@ -409,14 +402,13 @@ type DetailMovement = {
 function lotsOfLine(movements: DetailMovement[], orderItemId: number) {
 	const byLot = new Map<
 		number,
-		{ lotId: number; code: string | null; expiry: string; units: number }
+		{ lotId: number; code: string | null; units: number }
 	>();
 	for (const m of movements) {
 		if (m.kind !== "sale" || m.orderItemId !== orderItemId) continue;
 		const row = byLot.get(m.lotId) ?? {
 			lotId: m.lotId,
 			code: m.lotCode,
-			expiry: formatExpiry(m.expiresOn, m.expiryPrecision),
 			units: 0,
 		};
 		row.units += -m.quantity;

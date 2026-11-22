@@ -7,7 +7,7 @@ import { localizedUrl } from "#/lib/seo";
 import { siteOrigin } from "#/lib/site-origin";
 import { m } from "#/paraglide/messages";
 import { locales } from "#/paraglide/runtime";
-import { listCatalog, listRoutines } from "./domain/catalog";
+import { listBundles, listCatalog } from "./domain/catalog";
 import { publishedPageTitles } from "./domain/pages";
 import { publishedPromises } from "./domain/promises";
 import {
@@ -69,10 +69,10 @@ async function storeLlmsTxt(locale: Locale) {
 	const settings = await getSettings(db);
 	const opts = { locale };
 	const context = catalogContext(settings, locale);
-	const [products, routines, catalog, promises, pages, payments] =
+	const [products, bundles, catalog, promises, pages, payments] =
 		await Promise.all([
 			listCatalog(db, context),
-			listRoutines(db, context),
+			listBundles(db, context),
 			loadCatalog(db, context),
 			publishedPromises(db, settings),
 			publishedPageTitles(db, locale),
@@ -114,12 +114,6 @@ async function storeLlmsTxt(locale: Locale) {
 				),
 			},
 			{
-				title: m.shop_needs_label({}, opts),
-				lines: catalog.dimensions.concern.map(
-					(c) => `[${c.name}](${url(`/needs/${c.slug}`)})`,
-				),
-			},
-			{
 				title: m.home_types_title({}, opts),
 				lines: catalog.dimensions.category.map(
 					(c) => `[${c.name}](${url(`/categories/${c.slug}`)})`,
@@ -132,10 +126,10 @@ async function storeLlmsTxt(locale: Locale) {
 				),
 			},
 			{
-				title: m.nav_routines({}, opts),
-				lines: routines.map(
+				title: m.nav_bundles({}, opts),
+				lines: bundles.map(
 					(r) =>
-						`[${r.title}](${url(`/routines/${r.slug}`)}), ${money(r.products.reduce((n, p) => n + p.price, 0))}: ${r.products.map((p) => `${p.brand} ${p.name}`).join(" + ")}`,
+						`[${r.name}](${url(`/sets/${r.slug}`)}), ${money(r.price)}: ${r.items.map((i) => `${i.quantity > 1 ? `${i.quantity} × ` : ""}${i.product.brand} ${i.product.name}`).join(" + ")}`,
 				),
 			},
 			{

@@ -4,7 +4,9 @@ import { Hono } from "hono";
 import { d1, migratedDatabase } from "#/db/test-database";
 import type { AdminEnv } from "#/server/auth";
 
-const env: { DB?: ReturnType<typeof d1> } = {};
+const env: { DB?: ReturnType<typeof d1>; BETTER_AUTH_URL: string } = {
+	BETTER_AUTH_URL: "http://localhost",
+};
 mock.module("cloudflare:workers", () => ({ env }));
 const { apiError } = await import("#/server/api-error");
 const { shippingRouter } = await import("./shipping");
@@ -79,7 +81,7 @@ const stored = (id: number) =>
 		slug: string;
 		method: string;
 		fee: number;
-		free_from: number | null;
+		covers_rest: number;
 		delivery_days_min: number;
 		delivery_days_max: number;
 		position: number;
@@ -164,7 +166,8 @@ describe("GET /shipping-zones", () => {
 		expect(centro).toMatchObject({
 			method: "own_delivery",
 			fee: 300,
-			freeFrom: null,
+			coversRest: false,
+			municipalities: [],
 			deliveryDaysMin: 1,
 			deliveryDaysMax: 2,
 			position: 2,
@@ -229,7 +232,7 @@ describe("GET /shipping-zones", () => {
 	test("refuses an unknown sort, a page size it does not offer, and a status or method it does not have", async () => {
 		for (const query of [
 			"sort=slug",
-			"sort=freeFrom",
+			"sort=coversRest",
 			"dir=sideways",
 			"pageSize=7",
 			"page=0",
@@ -260,11 +263,14 @@ describe("GET /shipping-zones/options", () => {
 			deliveryDaysMax: 2,
 		});
 		expect(Object.keys(options[2]).sort()).toEqual([
+			"coversRest",
 			"deliveryDaysMax",
 			"deliveryDaysMin",
 			"fee",
 			"id",
 			"method",
+			"municipalities",
+			"slug",
 			"translations",
 		]);
 		expect(
@@ -311,7 +317,7 @@ describe("POST /shipping-zones", () => {
 			slug: "nueva",
 			method: "own_delivery",
 			fee: 250,
-			freeFrom: 3000,
+			municipalities: ["San Salvador Centro", "La Libertad Sur"],
 			deliveryDaysMin: 1,
 			deliveryDaysMax: 3,
 			translations: { es: { name: "Nueva", description: "" } },
@@ -331,7 +337,8 @@ describe("POST /shipping-zones", () => {
 			id: 6,
 			slug: "nueva",
 			fee: 250,
-			freeFrom: 3000,
+			coversRest: false,
+			municipalities: ["La Libertad Sur", "San Salvador Centro"],
 			position: 0,
 			status: "active",
 		});
@@ -365,6 +372,7 @@ describe("POST /shipping-zones", () => {
 			[{ fee: -1 }, "fee"],
 			[{ slug: "Con Espacio" }, "slug"],
 			[{ method: "drone" }, "method"],
+			[{ municipalities: ["Springfield"] }, "municipalities.0"],
 			[
 				{ translations: { es: { name: "", description: "" } } },
 				"translations.es.name",
@@ -381,6 +389,39 @@ describe("POST /shipping-zones", () => {
 	});
 });
 
+describe("the municipalities a zone serves", () => {
+	test("a municipality belongs to one zone, and the zone that covers the rest lists none", async () => {
+		const first = await send("PATCH", "/shipping-zones/1", {
+			municipalities: ["San Salvador Centro"],
+		});
+		expect(first.status).toBe(200);
+		const taken = await send("PATCH", "/shipping-zones/2", {
+			municipalities: ["San Salvador Centro"],
+		});
+		expect(taken.status).toBe(409);
+		expect((await taken.json()) as unknown).toEqual({
+			error: "municipality_in_other_zone",
+			taken: ["San Salvador Centro"],
+		});
+		const rest = await send("PATCH", "/shipping-zones/1", {
+			coversRest: true,
+		});
+		expect(rest.status).toBe(409);
+		expect((await rest.json()) as unknown).toEqual({
+			error: "zone_covers_rest",
+		});
+		const cleared = await send("PATCH", "/shipping-zones/1", {
+			coversRest: true,
+			municipalities: [],
+		});
+		expect(cleared.status).toBe(200);
+		expect(await cleared.json()).toMatchObject({
+			coversRest: true,
+			municipalities: [],
+		});
+	});
+});
+
 describe("PATCH /shipping-zones/:id", () => {
 	const patch = (id: number, body: unknown) =>
 		send("PATCH", `/shipping-zones/${id}`, body);
@@ -388,7 +429,7 @@ describe("PATCH /shipping-zones/:id", () => {
 	test("changes the fields and the texts of several languages in one write", async () => {
 		const res = await patch(1, {
 			fee: 450,
-			freeFrom: 5000,
+			municipalities: ["San Salvador Norte"],
 			deliveryDaysMin: 2,
 			deliveryDaysMax: 4,
 			position: 7,
@@ -401,14 +442,13 @@ describe("PATCH /shipping-zones/:id", () => {
 		const updated = (await res.json()) as Zone;
 		expect(updated).toMatchObject({
 			fee: 450,
-			freeFrom: 5000,
+			municipalities: ["San Salvador Norte"],
 			position: 7,
 			status: "active",
 		});
 		expect(updated.translations).toHaveLength(2);
 		expect(stored(1)).toMatchObject({
 			fee: 450,
-			free_from: 5000,
 			delivery_days_min: 2,
 			delivery_days_max: 4,
 			position: 7,

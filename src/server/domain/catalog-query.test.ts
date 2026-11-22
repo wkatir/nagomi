@@ -16,18 +16,11 @@ const brands = {
 	fr: { slug: "face-republic", name: "Face Republic" },
 };
 const categories = {
-	oil: { slug: "cleansing-oil", name: "Aceite limpiador", routineStep: 1 },
-	cleanser: { slug: "cleanser", name: "Limpiador", routineStep: 2 },
-	serum: { slug: "serum", name: "Sérum", routineStep: 4 },
-	sunscreen: { slug: "sunscreen", name: "Protector solar", routineStep: 6 },
+	oil: { slug: "cleansing-oil", name: "Aceite limpiador", sortOrder: 1 },
+	cleanser: { slug: "cleanser", name: "Limpiador", sortOrder: 2 },
+	keyboard: { slug: "keyboard", name: "Teclado", sortOrder: 4 },
+	sunscreen: { slug: "sunscreen", name: "Protector solar", sortOrder: 6 },
 };
-const concerns = {
-	acne: { slug: "oily-acne", name: "Grasa y acné" },
-	sensitive: { slug: "sensitive", name: "Piel sensible" },
-	sun: { slug: "sun-protection", name: "Protección solar" },
-	pores: { slug: "pores", name: "Poros" },
-};
-
 const variant = (
 	sku: string,
 	price: number,
@@ -38,7 +31,7 @@ const variant = (
 	gtin: null,
 	price,
 	compareAtPrice: null,
-	size: { value: 50, unit: "ml" },
+	optionLabel: null,
 	availability: stock ? "in_stock" : "sold_out",
 	maxQuantity: stock ? 5 : 0,
 	...extra,
@@ -52,10 +45,12 @@ function entry(
 	const e: CatalogEntry = {
 		id: nextId++,
 		tagline: null,
-		concerns: [],
-		skinTypes: [],
+		shortSpecs: null,
+		isFeatured: false,
+		badge: null,
+		warrantyMonths: 12,
 		collections: [],
-		routines: [],
+		bundles: [],
 		variants: [variant(`${fields.slug.toUpperCase()}`, 1000, false)],
 		packshot: null,
 		lifestyle: null,
@@ -69,7 +64,6 @@ function entry(
 			e.brand.name,
 			e.name,
 			e.category.name,
-			...e.concerns.map((c) => c.name),
 			...e.variants.map((v) => v.sku),
 		),
 	};
@@ -80,18 +74,15 @@ const oil = entry({
 	name: "Light Cleansing Oil",
 	brand: brands.s1004,
 	category: categories.oil,
-	concerns: [concerns.acne, concerns.sensitive],
-	skinTypes: ["dry", "sensitive"],
 	collections: [{ slug: "essentials", position: 1 }],
 	variants: [variant("S1004-LCO-200", 2400, true)],
 	createdAt: "2026-10-03T10:00:00Z",
 });
-const sunSerum = entry({
-	slug: "water-fit-sun-serum",
-	name: "Hyalu-Cica Water-Fit Sun Serum",
+const sunKeyboard = entry({
+	slug: "water-fit-sun-keyboard",
+	name: "Hyalu-Cica Water-Fit Sun Keyboard",
 	brand: brands.s1004,
 	category: categories.sunscreen,
-	concerns: [concerns.sun, concerns.sensitive],
 	collections: [
 		{ slug: "essentials", position: 3 },
 		{ slug: "new", position: 1 },
@@ -104,12 +95,10 @@ const cleanser = entry({
 	name: "Calming Salicylic Acid Cleanser",
 	brand: brands.fr,
 	category: categories.cleanser,
-	concerns: [concerns.acne, concerns.pores, concerns.sensitive],
-	skinTypes: ["oily", "combination", "sensitive"],
 	collections: [{ slug: "essentials", position: 2 }],
 	variants: [
 		variant("FR-SAC-100", 1700, true),
-		variant("FR-SAC-200", 2900, false, { size: { value: 200, unit: "ml" } }),
+		variant("FR-SAC-200", 2900, false, { optionLabel: "200 ml" }),
 	],
 	createdAt: "2026-10-03T10:00:00Z",
 });
@@ -118,8 +107,6 @@ const sunEssence = entry({
 	name: "Purity Sun Essence",
 	brand: brands.fr,
 	category: categories.sunscreen,
-	concerns: [concerns.sun],
-	skinTypes: ["oily"],
 	variants: [variant("FR-PSE-50", 1900, false, { compareAtPrice: 2300 })],
 	createdAt: "2026-10-03T10:00:00Z",
 });
@@ -127,20 +114,15 @@ const ampoule = entry({
 	slug: "centella-ampoule",
 	name: "Centella Ampoule",
 	brand: brands.s1004,
-	category: categories.serum,
-	concerns: [concerns.sensitive],
+	category: categories.keyboard,
 	collections: [{ slug: "new", position: 2 }],
 	variants: [variant("S1004-CA-100", 2500, false)],
 	createdAt: "2026-10-14T10:00:00Z",
 });
-const entries = [oil, sunSerum, cleanser, sunEssence, ampoule];
+const entries = [oil, sunKeyboard, cleanser, sunEssence, ampoule];
 
 const dimensions: FacetDimensions = {
 	category: Object.values(categories),
-	concern: Object.values(concerns),
-	skinType: (
-		["normal", "dry", "oily", "combination", "sensitive"] as const
-	).map((slug) => ({ slug, name: slug })),
 	brand: [brands.fr, brands.s1004],
 	collection: [
 		{ slug: "essentials", name: "Lo esencial" },
@@ -151,8 +133,6 @@ const dimensions: FacetDimensions = {
 
 const none: CatalogFilter = {
 	category: [],
-	concern: [],
-	skinType: [],
 	brand: [],
 	collection: [],
 	sort: "featured",
@@ -171,7 +151,7 @@ describe("toCard", () => {
 		expect(card).toMatchObject({
 			sku: "FR-SAC-100",
 			price: 1700,
-			size: { value: 50, unit: "ml" },
+			optionLabel: null,
 			variantsCount: 2,
 			availability: "in_stock",
 			maxQuantity: 5,
@@ -212,7 +192,7 @@ describe("toCard", () => {
 });
 
 describe("queryCatalog", () => {
-	test("without refinements lists everything, in stock first, then by routine step", () => {
+	test("without refinements lists everything, in stock first, then by category order", () => {
 		const r = query({});
 		expect(r.total).toBe(5);
 		expect(slugs(r)).toEqual([
@@ -220,19 +200,19 @@ describe("queryCatalog", () => {
 			"salicylic-cleanser",
 			"centella-ampoule",
 			// Same step, by name: Hyalu-Cica... before Purity...
-			"water-fit-sun-serum",
+			"water-fit-sun-keyboard",
 			"purity-sun-essence",
 		]);
 		expect(r.priceRange).toEqual({ min: 1700, max: 2500 });
 	});
 
 	test("search ignores accents and case and needs every word", () => {
-		expect(slugs(query({ q: "PROTECCIÓN" }))).toEqual([
-			"water-fit-sun-serum",
+		expect(slugs(query({ q: "PROTECTÓR" }))).toEqual([
+			"water-fit-sun-keyboard",
 			"purity-sun-essence",
 		]);
 		expect(slugs(query({ q: "skin1004 sun" }))).toEqual([
-			"water-fit-sun-serum",
+			"water-fit-sun-keyboard",
 		]);
 		expect(slugs(query({ q: "fr-sac" }))).toEqual(["salicylic-cleanser"]);
 		expect(query({ q: "retinol" }).total).toBe(0);
@@ -244,36 +224,27 @@ describe("queryCatalog", () => {
 			slugs(query({ category: ["sunscreen", "cleanser"], sort: "name" })),
 		).toEqual([
 			"salicylic-cleanser",
-			"water-fit-sun-serum",
+			"water-fit-sun-keyboard",
 			"purity-sun-essence",
 		]);
 		expect(
 			slugs(query({ category: ["sunscreen"], brand: ["face-republic"] })),
 		).toEqual(["purity-sun-essence"]);
-		expect(slugs(query({ concern: ["pores", "sun-protection"] }))).toHaveLength(
-			3,
-		);
 	});
 
 	test("a facet's counts keep every other refinement but not its own", () => {
 		const r = query({ category: ["sunscreen"], brand: ["skin1004"] });
-		expect(slugs(r)).toEqual(["water-fit-sun-serum"]);
+		expect(slugs(r)).toEqual(["water-fit-sun-keyboard"]);
 		// Categories counted among SKIN1004 products; brands among sunscreens.
 		expect(counts(r.facets.category)).toEqual({
 			"cleansing-oil": 1,
 			cleanser: 0,
-			serum: 1,
+			keyboard: 1,
 			sunscreen: 1,
 		});
 		expect(counts(r.facets.brand)).toEqual({
 			"face-republic": 1,
 			skin1004: 1,
-		});
-		expect(counts(r.facets.concern)).toEqual({
-			"oily-acne": 0,
-			sensitive: 1,
-			"sun-protection": 1,
-			pores: 0,
 		});
 		expect(
 			r.facets.category.find((c) => c.slug === "sunscreen")?.selected,
@@ -282,12 +253,6 @@ describe("queryCatalog", () => {
 
 	test("a product with several matching values counts once per value", () => {
 		const r = query({});
-		expect(counts(r.facets.concern)).toEqual({
-			"oily-acne": 2,
-			sensitive: 4,
-			"sun-protection": 2,
-			pores: 1,
-		});
 		expect(counts(r.facets.collection)).toEqual({ essentials: 3, new: 2 });
 	});
 
@@ -306,7 +271,7 @@ describe("queryCatalog", () => {
 		expect(slugs(r).sort()).toEqual([
 			"light-cleansing-oil",
 			"purity-sun-essence",
-			"water-fit-sun-serum",
+			"water-fit-sun-keyboard",
 		]);
 		expect(r.priceRange).toEqual({ min: 1700, max: 2500 });
 		expect(query({ category: ["sunscreen"] }).priceRange).toEqual({
@@ -338,21 +303,21 @@ describe("queryCatalog", () => {
 			"salicylic-cleanser",
 			"light-cleansing-oil",
 			"purity-sun-essence",
-			"water-fit-sun-serum",
+			"water-fit-sun-keyboard",
 			"centella-ampoule",
 		]);
 		expect(slugs(query({ sort: "price_desc" }))).toEqual([
 			"light-cleansing-oil",
 			"salicylic-cleanser",
 			"centella-ampoule",
-			"water-fit-sun-serum",
+			"water-fit-sun-keyboard",
 			"purity-sun-essence",
 		]);
 		expect(slugs(query({ sort: "name" }))).toEqual([
 			"salicylic-cleanser",
 			"light-cleansing-oil",
 			"centella-ampoule",
-			"water-fit-sun-serum",
+			"water-fit-sun-keyboard",
 			"purity-sun-essence",
 		]);
 		// Same creation time: the later id first.
@@ -360,7 +325,7 @@ describe("queryCatalog", () => {
 			"salicylic-cleanser",
 			"light-cleansing-oil",
 			"centella-ampoule",
-			"water-fit-sun-serum",
+			"water-fit-sun-keyboard",
 			"purity-sun-essence",
 		]);
 	});
@@ -382,10 +347,10 @@ describe("queryCatalog", () => {
 		expect(slugs(query({ collection: ["essentials"] }))).toEqual([
 			"light-cleansing-oil",
 			"salicylic-cleanser",
-			"water-fit-sun-serum",
+			"water-fit-sun-keyboard",
 		]);
 		expect(slugs(query({ collection: ["new"] }))).toEqual([
-			"water-fit-sun-serum",
+			"water-fit-sun-keyboard",
 			"centella-ampoule",
 		]);
 		expect(
@@ -395,42 +360,7 @@ describe("queryCatalog", () => {
 				"featured",
 				["new"],
 			).map((e) => e.slug),
-		).toEqual(["water-fit-sun-serum", "centella-ampoule"]);
-	});
-
-	test("skin types are alternatives, narrow the other facets and are counted without their own selection", () => {
-		const r = query({ skinType: ["oily", "dry"] });
-		expect(slugs(r)).toEqual([
-			"light-cleansing-oil",
-			"salicylic-cleanser",
-			"purity-sun-essence",
-		]);
-		expect(counts(r.facets.skinType)).toEqual({
-			dry: 1,
-			oily: 2,
-			combination: 1,
-			sensitive: 2,
-		});
-		expect(
-			r.facets.skinType.filter((v) => v.selected).map((v) => v.slug),
-		).toEqual(["dry", "oily"]);
-		expect(counts(r.facets.concern)).toEqual({
-			"oily-acne": 2,
-			sensitive: 2,
-			pores: 1,
-			"sun-protection": 1,
-		});
-	});
-
-	test("the skin type facet lists only the values the matching products have, in the standard order", () => {
-		const r = query({ q: "sun" });
-		expect(r.facets.skinType.map((v) => v.slug)).toEqual(["oily"]);
-		expect(query({}).facets.skinType.map((v) => v.slug)).toEqual([
-			"dry",
-			"oily",
-			"combination",
-			"sensitive",
-		]);
+		).toEqual(["water-fit-sun-keyboard", "centella-ampoule"]);
 	});
 
 	test("pages through the results", () => {

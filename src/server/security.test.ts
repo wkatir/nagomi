@@ -3,7 +3,7 @@ import { withSecurityHeaders } from "./security";
 
 test("every response gets the security headers", () => {
 	const res = withSecurityHeaders(
-		new Request("https://eclalune.com/"),
+		new Request("https://nagomi.example/"),
 		new Response("<html></html>", { headers: { "content-type": "text/html" } }),
 	);
 	expect(res.headers.get("x-content-type-options")).toBe("nosniff");
@@ -23,7 +23,7 @@ test("admin and auth API responses are not cached", () => {
 	for (const path of ["/api/admin/orders", "/api/auth/get-session"])
 		expect(
 			withSecurityHeaders(
-				new Request(`https://eclalune.com${path}`),
+				new Request(`https://nagomi.example${path}`),
 				Response.json({}),
 			).headers.get("cache-control"),
 		).toBe("no-store");
@@ -31,7 +31,7 @@ test("admin and auth API responses are not cached", () => {
 
 test("redirects keep their status and location", () => {
 	const res = withSecurityHeaders(
-		new Request("https://eclalune.com/en"),
+		new Request("https://nagomi.example/en"),
 		new Response(null, { status: 307, headers: { location: "/en/" } }),
 	);
 	expect(res.status).toBe(307);

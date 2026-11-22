@@ -16,20 +16,18 @@ const read = async (path: string) => {
 beforeEach(() => {
 	const db = migratedDatabase();
 	db.exec(`
-insert into store_settings (id, name, currency, default_locale, time_zone, country_code, order_code_prefix, max_quantity_per_line, expiry_warning_days) values (1, 'Store', 'USD', 'es', 'America/El_Salvador', 'SV', 'ECL', 20, 180);
-insert into brands (slug, name, search_key) values ('anua', 'Anua', 'anua');
-insert into categories (slug, routine_step) values ('serum', 1);
-insert into category_translations (category_id, locale, name) values (1, 'es', 'Sérum'), (1, 'en', 'Serum');
-insert into concerns (slug) values ('pores');
-insert into concern_translations (concern_id, locale, name) values (1, 'es', 'Poros'), (1, 'en', 'Pores');
-insert into products (slug, brand_id, category_id) values ('serum-1', 1, 1);
-insert into product_translations (product_id, locale, name, search_key) values (1, 'es', 'Sérum uno', 'serum uno'), (1, 'en', 'Serum one', 'serum one');
-insert into variants (product_id, sku, price, search_key) values (1, 'S1', 1500, 's1');
-update products set status = 'published' where id = 1;
-insert into product_concerns (product_id, concern_id) values (1, 1);
-insert into routines (slug, status) values ('morning', 'published');
-insert into routine_translations (routine_id, locale, title) values (1, 'es', 'Mañana'), (1, 'en', 'Morning');
-insert into routine_items (routine_id, variant_id, position) values (1, 1, 1);
+insert into store_settings (id, name, currency, default_locale, time_zone, country_code, order_code_prefix, max_quantity_per_line, low_stock_threshold) values (1, 'Store', 'USD', 'es', 'America/El_Salvador', 'SV', 'ECL', 20, 5);
+insert into brands (slug, name, search_key) values ('akko', 'Akko', 'akko');
+insert into categories (slug, icon, sort_order) values ('teclados', 'keyboard', 1);
+insert into category_translations (category_id, locale, name) values (1, 'es', 'Teclados'), (1, 'en', 'Keyboards');
+insert into products (slug, brand_id, category_id) values ('sakura-65', 1, 1), ('tsuki-keycaps', 1, 1);
+insert into product_translations (product_id, locale, name, search_key) values (1, 'es', 'Teclado Sakura', 'teclado sakura'), (1, 'en', 'Sakura keyboard', 'sakura keyboard'), (2, 'es', 'Keycaps Tsuki', 'keycaps tsuki'), (2, 'en', 'Tsuki keycaps', 'tsuki keycaps');
+insert into variants (product_id, sku, price, search_key) values (1, 'TEC-002', 7499, 'tec-002'), (2, 'TEC-004', 2999, 'tec-004');
+update products set status = 'published';
+insert into bundles (slug, price) values ('set-sakura', 9999);
+insert into bundle_translations (bundle_id, locale, name) values (1, 'es', 'Set Sakura'), (1, 'en', 'Sakura Set');
+insert into bundle_items (bundle_id, variant_id, position) values (1, 1, 1), (1, 2, 2);
+update bundles set status = 'published';
 `);
 	env.DB = d1(db);
 });
@@ -44,34 +42,33 @@ describe("SEO files", () => {
 		]);
 	});
 
-	test("llms.txt links the needs, types, brands and routines in the language of the file", async () => {
+	test("llms.txt links the categories, brands and bundles in the language of the file", async () => {
 		const spanish = await read("/llms.txt");
-		expect(spanish).toContain("[Poros](https://shop.example/needs/pores)");
-		expect(spanish).toContain("[Sérum](https://shop.example/categories/serum)");
-		expect(spanish).toContain("[Anua](https://shop.example/brands/anua)");
 		expect(spanish).toContain(
-			"[Mañana](https://shop.example/routines/morning)",
+			"[Teclados](https://shop.example/categories/teclados)",
+		);
+		expect(spanish).toContain("[Akko](https://shop.example/brands/akko)");
+		expect(spanish).toContain(
+			"[Set Sakura](https://shop.example/sets/set-sakura)",
 		);
 
 		const english = await read("/en/llms.txt");
-		expect(english).toContain("[Pores](https://shop.example/en/needs/pores)");
 		expect(english).toContain(
-			"[Serum](https://shop.example/en/categories/serum)",
+			"[Keyboards](https://shop.example/en/categories/teclados)",
 		);
 		expect(english).toContain(
-			"[Morning](https://shop.example/en/routines/morning)",
+			"[Sakura Set](https://shop.example/en/sets/set-sakura)",
 		);
-		expect(english).not.toContain("Poros");
+		expect(english).not.toContain("Teclados");
 	});
 
 	test("the sitemap lists the new pages once per language", async () => {
 		const xml = await read("/sitemap.xml");
 		for (const path of [
-			"/needs/pores",
-			"/categories/serum",
-			"/brands/anua",
-			"/routines",
-			"/routines/morning",
+			"/categories/teclados",
+			"/brands/akko",
+			"/sets",
+			"/sets/set-sakura",
 		]) {
 			expect(xml).toContain(`<loc>https://shop.example${path}</loc>`);
 			expect(xml).toContain(`<loc>https://shop.example/en${path}</loc>`);

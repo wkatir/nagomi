@@ -61,7 +61,7 @@ beforeEach(() => {
 	db.exec(`
 insert into store_settings (id, name, currency, default_locale) values (1, 'Store', 'USD', 'es');
 insert into brands (slug, name, search_key) values ('b', 'Brand', 'brand b');
-insert into categories (slug, routine_step) values ('c', 1);
+insert into categories (slug, icon, sort_order) values ('c', 'package', 1);
 insert into products (slug, brand_id, category_id) values ('p', 1, 1), ('q', 1, 1);
 `);
 	env.DB = d1(db);

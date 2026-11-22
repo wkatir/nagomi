@@ -13,7 +13,9 @@ import {
 	seedSupply,
 } from "./supply-fixtures";
 
-const env: { DB?: ReturnType<typeof d1> } = {};
+const env: { DB?: ReturnType<typeof d1>; BETTER_AUTH_URL: string } = {
+	BETTER_AUTH_URL: "http://localhost",
+};
 mock.module("cloudflare:workers", () => ({ env }));
 const { purchasingRouter } = await import("./purchasing");
 const { apiError } = await import("#/server/api-error");
@@ -289,9 +291,8 @@ describe("POST /purchase-orders/:id/receive", () => {
 				purchaseOrderItemId: 1,
 				quantity: 10,
 				code: "L-9",
-				expiresOn: "2027-05",
 			},
-			{ purchaseOrderItemId: 2, quantity: 4, expiresOn: "2028-01-31" },
+			{ purchaseOrderItemId: 2, quantity: 4 },
 		],
 	};
 
@@ -323,25 +324,18 @@ describe("POST /purchase-orders/:id/receive", () => {
 		expect(statusOf(1)).toBe("received");
 		expect(
 			db
-				.query(
-					"select variant_id, code, expires_on, expiry_precision, unit_cost_e4 from lots order by id",
-				)
+				.query("select variant_id, code, unit_cost_e4 from lots order by id")
 				.all(),
 		).toEqual([
 			{
 				variant_id: OIL_50,
 				code: "L-9",
-				// A month is stored as its last day, and remembered as a month.
-				expires_on: "2027-05-31",
-				expiry_precision: "month",
 				// 700.00 plus 10889 hundredths of a cent of shipping, over 10 units.
 				unit_cost_e4: 71089,
 			},
 			{
 				variant_id: CRM_30,
 				code: null,
-				expires_on: "2028-01-31",
-				expiry_precision: "day",
 				unit_cost_e4: 50778,
 			},
 		]);
@@ -397,7 +391,7 @@ describe("POST /purchase-orders/:id/receive", () => {
 		const first = await send("POST", "/1/receive", {
 			receivedOn: "2026-10-02",
 			shippingCost: 0,
-			lots: [{ purchaseOrderItemId: 1, quantity: 6, expiresOn: "2027-05-31" }],
+			lots: [{ purchaseOrderItemId: 1, quantity: 6 }],
 		});
 		expect(await json(first)).toEqual({
 			ok: true,
@@ -409,8 +403,8 @@ describe("POST /purchase-orders/:id/receive", () => {
 			receivedOn: "2026-10-03",
 			shippingCost: 0,
 			lots: [
-				{ purchaseOrderItemId: 1, quantity: 4, expiresOn: "2027-06-30" },
-				{ purchaseOrderItemId: 2, quantity: 4, expiresOn: "2028-01-31" },
+				{ purchaseOrderItemId: 1, quantity: 4 },
+				{ purchaseOrderItemId: 2, quantity: 4 },
 			],
 		});
 		expect(await json(second)).toEqual({ ok: true, status: "received" });
@@ -425,7 +419,7 @@ describe("POST /purchase-orders/:id/receive", () => {
 		const third = await send("POST", "/1/receive", {
 			receivedOn: "2026-10-03",
 			shippingCost: 0,
-			lots: [{ purchaseOrderItemId: 1, quantity: 1, expiresOn: "2027-05-31" }],
+			lots: [{ purchaseOrderItemId: 1, quantity: 1 }],
 		});
 		expect(third.status).toBe(409);
 		expect(await json(third)).toEqual({ error: "purchase_order_not_open" });
@@ -434,7 +428,7 @@ describe("POST /purchase-orders/:id/receive", () => {
 	test("refuses more than what is still expected, also when two lots of a line add up to it", async () => {
 		const over = await send("POST", "/1/receive", {
 			...receipt,
-			lots: [{ purchaseOrderItemId: 1, quantity: 11, expiresOn: "2027-05" }],
+			lots: [{ purchaseOrderItemId: 1, quantity: 11 }],
 		});
 		expect(over.status).toBe(409);
 		expect(await json(over)).toEqual({
@@ -445,8 +439,8 @@ describe("POST /purchase-orders/:id/receive", () => {
 		const split = await send("POST", "/1/receive", {
 			...receipt,
 			lots: [
-				{ purchaseOrderItemId: 1, quantity: 6, expiresOn: "2027-05" },
-				{ purchaseOrderItemId: 1, quantity: 6, expiresOn: "2027-06" },
+				{ purchaseOrderItemId: 1, quantity: 6 },
+				{ purchaseOrderItemId: 1, quantity: 6 },
 			],
 		});
 		expect(split.status).toBe(409);
@@ -456,18 +450,10 @@ describe("POST /purchase-orders/:id/receive", () => {
 		untouched();
 	});
 
-	test("refuses an expiry that is neither a day nor a month, and a line from another purchase order", async () => {
-		for (const expiresOn of ["2027-13", "27-05", "2027-02-30", "soon"]) {
-			const res = await send("POST", "/1/receive", {
-				...receipt,
-				lots: [{ purchaseOrderItemId: 1, quantity: 1, expiresOn }],
-			});
-			expect(res.status).toBe(400);
-			expect(await json(res)).toEqual({ error: "invalid_expiry" });
-		}
+	test("refuses a line from another purchase order", async () => {
 		const foreign = await send("POST", "/1/receive", {
 			...receipt,
-			lots: [{ purchaseOrderItemId: 99, quantity: 1, expiresOn: "2027-05" }],
+			lots: [{ purchaseOrderItemId: 99, quantity: 1 }],
 		});
 		expect(foreign.status).toBe(400);
 		expect(await json(foreign)).toEqual({
@@ -476,8 +462,8 @@ describe("POST /purchase-orders/:id/receive", () => {
 		untouched();
 	});
 
-	test("refuses a delivery dated in the future or before the order, and a lot already expired", async () => {
-		const lot = [{ purchaseOrderItemId: 1, quantity: 1, expiresOn: "2027-05" }];
+	test("refuses a delivery dated in the future or before the order", async () => {
+		const lot = [{ purchaseOrderItemId: 1, quantity: 1 }];
 		const tomorrow = new Date(Date.now() + 2 * 86_400_000)
 			.toISOString()
 			.slice(0, 10);
@@ -495,12 +481,6 @@ describe("POST /purchase-orders/:id/receive", () => {
 		});
 		expect(early.status).toBe(400);
 		expect(await json(early)).toEqual({ error: "received_before_ordered" });
-		const stale = await send("POST", "/1/receive", {
-			...receipt,
-			lots: [{ purchaseOrderItemId: 1, quantity: 1, expiresOn: "2026-10-01" }],
-		});
-		expect(stale.status).toBe(400);
-		expect(await json(stale)).toEqual({ error: "lot_expired_at_receipt" });
 		untouched();
 	});
 

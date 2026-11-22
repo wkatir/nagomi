@@ -3,7 +3,9 @@ import { beforeEach, describe, expect, mock, test } from "bun:test";
 import { count, like } from "drizzle-orm";
 import { d1, migratedDatabase } from "#/db/test-database";
 
-const env: { DB?: ReturnType<typeof d1> } = {};
+const env: { DB?: ReturnType<typeof d1>; BETTER_AUTH_URL: string } = {
+	BETTER_AUTH_URL: "http://localhost",
+};
 mock.module("cloudflare:workers", () => ({ env }));
 const { getDb, schema } = await import("#/db");
 const { pageWindow, sortBy, toPaged } = await import("./list-query");

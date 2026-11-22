@@ -24,8 +24,7 @@ describe("productListSearch", () => {
 			status: "draft",
 			brandId: 4,
 			categoryId: 5,
-			concernId: 6,
-			q: "aceite",
+			q: "teclado",
 		} as const;
 		expect(
 			productListSearch.parse({
@@ -36,8 +35,7 @@ describe("productListSearch", () => {
 				status: "draft",
 				brandId: "4",
 				categoryId: "5",
-				concernId: "6",
-				q: "  aceite ",
+				q: "  teclado ",
 			}),
 		).toEqual(expected);
 		expect(
@@ -67,7 +65,6 @@ describe("productListSearch", () => {
 			{ brandId: 0 },
 			{ brandId: "x" },
 			{ categoryId: 1.5 },
-			{ concernId: -2 },
 			{ q: "" },
 			{ q: "x".repeat(81) },
 		])

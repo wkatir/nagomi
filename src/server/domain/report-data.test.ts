@@ -19,7 +19,7 @@ function fulfilledOrder(sqlite: Database, id: number, subtotal: number) {
 	);
 	if (subtotal > 0)
 		sqlite.exec(
-			`insert into order_items (order_id, variant_id, quantity, unit_price, sku, brand_name, product_name) values (${id}, 1, 1, ${subtotal}, 'OIL', 'SKIN1004', 'Aceite')`,
+			`insert into order_items (order_id, variant_id, quantity, unit_price, sku, brand_name, product_name) values (${id}, 1, 1, ${subtotal}, 'OIL-001', 'SKIN1004', 'Aceite')`,
 		);
 	sqlite.exec(
 		`update orders set status = 'confirmed', confirmed_at = '2026-10-10T15:00:00Z', payment_method = 'cash', shipping_method = 'pickup', delivery_estimate_from = '2026-10-11', delivery_estimate_to = '2026-10-11', confirmation_message = 'ok' where id = ${id}`,
@@ -35,16 +35,16 @@ beforeEach(() => {
 	sqlite = migratedDatabase();
 	sqlite.exec(`
 		insert into brands (slug, name, search_key) values ('skin1004', 'SKIN1004', 'skin1004');
-		insert into categories (slug, routine_step) values ('cleanser', 1);
+		insert into categories (slug, icon, sort_order) values ('cleanser', 'package', 1);
 		insert into products (slug, brand_id, category_id) values ('oil', 1, 1);
-		insert into variants (product_id, sku, price, search_key) values (1, 'OIL', 1500, 'oil');
+		insert into variants (product_id, sku, price, search_key) values (1, 'OIL-001', 1500, 'oil');
 		-- Units for the orders confirmed below: a confirmation beyond stock is refused.
 		insert into suppliers (name, search_key) values ('Supplier', 'supplier');
 		insert into purchase_orders (supplier_id, reference, status, ordered_on) values (1, 'PO-1', 'ordered', '2026-10-01');
 		insert into purchase_order_items (purchase_order_id, variant_id, quantity, unit_cost) values (1, 1, 5, 700);
 		insert into purchase_receipts (purchase_order_id, received_on, created_by) values (1, '2026-10-05', 'u');
 		insert into purchase_receipt_lines (receipt_id, purchase_order_item_id, quantity, allocated_shipping_e4) values (1, 1, 5, 0);
-		insert into lots (variant_id, receipt_line_id, expires_on, unit_cost_e4) values (1, 1, '2027-01-31', 70000);
+		insert into lots (variant_id, receipt_line_id, unit_cost_e4) values (1, 1, 70000);
 		insert into inventory_movements (lot_id, kind, quantity, created_by) values (1, 'receive', 5, 'u');
 	`);
 	fulfilledOrder(sqlite, 1, 1500);

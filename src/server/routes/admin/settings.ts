@@ -12,7 +12,7 @@ import { untranslated } from "../../domain/locales";
 import { currentPageTexts, nextPageVersion } from "../../domain/pages";
 import { pageOf } from "../../domain/paging";
 import { isWhatsappNumber } from "../../domain/phone";
-import { getPaymentMethods, readSettings } from "../../domain/settings";
+import { getPaymentOptions, readSettings } from "../../domain/settings";
 import { localeParam, optionalText } from "./catalog-inputs";
 
 const {
@@ -20,6 +20,7 @@ const {
 	pages,
 	pageVersions,
 	purchaseOrders,
+	shippingZones,
 	storePaymentMethods,
 	storePromises,
 	storePromiseTranslations,
@@ -27,6 +28,17 @@ const {
 	users,
 } = schema;
 const days = (max: number) => z.number().int().min(1).max(max);
+const hours = z
+	.number()
+	.int()
+	.min(1)
+	.max(24 * 365)
+	.nullable();
+const money = z.number().int().min(0).max(100_000_000);
+const httpsUrl = z
+	.url({ protocol: /^https$/ })
+	.max(300)
+	.nullable();
 
 const settingsFields = z.object({
 	name: z.string().trim().min(1).max(80),
@@ -57,9 +69,18 @@ const settingsFields = z.object({
 		.refine(isCountryCode, "Unknown ISO 3166-1 alpha-2 country code"),
 	orderCodePrefix: z.string().regex(/^[A-Z0-9]{1,8}$/),
 	maxQuantityPerLine: z.number().int().min(1).max(999),
-	minShelfLifeDays: days(3650).nullable(),
-	expiryWarningDays: days(3650),
 	returnWindowDays: days(365).nullable(),
+	freeShippingFrom: money.nullable(),
+	lowStockThreshold: z.number().int().min(0).max(10_000),
+	frequentCustomerMinOrders: z.number().int().min(2).max(1000).nullable(),
+	inactiveCustomerDays: days(3650).nullable(),
+	followupPendingPaymentHours: hours,
+	followupPaidUnshippedHours: hours,
+	followupShippedUndeliveredHours: hours,
+	discordUrl: httpsUrl,
+	instagramUrl: httpsUrl,
+	tiktokUrl: httpsUrl,
+	youtubeUrl: httpsUrl,
 	foundingYear: z
 		.number()
 		.int()
@@ -73,9 +94,18 @@ const settingsState = settingsFields.refine(
 );
 const settingsPatch = settingsFields
 	.extend({
-		acceptedPaymentMethods: z
-			.array(z.enum(PAYMENT_METHODS))
-			.refine((x) => new Set(x).size === x.length, "Duplicate method"),
+		paymentOptions: z
+			.array(
+				z.object({
+					method: z.enum(PAYMENT_METHODS),
+					maxTotal: z.number().int().min(1).max(100_000_000).nullable(),
+					shippingZoneId: z.number().int().positive().nullable(),
+				}),
+			)
+			.refine(
+				(x) => new Set(x.map((o) => o.method)).size === x.length,
+				"Duplicate method",
+			),
 	})
 	.partial();
 
@@ -102,15 +132,15 @@ async function publishedReturnWindowUsers(db: ReturnType<typeof getDb>) {
 export const settingsRouter = new Hono<AdminEnv>()
 	.get("/", async (c) => {
 		const db = getDb();
-		const [settings, acceptedPaymentMethods] = await Promise.all([
+		const [settings, paymentOptions] = await Promise.all([
 			readSettings(db),
-			getPaymentMethods(db),
+			getPaymentOptions(db),
 		]);
-		return c.json({ ...settings, acceptedPaymentMethods });
+		return c.json({ ...settings, paymentOptions });
 	})
 	.patch("/", validate("json", settingsPatch), async (c) => {
 		const db = getDb();
-		const { acceptedPaymentMethods, ...patch } = c.req.valid("json");
+		const { paymentOptions, ...patch } = c.req.valid("json");
 		const stored = await readSettings(db);
 		const state = settingsState.safeParse({ ...stored, ...patch });
 		if (!state.success) return invalidRequest(c, state.error);
@@ -130,6 +160,22 @@ export const settingsRouter = new Hono<AdminEnv>()
 			if (missing.length > 0)
 				return c.json({ error: "default_locale_untranslated", missing }, 409);
 		}
+		const zoneIds = [
+			...new Set(
+				(paymentOptions ?? []).flatMap((o) =>
+					o.shippingZoneId === null ? [] : [o.shippingZoneId],
+				),
+			),
+		];
+		if (zoneIds.length > 0) {
+			const found = await db
+				.select({ id: shippingZones.id })
+				.from(shippingZones)
+				.where(eq(shippingZones.status, "active"));
+			const active = new Set(found.map((z) => z.id));
+			if (zoneIds.some((id) => !active.has(id)))
+				return c.json({ error: "unknown_shipping_zone" }, 409);
+		}
 		if (
 			state.data.returnWindowDays === null &&
 			(await publishedReturnWindowUsers(db))
@@ -146,8 +192,8 @@ export const settingsRouter = new Hono<AdminEnv>()
 			.update(storeSettings)
 			.set({ ...state.data, updatedAt: now })
 			.where(eq(storeSettings.id, 1));
-		if (acceptedPaymentMethods === undefined) await db.batch([update, record]);
-		else if (acceptedPaymentMethods.length === 0)
+		if (paymentOptions === undefined) await db.batch([update, record]);
+		else if (paymentOptions.length === 0)
 			await db.batch([update, db.delete(storePaymentMethods), record]);
 		else
 			await db.batch([
@@ -155,14 +201,14 @@ export const settingsRouter = new Hono<AdminEnv>()
 				db.delete(storePaymentMethods),
 				db
 					.insert(storePaymentMethods)
-					.values(acceptedPaymentMethods.map((method) => ({ method }))),
+					.values(paymentOptions.map((o, position) => ({ ...o, position }))),
 				record,
 			]);
-		const [settings, methods] = await Promise.all([
+		const [settings, options] = await Promise.all([
 			readSettings(db),
-			getPaymentMethods(db),
+			getPaymentOptions(db),
 		]);
-		return c.json({ ...settings, acceptedPaymentMethods: methods });
+		return c.json({ ...settings, paymentOptions: options });
 	})
 	.get("/promises", async (c) => {
 		const db = getDb();

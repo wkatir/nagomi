@@ -10,7 +10,9 @@ import {
 	seedSupply,
 } from "./supply-fixtures";
 
-const env: { DB?: ReturnType<typeof d1> } = {};
+const env: { DB?: ReturnType<typeof d1>; BETTER_AUTH_URL: string } = {
+	BETTER_AUTH_URL: "http://localhost",
+};
 mock.module("cloudflare:workers", () => ({ env }));
 const { suppliersRouter } = await import("./suppliers");
 

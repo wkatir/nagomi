@@ -3,7 +3,7 @@ import { missingCheckoutSettings } from "./store-rules";
 
 const complete = {
 	whatsappNumber: "50370000000",
-	legalName: "Eclalune",
+	legalName: "Nagomi",
 	taxIdLabel: "NIT",
 	taxId: "0614-000000-000-0",
 	address: "San Salvador",

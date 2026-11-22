@@ -4,13 +4,16 @@ import { Hono } from "hono";
 import { d1, migratedDatabase } from "#/db/test-database";
 import type { AdminEnv } from "#/server/auth";
 
-const env: { DB?: ReturnType<typeof d1> } = {};
+const env: { DB?: ReturnType<typeof d1>; BETTER_AUTH_URL: string } = {
+	BETTER_AUTH_URL: "http://localhost",
+};
 mock.module("cloudflare:workers", () => ({ env }));
 const { searchRouter } = await import("./search");
 
 const app = new Hono<AdminEnv>()
 	.use(async (c, next) => {
 		c.set("adminUserId", "admin");
+		c.set("staffRole", "admin");
 		await next();
 	})
 	.route("/search", searchRouter);
@@ -24,8 +27,7 @@ const GROUPS = [
 	"purchases",
 	"brands",
 	"categories",
-	"concerns",
-	"routines",
+	"bundles",
 	"collections",
 	"promotions",
 ] as const;
@@ -44,9 +46,8 @@ const none: Results = {
 	suppliers: [],
 	purchases: [],
 	brands: [],
+	bundles: [],
 	categories: [],
-	concerns: [],
-	routines: [],
 	collections: [],
 	promotions: [],
 };
@@ -55,23 +56,21 @@ let db: Database;
 beforeEach(() => {
 	db = migratedDatabase();
 	db.exec(`
-insert into store_settings (id, name, currency, default_locale, time_zone, country_code, order_code_prefix, max_quantity_per_line, expiry_warning_days) values (1, 'Store', 'USD', 'es', 'America/El_Salvador', 'SV', 'ECL', 20, 180);
+insert into store_settings (id, name, currency, default_locale, time_zone, country_code, order_code_prefix, max_quantity_per_line, low_stock_threshold) values (1, 'Store', 'USD', 'es', 'America/El_Salvador', 'SV', 'ECL', 20, 5);
 insert into customers (name, phone_e164, search_key) values ('Ángela Pérez', '+50371234567', 'angela perez 50371234567');
 insert into orders (code, idempotency_key, request_hash, locale, channel, subtotal, total, search_key, customer_id) values ('ECL-1', 'k1', 'h', 'es', 'whatsapp', 1000, 1000, 'ecl-1', 1);
 insert into orders (code, idempotency_key, request_hash, locale, channel, subtotal, total, search_key, customer_name) values ('ECL-2', 'k2', 'h', 'es', 'whatsapp', 500, 500, 'ecl-2 maria', 'Maria');
 insert into brands (slug, name, search_key) values ('skin1004', 'SKIN1004', 'skin1004 skin1004'), ('face-republic', 'Face Republic', 'face republic face-republic');
-insert into categories (slug, routine_step) values ('cleanser', 1);
+insert into categories (slug, icon, sort_order) values ('cleanser', 'package', 1);
 insert into category_translations (category_id, locale, name) values (1, 'es', 'Limpiador');
-insert into concerns (slug) values ('sensitive');
-insert into concern_translations (concern_id, locale, name) values (1, 'es', 'Piel sensible');
 insert into products (slug, brand_id, category_id) values ('oil', 1, 1), ('toner', 2, 1);
 insert into product_translations (product_id, locale, name, search_key) values (1, 'es', 'Aceite limpiador', 'aceite limpiador'), (1, 'en', 'Cleansing oil', 'cleansing oil'), (2, 'es', 'Tónico', 'tonico');
 insert into variants (product_id, sku, search_key) values (1, 'OIL-200', 'oil-200'), (2, 'TON-100', 'ton-100');
 insert into suppliers (name, contact_name, search_key) values ('Sugar Glamour', 'Hana', 'sugar glamour hana');
 insert into purchase_orders (supplier_id, reference, status, ordered_on) values (1, 'PO-OCT', 'draft', '2026-10-01');
 insert into promotions (code, type, value, status) values ('HOLA10', 'percentage', 10, 'active');
-insert into routines (slug, status) values ('morning', 'draft');
-insert into routine_translations (routine_id, locale, title) values (1, 'es', 'Rutina de mañana');
+insert into bundles (slug, status, price) values ('morning', 'draft', 1);
+insert into bundle_translations (bundle_id, locale, name) values (1, 'es', 'Set de mañana');
 insert into collections (slug, status) values ('summer', 'draft');
 insert into collection_translations (collection_id, locale, title) values (1, 'es', 'Verano');
 `);
@@ -122,10 +121,7 @@ describe("GET /search", () => {
 		expect(labels((await search("limpiador")).categories)).toEqual([
 			"Limpiador",
 		]);
-		expect(labels((await search("PIEL")).concerns)).toEqual(["Piel sensible"]);
-		expect(labels((await search("manana")).routines)).toEqual([
-			"Rutina de mañana",
-		]);
+		expect(labels((await search("manana")).bundles)).toEqual(["Set de mañana"]);
 		expect(labels((await search("verano")).collections)).toEqual(["Verano"]);
 		expect(labels((await search("hola")).promotions)).toEqual(["HOLA10"]);
 		const purchase = (await search("po-oct")).purchases;

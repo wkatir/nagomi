@@ -17,7 +17,7 @@ export const holdsStock = (holdStart: string) =>
 		and(eq(orders.status, "pending"), gte(orders.createdAt, holdStart)),
 	);
 
-export function onHandByVariant(db: Db, today: string, variantIds?: number[]) {
+export function onHandByVariant(db: Db, variantIds?: number[]) {
 	return db
 		.select({
 			variantId: lots.variantId,
@@ -25,12 +25,7 @@ export function onHandByVariant(db: Db, today: string, variantIds?: number[]) {
 		})
 		.from(lots)
 		.innerJoin(inventoryMovements, eq(inventoryMovements.lotId, lots.id))
-		.where(
-			and(
-				variantIds ? inList(lots.variantId, variantIds) : undefined,
-				gte(lots.expiresOn, today),
-			),
-		)
+		.where(variantIds ? inList(lots.variantId, variantIds) : undefined)
 		.groupBy(lots.variantId);
 }
 
@@ -68,7 +63,7 @@ export async function sellableByVariant(
 	excludeOrderId?: number,
 ) {
 	const [stock, promised] = await Promise.all([
-		onHandByVariant(db, clock.today, variantIds),
+		onHandByVariant(db, variantIds),
 		committedByVariant(db, clock.holdStart, variantIds, excludeOrderId),
 	]);
 	const onHand = new Map(stock.map((r) => [r.variantId, r.onHand]));
@@ -108,7 +103,7 @@ export function stockFits(
 	excludeOrderId: number | null = null,
 ) {
 	const items = JSON.stringify(lines.map((l) => [l.variantId, l.quantity]));
-	return sql`not exists (select 1 from json_each(${items}) j where json_extract(j.value, '$[1]') > (select coalesce(sum(m.quantity), 0) from lots l join inventory_movements m on m.lot_id = l.id where l.variant_id = json_extract(j.value, '$[0]') and l.expires_on >= ${clock.today}) - (select coalesce(sum(oi.quantity), 0) from order_items oi join orders o on o.id = oi.order_id where oi.variant_id = json_extract(j.value, '$[0]') and o.id is not ${excludeOrderId} and (o.status = 'confirmed' or (o.status = 'pending' and o.created_at >= ${clock.holdStart}))))`;
+	return sql`not exists (select 1 from json_each(${items}) j where json_extract(j.value, '$[1]') > (select coalesce(sum(m.quantity), 0) from lots l join inventory_movements m on m.lot_id = l.id where l.variant_id = json_extract(j.value, '$[0]')) - (select coalesce(sum(oi.quantity), 0) from order_items oi join orders o on o.id = oi.order_id where oi.variant_id = json_extract(j.value, '$[0]') and o.id is not ${excludeOrderId} and (o.status = 'confirmed' or (o.status = 'pending' and o.created_at >= ${clock.holdStart}))))`;
 }
 
 export function lotStock(db: Db, where?: SQL) {
@@ -117,8 +112,6 @@ export function lotStock(db: Db, where?: SQL) {
 			lotId: lots.id,
 			variantId: lots.variantId,
 			code: lots.code,
-			expiresOn: lots.expiresOn,
-			expiryPrecision: lots.expiryPrecision,
 			unitCostE4: lots.unitCostE4,
 			available: sql<number>`coalesce(sum(${inventoryMovements.quantity}), 0)`,
 		})
@@ -126,16 +119,14 @@ export function lotStock(db: Db, where?: SQL) {
 		.leftJoin(inventoryMovements, eq(inventoryMovements.lotId, lots.id))
 		.where(where)
 		.groupBy(lots.id)
-		.orderBy(asc(lots.expiresOn), asc(lots.id));
+		.orderBy(asc(lots.id));
 }
 
-// `today` in the store's time zone; expired units only leave as waste.
-export async function stockByVariant(db: Db, today: string) {
+export async function stockByVariant(db: Db) {
 	const rows = await db
 		.select({
 			variantId: lots.variantId,
-			onHand: sql<number>`coalesce(sum(case when ${lots.expiresOn} >= ${today} then ${inventoryMovements.quantity} end), 0)`,
-			expired: sql<number>`coalesce(sum(case when ${lots.expiresOn} < ${today} then ${inventoryMovements.quantity} end), 0)`,
+			onHand: sql<number>`coalesce(sum(${inventoryMovements.quantity}), 0)`,
 		})
 		.from(lots)
 		.leftJoin(inventoryMovements, eq(inventoryMovements.lotId, lots.id))

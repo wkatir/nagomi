@@ -4,7 +4,6 @@ import { schema } from "#/db";
 import type { Locale } from "#/lib/enums";
 import type { PurchaseListSearch } from "#/lib/schemas/purchasing";
 import { qualified, withinLocalDays } from "./d1";
-import { formatExpiry } from "./expiry";
 import { groupBy } from "./group-by";
 import { pageWindow, sortBy, toPaged } from "./list-query";
 import { e4ToMinor } from "./receiving";
@@ -137,8 +136,7 @@ export async function purchaseDetail(db: Db, locale: Locale, id: number) {
 				sku: variants.sku,
 				brand: brands.name,
 				name: productTranslations.name,
-				sizeValue: variants.sizeValue,
-				sizeUnit: variants.sizeUnit,
+				optionLabel: variants.optionLabel,
 				quantity: purchaseOrderItems.quantity,
 				received: sql<number>`(select coalesce(sum(l.quantity), 0) from purchase_receipt_lines l where l.purchase_order_item_id = ${qualified(purchaseOrderItems.id)})`,
 				unitCost: purchaseOrderItems.unitCost,
@@ -178,8 +176,6 @@ export async function purchaseDetail(db: Db, locale: Locale, id: number) {
 				quantity: purchaseReceiptLines.quantity,
 				lotId: lots.id,
 				lotCode: lots.code,
-				expiresOn: lots.expiresOn,
-				expiryPrecision: lots.expiryPrecision,
 				unitCostE4: lots.unitCostE4,
 			})
 			.from(purchaseReceiptLines)
@@ -201,13 +197,10 @@ export async function purchaseDetail(db: Db, locale: Locale, id: number) {
 			if (own === undefined) throw new Error(`Receipt ${r.id} has no lines`);
 			return {
 				...r,
-				lines: own.map(
-					({ receiptId: _, unitCostE4, expiryPrecision, ...l }) => ({
-						...l,
-						expiry: formatExpiry(l.expiresOn, expiryPrecision),
-						landedUnitCost: e4ToMinor(unitCostE4),
-					}),
-				),
+				lines: own.map(({ receiptId: _, unitCostE4, ...l }) => ({
+					...l,
+					landedUnitCost: e4ToMinor(unitCostE4),
+				})),
 			};
 		}),
 	};

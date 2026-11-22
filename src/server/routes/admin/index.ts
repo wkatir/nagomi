@@ -1,13 +1,15 @@
 import { Hono } from "hono";
-import { type AdminEnv, requireAdmin } from "../../auth";
+import { type AdminEnv, requireArea, requireStaff } from "../../auth";
+import { ADMIN_AREAS } from "./areas";
 import { auditRouter } from "./audit";
 import { brandsRouter } from "./brands";
+import { bundlesRouter } from "./bundles";
 import { categoriesRouter } from "./categories";
 import { collectionsRouter } from "./collections";
-import { concernsRouter } from "./concerns";
 import { customersRouter } from "./customers";
 import { dashboardRouter } from "./dashboard";
 import { exportsRouter } from "./exports";
+import { followupsRouter } from "./followups";
 import { homeSlidesRouter } from "./home-slides";
 import { inventoryRouter } from "./inventory";
 import { mediaFilesRouter, mediaRouter } from "./media";
@@ -16,22 +18,23 @@ import { productsRouter } from "./products";
 import { promotionsRouter } from "./promotions";
 import { purchasingRouter } from "./purchasing";
 import { reportsRouter } from "./reports";
-import { routinesRouter } from "./routines";
 import { searchRouter } from "./search";
 import { settingsRouter } from "./settings";
 import { shippingRouter } from "./shipping";
 import { suppliersRouter } from "./suppliers";
 
-export const admin = new Hono<AdminEnv>()
-	.use("*", requireAdmin)
+const staff = new Hono<AdminEnv>().use("*", requireStaff);
+for (const [prefix, area] of Object.entries(ADMIN_AREAS))
+	staff.use(`${prefix}/*`, requireArea(area));
+
+export const admin = staff
 	.route("/dashboard", dashboardRouter)
 	.route("/products", productsRouter)
 	.route("/product-images", mediaRouter)
 	.route("/media", mediaFilesRouter)
 	.route("/brands", brandsRouter)
 	.route("/categories", categoriesRouter)
-	.route("/concerns", concernsRouter)
-	.route("/routines", routinesRouter)
+	.route("/bundles", bundlesRouter)
 	.route("/collections", collectionsRouter)
 	.route("/home-slides", homeSlidesRouter)
 	.route("/promotions", promotionsRouter)
@@ -39,6 +42,7 @@ export const admin = new Hono<AdminEnv>()
 	.route("/purchase-orders", purchasingRouter)
 	.route("/inventory", inventoryRouter)
 	.route("/orders", ordersRouter)
+	.route("/followups", followupsRouter)
 	.route("/customers", customersRouter)
 	.route("/reports", reportsRouter)
 	.route("/search", searchRouter)

@@ -1,10 +1,8 @@
 import type { ReturnDisposition } from "#/db/schema";
-import { isExpired } from "./fefo";
 
 export type SoldLot = {
 	orderItemId: number;
 	lotId: number;
-	expiresOn: string;
 	sold: number;
 	returned: number;
 };
@@ -36,14 +34,6 @@ export class ReturnExceedsSoldError extends Error {
 	}
 }
 
-export class RestockExpiredLotError extends Error {
-	constructor(readonly lotId: number) {
-		super(
-			`Lot ${lotId} has expired: its returned units can only be written off`,
-		);
-	}
-}
-
 export class ReturnLotRequiredError extends Error {
 	constructor(readonly orderItemId: number) {
 		super(`Order item ${orderItemId} left from several lots: choose the lot`);
@@ -54,7 +44,6 @@ export class ReturnLotRequiredError extends Error {
 export function planReturn(
 	sold: SoldLot[],
 	requests: ReturnRequest[],
-	today: string,
 ): ReturnLinePlan[] {
 	if (requests.length === 0)
 		throw new Error("A return needs at least one line");
@@ -77,15 +66,10 @@ export function planReturn(
 		const returnable = left.get(key) ?? 0;
 		if (r.quantity > returnable)
 			throw new ReturnExceedsSoldError(r.orderItemId, r.lotId, returnable);
-		const lot = sold.find(
-			(s) => s.orderItemId === r.orderItemId && s.lotId === lotId,
-		);
-		if (lot === undefined)
+		if (!sold.some((s) => s.orderItemId === r.orderItemId && s.lotId === lotId))
 			throw new Error(
 				`Order item ${r.orderItemId} has no sale from lot ${lotId}`,
 			);
-		if (r.disposition === "restock" && isExpired(lot.expiresOn, today))
-			throw new RestockExpiredLotError(lotId);
 		left.set(key, returnable - r.quantity);
 		const same = plan.find(
 			(p) =>
@@ -106,16 +90,14 @@ export function planReturn(
 }
 
 // For an order whose delivery failed.
-export function fullReturn(sold: SoldLot[], today: string): ReturnLinePlan[] {
+export function fullReturn(sold: SoldLot[]): ReturnLinePlan[] {
 	return sold
 		.filter((s) => s.sold > s.returned)
 		.map((s) => ({
 			orderItemId: s.orderItemId,
 			lotId: s.lotId,
 			quantity: s.sold - s.returned,
-			disposition: isExpired(s.expiresOn, today)
-				? ("write_off" as const)
-				: ("restock" as const),
+			disposition: "restock" as const,
 		}));
 }
 

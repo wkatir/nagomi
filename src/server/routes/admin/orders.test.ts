@@ -4,7 +4,9 @@ import { Hono } from "hono";
 import { d1, migratedDatabase } from "#/db/test-database";
 import type { AdminEnv } from "#/server/auth";
 
-const env: { DB?: ReturnType<typeof d1> } = {};
+const env: { DB?: ReturnType<typeof d1>; BETTER_AUTH_URL: string } = {
+	BETTER_AUTH_URL: "http://localhost",
+};
 mock.module("cloudflare:workers", () => ({ env }));
 const { ordersRouter } = await import("./orders");
 
@@ -37,7 +39,7 @@ const confirm = (id: number) =>
 	});
 const short = (requested: number, available: number) => ({
 	error: "insufficient_stock",
-	lines: [{ variantId: 1, sku: "OIL", requested, available }],
+	lines: [{ variantId: 1, sku: "OIL-001", requested, available }],
 });
 
 const body = async (res: Response) =>
@@ -51,21 +53,21 @@ const orderCount = () =>
 beforeEach(() => {
 	db = migratedDatabase();
 	db.exec(`
-insert into store_settings (id, name, currency, default_locale, time_zone, country_code, order_code_prefix, max_quantity_per_line, expiry_warning_days) values (1, 'Store', 'USD', 'es', 'America/El_Salvador', 'SV', 'ECL', 20, 180);
+insert into store_settings (id, name, currency, default_locale, time_zone, country_code, order_code_prefix, max_quantity_per_line, low_stock_threshold) values (1, 'Store', 'USD', 'es', 'America/El_Salvador', 'SV', 'ECL', 20, 5);
 insert into store_payment_methods (method) values ('cash');
 insert into brands (slug, name, search_key) values ('b', 'Brand', 'brand b');
-insert into categories (slug, routine_step) values ('cleanser', 1);
+insert into categories (slug, icon, sort_order) values ('cleanser', 'package', 1);
 insert into category_translations (category_id, locale, name) values (1, 'es', 'Limpiador');
 insert into products (slug, brand_id, category_id) values ('oil', 1, 1);
 insert into product_translations (product_id, locale, name, search_key) values (1, 'es', 'Aceite', 'aceite');
-insert into variants (product_id, sku, price, search_key) values (1, 'OIL', 1500, 'oil');
+insert into variants (product_id, sku, price, search_key) values (1, 'OIL-001', 1500, 'oil');
 update products set status = 'published' where id = 1;
 insert into suppliers (name, search_key) values ('Supplier', 'supplier');
 insert into purchase_orders (supplier_id, reference, status, ordered_on) values (1, 'PO-1', 'ordered', '2026-01-01');
 insert into purchase_order_items (purchase_order_id, variant_id, quantity, unit_cost) values (1, 1, 3, 700);
 insert into purchase_receipts (purchase_order_id, received_on, created_by) values (1, '2026-01-02', 'u');
 insert into purchase_receipt_lines (receipt_id, purchase_order_item_id, quantity, allocated_shipping_e4) values (1, 1, 3, 0);
-insert into lots (variant_id, receipt_line_id, expires_on, unit_cost_e4) values (1, 1, '2099-12-31', 70000);
+insert into lots (variant_id, receipt_line_id, unit_cost_e4) values (1, 1, 70000);
 insert into inventory_movements (lot_id, kind, quantity, created_by) values (1, 'receive', 3, 'u');
 `);
 	env.DB = d1(db);
@@ -98,7 +100,7 @@ describe("admin orders and stock", () => {
 		// Placed long ago and never confirmed: past its deadline, it holds nothing.
 		db.exec(`
 insert into orders (code, idempotency_key, request_hash, locale, channel, subtotal, total, search_key, created_at) values ('OLD-1', '00000000-0000-4000-8000-000000000000', 'h', 'es', 'whatsapp', 4500, 4500, 'old-1', '2026-01-03T00:00:00Z');
-insert into order_items (order_id, variant_id, quantity, unit_price, sku, brand_name, product_name) values (1, 1, 3, 1500, 'OIL', 'Brand', 'Aceite');
+insert into order_items (order_id, variant_id, quantity, unit_price, sku, brand_name, product_name) values (1, 1, 3, 1500, 'OIL-001', 'Brand', 'Aceite');
 `);
 		expect((await create(3)).status).toBe(201);
 		const refused = await confirm(1);

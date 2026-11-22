@@ -112,23 +112,19 @@ describe("receiptDateProblem", () => {
 		receivedOn: "2026-10-05",
 		orderedOn: "2026-10-03",
 		today: "2026-10-05",
-		expiries: ["2027-05-31", "2026-10-05"],
 	};
 
-	test("accepts a delivery dated today with lots expiring today or later", () => {
+	test("accepts a delivery dated today", () => {
 		expect(receiptDateProblem(ok)).toBeNull();
 		expect(receiptDateProblem({ ...ok, orderedOn: null })).toBeNull();
 	});
 
-	test("refuses future dates, dates before the order and expired lots", () => {
+	test("refuses future dates and dates before the order", () => {
 		expect(receiptDateProblem({ ...ok, receivedOn: "2026-10-06" })).toBe(
 			"received_on_in_future",
 		);
 		expect(receiptDateProblem({ ...ok, receivedOn: "2026-10-02" })).toBe(
 			"received_before_ordered",
-		);
-		expect(receiptDateProblem({ ...ok, expiries: ["2026-10-04"] })).toBe(
-			"lot_expired_at_receipt",
 		);
 	});
 });

@@ -4,7 +4,9 @@ import { Hono } from "hono";
 import { d1, migratedDatabase } from "#/db/test-database";
 import type { AdminEnv } from "#/server/auth";
 
-const env: { DB?: ReturnType<typeof d1> } = {};
+const env: { DB?: ReturnType<typeof d1>; BETTER_AUTH_URL: string } = {
+	BETTER_AUTH_URL: "http://localhost",
+};
 mock.module("cloudflare:workers", () => ({ env }));
 const { auditRouter } = await import("./audit");
 
@@ -61,10 +63,10 @@ function event(e: {
 beforeEach(() => {
 	db = migratedDatabase();
 	db.exec(`
-insert into store_settings (id, name, currency, default_locale, time_zone, country_code, order_code_prefix, max_quantity_per_line, expiry_warning_days) values (1, 'Store', 'USD', 'es', 'America/El_Salvador', 'SV', 'ECL', 20, 180);
-insert into users (id, name, email) values ('ana', 'Ana Admin', 'ana@example.com');
-insert into users (id, name, email) values ('beto', 'Beto Admin', 'beto@example.com');
-insert into users (id, name, email) values ('idle', 'Idle Admin', 'idle@example.com');
+insert into store_settings (id, name, currency, default_locale, time_zone, country_code, order_code_prefix, max_quantity_per_line, low_stock_threshold) values (1, 'Store', 'USD', 'es', 'America/El_Salvador', 'SV', 'ECL', 20, 5);
+insert into users (id, name, email, role) values ('ana', 'Ana Admin', 'ana@example.com', 'admin');
+insert into users (id, name, email, role) values ('beto', 'Beto Admin', 'beto@example.com', 'admin');
+insert into users (id, name, email, role) values ('idle', 'Idle Admin', 'idle@example.com', 'admin');
 `);
 	env.DB = d1(db);
 });
