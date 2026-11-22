@@ -22,7 +22,8 @@ import {
 import { missingCheckoutSettings } from "../domain/store-rules";
 import { catalogContext } from "../domain/storefront-catalog";
 import { zoneOptions } from "../domain/zone-queries";
-import { type WompiEnv, wompiCredentials } from "../payments/wompi";
+import { cardProvider } from "../payments/demo-card";
+import type { WompiEnv } from "../payments/wompi";
 
 const { pages } = schema;
 
@@ -59,7 +60,7 @@ export const storefront = new Hono()
 			checkoutOpen: missingCheckoutSettings(s).length === 0 && legalPages.ok,
 			paymentMethods,
 			paymentOptions,
-			cardPaymentsConfigured: wompiCredentials(env as WompiEnv) !== null,
+			cardProvider: cardProvider(env as WompiEnv, s),
 			promises,
 			footerPages: footer,
 			social: {

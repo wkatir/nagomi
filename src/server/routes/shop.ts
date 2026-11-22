@@ -9,13 +9,16 @@ import {
 } from "hono/cookie";
 import { z } from "zod";
 import { type Db, getDb, schema } from "#/db";
+import type { Locale } from "#/db/schema";
 import { CHECKOUT_PAYMENT_METHODS, LOCALES } from "#/lib/enums";
+import { localizedUrl } from "#/lib/seo";
 import {
 	isSvMunicipality,
 	SV_MUNICIPALITIES,
 	SV_PHONE_REGEX,
 } from "#/lib/sv-locations";
 import { sessionCustomer } from "../customer-session";
+import { recordCardPayment } from "../domain/card-payments";
 import {
 	CART_COOKIE,
 	CART_COOKIE_DAYS,
@@ -47,6 +50,7 @@ import {
 } from "../domain/place-order";
 import { getSettings, type StoreSettings } from "../domain/settings";
 import { missingCheckoutSettings } from "../domain/store-rules";
+import { cardProvider, checkDemoCard } from "../payments/demo-card";
 import {
 	parseWebhook,
 	validWebhookSignature,
@@ -74,6 +78,8 @@ const ORDERS_COOKIE = "nagomi_orders";
 const ORDERS_REMEMBERED = 5;
 
 const wompi = () => wompiCredentials(env as WompiEnv);
+const cardOf = (settings: StoreSettings) =>
+	cardProvider(env as WompiEnv, settings);
 
 const secureCookies = () => new URL(env.BETTER_AUTH_URL).protocol === "https:";
 
@@ -172,7 +178,7 @@ async function respondCart(
 		await priceCart(db, settings, query.locale, cart, {
 			municipality: query.municipality ?? null,
 			email: customer?.email ?? null,
-			cardConfigured: wompi() !== null,
+			cardProvider: cardOf(settings),
 		}),
 		status,
 	);
@@ -257,12 +263,36 @@ function siteUrl(path: string) {
 	return new URL(path, env.BETTER_AUTH_URL).toString();
 }
 
+const demoPaymentUrl = (order: { code: string; locale: Locale }) =>
+	localizedUrl(env.BETTER_AUTH_URL, `/pago-prueba/${order.code}`, order.locale);
+
 async function createCardPayment(
 	db: Db,
-	order: { id: number; code: string; total: number },
+	settings: StoreSettings,
+	order: { id: number; code: string; total: number; locale: Locale },
 ) {
+	const provider = cardOf(settings);
+	if (provider === "demo") {
+		const url = demoPaymentUrl(order);
+		await db.batch([
+			db.insert(payments).values({
+				orderId: order.id,
+				kind: "payment",
+				method: "card",
+				amount: order.total,
+				status: "pending",
+				reference: "demo-page",
+				recordedBy: "demo",
+			}),
+			db
+				.update(orders)
+				.set({ paymentUrl: url })
+				.where(and(eq(orders.id, order.id), eq(orders.status, "pending"))),
+		]);
+		return url;
+	}
 	const credentials = wompi();
-	if (!credentials) throw new Error("Card payment without Wompi credentials");
+	if (!credentials) throw new Error("Card payment without a card provider");
 	const link = await wompiClient(credentials).createPaymentLink({
 		reference: order.code,
 		amount: order.total,
@@ -297,7 +327,7 @@ async function orderView(db: Db, settings: StoreSettings, code: string) {
 		.where(eq(orders.code, code));
 	if (!row) return null;
 	const o = row.order;
-	const [lines, sets, history] = await db.batch([
+	const [lines, sets, history, failures] = await db.batch([
 		db
 			.select({
 				orderBundleId: orderItems.orderBundleId,
@@ -332,7 +362,19 @@ async function orderView(db: Db, settings: StoreSettings, code: string) {
 			.from(orderStatusHistory)
 			.where(eq(orderStatusHistory.orderId, o.id))
 			.orderBy(asc(orderStatusHistory.id)),
+		db
+			.select({ id: payments.id })
+			.from(payments)
+			.where(
+				and(
+					eq(payments.orderId, o.id),
+					eq(payments.method, "card"),
+					eq(payments.status, "failed"),
+				),
+			)
+			.limit(1),
 	]);
+	const provider = cardOf(settings);
 	const net = row.paid - row.refunded;
 	const awaitingPayment =
 		o.status === "pending" && o.paymentMethod !== "cash_on_delivery";
@@ -400,7 +442,10 @@ async function orderView(db: Db, settings: StoreSettings, code: string) {
 		paymentUrl:
 			awaitingPayment && o.paymentMethod === "card" ? o.paymentUrl : null,
 		cardPaymentAvailable:
-			awaitingPayment && o.paymentMethod === "card" && wompi() !== null,
+			awaitingPayment && o.paymentMethod === "card" && provider !== null,
+		cardProvider: o.paymentMethod === "card" ? provider : null,
+		cardDeclined:
+			awaitingPayment && o.paymentMethod === "card" && failures.length > 0,
 		bankTransfer:
 			awaitingPayment &&
 			o.paymentMethod === "bank_transfer" &&
@@ -444,6 +489,14 @@ async function mayOpen(
 		? { ok: true as const }
 		: { ok: false as const, limited: false };
 }
+
+const demoPaymentInput = z.object({
+	attempt: idempotencyKey,
+	amount: z.number().int().positive(),
+	number: z.string().trim().max(23),
+	expiry: z.string().trim().max(7),
+	cvc: z.string().trim().max(4),
+});
 
 const orderCode = z.object({
 	code: z
@@ -595,7 +648,7 @@ export const shop = new Hono()
 				settings,
 				query.locale,
 				{ ...cart, promotionCode: null },
-				{ municipality: null, email: null, cardConfigured: false },
+				{ municipality: null, email: null, cardProvider: null },
 			);
 			if (priced.count === 0) return c.json({ error: "cart_empty" }, 409);
 			const customer = await sessionCustomer(c);
@@ -742,7 +795,7 @@ export const shop = new Hono()
 		const priced = await priceCartWithStock(db, settings, input.locale, cart, {
 			municipality: place.municipality,
 			email,
-			cardConfigured: wompi() !== null,
+			cardProvider: cardOf(settings),
 		});
 		const total = priced.cart;
 		if (total.count === 0) return c.json({ error: "cart_empty" as const }, 409);
@@ -874,9 +927,9 @@ export const shop = new Hono()
 		let paymentError: string | null = null;
 		if (order.paymentMethod === "card") {
 			try {
-				redirectUrl = await createCardPayment(db, order);
+				redirectUrl = await createCardPayment(db, settings, order);
 			} catch (e) {
-				console.error(`Wompi payment link for ${order.code} failed`, e);
+				console.error(`Card payment for ${order.code} failed`, e);
 				paymentError = "gateway_unavailable";
 			}
 		}
@@ -925,7 +978,8 @@ export const shop = new Hono()
 			const { code } = c.req.valid("param");
 			const access = await mayOpen(c, db, code, c.req.valid("json").email);
 			if (!access.ok) return c.json({ error: "order_not_found" }, 404);
-			if (!wompi()) return c.json({ error: "card_unavailable" }, 409);
+			const settings = await getSettings(db);
+			if (!cardOf(settings)) return c.json({ error: "card_unavailable" }, 409);
 			const order = await db.query.orders.findFirst({
 				where: eq(orders.code, code),
 			});
@@ -936,11 +990,67 @@ export const shop = new Hono()
 			)
 				return c.json({ error: "invalid_transition" }, 409);
 			try {
-				return c.json({ redirectUrl: await createCardPayment(db, order) });
+				return c.json({
+					redirectUrl: await createCardPayment(db, settings, order),
+				});
 			} catch (e) {
-				console.error(`Wompi payment link for ${order.code} failed`, e);
+				console.error(`Card payment for ${order.code} failed`, e);
 				return c.json({ error: "gateway_unavailable" }, 502);
 			}
+		},
+	)
+	.post(
+		"/orders/:code/demo-payment",
+		validate("param", orderCode),
+		validate("json", demoPaymentInput),
+		async (c) => {
+			const db = getDb();
+			const { code } = c.req.valid("param");
+			const input = c.req.valid("json");
+			if (!(await withinLimit(c, "card")))
+				return c.json({ error: "rate_limited" }, 429);
+			const access = await mayOpen(c, db, code, undefined);
+			if (!access.ok) return c.json({ error: "order_not_found" }, 404);
+			const settings = await getSettings(db);
+			if (cardOf(settings) !== "demo")
+				return c.json({ error: "card_unavailable" }, 409);
+			const order = await db.query.orders.findFirst({
+				where: eq(orders.code, code),
+			});
+			if (!order) return c.json({ error: "order_not_found" }, 404);
+			const transactionId = `DEMO-${input.attempt}`;
+			const earlier = await db.query.payments.findFirst({
+				columns: { orderId: true, status: true },
+				where: eq(payments.providerTransactionId, transactionId),
+			});
+			if (earlier && earlier.orderId === order.id)
+				return c.json({
+					approved: earlier.status === "confirmed",
+					duplicate: true,
+				});
+			if (order.status !== "pending" || order.paymentMethod !== "card")
+				return c.json({ error: "invalid_transition" }, 409);
+			if (input.amount !== order.total)
+				return c.json({ error: "amount_mismatch" }, 409);
+			const card = checkDemoCard(input);
+			if (!card.ok)
+				return c.json(
+					{ error: "invalid_fields" as const, fields: card.fields },
+					422,
+				);
+			const outcome = await recordCardPayment(db, {
+				orderCode: order.code,
+				transactionId,
+				approved: card.approved,
+				amount: order.total,
+				reference: `${card.brand} •••• ${card.last4}`,
+				provider: "demo",
+			});
+			if (!outcome.ok) return c.json({ error: outcome.error }, 409);
+			return c.json({
+				approved: outcome.approved,
+				duplicate: outcome.duplicate,
+			});
 		},
 	)
 	// Signed with the API secret; repeated notices change nothing.
@@ -961,74 +1071,20 @@ export const shop = new Hono()
 		}
 		const notice = parseWebhook(json);
 		if (!notice) return c.json({ error: "invalid_request" }, 400);
-		const db = getDb();
-		const seen = await db.query.payments.findFirst({
-			columns: { id: true },
-			where: eq(payments.providerTransactionId, notice.transactionId),
-		});
-		if (seen) return c.json({ ok: true, duplicate: true });
 		if (!notice.approved) return c.json({ ok: true, approved: false });
-		const order = await db.query.orders.findFirst({
-			where: eq(orders.code, notice.reference),
+		const outcome = await recordCardPayment(getDb(), {
+			orderCode: notice.reference,
+			transactionId: notice.transactionId,
+			approved: true,
+			amount: notice.amount,
+			reference: `wompi:${notice.transactionId}${notice.production === false ? " (prueba)" : ""}`,
+			provider: "wompi",
 		});
-		if (!order) return c.json({ error: "order_not_found" }, 404);
-		if (order.paymentMethod !== "card" || notice.amount !== order.total)
-			return c.json({ error: "amount_mismatch" }, 409);
-		const pendingPayment = await db.query.payments.findFirst({
-			where: and(
-				eq(payments.orderId, order.id),
-				eq(payments.method, "card"),
-				eq(payments.status, "pending"),
-			),
-		});
-		const reference = `wompi:${notice.transactionId}${notice.production === false ? " (prueba)" : ""}`;
-		try {
-			await db.batch([
-				pendingPayment
-					? db
-							.update(payments)
-							.set({
-								status: "confirmed",
-								providerTransactionId: notice.transactionId,
-								reference,
-							})
-							.where(
-								and(
-									eq(payments.id, pendingPayment.id),
-									eq(payments.status, "pending"),
-								),
-							)
-					: db.insert(payments).values({
-							orderId: order.id,
-							kind: "payment",
-							method: "card",
-							amount: notice.amount,
-							status: "confirmed",
-							reference,
-							providerTransactionId: notice.transactionId,
-							recordedBy: "wompi",
-						}),
-				db
-					.update(orders)
-					.set({
-						status: "paid",
-						paidAt: sql`(strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))`,
-					})
-					.where(
-						and(
-							eq(orders.id, order.id),
-							eq(orders.status, "pending"),
-							sql`${confirmedPaid} >= ${orders.total}`,
-						),
-					),
-			]);
-		} catch (e) {
-			if (
-				mapDbError(e) === null &&
-				/UNIQUE constraint failed: payments/.test(String(e))
-			)
-				return c.json({ ok: true, duplicate: true });
-			throw e;
-		}
-		return c.json({ ok: true });
+		if (!outcome.ok)
+			return outcome.error === "order_not_found"
+				? c.json({ error: outcome.error }, 404)
+				: c.json({ error: outcome.error }, 409);
+		return outcome.duplicate
+			? c.json({ ok: true, duplicate: true })
+			: c.json({ ok: true });
 	});

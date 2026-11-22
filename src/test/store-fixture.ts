@@ -17,7 +17,7 @@ export const testStore: TestStore = {
 	whatsappDisplay: null,
 	taxRateBp: 1300,
 	paymentDueHours: 48,
-	cardPaymentsConfigured: false,
+	cardProvider: null,
 	freeShippingFrom: null,
 	lowStockThreshold: 5,
 	maxQuantityPerLine: 20,

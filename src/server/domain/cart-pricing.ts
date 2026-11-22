@@ -1,4 +1,5 @@
 import type { CheckoutPaymentMethod } from "#/lib/enums";
+import type { CardProvider } from "../payments/demo-card";
 
 const minor = (n: number, what: string) => {
 	if (!Number.isSafeInteger(n) || n < 0)
@@ -85,6 +86,7 @@ export type PaymentOption = {
 	reason: PaymentUnavailableReason | null;
 	maxTotal: number | null;
 	zone: string | null;
+	provider: CardProvider | null;
 };
 
 export function paymentOptions(
@@ -97,7 +99,7 @@ export function paymentOptions(
 	order: {
 		total: number;
 		zoneId: number | null;
-		cardConfigured: boolean;
+		cardProvider: CardProvider | null;
 		bankConfigured: boolean;
 	},
 ): PaymentOption[] {
@@ -111,7 +113,7 @@ export function paymentOptions(
 		.map((a) => {
 			const method = a.method as CheckoutPaymentMethod;
 			const reason: PaymentUnavailableReason | null =
-				(method === "card" && !order.cardConfigured) ||
+				(method === "card" && order.cardProvider === null) ||
 				(method === "bank_transfer" && !order.bankConfigured)
 					? "not_configured"
 					: a.shippingZoneId !== null && order.zoneId === null
@@ -127,6 +129,7 @@ export function paymentOptions(
 				reason,
 				maxTotal: a.maxTotal,
 				zone: a.shippingZoneSlug,
+				provider: method === "card" ? order.cardProvider : null,
 			};
 		});
 }

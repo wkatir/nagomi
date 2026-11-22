@@ -3,6 +3,7 @@ import type { Db } from "#/db";
 import { schema } from "#/db";
 import type { Locale } from "#/db/schema";
 import { storeToday } from "#/lib/dates";
+import type { CardProvider } from "../payments/demo-card";
 import { cartTotals, type PaymentOption, paymentOptions } from "./cart-pricing";
 import {
 	type CatalogBundle,
@@ -405,7 +406,7 @@ export async function priceCartWithStock(
 	options: {
 		municipality: string | null;
 		email: string | null;
-		cardConfigured: boolean;
+		cardProvider: CardProvider | null;
 	},
 ) {
 	const taxRateBp = settings.taxRateBp;
@@ -453,7 +454,7 @@ export async function priceCartWithStock(
 	const payment = paymentOptions(accepted, {
 		total: totals.total,
 		zoneId: quote?.zoneId ?? null,
-		cardConfigured: options.cardConfigured,
+		cardProvider: options.cardProvider,
 		bankConfigured: bankConfigured(settings),
 	}).map((o: PaymentOption) => ({ ...o, zoneName: zoneName(o.zone) }));
 	const freeFrom = settings.freeShippingFrom;

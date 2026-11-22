@@ -591,3 +591,270 @@ describe("card payments with Wompi", () => {
 		expect(view).toMatchObject({ status: "paid", paid: true });
 	});
 });
+
+describe("card payments with the test gateway", () => {
+	beforeEach(() => {
+		db.exec("update store_settings set demo_store = 1");
+	});
+
+	const cardOption = async () => {
+		await add({ sku: "RAT-002", quantity: 1 });
+		return (await cart("San Salvador Centro")).paymentOptions.find(
+			(o) => o.method === "card",
+		);
+	};
+	const place = async () => {
+		await add({ sku: "RAT-002", quantity: 1 });
+		const res = await checkout({ paymentMethod: "card" });
+		expect(res.status).toBe(201);
+		return json<{ code: string; total: number; redirectUrl: string }>(res);
+	};
+	const pay = (
+		order: { code: string; total: number },
+		card: Partial<{
+			number: string;
+			expiry: string;
+			cvc: string;
+			amount: number;
+			attempt: string;
+		}> = {},
+	) =>
+		send("POST", `/orders/${order.code}/demo-payment`, {
+			attempt: crypto.randomUUID(),
+			amount: order.total,
+			number: "4242 4242 4242 4242",
+			expiry: "12/30",
+			cvc: "123",
+			...card,
+		});
+	const orderRow = () =>
+		db.query("select status, paid_at from orders").get() as {
+			status: string;
+			paid_at: string | null;
+		};
+	const paymentRows = () =>
+		db
+			.query(
+				"select status, reference, provider_transaction_id, recorded_by from payments order by id",
+			)
+			.all() as {
+			status: string;
+			reference: string;
+			provider_transaction_id: string | null;
+			recorded_by: string;
+		}[];
+
+	test("the card provider follows the demo flag and the Wompi keys", async () => {
+		expect(await cardOption()).toMatchObject({
+			available: true,
+			reason: null,
+			provider: "demo",
+		});
+		env.WOMPI_CLIENT_ID = "app-id";
+		env.WOMPI_CLIENT_SECRET = "api-secret";
+		expect(await cardOption()).toMatchObject({
+			available: true,
+			provider: "wompi",
+		});
+		db.exec("update store_settings set demo_store = 0");
+		expect(await cardOption()).toMatchObject({
+			available: true,
+			provider: "wompi",
+		});
+		delete env.WOMPI_CLIENT_ID;
+		delete env.WOMPI_CLIENT_SECRET;
+		expect(await cardOption()).toMatchObject({
+			available: false,
+			reason: "not_configured",
+			provider: null,
+		});
+	});
+
+	test("checkout takes the stock, leaves the order pending and sends the browser to the test page", async () => {
+		const placed = await place();
+		expect(placed.redirectUrl).toBe(
+			`https://nagomi.example/pago-prueba/${placed.code}`,
+		);
+		expect(onHand(2)).toBe(4);
+		expect(orderRow().status).toBe("pending");
+		expect(paymentRows()).toEqual([
+			{
+				status: "pending",
+				reference: "demo-page",
+				provider_transaction_id: null,
+				recorded_by: "demo",
+			},
+		]);
+		const view = await json<Record<string, unknown>>(
+			await send("GET", `/orders/${placed.code}`),
+		);
+		expect(view).toMatchObject({
+			cardProvider: "demo",
+			cardPaymentAvailable: true,
+			cardDeclined: false,
+			paymentUrl: placed.redirectUrl,
+		});
+	});
+
+	test("an English order is sent to the English test page", async () => {
+		await add({ sku: "RAT-002", quantity: 1 });
+		db.exec(
+			"insert into page_versions (page_id, locale, version, title, body_markdown) values (1, 'en', 1, 'Privacy', 'Text'), (2, 'en', 1, 'Terms', 'Text')",
+		);
+		const placed = await json<{ code: string; redirectUrl: string }>(
+			await checkout({ paymentMethod: "card", locale: "en" }),
+		);
+		expect(placed.redirectUrl).toBe(
+			`https://nagomi.example/en/pago-prueba/${placed.code}`,
+		);
+	});
+
+	test("the approved card pays the order through the confirmed payment", async () => {
+		const placed = await place();
+		const res = await pay(placed);
+		expect(res.status).toBe(200);
+		expect(await json<object>(res)).toEqual({ approved: true, duplicate: false });
+		expect(orderRow().status).toBe("paid");
+		expect(orderRow().paid_at).not.toBeNull();
+		const [row] = paymentRows();
+		expect(paymentRows()).toHaveLength(1);
+		expect(row).toMatchObject({
+			status: "confirmed",
+			reference: "Visa •••• 4242",
+			recorded_by: "demo",
+		});
+		expect(row.provider_transaction_id).toMatch(/^DEMO-[0-9a-f-]{36}$/);
+		const view = await json<Record<string, unknown>>(
+			await send("GET", `/orders/${placed.code}?pago=tarjeta`),
+		);
+		expect(view).toMatchObject({ status: "paid", paid: true });
+	});
+
+	test("the declined card records a failed payment and the order stays pending, payable again", async () => {
+		const placed = await place();
+		const res = await pay(placed, { number: "4000 0000 0000 0002" });
+		expect(await json<object>(res)).toEqual({ approved: false, duplicate: false });
+		expect(orderRow().status).toBe("pending");
+		expect(paymentRows().map((p) => [p.status, p.reference])).toEqual([
+			["pending", "demo-page"],
+			["failed", "Visa •••• 0002"],
+		]);
+		const view = await json<Record<string, unknown>>(
+			await send("GET", `/orders/${placed.code}`),
+		);
+		expect(view).toMatchObject({
+			status: "pending",
+			paid: false,
+			cardDeclined: true,
+			cardPaymentAvailable: true,
+		});
+		expect(await json(await pay(placed))).toMatchObject({ approved: true });
+		expect(orderRow().status).toBe("paid");
+	});
+
+	test("an amount other than the order total is refused and changes nothing", async () => {
+		const placed = await place();
+		const res = await pay(placed, { amount: placed.total - 1 });
+		expect(res.status).toBe(409);
+		expect((await json(res)).error).toBe("amount_mismatch");
+		expect(orderRow().status).toBe("pending");
+		expect(paymentRows()).toHaveLength(1);
+	});
+
+	test("the same attempt sent twice is recorded once and answers the same", async () => {
+		const placed = await place();
+		const attempt = crypto.randomUUID();
+		await pay(placed, { attempt, number: "4000 0000 0000 0002" });
+		const again = await pay(placed, {
+			attempt,
+			number: "4000 0000 0000 0002",
+		});
+		expect(await json<object>(again)).toEqual({ approved: false, duplicate: true });
+		const paid = crypto.randomUUID();
+		await pay(placed, { attempt: paid });
+		const repeated = await pay(placed, { attempt: paid });
+		expect(repeated.status).toBe(200);
+		expect(await json<object>(repeated)).toEqual({ approved: true, duplicate: true });
+		expect(paymentRows().map((p) => p.status)).toEqual(["confirmed", "failed"]);
+		expect((await pay(placed)).status).toBe(409);
+	});
+
+	test("only the browser that placed the order or its signed-in owner may pay it", async () => {
+		db.exec(`
+insert into users (id, name, email, role) values ('u-ana', 'Ana', 'ana@example.com', 'customer'), ('u-eva', 'Eva', 'eva@example.com', 'customer');
+insert into customers (id, auth_user_id, name, email, phone_e164, search_key) values (1, 'u-ana', 'Ana', 'ana@example.com', '+50371234567', 'ana'), (2, 'u-eva', 'Eva', 'eva@example.com', '+50371234568', 'eva');`);
+		const placed = await place();
+		jar = new Map();
+		const other = await send("POST", `/orders/${placed.code}/demo-payment`, {
+			attempt: crypto.randomUUID(),
+			amount: placed.total,
+			number: "4242424242424242",
+			expiry: "12/30",
+			cvc: "123",
+			email: "ana@example.com",
+		});
+		expect(other.status).toBe(404);
+		session = { user: { id: "u-eva", role: "customer" } };
+		expect((await pay(placed)).status).toBe(404);
+		expect(orderRow().status).toBe("pending");
+
+		db.exec("update orders set customer_id = 1");
+		session = { user: { id: "u-ana", role: "customer" } };
+		expect(await json(await pay(placed))).toMatchObject({ approved: true });
+	});
+
+	test("a card that is not a test card is refused, and no card number is stored anywhere", async () => {
+		const placed = await place();
+		const real = await pay(placed, { number: "4111 1111 1111 1111" });
+		expect(real.status).toBe(422);
+		expect((await json(real)).fields).toEqual({
+			cardNumber: "not_test_card",
+		});
+		const typo = await pay(placed, { number: "4242 4242 4242 4241" });
+		expect((await json(typo)).fields).toEqual({ cardNumber: "invalid" });
+		await pay(placed, { number: "4000 0000 0000 0002" });
+		await pay(placed);
+		const tables = (
+			db
+				.query(
+					"select name from sqlite_master where type = 'table' and name not like 'sqlite_%'",
+				)
+				.all() as { name: string }[]
+		).map((t) => t.name);
+		const numbers = [
+			"4242424242424242",
+			"4242 4242 4242 4242",
+			"4000000000000002",
+			"4000 0000 0000 0002",
+			"4111111111111111",
+			"4111 1111 1111 1111",
+		];
+		for (const table of tables) {
+			const text = JSON.stringify(db.query(`select * from "${table}"`).all());
+			for (const n of numbers) expect(text.includes(n)).toBe(false);
+		}
+	});
+
+	test("with Wompi keys or outside demo mode the test gateway refuses to pay", async () => {
+		const placed = await place();
+		db.exec("update store_settings set demo_store = 0");
+		const off = await pay(placed);
+		expect(off.status).toBe(409);
+		expect((await json(off)).error).toBe("card_unavailable");
+		db.exec("update store_settings set demo_store = 1");
+		env.WOMPI_CLIENT_ID = "app-id";
+		env.WOMPI_CLIENT_SECRET = "api-secret";
+		expect((await json(await pay(placed))).error).toBe("card_unavailable");
+		expect(orderRow().status).toBe("pending");
+	});
+
+	test("a bank transfer order cannot be paid on the test page", async () => {
+		await add({ sku: "RAT-002", quantity: 1 });
+		const placed = await json<{ code: string; total: number }>(
+			await checkout(),
+		);
+		const res = await pay(placed);
+		expect(res.status).toBe(409);
+		expect((await json(res)).error).toBe("invalid_transition");
+	});
+});

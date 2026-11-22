@@ -133,7 +133,7 @@ describe("paymentOptions", () => {
 	const base = {
 		total: 5000,
 		zoneId: 1,
-		cardConfigured: true,
+		cardProvider: "wompi" as const,
 		bankConfigured: true,
 	};
 
@@ -158,14 +158,31 @@ describe("paymentOptions", () => {
 		expect(reasons({ ...base, total: 15000 }).cash_on_delivery).toBeNull();
 	});
 
-	test("the card needs the Wompi keys and the transfer the bank details", () => {
+	test("the card needs a card provider and the transfer the bank details", () => {
 		expect(
-			reasons({ ...base, cardConfigured: false, bankConfigured: false }),
+			reasons({ ...base, cardProvider: null, bankConfigured: false }),
 		).toEqual({
 			card: "not_configured",
 			bank_transfer: "not_configured",
 			cash_on_delivery: null,
 		});
+	});
+
+	test("the card option names its provider, and no other option has one", () => {
+		const providers = (cardProvider: "wompi" | "demo" | null) =>
+			Object.fromEntries(
+				paymentOptions(accepted, { ...base, cardProvider }).map((o) => [
+					o.method,
+					o.provider,
+				]),
+			);
+		expect(providers("demo")).toEqual({
+			card: "demo",
+			bank_transfer: null,
+			cash_on_delivery: null,
+		});
+		expect(providers("wompi").card).toBe("wompi");
+		expect(providers(null).card).toBeNull();
 	});
 });
 
