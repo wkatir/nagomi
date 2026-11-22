@@ -23,10 +23,11 @@
     "test": "bun test",
     "typecheck": "wrangler types && paraglide-js compile --project ./project.inlang --outdir ./src/paraglide --strategy url cookie preferredLanguage baseLocale && tsc --noEmit",
     "auth:generate": "bunx auth@latest generate --config scripts/auth.config.ts --output src/db/auth-schema.ts -y",
-    "admin:create": "bun scripts/create-admin.ts",
-    "fonts": "bun scripts/fonts.ts"
+    "admin:create": "bun scripts/create-admin.ts"
   },
   "dependencies": {
+    "@fontsource-variable/inter": "5.3.0",
+    "@fontsource-variable/noto-serif-jp": "5.3.1",
     "@hono/zod-validator": "^0.9.1",
     "@tailwindcss/vite": "^4.1.18",
     "@tanstack/react-form": "1.33.5",

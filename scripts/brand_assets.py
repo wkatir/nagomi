@@ -1,57 +1,59 @@
-"""Draws the Eclalune mark, favicons, app icons and Open Graph images from Satoshi outlines.
-
-The mark is a white Satoshi Bold "e" on a #111111 square (Wilmer's logo file,
-eclalune-linkedin-logo-400.png: the glyph's box is centred and 47.5% of the side). The
-wordmark is "eclalune" in Satoshi Bold with the font's kerning and -0.04em tracking.
-
-Outlines are read from public/fonts (run `bun run fonts` first); no font file is written,
-so the outputs are outlined graphics, which the Satoshi license allows. Needs Python 3 with
-fonttools, brotli and Pillow. Run from app/: python scripts/brand_assets.py
-"""
-
+import math
 from io import BytesIO
 from pathlib import Path
 
+import resvg_py
 from fontTools.pens.basePen import BasePen
-from fontTools.pens.svgPathPen import SVGPathPen
 from fontTools.pens.transformPen import TransformPen
 from fontTools.ttLib import TTFont
-from PIL import Image, ImageChops, ImageDraw
+from fontTools.varLib.instancer import instantiateVariableFont
+from PIL import Image
 
 APP = Path(__file__).resolve().parent.parent
 PUBLIC = APP / "public"
 BRAND_PATHS = APP / "src/components/brand/brand-paths.ts"
-WORDMARK_MASTER = APP.parent / "docs/brand/final/eclalune-wordmark.svg"
+SERIF_FILES = APP / "node_modules/@fontsource-variable/noto-serif-jp/files"
+SANS_FILES = APP / "node_modules/@fontsource-variable/inter/files"
 
-INK = "#111111"
-WHITE = "#ffffff"
-TAGLINE_GREY = "#bdbdbd"
-GLYPH_SHARE = 0.475  # glyph box height / square side, measured on the original logo
-TRACKING = -0.04  # em
-SUPERSAMPLE = 8
+BACKGROUND = "#0d0d17"
+VIOLET = "#8b7cf6"
+VIOLET_LIGHT = "#a78bfa"
+LAVENDER = "#e6e1ff"
+MUTED = "#9b97b8"
 
-bold = TTFont(APP / "public/fonts/satoshi-bold.woff2")
-medium = TTFont(APP / "public/fonts/satoshi-medium.woff2")
+TAGLINES = {
+    "og-default.png": "Periféricos y accesorios para tu setup",
+    "og-default-en.png": "Peripherals and accessories for your setup",
+}
+
+MARK = {
+    "regular": {"radius": 41.5, "width": 8.6, "weight": 700, "height": 53, "cy": 50.5},
+    "small": {"radius": 40, "width": 13, "weight": 900, "height": 56, "cy": 50.5},
+}
 
 
-def x_advance(value) -> int:
-    return getattr(value, "XAdvance", 0) or 0 if value else 0
+def fmt(value: float) -> str:
+    text = f"{value:.2f}".rstrip("0").rstrip(".")
+    return "0" if text in ("-0", "") else text
 
 
-def kerning(font: TTFont, first: str, second: str) -> int:
-    """X-advance adjustment of a glyph pair in the GPOS kern feature (pair positioning)."""
-    gpos = font["GPOS"].table
-    indices = sorted(
-        {
-            i
-            for record in gpos.FeatureList.FeatureRecord
-            if record.FeatureTag == "kern"
-            for i in record.Feature.LookupListIndex
-        }
-    )
-    total = 0
-    for index in indices:
-        lookup = gpos.LookupList.Lookup[index]
+def font(path: Path, weight: int) -> TTFont:
+    face = TTFont(path)
+    return instantiateVariableFont(face, {"wght": weight}) if "fvar" in face else face
+
+
+def pair_kerning(face: TTFont, first: str, second: str) -> float:
+    if "GPOS" not in face:
+        return 0
+    table = face["GPOS"].table
+    indices = {
+        i
+        for record in table.FeatureList.FeatureRecord
+        if record.FeatureTag == "kern"
+        for i in record.Feature.LookupListIndex
+    }
+    for index in sorted(indices):
+        lookup = table.LookupList.Lookup[index]
         for sub in lookup.SubTable:
             kind = lookup.LookupType
             if kind == 9:
@@ -59,242 +61,287 @@ def kerning(font: TTFont, first: str, second: str) -> int:
             if kind != 2 or first not in sub.Coverage.glyphs:
                 continue
             if sub.Format == 1:
-                pair_set = sub.PairSet[sub.Coverage.glyphs.index(first)]
-                match = [r for r in pair_set.PairValueRecord if r.SecondGlyph == second]
-                if not match:
-                    continue
-                total += x_advance(match[0].Value1)
+                pairs = sub.PairSet[sub.Coverage.glyphs.index(first)].PairValueRecord
+                for record in pairs:
+                    if record.SecondGlyph == second and record.Value1:
+                        return getattr(record.Value1, "XAdvance", 0) or 0
             else:
                 row = sub.Class1Record[sub.ClassDef1.classDefs.get(first, 0)]
-                total += x_advance(row.Class2Record[sub.ClassDef2.classDefs.get(second, 0)].Value1)
-            break
-    return total
+                value = row.Class2Record[sub.ClassDef2.classDefs.get(second, 0)].Value1
+                if value and getattr(value, "XAdvance", 0):
+                    return value.XAdvance
+    return 0
 
 
-def layout(font: TTFont, text: str, tracking: float = 0.0) -> list[tuple[str, float]]:
-    """Glyph names with their x offsets in font units (kerning and tracking applied)."""
-    cmap = font.getBestCmap()
-    upm = font["head"].unitsPerEm
-    names = [cmap[ord(ch)] for ch in text]
-    placed, x = [], 0.0
-    for i, name in enumerate(names):
-        placed.append((name, x))
-        x += font["hmtx"][name][0] + tracking * upm
-        if i + 1 < len(names):
-            x += kerning(font, name, names[i + 1])
-    return placed
-
-
-def ink_box(font: TTFont, placed: list[tuple[str, float]]) -> tuple[float, float, float, float]:
-    glyf = font["glyf"]
-    boxes = []
-    for name, x in placed:
-        g = glyf[name]
-        if g.numberOfContours:
-            boxes.append((x + g.xMin, g.yMin, x + g.xMax, g.yMax))
-    return (
-        min(b[0] for b in boxes),
-        min(b[1] for b in boxes),
-        max(b[2] for b in boxes),
-        max(b[3] for b in boxes),
-    )
-
-
-def svg_path(font: TTFont, placed, transform) -> str:
-    """Placed glyphs as one SVG path; transform maps font units (y up) to the target space."""
-    glyph_set = font.getGlyphSet()
-    pen = SVGPathPen(glyph_set, ntos=lambda v: f"{round(v, 1):g}")
-    for name, x in placed:
-        a, b, c, d, e, f = transform
-        glyph_set[name].draw(TransformPen(pen, (a, b, c, d, a * x + e, b * x + f)))
-    return pen.getCommands()
-
-
-class FlattenPen(BasePen):
-    """Contours as point lists (curves split into short segments), for rasterizing."""
-
-    def __init__(self, glyph_set, transform):
+class Recorder(BasePen):
+    def __init__(self, glyph_set):
         super().__init__(glyph_set)
-        self.transform = transform
-        self.contours: list[list[tuple[float, float]]] = []
+        self.value = []
 
-    def _map(self, p):
-        a, b, c, d, e, f = self.transform
-        return (a * p[0] + c * p[1] + e, b * p[0] + d * p[1] + f)
+    def _moveTo(self, pt):
+        self.value.append(("moveTo", (pt,)))
 
-    def _moveTo(self, p):
-        self.contours.append([self._map(p)])
-
-    def _lineTo(self, p):
-        self.contours[-1].append(self._map(p))
-
-    def _qCurveToOne(self, p1, p2):
-        p0 = self._getCurrentPoint()
-        for i in range(1, 17):
-            t = i / 16
-            x = (1 - t) ** 2 * p0[0] + 2 * (1 - t) * t * p1[0] + t * t * p2[0]
-            y = (1 - t) ** 2 * p0[1] + 2 * (1 - t) * t * p1[1] + t * t * p2[1]
-            self.contours[-1].append(self._map((x, y)))
+    def _lineTo(self, pt):
+        self.value.append(("lineTo", (pt,)))
 
     def _curveToOne(self, p1, p2, p3):
-        p0 = self._getCurrentPoint()
-        for i in range(1, 17):
-            t = i / 16
-            u = 1 - t
-            x = u**3 * p0[0] + 3 * u * u * t * p1[0] + 3 * u * t * t * p2[0] + t**3 * p3[0]
-            y = u**3 * p0[1] + 3 * u * u * t * p1[1] + 3 * u * t * t * p2[1] + t**3 * p3[1]
-            self.contours[-1].append(self._map((x, y)))
+        self.value.append(("curveTo", (p1, p2, p3)))
+
+    def _qCurveToOne(self, p1, p2):
+        self.value.append(("qCurveTo", (p1, p2)))
+
+    def _closePath(self):
+        self.value.append(("closePath", ()))
+
+    def _endPath(self):
+        self.value.append(("closePath", ()))
 
 
-def draw_text(image: Image.Image, font: TTFont, placed, transform, fill: str) -> None:
-    """Paints placed glyphs onto `image` (even-odd per glyph, glyphs united), anti-aliased."""
-    w, h = image.size
-    s = SUPERSAMPLE
-    a, b, c, d, e, f = transform
-    big = (a * s, b * s, c * s, d * s, e * s, f * s)
-    coverage = Image.new("1", (w * s, h * s), 0)
-    glyph_set = font.getGlyphSet()
-    for name, x in placed:
-        pen = FlattenPen(glyph_set, (big[0], big[1], big[2], big[3], big[0] * x + big[4], big[1] * x + big[5]))
-        glyph_set[name].draw(pen)
-        glyph = Image.new("1", coverage.size, 0)
-        for contour in pen.contours:
-            if len(contour) < 3:
-                continue
-            ring = Image.new("1", coverage.size, 0)
-            ImageDraw.Draw(ring).polygon(contour, fill=1)
-            glyph = ImageChops.logical_xor(glyph, ring)
-        coverage = ImageChops.logical_or(coverage, glyph)
-    mask = coverage.convert("L").resize((w, h), Image.Resampling.BOX)
-    image.paste(Image.new(image.mode, image.size, fill), (0, 0), mask)
+def outline(face: TTFont, text: str, size: float, tracking: float = 0.0) -> tuple[list, float]:
+    glyphs = face.getGlyphSet()
+    cmap = face.getBestCmap()
+    scale = size / face["head"].unitsPerEm
+    names = [cmap[ord(ch)] for ch in text]
+    pen = Recorder(glyphs)
+    x = 0.0
+    for i, name in enumerate(names):
+        glyphs[name].draw(TransformPen(pen, (scale, 0, 0, -scale, x, 0)))
+        x += glyphs[name].width * scale
+        if i + 1 < len(names):
+            x += pair_kerning(face, name, names[i + 1]) * scale + tracking * size
+    return pen.value, x
 
 
-def fit(font: TTFont, placed, box: tuple[float, float, float, float]):
-    """Transform scaling the ink box of `placed` to height box[3]-box[1], centred in `box`."""
-    x0, y0, x1, y1 = ink_box(font, placed)
-    scale = (box[3] - box[1]) / (y1 - y0)
-    cx = (box[0] + box[2]) / 2 - scale * (x0 + x1) / 2
-    cy = (box[1] + box[3]) / 2 + scale * (y0 + y1) / 2
-    return (scale, 0, 0, -scale, cx, cy)
+def bounds(commands: list) -> tuple[float, float, float, float]:
+    points = [p for _, args in commands for p in args]
+    xs = [p[0] for p in points]
+    ys = [p[1] for p in points]
+    return min(xs), min(ys), max(xs), max(ys)
 
 
-E = layout(bold, "e")
-WORDMARK = layout(bold, "eclalune", TRACKING)
+def place(commands: list, dx: float, dy: float, scale: float = 1.0) -> list:
+    return [(op, tuple((x * scale + dx, y * scale + dy) for x, y in args)) for op, args in commands]
 
 
-def mark_transform(side: float):
-    g = side * GLYPH_SHARE
-    return fit(bold, E, ((side - g) / 2, (side - g) / 2, (side + g) / 2, (side + g) / 2))
+def pair(point: tuple[float, float]) -> str:
+    return f"{fmt(point[0])} {fmt(point[1])}"
 
 
-def mark_png(side: int, ink: str = INK, paper: str = WHITE) -> Image.Image:
-    image = Image.new("RGB", (side, side), ink)
-    draw_text(image, bold, E, mark_transform(side), paper)
-    return image
+def to_d(commands: list) -> str:
+    letters = {"moveTo": "M", "lineTo": "L", "curveTo": "C", "qCurveTo": "Q", "closePath": "Z"}
+    parts = []
+    for op, args in commands:
+        parts.append(letters[op] + " ".join(pair(p) for p in args))
+    return "".join(parts)
 
 
-def write(path: Path, data: bytes | str) -> None:
-    path.write_bytes(data if isinstance(data, bytes) else data.encode())
-    print(f"wrote {path.relative_to(APP.parent)}")
+def smoothstep(edge0: float, edge1: float, x: float) -> float:
+    t = min(1.0, max(0.0, (x - edge0) / (edge1 - edge0)))
+    return t * t * (3 - 2 * t)
 
 
-def mark_svg() -> str:
-    d = svg_path(bold, E, mark_transform(1000))
+def catmull_rom(points: list) -> str:
+    n = len(points)
+    d = [f"M{pair(points[0])}"]
+    for i in range(n):
+        p0, p1, p2, p3 = points[i - 1], points[i], points[(i + 1) % n], points[(i + 2) % n]
+        c1 = (p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6)
+        c2 = (p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6)
+        d.append(f"C{pair(c1)} {pair(c2)} {pair(p2)}")
+    return "".join(d) + "Z"
+
+
+def enso(cx: float, cy: float, radius: float, width: float, dry: bool, steps: int = 72) -> str:
+    start = math.radians(-58)
+    sweep = math.radians(-328)
+
+    def centre(t: float) -> tuple[float, float]:
+        a = start + sweep * t
+        wobble = 0.018 * math.sin(2 * math.pi * 1.1 * t + 0.7) + 0.011 * math.sin(2 * math.pi * 2.6 * t + 2.1)
+        r = radius * (1 + wobble) * (1 - 0.05 * smoothstep(0.84, 1.0, t))
+        return cx + r * math.cos(a) * 1.01, cy + r * math.sin(a) * 0.99
+
+    def profile(t: float) -> float:
+        rise = 0.72 + 0.28 * smoothstep(0.0, 0.1, t)
+        body = 1 + 0.1 * math.sin(2 * math.pi * (1.3 * t + 0.1))
+        fall = 1 - 0.93 * smoothstep(0.8, 1.0, t) ** 1.5
+        return rise * body * fall
+
+    def frame(t: float) -> tuple[tuple[float, float], tuple[float, float], tuple[float, float]]:
+        eps = 1e-4
+        a, b = centre(max(0.0, t - eps)), centre(min(1.0, t + eps))
+        length = math.hypot(b[0] - a[0], b[1] - a[1])
+        tangent = ((b[0] - a[0]) / length, (b[1] - a[1]) / length)
+        return centre(t), tangent, (tangent[1], -tangent[0])
+
+    outer, inner = [], []
+    for i in range(steps + 1):
+        t = i / steps
+        (x, y), _, (nx, ny) = frame(t)
+        w = width * profile(t)
+        bias = 0.5 + 0.06 * math.sin(2 * math.pi * 1.7 * t + 0.3)
+        grain = 1 + 0.035 * math.sin(2 * math.pi * 9 * t + 1.1) if dry else 1
+        outer.append((x + nx * w * bias * grain, y + ny * w * bias * grain))
+        inner.append((x - nx * w * (1 - bias), y - ny * w * (1 - bias)))
+
+    (x0, y0), (tx, ty), (nx, ny) = frame(0)
+    w0 = width * profile(0)
+    head = []
+    for k in range(1, 6):
+        phi = math.pi - math.pi * k / 6
+        head.append(
+            (
+                x0 + nx * w0 * 0.5 * math.cos(phi) - tx * w0 * 0.55 * math.sin(phi),
+                y0 + ny * w0 * 0.5 * math.cos(phi) - ty * w0 * 0.55 * math.sin(phi),
+            )
+        )
+    ring = catmull_rom(outer + inner[::-1] + head)
+    if not dry:
+        return ring
+    streaks = []
+    for t0, t1, offset, thickness in ((0.66, 0.9, 0.12, 0.09), (0.76, 0.95, -0.2, 0.07)):
+        upper, lower = [], []
+        n = 18
+        for i in range(n + 1):
+            t = t0 + (t1 - t0) * i / n
+            (x, y), _, (nx, ny) = frame(t)
+            w = width * profile(t)
+            half = w * thickness * math.sin(math.pi * i / n) ** 0.8
+            centre_offset = w * offset
+            upper.append((x + nx * (centre_offset + half), y + ny * (centre_offset + half)))
+            lower.append((x + nx * (centre_offset - half), y + ny * (centre_offset - half)))
+        streaks.append(catmull_rom(lower + upper[-2:0:-1]))
+    return ring + "".join(streaks)
+
+
+def kanji(weight: int, height: float, cx: float, cy: float) -> str:
+    face = font(SERIF_FILES / "noto-serif-jp-112-wght-normal.woff2", weight)
+    commands, _ = outline(face, "和", 100)
+    x0, y0, x1, y1 = bounds(commands)
+    scale = height / (y1 - y0)
+    return to_d(place(commands, cx - (x0 + x1) / 2 * scale, cy - (y0 + y1) / 2 * scale, scale))
+
+
+def mark_paths(variant: str) -> tuple[str, str]:
+    spec = MARK[variant]
+    return enso(50, 50, spec["radius"], spec["width"], variant == "regular"), kanji(spec["weight"], spec["height"], 50, spec["cy"])
+
+
+def lockup() -> dict:
+    serif_latin = font(SERIF_FILES / "noto-serif-jp-latin-wght-normal.woff2", 300)
+    serif_kana = font(SERIF_FILES / "noto-serif-jp-119-wght-normal.woff2", 400)
+    word, _ = outline(serif_latin, "Nagomi", 50, 0.01)
+    wx0, _, wx1, _ = bounds(word)
+    word_x, word_y = 114 - wx0, 60
+    kana, _ = outline(serif_kana, "なごみ", 17, 0.22)
+    kx0, _, kx1, ky1 = bounds(kana)
+    kana_x, kana_y = 116 - kx0, 87 - ky1
+    return {
+        "word": to_d(place(word, word_x, word_y)),
+        "kana": to_d(place(kana, kana_x, kana_y)),
+        "width": math.ceil(max(word_x + wx1, kana_x + kx1) + 2),
+    }
+
+
+def svg(width: float, height: float, body: str) -> str:
     return (
-        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000">'
-        f'<rect width="1000" height="1000" fill="{INK}"/>'
-        f'<path d="{d}" fill="{WHITE}"/></svg>\n'
+        f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {fmt(width)} {fmt(height)}" '
+        f'width="{fmt(width)}" height="{fmt(height)}">{body}</svg>'
     )
 
 
-def og_image(tagline: str) -> Image.Image:
-    width, height = 1200, 630
-    image = Image.new("RGB", (width, height), INK)
-    # Centred so a square crop of the middle (WhatsApp, some feeds) still shows the mark and
-    # the name.
-    side, gap, word_height, tagline_drop = 112, 56, 104, 74
-    top = (height - (side + gap + word_height + tagline_drop)) // 2
-    left = (width - side) // 2
-    square = mark_png(side * 4, ink=WHITE, paper=INK).resize((side, side), Image.Resampling.LANCZOS)
-    image.paste(square, (left, top))
-    word_top = top + side + gap
-    x0, y0, x1, y1 = ink_box(bold, WORDMARK)
-    scale = word_height / (y1 - y0)
-    word_width = (x1 - x0) * scale
-    draw_text(
-        image,
-        bold,
-        WORDMARK,
-        fit(bold, WORDMARK, ((width - word_width) / 2, word_top, (width + word_width) / 2, word_top + word_height)),
-        WHITE,
-    )
-    line = layout(medium, tagline, -0.01)
-    lx0, ly0, lx1, ly1 = ink_box(medium, line)
-    line_scale = 34 / medium["head"].unitsPerEm
-    line_width = (lx1 - lx0) * line_scale
-    baseline = word_top + word_height + tagline_drop
-    draw_text(
-        image,
-        medium,
-        line,
-        (line_scale, 0, 0, -line_scale, (width - line_width) / 2 - lx0 * line_scale, baseline),
-        TAGLINE_GREY,
-    )
-    return image
+def render(markup: str) -> Image.Image:
+    return Image.open(BytesIO(bytes(resvg_py.svg_to_bytes(svg_string=markup)))).convert("RGBA")
 
 
-def png(image: Image.Image) -> bytes:
-    out = BytesIO()
-    image.save(out, "PNG", optimize=True)
-    return out.getvalue()
+def tile(size: int, variant: str, share: float, radius: float) -> str:
+    ring, glyph = mark_paths(variant)
+    scale = size * share / 100
+    offset = (size - 100 * scale) / 2
+    corner = f' rx="{fmt(size * radius)}"' if radius else ""
+    return svg(
+        size,
+        size,
+        f'<rect width="{size}" height="{size}"{corner} fill="{BACKGROUND}"/>'
+        f'<g transform="translate({fmt(offset)} {fmt(offset)}) scale({fmt(scale)})" fill="{VIOLET_LIGHT}">'
+        f'<path d="{ring}"/><path d="{glyph}"/></g>',
+    )
+
+
+def og(name: str, tagline: str, parts: dict) -> None:
+    ring, glyph = mark_paths("regular")
+    width, height, scale = 1200, 630, 2.3
+    lx, ly = (width - parts["width"] * scale) / 2, 168
+    line, line_w = outline(font(SANS_FILES / "inter-latin-wght-normal.woff2", 400), tagline, 34, -0.005)
+    body = (
+        '<defs><radialGradient id="glow" cx="50%" cy="42%" r="62%">'
+        f'<stop offset="0" stop-color="{VIOLET}" stop-opacity="0.2"/>'
+        f'<stop offset="0.4" stop-color="{VIOLET}" stop-opacity="0.08"/>'
+        f'<stop offset="1" stop-color="{VIOLET}" stop-opacity="0"/>'
+        "</radialGradient></defs>"
+        f'<rect width="{width}" height="{height}" fill="{BACKGROUND}"/>'
+        f'<rect width="{width}" height="{height}" fill="url(#glow)"/>'
+        f'<g transform="translate({fmt(lx)} {fmt(ly)}) scale({scale})">'
+        f'<g fill="{VIOLET_LIGHT}"><path d="{ring}"/><path d="{glyph}"/></g>'
+        f'<path d="{parts["word"]}" fill="{LAVENDER}"/>'
+        f'<path d="{parts["kana"]}" fill="{MUTED}"/></g>'
+        f'<rect x="{fmt(width / 2 - 28)}" y="418" width="56" height="2" rx="1" fill="{VIOLET}" opacity="0.7"/>'
+        f'<path d="{to_d(place(line, (width - line_w) / 2, 470))}" fill="{MUTED}"/>'
+    )
+    render(svg(width, height, body)).convert("RGB").save(PUBLIC / name, optimize=True)
 
 
 def main() -> None:
-    svg = mark_svg()
-    write(PUBLIC / "logo-mark.svg", svg)
-    write(PUBLIC / "favicon.svg", svg)
+    ring, glyph = mark_paths("regular")
+    small_ring, small_glyph = mark_paths("small")
+    parts = lockup()
 
-    for name, side in [
-        ("favicon-48.png", 48),
-        ("favicon-96.png", 96),
-        ("apple-touch-icon.png", 180),
-        ("icon-192.png", 192),
-        ("icon-512.png", 512),
-        ("logo.png", 512),
-    ]:
-        write(PUBLIC / name, png(mark_png(side)))
-    # The glyph stays inside the 80% safe circle of a maskable icon (its farthest corner is
-    # about 33% of the side from the centre), so the maskable icon is the same full-bleed art.
-    write(PUBLIC / "icon-maskable-512.png", png(mark_png(512)))
-
-    ico = BytesIO()
-    frames = [mark_png(s) for s in (48, 32, 16)]
-    frames[0].save(ico, "ICO", sizes=[(48, 48), (32, 32), (16, 16)], append_images=frames[1:])
-    write(PUBLIC / "favicon.ico", ico.getvalue())
-
-    write(PUBLIC / "og-default.png", png(og_image("Belleza y cuidado personal")))
-    write(PUBLIC / "og-default-en.png", png(og_image("Beauty and personal care")))
-
-    x0, y0, x1, y1 = ink_box(bold, WORDMARK)
-    wordmark = svg_path(bold, WORDMARK, (1, 0, 0, -1, -x0, y1))
-    write(
-        WORDMARK_MASTER,
-        f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {round(x1 - x0)} {round(y1 - y0)}">'
-        f'<path d="{wordmark}" fill="{INK}"/></svg>\n',
+    (PUBLIC / "logo-mark.svg").write_text(
+        svg(100, 100, f'<g fill="currentColor"><path d="{ring}"/><path d="{glyph}"/></g>'), encoding="utf-8"
     )
-    cutout = "M0 0H1000V1000H0Z" + svg_path(bold, E, mark_transform(1000))
-    write(
-        BRAND_PATHS,
-        "// Generated by scripts/brand_assets.py from the Satoshi Bold outlines; do not edit.\n"
-        "// The wordmark is in font units (1000 per em); the mark is a 1000 x 1000 square minus\n"
-        '// the "e" (even-odd), so the letter shows whatever is behind the mark.\n'
-        "export const WORDMARK = {\n"
-        f"\twidth: {round(x1 - x0)},\n"
-        f"\theight: {round(y1 - y0)},\n"
-        f'\tpath: "{wordmark}",\n'
-        "};\n"
-        f'export const MARK_CUTOUT_PATH =\n\t"{cutout}";\n',
+    (PUBLIC / "logo.svg").write_text(
+        svg(
+            parts["width"],
+            100,
+            f'<g fill="currentColor"><path d="{ring}"/><path d="{glyph}"/>'
+            f'<path d="{parts["word"]}"/><path d="{parts["kana"]}"/></g>',
+        ),
+        encoding="utf-8",
     )
+    (PUBLIC / "favicon.svg").write_text(tile(100, "small", 0.84, 0.22), encoding="utf-8")
+
+    icons = {
+        16: render(tile(16, "small", 0.9, 0.22)),
+        32: render(tile(32, "small", 0.88, 0.22)),
+        48: render(tile(48, "small", 0.86, 0.22)),
+        96: render(tile(96, "regular", 0.8, 0.22)),
+    }
+    icons[48].save(PUBLIC / "favicon-48.png", optimize=True)
+    icons[96].save(PUBLIC / "favicon-96.png", optimize=True)
+    icons[48].save(
+        PUBLIC / "favicon.ico", sizes=[(16, 16), (32, 32), (48, 48)], append_images=[icons[16], icons[32]]
+    )
+
+    render(tile(180, "regular", 0.74, 0)).convert("RGB").save(PUBLIC / "apple-touch-icon.png", optimize=True)
+    render(tile(192, "regular", 0.78, 0.22)).save(PUBLIC / "icon-192.png", optimize=True)
+    render(tile(512, "regular", 0.78, 0.22)).save(PUBLIC / "icon-512.png", optimize=True)
+    render(tile(512, "regular", 0.62, 0)).convert("RGB").save(PUBLIC / "icon-maskable-512.png", optimize=True)
+    render(tile(512, "regular", 0.76, 0)).convert("RGB").save(PUBLIC / "logo.png", optimize=True)
+
+    for name, tagline in TAGLINES.items():
+        og(name, tagline, parts)
+
+    constants = {
+        "MARK_RING": ring,
+        "MARK_GLYPH": glyph,
+        "MARK_RING_SMALL": small_ring,
+        "MARK_GLYPH_SMALL": small_glyph,
+        "WORDMARK": parts["word"],
+        "WORDMARK_KANA": parts["kana"],
+    }
+    lines = [f'export const {name} =\n\t"{value}";\n' for name, value in constants.items()]
+    lines.append(f"export const LOGO_WIDTH = {parts['width']};\n")
+    BRAND_PATHS.write_text("".join(lines), encoding="utf-8", newline="\n")
 
 
 if __name__ == "__main__":

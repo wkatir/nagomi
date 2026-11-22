@@ -7,7 +7,7 @@ dist
 .wrangler
 __unconfig*
 src/paraglide
-public/fonts/*.woff2
+
 seed/seed.sql
 seed/sync-texts.sql
 seed/media.sql
