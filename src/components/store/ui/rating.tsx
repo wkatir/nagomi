@@ -1,15 +1,22 @@
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { cn } from "cn";
 import { Star } from "lucide-react";
+import { intlLocale } from "#/lib/intl";
+import { storeQuery } from "#/lib/queries";
 import { m } from "#/paraglide/messages";
 import { getLocale } from "#/paraglide/runtime";
 
 type RatingValue = { average: number | null; count: number };
 
-const averageText = (average: number) =>
-	average.toLocaleString(getLocale(), {
-		minimumFractionDigits: 1,
-		maximumFractionDigits: 1,
-	});
+export function useAverageText() {
+	const { data } = useSuspenseQuery(storeQuery);
+	const locale = intlLocale(getLocale(), data.countryCode);
+	return (average: number) =>
+		average.toLocaleString(locale, {
+			minimumFractionDigits: 1,
+			maximumFractionDigits: 1,
+		});
+}
 
 export function Stars({
 	value,
@@ -44,6 +51,7 @@ export function Rating({
 	summary?: boolean;
 	className?: string;
 }) {
+	const averageText = useAverageText();
 	if (rating.average === null) return null;
 	const average = averageText(rating.average);
 	const label = m.product_rating_label({

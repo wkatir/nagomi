@@ -7,7 +7,6 @@ import { StoreIconButton } from "./ui/store-button";
 
 type GalleryImage = CatalogProduct["images"][number];
 
-// Thumbnails are buttons labelled by position, so their images are decorative.
 export function ProductGallery({
 	images,
 	label,
@@ -17,7 +16,6 @@ export function ProductGallery({
 }) {
 	const id = useId();
 	const track = useRef<HTMLDivElement>(null);
-	// Slide a button asked for; scroll positions passed on the way there are ignored.
 	const target = useRef<number | null>(null);
 	const [active, setActive] = useState(0);
 	const count = images.length;
@@ -36,7 +34,6 @@ export function ProductGallery({
 			}
 			setActive(i);
 		};
-		// A swipe or wheel during a button scroll takes over from the button.
 		const release = () => {
 			target.current = null;
 		};
@@ -50,8 +47,13 @@ export function ProductGallery({
 		};
 	}, [count]);
 
-	if (count === 0) return <div className="aspect-square bg-photo" />;
-	if (count === 1) return <Photo image={images[0]} eager />;
+	if (count === 0) return <div className="panel aspect-square bg-photo" />;
+	if (count === 1)
+		return (
+			<div className="panel overflow-hidden">
+				<Photo image={images[0]} eager />
+			</div>
+		);
 
 	const go = (i: number) => {
 		const el = track.current;
@@ -88,7 +90,7 @@ export function ProductGallery({
 					// biome-ignore lint/a11y/noNoninteractiveTabindex: a scrollable region must be reachable by keyboard
 					tabIndex={0}
 					onKeyDown={onKeyDown}
-					className="flex snap-x snap-mandatory overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+					className="panel flex snap-x snap-mandatory overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
 				>
 					{images.map((image, i) => (
 						<figure
@@ -139,8 +141,9 @@ export function ProductGallery({
 						aria-current={i === active ? "true" : undefined}
 						aria-controls={id}
 						className={cn(
-							"size-20 shrink-0 overflow-hidden rounded-none bg-photo hover:bg-photo max-md:size-16",
-							i === active && "outline-2 outline-offset-0 outline-foreground",
+							"size-20 shrink-0 overflow-hidden rounded-lg border bg-photo hover:bg-photo max-md:size-16",
+							i === active &&
+								"border-primary outline-2 outline-offset-0 outline-primary",
 						)}
 					>
 						<img
@@ -150,11 +153,7 @@ export function ProductGallery({
 							height={image.height}
 							loading="lazy"
 							decoding="async"
-							className={
-								image.kind === "packshot"
-									? "h-4/5 w-4/5 object-contain"
-									: "h-full w-full object-cover"
-							}
+							className="h-full w-full object-cover"
 						/>
 					</StoreIconButton>
 				))}
@@ -170,14 +169,8 @@ function Photo({
 	image: GalleryImage;
 	eager?: boolean;
 }) {
-	const packshot = image.kind === "packshot";
 	return (
-		<div
-			className={cn(
-				"flex aspect-square items-center justify-center overflow-hidden bg-photo",
-				packshot && "p-[14%]",
-			)}
-		>
+		<div className="flex aspect-square items-center justify-center overflow-hidden bg-photo">
 			<img
 				src={image.url}
 				alt={image.alt}
@@ -187,10 +180,8 @@ function Photo({
 				fetchPriority={eager ? "high" : undefined}
 				decoding={eager ? undefined : "async"}
 				draggable={false}
-				className={cn(
-					"h-full w-full",
-					packshot ? "object-contain" : "object-cover",
-				)}
+				sizes="(min-width: 1024px) 45vw, 100vw"
+				className="h-full w-full object-cover"
 			/>
 		</div>
 	);

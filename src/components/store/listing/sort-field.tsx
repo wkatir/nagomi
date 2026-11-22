@@ -32,7 +32,7 @@ export function SortField({
 		>
 			<FieldLabel
 				htmlFor={id}
-				className="shrink-0 type-small font-normal text-muted-foreground"
+				className="shrink-0 type-small font-normal whitespace-nowrap text-muted-foreground"
 			>
 				{m.shop_sort_label()}
 			</FieldLabel>

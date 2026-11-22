@@ -179,7 +179,7 @@ function CombosBanner({ slide }: { slide: Slide }) {
 				height={slide.image.height}
 				loading="lazy"
 				decoding="async"
-				className="absolute inset-y-0 right-0 -z-10 h-full w-full object-cover object-right [mask-image:linear-gradient(90deg,transparent_0%,black_55%)] md:w-[68%] md:[mask-image:linear-gradient(90deg,transparent_0%,black_35%)]"
+				className="absolute inset-y-0 right-0 -z-10 h-full w-full object-cover object-right opacity-60 md:opacity-100 [mask-image:linear-gradient(90deg,transparent_0%,black_55%)] md:w-[68%] md:[mask-image:linear-gradient(90deg,transparent_0%,black_35%)]"
 			/>
 			<div
 				aria-hidden

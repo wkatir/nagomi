@@ -24,7 +24,12 @@ export function StoreNav({ className }: { className?: string }) {
 		<nav aria-label={m.nav_main()} className={className}>
 			<ul className="grid gap-0.5">
 				<li>
-					<Link to="/" className={item} aria-current={current("/")}>
+					<Link
+						to="/"
+						activeOptions={{ exact: true }}
+						className={item}
+						aria-current={current("/")}
+					>
 						<House aria-hidden className="size-5 shrink-0" />
 						{m.nav_home()}
 					</Link>

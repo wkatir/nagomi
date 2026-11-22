@@ -1,7 +1,9 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
+import { Boxes } from "lucide-react";
 import { BundleCard } from "#/components/store/bundle-card";
 import { EmptyState } from "#/components/store/ui/empty-state";
+import { PageHeader } from "#/components/store/ui/page-header";
 import { StoreBreadcrumb } from "#/components/store/ui/store-breadcrumb";
 import type { Trail } from "#/lib/crumbs";
 import { bundlesQuery, storeQuery } from "#/lib/queries";
@@ -47,22 +49,24 @@ export const Route = createFileRoute("/_store/sets/")({
 function BundlesPage() {
 	const { data: bundles } = useSuspenseQuery(bundlesQuery(getLocale()));
 	return (
-		<div className="container-page py-section-sm">
-			<StoreBreadcrumb trail={trail()} className="-mt-3" />
-			<h1 className="mt-2 type-h1 text-balance">{m.bundles_title()}</h1>
-			<p className="mt-4 max-w-[62ch] type-lead text-foreground-secondary">
-				{m.bundles_body()}
-			</p>
+		<div className="container-page pt-4 md:pt-6">
+			<StoreBreadcrumb trail={trail()} />
+			<PageHeader
+				title={m.bundles_title()}
+				description={m.bundles_body()}
+				icon={Boxes}
+				className="mt-2 mb-6"
+			/>
 			{bundles.length > 0 ? (
-				<ul className="mt-12 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+				<ul className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
 					{bundles.map((bundle) => (
-						<li key={bundle.slug}>
-							<BundleCard bundle={bundle} />
+						<li key={bundle.slug} className="flex">
+							<BundleCard bundle={bundle} headingLevel={2} className="w-full" />
 						</li>
 					))}
 				</ul>
 			) : (
-				<EmptyState title={m.bundles_empty()} className="mt-10" />
+				<EmptyState title={m.bundles_empty()} />
 			)}
 		</div>
 	);

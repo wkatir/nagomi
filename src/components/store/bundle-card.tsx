@@ -1,5 +1,7 @@
-import { StoreButton } from "#/components/store/ui/store-button";
-import { TextLink } from "#/components/store/ui/text-link";
+import { Link } from "@tanstack/react-router";
+import { cn } from "cn";
+import { ShoppingCart } from "lucide-react";
+import { StoreIconButton } from "#/components/store/ui/store-button";
 import { useMoney } from "#/hooks/use-money";
 import { useAddToCart } from "#/lib/cart";
 import type { BundleView } from "#/lib/queries";
@@ -8,18 +10,25 @@ import { m } from "#/paraglide/messages";
 export function BundleCard({
 	bundle,
 	headingLevel = 3,
+	className,
 }: {
 	bundle: BundleView;
 	headingLevel?: 2 | 3;
+	className?: string;
 }) {
 	const money = useMoney();
 	const available = bundle.availability === "in_stock";
-	const { add } = useAddToCart();
+	const { add, pending } = useAddToCart();
 	const Heading = headingLevel === 2 ? "h2" : "h3";
 	return (
-		<article className="flex h-full flex-col border">
+		<article
+			className={cn(
+				"group/card panel relative flex flex-col overflow-hidden transition-colors hover:border-[#3a3858]",
+				className,
+			)}
+		>
 			<div
-				className="grid aspect-[16/10] grid-rows-[minmax(0,1fr)] overflow-hidden bg-photo"
+				className="grid aspect-[16/9] gap-px bg-border"
 				style={{
 					gridTemplateColumns: `repeat(${bundle.items.length}, minmax(0, 1fr))`,
 				}}
@@ -27,10 +36,7 @@ export function BundleCard({
 				{bundle.items.map((item) => {
 					const img = item.product.packshot;
 					return (
-						<div
-							key={item.sku}
-							className="flex h-full items-center justify-center px-[6%] py-[12%]"
-						>
+						<div key={item.sku} className="overflow-hidden bg-photo">
 							{img && (
 								<img
 									src={img.url}
@@ -38,73 +44,60 @@ export function BundleCard({
 									width={img.width}
 									height={img.height}
 									loading="lazy"
-									className="h-full w-full object-contain"
+									decoding="async"
+									className="size-full object-cover transition-transform duration-500 group-hover/card:scale-[1.04]"
 								/>
 							)}
 						</div>
 					);
 				})}
 			</div>
-			<div className="flex flex-1 flex-col p-6 max-md:p-5">
-				<Heading className="type-h3">
-					<TextLink
-						inline
-						variant="nav"
+			<div className="flex flex-1 flex-col p-4">
+				<Heading className="type-h4">
+					<Link
 						to="/sets/$slug"
 						params={{ slug: bundle.slug }}
+						className="after:absolute after:inset-0 after:rounded-xl focus-visible:outline-none focus-visible:after:outline-2 focus-visible:after:outline-offset-2 focus-visible:after:outline-ring"
 					>
 						{bundle.name}
-					</TextLink>
+					</Link>
 				</Heading>
-				{bundle.description && (
-					<p className="mt-2 line-clamp-3 type-small text-foreground-secondary">
-						{bundle.description}
-					</p>
-				)}
-				<ul className="mt-5 grid gap-1.5 border-t pt-4 type-small">
-					{bundle.items.map((item) => (
-						<li key={item.sku} className="grid grid-cols-[28px_1fr] gap-2">
-							<span className="text-muted-foreground tabular-nums">
-								{m.bundle_item_quantity({ quantity: item.quantity })}
-							</span>
-							<span>
-								<TextLink
-									inline
-									variant="nav"
-									to="/products/$slug"
-									params={{ slug: item.product.slug }}
-								>
-									{item.product.name}
-								</TextLink>
-								{item.availability === "sold_out" && (
-									<span className="text-muted-foreground">
-										{" "}
-										· {m.product_out_of_stock()}
-									</span>
-								)}
-							</span>
-						</li>
-					))}
-				</ul>
-				<div className="mt-auto flex items-end justify-between gap-4 pt-6">
+				<p className="mt-1 line-clamp-2 type-meta text-muted-foreground">
+					{bundle.items
+						.map((item) =>
+							item.quantity > 1
+								? `${item.quantity} × ${item.product.name}`
+								: item.product.name,
+						)
+						.join(" + ")}
+				</p>
+				<div className="mt-auto flex items-end justify-between gap-3 pt-4">
 					<div>
-						<p className="type-meta text-muted-foreground line-through">
-							{money(bundle.itemsTotal)}
+						<p className="type-meta text-muted-foreground tabular-nums">
+							<span className="sr-only">{m.bundle_items_total()} </span>
+							<s>{money(bundle.itemsTotal)}</s>
 						</p>
-						<p className="type-stat">{money(bundle.price)}</p>
-						<p className="type-meta text-success">
+						<p className="text-lg leading-tight font-semibold tabular-nums">
+							{money(bundle.price)}
+						</p>
+						<p className="mt-1 inline-flex rounded-full bg-success/10 px-2 py-0.5 type-meta font-medium text-success">
 							{m.bundle_saving({ amount: money(bundle.saving) })}
 						</p>
 					</div>
-					<StoreButton
-						disabled={!available}
+					<StoreIconButton
+						disabled={!available || pending}
+						aria-label={
+							available
+								? m.bundle_add_named({ name: bundle.name })
+								: m.bundle_sold_out()
+						}
 						onClick={(e) =>
 							add({ bundle: bundle.slug, quantity: 1 }, e.currentTarget)
 						}
-						className="shrink-0"
+						className="tap-target relative z-10 size-9 shrink-0 rounded-lg bg-primary-gradient text-primary-foreground hover:bg-primary hover:text-primary-foreground hover:brightness-110 disabled:bg-none disabled:bg-muted disabled:text-muted-foreground"
 					>
-						{available ? m.bundle_add() : m.bundle_sold_out()}
-					</StoreButton>
+						<ShoppingCart aria-hidden className="size-4" />
+					</StoreIconButton>
 				</div>
 			</div>
 		</article>
