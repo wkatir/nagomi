@@ -5,6 +5,7 @@ import { z } from "zod";
 import { getDb, schema } from "#/db";
 import { SV_MUNICIPALITIES } from "#/lib/sv-locations";
 import { localeQuery, validate } from "#/server/validate";
+import { shippingQuote } from "../domain/cart";
 import { listBundles, listCatalog, pickLocale } from "../domain/catalog";
 import {
 	checkoutPageVersions,
@@ -18,7 +19,6 @@ import {
 	getPaymentOptions,
 	getSettings,
 } from "../domain/settings";
-import { zoneFee, zoneForMunicipality } from "../domain/shipping";
 import { missingCheckoutSettings } from "../domain/store-rules";
 import { catalogContext } from "../domain/storefront-catalog";
 import { zoneOptions } from "../domain/zone-queries";
@@ -90,40 +90,17 @@ export const storefront = new Hono()
 		async (c) => {
 			const db = getDb();
 			const { locale, municipality, merchandise } = c.req.valid("query");
-			const [settings, zones] = await Promise.all([
-				getSettings(db),
-				zoneOptions(db),
-			]);
-			const zone = zoneForMunicipality(
-				zones
-					.filter((z) => z.method !== "pickup")
-					.map((z) => ({
-						zone: z,
-						coversRest: z.coversRest,
-						municipalities: z.municipalities,
-					})),
-				municipality,
-			);
-			if (!zone) return c.json({ error: "no_shipping_zone" }, 404);
-			const name = pickLocale(
-				zone.translations,
+			const settings = await getSettings(db);
+			const quote = await shippingQuote(
+				db,
+				settings,
 				locale,
-				settings.defaultLocale,
+				municipality,
+				merchandise,
 			);
-			if (!name)
-				throw new Error(
-					`Shipping zone ${zone.slug} has no ${settings.defaultLocale} name`,
-				);
-			return c.json({
-				zone: zone.slug,
-				name: name.name,
-				method: zone.method,
-				fee: zoneFee(zone, merchandise, settings.freeShippingFrom),
-				baseFee: zone.fee,
-				freeShippingFrom: settings.freeShippingFrom,
-				deliveryDaysMin: zone.deliveryDaysMin,
-				deliveryDaysMax: zone.deliveryDaysMax,
-			});
+			if (!quote) return c.json({ error: "no_shipping_zone" }, 404);
+			const { zoneId: _, ...rest } = quote;
+			return c.json({ ...rest, freeShippingFrom: settings.freeShippingFrom });
 		},
 	)
 	.get("/shipping/zones", validate("query", localeQuery), async (c) => {
