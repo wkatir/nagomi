@@ -1,18 +1,15 @@
 {
   "settings": {
-    "name": "Nagomi", "currency": "USD", "defaultLocale": "es", "email": "hola@nagomi.example",
+    "name": "Nagomi", "currency": "USD", "defaultLocale": "es", "demoStore": true, "email": null,
     "whatsappNumber": null, "phone": null,
-    "legalName": "[Razón social pendiente]", "taxIdLabel": "NIT", "taxId": "[NIT pendiente]", "address": "[Dirección pendiente]",
+    "legalName": null, "taxIdLabel": null, "taxId": null, "address": null,
     "timeZone": "America/El_Salvador", "countryCode": "SV", "orderCodePrefix": "NAG",
     "maxQuantityPerLine": 10, "returnWindowDays": 8, "foundingYear": 2026,
     "freeShippingFrom": 5000, "lowStockThreshold": 5,
     "frequentCustomerMinOrders": 3, "inactiveCustomerDays": 90,
     "followupPendingPaymentHours": 48, "followupPaidUnshippedHours": 24, "followupShippedUndeliveredHours": 96,
-    "taxRateBp": 1300, "bankName": "Banco Agrícola", "bankAccountType": "Cuenta corriente", "bankAccountNumber": "[Número de cuenta pendiente]", "bankAccountHolder": "[Razón social pendiente]",
-    "discordUrl": "https://discord.gg/nagomi-placeholder",
-    "instagramUrl": "https://www.instagram.com/nagomi.placeholder",
-    "tiktokUrl": "https://www.tiktok.com/@nagomi.placeholder",
-    "youtubeUrl": "https://www.youtube.com/@nagomi-placeholder"
+    "taxRateBp": 1300, "bankName": null, "bankAccountType": null, "bankAccountNumber": null, "bankAccountHolder": null,
+    "discordUrl": null, "instagramUrl": null, "tiktokUrl": null, "youtubeUrl": null
   },
   "paymentMethods": [
     { "method": "card", "maxTotal": null, "zone": null },

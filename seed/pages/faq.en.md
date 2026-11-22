@@ -1,5 +1,8 @@
 # Frequently asked questions
 
+## Is this a real store?
+It is a demo store: Nagomi is an academic project for the Modelos de Comercio Electrónico (E-commerce Models) course at Universidad Francisco Gavidia, San Salvador, El Salvador. You can browse and place orders to try it, but orders are not charged or shipped. Do not transfer any money.
+
 ## How do I place an order?
 Add your products to the cart, choose your address and payment method, and confirm. You can shop with your account or as a guest. We email you when your order is confirmed and when it ships.
 

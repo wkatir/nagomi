@@ -1,17 +1,7 @@
 # Contact
 
-Have a question about a product, your order or a warranty claim? Write to us and we will reply as soon as we can.
+Nagomi is an academic project for the Modelos de Comercio Electrónico (E-commerce Models) course at Universidad Francisco Gavidia, San Salvador, El Salvador. As a demo store it has no customer service email, phone or WhatsApp: contact is through the course.
 
-- **Email:** hola@nagomi.example
-- **WhatsApp:** [number pending]
-- **Hours:** Monday to Friday 9:00 to 18:00 and Saturday 9:00 to 13:00 (El Salvador time).
+Orders placed on this site are recorded for the demonstration, but they are not charged or shipped. Do not transfer any money.
 
-For questions about an order, include its number so we can help you faster.
-
-## Follow us
-- Discord: [Nagomi community](https://discord.gg/nagomi-placeholder)
-- Instagram: [@nagomi.placeholder](https://www.instagram.com/nagomi.placeholder)
-- TikTok: [@nagomi.placeholder](https://www.tiktok.com/@nagomi.placeholder)
-- YouTube: [Nagomi](https://www.youtube.com/@nagomi-placeholder)
-
-We are an online store: for now we have no showroom.
+We are an online store: we have no showroom.

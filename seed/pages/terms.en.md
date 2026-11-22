@@ -1,6 +1,8 @@
 # Terms and conditions
 
-These terms govern purchases at the Nagomi online store, run by [Razón social pendiente] (tax ID [NIT pendiente]), at [Dirección pendiente], El Salvador. By creating an account or placing an order you accept these terms and the [privacy notice](/pages/privacy).
+> **Demo store.** Nagomi is an academic project for the Modelos de Comercio Electrónico (E-commerce Models) course at Universidad Francisco Gavidia, San Salvador, El Salvador. It is not a registered company: orders are not charged or shipped. These terms describe the conditions the store would apply when it operates.
+
+These terms govern purchases at the Nagomi online store. By creating an account or placing an order you accept these terms and the [privacy notice](/pages/privacy).
 
 ## Prices
 All prices are in US dollars (US$) and include 13% VAT (IVA). Your order summary shows how much of the total is VAT. Shipping is shown separately before you confirm your purchase.
@@ -26,7 +28,7 @@ Under El Salvador's Consumer Protection Law, you have **8 days from delivery** t
 Every product has a warranty against manufacturing defects from the delivery date: **12 months** on keyboards, mice, headphones and lighting, and **6 months** on desk mats and accessories. Each product page states its warranty.
 
 ## Complaints
-If there is a problem with your purchase, email hola@nagomi.example and we will sort it out with you. You may also contact El Salvador's consumer protection agency (Defensoría del Consumidor).
+If there is a problem with your purchase, contact us through the Modelos de Comercio Electrónico course at Universidad Francisco Gavidia and we will sort it out with you. You may also contact El Salvador's consumer protection agency (Defensoría del Consumidor).
 
 ## Governing law
 These terms are governed by the laws of El Salvador. Any dispute will be submitted to the competent courts of El Salvador, without prejudice to your rights as a consumer.

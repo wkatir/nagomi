@@ -17,13 +17,14 @@ type Catalog = {
     name: string
     currency: string
     defaultLocale: string
-    email: string
+    demoStore: boolean
+    email: string | null
     whatsappNumber: string | null
     phone: string | null
-    legalName: string
-    taxIdLabel: string
-    taxId: string
-    address: string
+    legalName: string | null
+    taxIdLabel: string | null
+    taxId: string | null
+    address: string | null
     timeZone: string
     countryCode: string
     orderCodePrefix: string
@@ -38,14 +39,14 @@ type Catalog = {
     followupPaidUnshippedHours: number
     followupShippedUndeliveredHours: number
     taxRateBp: number
-    bankName: string
-    bankAccountType: string
-    bankAccountNumber: string
-    bankAccountHolder: string
-    discordUrl: string
-    instagramUrl: string
-    tiktokUrl: string
-    youtubeUrl: string
+    bankName: string | null
+    bankAccountType: string | null
+    bankAccountNumber: string | null
+    bankAccountHolder: string | null
+    discordUrl: string | null
+    instagramUrl: string | null
+    tiktokUrl: string | null
+    youtubeUrl: string | null
   }
   paymentMethods: { method: string; maxTotal: number | null; zone: string | null }[]
   promises: ({ slug: string; published: boolean } & PerLocale<{ title: string; body: string | null }>)[]
@@ -244,6 +245,7 @@ const sql = [
       name: s.name,
       currency: s.currency,
       default_locale: s.defaultLocale,
+      demo_store: s.demoStore,
       whatsapp_number: whatsappNumber,
       legal_name: s.legalName,
       tax_id_label: s.taxIdLabel,

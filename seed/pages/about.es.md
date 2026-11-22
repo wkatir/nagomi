@@ -11,4 +11,7 @@ Somos una tienda en línea de El Salvador dedicada a periféricos y accesorios p
 
 Además de las marcas que traemos, tenemos nuestra marca propia, Nagomi, con alfombrillas, ratones y accesorios pensados aquí.
 
+## Un proyecto académico
+Nagomi es un proyecto académico de la asignatura Modelos de Comercio Electrónico de la Universidad Francisco Gavidia, San Salvador, El Salvador. Es una tienda de demostración: puedes recorrerla y hacer pedidos, pero los pedidos no se cobran ni se envían.
+
 *Tu espacio, tu estilo, tu calma.*

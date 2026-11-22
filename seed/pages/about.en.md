@@ -11,4 +11,7 @@ We are an online store from El Salvador devoted to peripherals and accessories f
 
 Alongside the brands we carry, we have our own brand, Nagomi, with desk mats, mice and accessories designed here.
 
+## An academic project
+Nagomi is an academic project for the Modelos de Comercio Electrónico (E-commerce Models) course at Universidad Francisco Gavidia, San Salvador, El Salvador. It is a demo store: you can browse it and place orders, but orders are not charged or shipped.
+
 *Your space, your style, your calm.*

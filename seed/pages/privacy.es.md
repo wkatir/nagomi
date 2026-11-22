@@ -2,8 +2,10 @@
 
 Este aviso explica qué datos personales tratamos en Nagomi, para qué los usamos y cómo puedes ejercer tus derechos, de acuerdo con la Ley para la Protección de Datos Personales de El Salvador.
 
+> **Tienda de demostración.** Nagomi es un proyecto académico de la asignatura Modelos de Comercio Electrónico de la Universidad Francisco Gavidia, San Salvador, El Salvador. No es una empresa registrada: los pedidos no se cobran ni se envían. Este aviso describe cómo se tratan los datos que ingresas al probarla y la política que la tienda aplicaría al operar.
+
 ## Responsable del tratamiento
-El responsable de tus datos es [Razón social pendiente], que opera la tienda en línea Nagomi en El Salvador. NIT: [NIT pendiente]. Domicilio: [Dirección pendiente]. Para cualquier asunto de privacidad puedes escribirnos a hola@nagomi.example.
+El responsable de tus datos es el equipo de Nagomi, proyecto académico de la asignatura Modelos de Comercio Electrónico de la Universidad Francisco Gavidia, San Salvador, El Salvador. Como es una tienda de demostración, no ingreses datos que no quieras compartir. Para cualquier asunto de privacidad, contáctanos a través de la asignatura.
 
 ## Qué datos recogemos
 - **Datos de tu cuenta:** nombre, correo electrónico y contraseña (guardada cifrada; nunca la vemos).
@@ -30,7 +32,7 @@ Solo con quienes necesitamos para atender tu pedido: la empresa de mensajería q
 Los datos de tu cuenta, mientras la mantengas activa. Los de tus pedidos, durante el tiempo que exigen las leyes mercantiles y tributarias. Los de comunicaciones comerciales, hasta que retires tu permiso. Después los eliminamos o los anonimizamos.
 
 ## Tus derechos
-Tienes derecho a **acceder** a tus datos, **rectificarlos** si son inexactos, **cancelarlos** cuando ya no sean necesarios, **oponerte** a un tratamiento y pedir su **portabilidad** en un formato de uso común. Para ejercerlos, escríbenos a hola@nagomi.example desde el correo de tu cuenta, indicando qué derecho quieres ejercer. Te respondemos en un plazo máximo de 10 días hábiles. Si no estás conforme con la respuesta, puedes acudir a la autoridad competente en protección de datos.
+Tienes derecho a **acceder** a tus datos, **rectificarlos** si son inexactos, **cancelarlos** cuando ya no sean necesarios, **oponerte** a un tratamiento y pedir su **portabilidad** en un formato de uso común. Para ejercerlos, contáctanos a través de la asignatura con el correo de tu cuenta, indicando qué derecho quieres ejercer. Te respondemos en un plazo máximo de 10 días hábiles. Si no estás conforme con la respuesta, puedes acudir a la autoridad competente en protección de datos.
 
 ## Seguridad
 La tienda usa conexión cifrada (HTTPS), las contraseñas se guardan cifradas y el acceso a los datos está limitado al personal que los necesita para su trabajo.

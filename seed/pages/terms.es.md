@@ -1,6 +1,8 @@
 # Términos y condiciones
 
-Estos términos regulan las compras en la tienda en línea Nagomi, operada por [Razón social pendiente] (NIT [NIT pendiente]), con domicilio en [Dirección pendiente], El Salvador. Al crear una cuenta o hacer un pedido aceptas estos términos y el [aviso de privacidad](/pages/privacy).
+> **Tienda de demostración.** Nagomi es un proyecto académico de la asignatura Modelos de Comercio Electrónico de la Universidad Francisco Gavidia, San Salvador, El Salvador. No es una empresa registrada: los pedidos no se cobran ni se envían. Estos términos describen las condiciones que la tienda aplicaría al operar.
+
+Estos términos regulan las compras en la tienda en línea Nagomi. Al crear una cuenta o hacer un pedido aceptas estos términos y el [aviso de privacidad](/pages/privacy).
 
 ## Precios
 Todos los precios están en dólares de los Estados Unidos (US$) e incluyen el IVA del 13 %. En el resumen de tu pedido verás cuánto del total corresponde al IVA. El costo de envío se muestra aparte antes de que confirmes tu compra.
@@ -26,7 +28,7 @@ De acuerdo con la Ley de Protección al Consumidor, tienes **8 días desde que r
 Cada producto tiene garantía contra defectos de fabricación desde la fecha de entrega: **12 meses** en teclados, ratones, audífonos e iluminación, y **6 meses** en alfombrillas y accesorios. La garantía de cada producto se indica en su página.
 
 ## Reclamos
-Si tienes un problema con tu compra, escríbenos a hola@nagomi.example y lo resolvemos contigo. También puedes acudir a la Defensoría del Consumidor.
+Si tienes un problema con tu compra, contáctanos a través de la asignatura Modelos de Comercio Electrónico de la Universidad Francisco Gavidia y lo resolvemos contigo. También puedes acudir a la Defensoría del Consumidor.
 
 ## Ley aplicable
 Estos términos se rigen por las leyes de El Salvador. Cualquier controversia se someterá a los tribunales competentes de El Salvador, sin perjuicio de tus derechos como consumidor.

@@ -1,9 +1,11 @@
 # Returns and warranty
 
+> **Demo store.** Nagomi is an academic project for the Modelos de Comercio Electrónico (E-commerce Models) course at Universidad Francisco Gavidia, San Salvador, El Salvador. It is not a registered company: orders are not charged or shipped. This page describes the policy the store would apply when it operates.
+
 ## If you change your mind (right of withdrawal)
 You have **8 days from delivery** to return a product without giving a reason, as set out in El Salvador's Consumer Protection Law.
 - The product must be unused, complete, with its accessories and in its original packaging. You may open the box to check it.
-- Email hola@nagomi.example with your order number and we will tell you how to send it.
+- Contact us through the [contact](/pages/contact) channels with your order number and we will tell you how to send it.
 - Return shipping is on you.
 - Once we receive and check the product, we refund what you paid for it to the same payment method within 10 business days at most.
 
@@ -16,7 +18,7 @@ All our products have a warranty against manufacturing defects, counted from the
 - **6 months:** desk mats and accessories.
 
 ### How to claim the warranty
-1. Email hola@nagomi.example with your order number, a description of the fault and, if you can, a photo or video.
+1. Contact us through the [contact](/pages/contact) channels with your order number, a description of the fault and, if you can, a photo or video.
 2. We confirm whether it applies and arrange pickup or shipping of the product.
 3. We inspect the product and repair it, replace it with the same one or, if it is out of stock, refund what you paid.
 

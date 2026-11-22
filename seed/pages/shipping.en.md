@@ -1,5 +1,7 @@
 # Shipping policy
 
+> **Demo store.** Nagomi is an academic project for the Modelos de Comercio Electrónico (E-commerce Models) course at Universidad Francisco Gavidia, San Salvador, El Salvador. It is not a registered company: orders are not charged or shipped. This page describes the policy the store would apply when it operates.
+
 We ship across El Salvador. The fee and delivery time depend on the municipality of your address, and you will see them before you confirm your order.
 
 ## Zones, fees and times
@@ -15,7 +17,7 @@ We ship across El Salvador. The fee and delivery time depend on the municipality
 1. Once your order is confirmed, we pack it and let you know when it leaves.
 2. In the San Salvador metro area our own courier delivers it; elsewhere, a delivery company does.
 3. Someone needs to be at the address to receive it. If nobody is there, we arrange a second attempt with you.
-4. Check the package when it arrives. If it is damaged, email us the same day with photos at hola@nagomi.example.
+4. Check the package when it arrives. If it is damaged, tell us the same day with photos through the [contact](/pages/contact) channels.
 
 Times count from the moment the order is confirmed and exclude Sundays and public holidays.
 

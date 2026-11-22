@@ -2,8 +2,10 @@
 
 This notice explains which personal data Nagomi processes, what we use it for and how you can exercise your rights, under El Salvador's Personal Data Protection Law (Ley para la Protección de Datos Personales).
 
+> **Demo store.** Nagomi is an academic project for the Modelos de Comercio Electrónico (E-commerce Models) course at Universidad Francisco Gavidia, San Salvador, El Salvador. It is not a registered company: orders are not charged or shipped. This notice describes how the data you enter while trying it is handled and the policy the store would apply when it operates.
+
 ## Data controller
-Your data is controlled by [Razón social pendiente], which runs the Nagomi online store in El Salvador. Tax ID (NIT): [NIT pendiente]. Address: [Dirección pendiente]. For any privacy matter, write to hola@nagomi.example.
+Your data is controlled by the Nagomi team, an academic project for the Modelos de Comercio Electrónico (E-commerce Models) course at Universidad Francisco Gavidia, San Salvador, El Salvador. As it is a demo store, do not enter any data you would rather not share. For any privacy matter, contact us through the course.
 
 ## What data we collect
 - **Account data:** name, email address and password (stored encrypted; we never see it).
@@ -30,7 +32,7 @@ Only with those we need to fulfil your order: the courier that delivers it, the 
 Account data, for as long as your account is active. Order data, for as long as commercial and tax law requires. Marketing data, until you withdraw your permission. After that we delete or anonymise it.
 
 ## Your rights
-You have the right to **access** your data, **rectify** it if it is inaccurate, **cancel** it when it is no longer needed, **object** to its processing and ask for its **portability** in a commonly used format. To exercise them, email hola@nagomi.example from your account's address, stating which right you want to exercise. We reply within 10 business days at most. If you are not satisfied with our answer, you may contact the competent data protection authority.
+You have the right to **access** your data, **rectify** it if it is inaccurate, **cancel** it when it is no longer needed, **object** to its processing and ask for its **portability** in a commonly used format. To exercise them, contact us through the course with your account's email address, stating which right you want to exercise. We reply within 10 business days at most. If you are not satisfied with our answer, you may contact the competent data protection authority.
 
 ## Security
 The store uses an encrypted connection (HTTPS), passwords are stored encrypted and access to data is limited to the staff who need it for their work.

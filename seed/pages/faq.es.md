@@ -1,5 +1,8 @@
 # Preguntas frecuentes
 
+## ¿Es una tienda real?
+Es una tienda de demostración: Nagomi es un proyecto académico de la asignatura Modelos de Comercio Electrónico de la Universidad Francisco Gavidia, San Salvador, El Salvador. Puedes navegar y hacer pedidos para probarla, pero los pedidos no se cobran ni se envían. No transfieras dinero.
+
 ## ¿Cómo hago un pedido?
 Agrega tus productos al carrito, elige tu dirección y tu forma de pago, y confirma. Puedes comprar con tu cuenta o como invitado. Te avisamos por correo cuando tu pedido se confirma y cuando sale.
 
