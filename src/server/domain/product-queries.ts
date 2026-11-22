@@ -7,6 +7,7 @@ import { qualified } from "./d1";
 import { mediaUrl } from "./images";
 import { pageWindow, sortBy, toPaged } from "./list-query";
 import { productSearch } from "./product-search";
+import { productTextIn } from "./product-text";
 
 const {
 	brands,
@@ -83,10 +84,7 @@ export async function pagedProducts(
 		stock,
 	};
 	const where = productFilter(db, query);
-	const defaultText = and(
-		eq(productTranslations.productId, products.id),
-		eq(productTranslations.locale, clock.defaultLocale),
-	);
+	const defaultText = productTextIn(clock.defaultLocale);
 
 	const [rows, [counted]] = await db.batch([
 		db

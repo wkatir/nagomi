@@ -4,6 +4,7 @@ import { schema } from "#/db";
 import type { Locale } from "#/lib/enums";
 import type { LotListSearch, StockListSearch } from "#/lib/schemas/inventory";
 import { pageWindow, sortBy, toPaged } from "./list-query";
+import { productTextIn } from "./product-text";
 import { e4ToMinor } from "./receiving";
 import { searchPatterns } from "./search";
 import { searchMatch } from "./search-sql";
@@ -107,13 +108,7 @@ export async function pagedStock(
 			.from(variants)
 			.innerJoin(products, eq(products.id, variants.productId))
 			.innerJoin(brands, eq(brands.id, products.brandId))
-			.leftJoin(
-				productTranslations,
-				and(
-					eq(productTranslations.productId, products.id),
-					eq(productTranslations.locale, clock.locale),
-				),
-			)
+			.leftJoin(productTranslations, productTextIn(clock.locale))
 			.leftJoin(stock, eq(stock.variantId, variants.id))
 			.where(where)
 			.orderBy(...sortBy(sortColumns, query.sort, query.dir, variants.id))
@@ -124,13 +119,7 @@ export async function pagedStock(
 			.from(variants)
 			.innerJoin(products, eq(products.id, variants.productId))
 			.innerJoin(brands, eq(brands.id, products.brandId))
-			.leftJoin(
-				productTranslations,
-				and(
-					eq(productTranslations.productId, products.id),
-					eq(productTranslations.locale, clock.locale),
-				),
-			)
+			.leftJoin(productTranslations, productTextIn(clock.locale))
 			.leftJoin(stock, eq(stock.variantId, variants.id))
 			.where(where),
 	]);
@@ -240,13 +229,7 @@ export async function pagedLots(
 			.innerJoin(variants, eq(variants.id, lots.variantId))
 			.innerJoin(products, eq(products.id, variants.productId))
 			.innerJoin(brands, eq(brands.id, products.brandId))
-			.leftJoin(
-				productTranslations,
-				and(
-					eq(productTranslations.productId, products.id),
-					eq(productTranslations.locale, clock.locale),
-				),
-			)
+			.leftJoin(productTranslations, productTextIn(clock.locale))
 			.innerJoin(
 				purchaseReceiptLines,
 				eq(purchaseReceiptLines.id, lots.receiptLineId),
@@ -270,13 +253,7 @@ export async function pagedLots(
 			.innerJoin(variants, eq(variants.id, lots.variantId))
 			.innerJoin(products, eq(products.id, variants.productId))
 			.innerJoin(brands, eq(brands.id, products.brandId))
-			.leftJoin(
-				productTranslations,
-				and(
-					eq(productTranslations.productId, products.id),
-					eq(productTranslations.locale, clock.locale),
-				),
-			)
+			.leftJoin(productTranslations, productTextIn(clock.locale))
 			.where(where),
 	]);
 	const items = rows.map(({ unitCostE4, ...lot }) => ({

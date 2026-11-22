@@ -6,6 +6,7 @@ import type { PurchaseListSearch } from "#/lib/schemas/purchasing";
 import { qualified, withinLocalDays } from "./d1";
 import { groupBy } from "./group-by";
 import { pageWindow, sortBy, toPaged } from "./list-query";
+import { productTextIn } from "./product-text";
 import { e4ToMinor } from "./receiving";
 import { searchPatterns } from "./search";
 import { searchMatch } from "./search-sql";
@@ -145,13 +146,7 @@ export async function purchaseDetail(db: Db, locale: Locale, id: number) {
 			.innerJoin(variants, eq(variants.id, purchaseOrderItems.variantId))
 			.innerJoin(products, eq(products.id, variants.productId))
 			.innerJoin(brands, eq(brands.id, products.brandId))
-			.leftJoin(
-				productTranslations,
-				and(
-					eq(productTranslations.productId, products.id),
-					eq(productTranslations.locale, locale),
-				),
-			)
+			.leftJoin(productTranslations, productTextIn(locale))
 			.where(eq(purchaseOrderItems.purchaseOrderId, id))
 			.orderBy(asc(purchaseOrderItems.id)),
 		db

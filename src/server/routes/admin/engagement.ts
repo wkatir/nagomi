@@ -7,6 +7,7 @@ import type { AdminEnv } from "#/server/auth";
 import { idParam, validate } from "#/server/validate";
 import { audit } from "../../domain/audit";
 import { sellableByVariant } from "../../domain/inventory";
+import { productTextIn } from "../../domain/product-text";
 import { getSettings } from "../../domain/settings";
 
 const {
@@ -52,13 +53,7 @@ export const reviewsRouter = new Hono<AdminEnv>()
 					.from(productReviews)
 					.innerJoin(products, eq(products.id, productReviews.productId))
 					.innerJoin(customers, eq(customers.id, productReviews.customerId))
-					.leftJoin(
-						productTranslations,
-						and(
-							eq(productTranslations.productId, products.id),
-							eq(productTranslations.locale, defaultLocale),
-						),
-					)
+					.leftJoin(productTranslations, productTextIn(defaultLocale))
 					.where(status ? eq(productReviews.status, status) : undefined)
 					.orderBy(desc(productReviews.updatedAt), desc(productReviews.id))
 					.limit(200),
@@ -130,13 +125,7 @@ export const stockAlertsRouter = new Hono<AdminEnv>()
 			.from(stockAlerts)
 			.innerJoin(variants, eq(variants.id, stockAlerts.variantId))
 			.innerJoin(products, eq(products.id, variants.productId))
-			.leftJoin(
-				productTranslations,
-				and(
-					eq(productTranslations.productId, products.id),
-					eq(productTranslations.locale, defaultLocale),
-				),
-			)
+			.leftJoin(productTranslations, productTextIn(defaultLocale))
 			.where(isNull(stockAlerts.notifiedAt))
 			.orderBy(asc(variants.sku), asc(stockAlerts.createdAt));
 		const units = await sellableByVariant(db, [

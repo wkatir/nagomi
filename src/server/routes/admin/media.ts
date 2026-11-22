@@ -27,6 +27,7 @@ import {
 } from "../../domain/images";
 import { pageOf } from "../../domain/paging";
 import { productPhotoColumns } from "../../domain/product-photos";
+import { productTextIn } from "../../domain/product-text";
 import { readSettings } from "../../domain/settings";
 import { translationEntries } from "./catalog-inputs";
 
@@ -489,13 +490,7 @@ export const mediaFilesRouter = new Hono<AdminEnv>()
 				})
 				.from(productImages)
 				.innerJoin(products, eq(products.id, productImages.productId))
-				.leftJoin(
-					productTranslations,
-					and(
-						eq(productTranslations.productId, products.id),
-						eq(productTranslations.locale, defaultLocale),
-					),
-				)
+				.leftJoin(productTranslations, productTextIn(defaultLocale))
 				.where(eq(productImages.mediaFileId, id))
 				.orderBy(asc(productImages.id)),
 		]);

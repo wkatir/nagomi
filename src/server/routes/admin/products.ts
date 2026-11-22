@@ -25,6 +25,7 @@ import {
 	publishMissing,
 	skuIsFree,
 } from "../../domain/product-rules";
+import { productTextIn } from "../../domain/product-text";
 import { e4ToMinor } from "../../domain/receiving";
 import { searchKey, withoutSearchKey } from "../../domain/search";
 import { getSettings, readSettings } from "../../domain/settings";
@@ -317,13 +318,7 @@ export const productsRouter = new Hono<AdminEnv>()
 			.innerJoin(brands, eq(brands.id, products.brandId))
 			.innerJoin(categories, eq(categories.id, products.categoryId))
 			.innerJoin(variants, eq(variants.productId, products.id))
-			.leftJoin(
-				productTranslations,
-				and(
-					eq(productTranslations.productId, products.id),
-					eq(productTranslations.locale, defaultLocale),
-				),
-			)
+			.leftJoin(productTranslations, productTextIn(defaultLocale))
 			.where(productFilter(db, filter))
 			.orderBy(asc(brands.name), asc(products.slug), asc(variants.id));
 		const [stock, landed] = await Promise.all([

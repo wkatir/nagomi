@@ -21,6 +21,7 @@ import {
 	stockSummary,
 } from "../../domain/inventory-queries";
 import { pageOf } from "../../domain/paging";
+import { productTextIn } from "../../domain/product-text";
 import { e4ToMinor } from "../../domain/receiving";
 import { getSettings, type StoreSettings } from "../../domain/settings";
 
@@ -79,13 +80,7 @@ export async function listMovements(
 		.innerJoin(variants, eq(variants.id, lots.variantId))
 		.innerJoin(products, eq(products.id, variants.productId))
 		.innerJoin(brands, eq(brands.id, products.brandId))
-		.leftJoin(
-			productTranslations,
-			and(
-				eq(productTranslations.productId, products.id),
-				eq(productTranslations.locale, settings.defaultLocale),
-			),
-		)
+		.leftJoin(productTranslations, productTextIn(settings.defaultLocale))
 		.leftJoin(users, eq(users.id, inventoryMovements.createdBy))
 		.where(
 			and(

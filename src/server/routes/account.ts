@@ -9,6 +9,7 @@ import { CUSTOMER_ROLE } from "#/lib/roles";
 import { isSvMunicipality } from "#/lib/sv-locations";
 import { checkoutPageVersions } from "../domain/pages";
 import { salvadoranE164 } from "../domain/phone";
+import { productTextIn } from "../domain/product-text";
 import { phoneDigits, searchKey } from "../domain/search";
 import { getSettings } from "../domain/settings";
 import { patchOf, validate } from "../validate";
@@ -427,13 +428,7 @@ export const account = new Hono<AccountEnv>()
 				.innerJoin(orderItems, eq(orderItems.orderId, orders.id))
 				.innerJoin(variants, eq(variants.id, orderItems.variantId))
 				.innerJoin(products, eq(products.id, variants.productId))
-				.innerJoin(
-					productTranslations,
-					and(
-						eq(productTranslations.productId, products.id),
-						eq(productTranslations.locale, locale),
-					),
-				)
+				.innerJoin(productTranslations, productTextIn(locale))
 				.where(
 					and(
 						eq(orders.customerId, c.var.customerId),

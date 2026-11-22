@@ -14,6 +14,7 @@ import {
 } from "../../domain/catalog-lists";
 import { inList, nonEmpty } from "../../domain/d1";
 import { mediaUrl } from "../../domain/images";
+import { productTextIn } from "../../domain/product-text";
 import { readSettings } from "../../domain/settings";
 import { canMoveStatus } from "../../domain/status";
 import {
@@ -93,13 +94,7 @@ async function collectionDetails(db: Db, ids: number[]) {
 			})
 			.from(collectionProducts)
 			.innerJoin(products, eq(products.id, collectionProducts.productId))
-			.leftJoin(
-				productTranslations,
-				and(
-					eq(productTranslations.productId, products.id),
-					eq(productTranslations.locale, defaultLocale),
-				),
-			)
+			.leftJoin(productTranslations, productTextIn(defaultLocale))
 			.where(inList(collectionProducts.collectionId, ids))
 			.orderBy(asc(collectionProducts.position)),
 	]);
