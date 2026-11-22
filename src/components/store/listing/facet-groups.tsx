@@ -7,7 +7,6 @@ import {
 } from "#/components/ui/accordion";
 import { Checkbox } from "#/components/ui/checkbox";
 import { Field, FieldLabel } from "#/components/ui/field";
-import type { SkinType } from "#/lib/enums";
 import {
 	type Facet,
 	type ListingScope,
@@ -17,24 +16,14 @@ import {
 	toggle,
 } from "#/lib/listing";
 import type { ProductPage } from "#/lib/queries";
-import { skinTypeLabel } from "#/lib/skin-type";
 import { m } from "#/paraglide/messages";
 
 type Facets = ProductPage["facets"];
 
 const GROUPS: { facet: Facet; title: () => string }[] = [
-	{ facet: "concern", title: m.shop_facet_need },
 	{ facet: "category", title: m.shop_type_label },
-	{ facet: "skinType", title: m.shop_facet_skin },
 	{ facet: "brand", title: m.shop_facet_brand },
 ];
-
-// A skin type is stored by its enum value; the page names it in the customer's language.
-export const facetLabel = (
-	facet: Facet,
-	value: { slug: string; name: string },
-) =>
-	facet === "skinType" ? skinTypeLabel[value.slug as SkinType]() : value.name;
 
 // The checks follow `search`, which the list updates at once, not the data, which arrives
 // after the new list loads.
@@ -79,7 +68,7 @@ export function FacetGroups({
 											id={id}
 											checked={checked}
 											disabled={value.count === 0 && !checked}
-											label={facetLabel(facet, value)}
+											label={value.name}
 											count={value.count}
 											onChange={() =>
 												onChange(toggle(search, facet, value.slug))

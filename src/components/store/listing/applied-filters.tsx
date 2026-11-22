@@ -13,7 +13,6 @@ import {
 } from "#/lib/listing";
 import type { ProductPage } from "#/lib/queries";
 import { m } from "#/paraglide/messages";
-import { facetLabel } from "./facet-groups";
 
 // The chips follow `search`, not the data; a value the facets do not know shows its slug.
 export function AppliedFilters({
@@ -40,10 +39,7 @@ export function AppliedFilters({
 		...FACETS.filter((facet) => scope[facet] === undefined).flatMap((facet) =>
 			listOf(search[facet]).map((slug) => ({
 				key: `${facet}:${slug}`,
-				name: facetLabel(
-					facet,
-					facets[facet].find((v) => v.slug === slug) ?? { slug, name: slug },
-				),
+				name: facets[facet].find((v) => v.slug === slug)?.name ?? slug,
 				remove: () => onChange(toggle(search, facet, slug)),
 			})),
 		),

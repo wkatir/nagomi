@@ -20,11 +20,11 @@ import {
 
 const origin = "https://shop.example";
 const store: StoreIdentity = {
-	name: "Eclalune",
+	name: "Nagomi",
 	countryCode: "SV",
 	whatsappNumber: "50362862515",
 	business: {
-		legalName: "Eclalune, S.A.S.",
+		legalName: "Nagomi, S.A. de C.V.",
 		email: "contact@shop.example",
 		phone: null,
 	},
@@ -125,8 +125,8 @@ describe("store head", () => {
 			path,
 			noindex,
 			store,
-			title: "Eclalune | Skincare",
-			description: "Skincare coreano.",
+			title: "Nagomi | Periféricos",
+			description: "Periféricos y setups.",
 		});
 	const content = (meta: Record<string, unknown>[], key: string) =>
 		meta
@@ -150,7 +150,7 @@ describe("store head", () => {
 		expect(content(meta, "og:image")).toEqual([`${origin}/og-default-en.png`]);
 		expect(content(meta, "og:image:width")).toEqual(["1200"]);
 		expect(content(meta, "og:image:height")).toEqual(["630"]);
-		expect(content(meta, "og:site_name")).toEqual(["Eclalune"]);
+		expect(content(meta, "og:site_name")).toEqual(["Nagomi"]);
 		expect(content(meta, "twitter:card")).toEqual(["summary_large_image"]);
 		expect(content(meta, "og:url")).toEqual([`${origin}/en/products`]);
 		expect(jsonLd(meta)).toEqual([]);
@@ -177,15 +177,15 @@ describe("store head", () => {
 
 	test("page meta overrides title and description", () => {
 		expect(
-			pageMeta({ title: "Oil", storeName: "Eclalune", description: "Clean." }),
+			pageMeta({ title: "Oil", storeName: "Nagomi", description: "Clean." }),
 		).toEqual([
-			{ title: "Oil | Eclalune" },
+			{ title: "Oil | Nagomi" },
 			{ property: "og:title", content: "Oil" },
 			{ name: "description", content: "Clean." },
 			{ property: "og:description", content: "Clean." },
 		]);
 		expect(
-			pageMeta({ title: "Oil", storeName: "Eclalune", description: null }),
+			pageMeta({ title: "Oil", storeName: "Nagomi", description: null }),
 		).toHaveLength(2);
 	});
 });
@@ -196,7 +196,7 @@ describe("JSON-LD", () => {
 			organizationJsonLd(origin, store, "Beauty and personal care."),
 		);
 		expect(json.description).toBe("Beauty and personal care.");
-		expect(json.legalName).toBe("Eclalune, S.A.S.");
+		expect(json.legalName).toBe("Nagomi, S.A. de C.V.");
 		expect(json.logo).toBe(`${origin}/logo.png`);
 		expect(json.contactPoint.telephone).toBe("+50362862515");
 		expect(json.contactPoint.email).toBe("contact@shop.example");
@@ -221,7 +221,7 @@ describe("JSON-LD", () => {
 
 	test("the site search points at the product listing in the page's locale", () => {
 		const json = expectValidJsonLd(webSiteJsonLd(origin, store, "en"));
-		expect(json.name).toBe("Eclalune");
+		expect(json.name).toBe("Nagomi");
 		expect(json.publisher["@id"]).toBe(`${origin}/#organization`);
 		expect(json.potentialAction.target.urlTemplate).toBe(
 			`${origin}/en/products?q={search_term_string}`,
@@ -245,7 +245,7 @@ describe("JSON-LD", () => {
 					price,
 					currency,
 					availability: stockAvailability(availability),
-					seller: "Eclalune",
+					seller: "Nagomi",
 				}),
 			);
 		const inStock = product(1551, "USD", "in_stock");
@@ -282,7 +282,7 @@ describe("JSON-LD", () => {
 		const meta = listPageMeta({
 			origin,
 			locale: "en",
-			storeName: "Eclalune",
+			storeName: "Nagomi",
 			title: "Products for pores",
 			description: "Cleansers and toners.",
 			trail: {
@@ -291,7 +291,7 @@ describe("JSON-LD", () => {
 			},
 			items: [{ name: "SKIN1004 Oil", path: "/products/oil" }],
 		});
-		expect(meta).toContainEqual({ title: "Products for pores | Eclalune" });
+		expect(meta).toContainEqual({ title: "Products for pores | Nagomi" });
 		expect(meta).toContainEqual({
 			name: "description",
 			content: "Cleansers and toners.",

@@ -35,17 +35,8 @@ export function ProductsMenu() {
 					<NavigationMenuTrigger className={item}>
 						{m.nav_shop()}
 					</NavigationMenuTrigger>
-					<NavigationMenuContent className="md:w-[46rem] md:p-0">
-						<div className="grid grid-cols-3 gap-x-8 px-8 pt-6 pb-4">
-							<Group title={m.shop_needs_label()}>
-								{nav.concerns.map((c) => (
-									<NavigationMenuLink key={c.slug} asChild className={entry}>
-										<Link to="/needs/$slug" params={{ slug: c.slug }}>
-											{c.name}
-										</Link>
-									</NavigationMenuLink>
-								))}
-							</Group>
+					<NavigationMenuContent className="md:w-[32rem] md:p-0">
+						<div className="grid grid-cols-2 gap-x-8 px-8 pt-6 pb-4">
 							<Group title={m.home_types_title()}>
 								{nav.categories.map((c) => (
 									<NavigationMenuLink key={c.slug} asChild className={entry}>
@@ -74,12 +65,14 @@ export function ProductsMenu() {
 				</NavigationMenuItem>
 				<NavigationMenuItem>
 					<NavigationMenuLink asChild className={item}>
-						<Link to="/routines">{m.nav_routines()}</Link>
+						<Link to="/sets">{m.nav_bundles()}</Link>
 					</NavigationMenuLink>
 				</NavigationMenuItem>
 				<NavigationMenuItem>
 					<NavigationMenuLink asChild className={item}>
-						<Link to="/company">{m.footer_company()}</Link>
+						<Link to="/pages/$slug" params={{ slug: "about" }}>
+							{m.nav_about()}
+						</Link>
 					</NavigationMenuLink>
 				</NavigationMenuItem>
 			</NavigationMenuList>

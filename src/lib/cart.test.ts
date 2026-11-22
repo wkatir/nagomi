@@ -1,6 +1,6 @@
 import { afterAll, beforeEach, describe, expect, test } from "bun:test";
 
-const KEY = "eclalune:cart:v1";
+const KEY = "nagomi:cart:v1";
 const storage = new Map<string, string>();
 let onStorage: (event: { key: string | null }) => void = () => {};
 Object.assign(globalThis, {

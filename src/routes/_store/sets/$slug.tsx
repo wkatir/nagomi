@@ -1,32 +1,32 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, notFound } from "@tanstack/react-router";
+import { BundleCard } from "#/components/store/bundle-card";
 import { ProductCard } from "#/components/store/product-card";
-import { RoutineCard } from "#/components/store/routine-card";
 import { SectionHeading } from "#/components/store/ui/section-heading";
 import { StoreBreadcrumb } from "#/components/store/ui/store-breadcrumb";
 import { isNotFound } from "#/lib/api";
 import type { Trail } from "#/lib/crumbs";
-import { routineQuery, storeQuery } from "#/lib/queries";
+import { bundleQuery, storeQuery } from "#/lib/queries";
 import { listPageMeta } from "#/lib/seo";
 import { siteOrigin } from "#/lib/site-origin";
 import { m } from "#/paraglide/messages";
 import { getLocale } from "#/paraglide/runtime";
 
-const trailOf = (slug: string, title: string): Trail => ({
-	ancestors: ["home", "routines"],
-	current: { name: title, path: `/routines/${slug}` },
+const trailOf = (slug: string, name: string): Trail => ({
+	ancestors: ["home", "bundles"],
+	current: { name, path: `/sets/${slug}` },
 });
 
-export const Route = createFileRoute("/_store/routines/$slug")({
+export const Route = createFileRoute("/_store/sets/$slug")({
 	loader: async ({ context, params }) => {
 		try {
-			const [store, routine] = await Promise.all([
+			const [store, bundle] = await Promise.all([
 				context.queryClient.ensureQueryData(storeQuery),
 				context.queryClient.ensureQueryData(
-					routineQuery(params.slug, getLocale()),
+					bundleQuery(params.slug, getLocale()),
 				),
 			]);
-			return { store, routine };
+			return { store, bundle };
 		} catch (e) {
 			if (isNotFound(e)) throw notFound();
 			throw e;
@@ -34,53 +34,53 @@ export const Route = createFileRoute("/_store/routines/$slug")({
 	},
 	head: ({ loaderData, params }) => {
 		if (!loaderData) return {};
-		const { store, routine } = loaderData;
+		const { store, bundle } = loaderData;
 		return {
 			meta: listPageMeta({
 				origin: siteOrigin(),
 				locale: getLocale(),
 				storeName: store.name,
-				title: routine.seoTitle ?? routine.title,
-				description: routine.seoDescription ?? routine.description,
-				trail: trailOf(params.slug, routine.title),
-				items: routine.steps.map((s) => ({
-					name: `${s.product.brand.name} ${s.product.name}`,
-					path: `/products/${s.product.slug}`,
+				title: bundle.seoTitle ?? bundle.name,
+				description: bundle.seoDescription ?? bundle.description,
+				trail: trailOf(params.slug, bundle.name),
+				items: bundle.items.map((i) => ({
+					name: `${i.product.brand.name} ${i.product.name}`,
+					path: `/products/${i.product.slug}`,
 				})),
 			}),
 		};
 	},
-	component: RoutinePage,
+	component: BundlePage,
 });
 
-function RoutinePage() {
+function BundlePage() {
 	const { slug } = Route.useParams();
-	const { data: routine } = useSuspenseQuery(routineQuery(slug, getLocale()));
+	const { data: bundle } = useSuspenseQuery(bundleQuery(slug, getLocale()));
 	return (
 		<div className="container-page py-section-sm">
-			<StoreBreadcrumb trail={trailOf(slug, routine.title)} className="-mt-3" />
-			<h1 className="mt-2 type-h1 text-balance">{routine.title}</h1>
-			{routine.description && (
+			<StoreBreadcrumb trail={trailOf(slug, bundle.name)} className="-mt-3" />
+			<h1 className="mt-2 type-h1 text-balance">{bundle.name}</h1>
+			{bundle.description && (
 				<p className="mt-4 max-w-[62ch] type-lead text-foreground-secondary">
-					{routine.description}
+					{bundle.description}
 				</p>
 			)}
 			<div className="mt-10 max-w-xl">
-				<RoutineCard routine={routine} />
+				<BundleCard bundle={bundle} headingLevel={2} />
 			</div>
 			<section
-				aria-labelledby="routine-products-title"
+				aria-labelledby="bundle-products-title"
 				className="mt-section-sm"
 			>
 				<SectionHeading
-					id="routine-products-title"
-					title={m.routines_products_title()}
+					id="bundle-products-title"
+					title={m.bundle_products_title()}
 				/>
 				<div className="mt-8 grid grid-cols-2 gap-x-3 gap-y-10 md:grid-cols-3 md:gap-x-5 md:gap-y-12 lg:grid-cols-4">
-					{routine.steps.map((step) => (
+					{bundle.items.map((item) => (
 						<ProductCard
-							key={step.sku}
-							product={step.product}
+							key={item.sku}
+							product={item.product}
 							headingLevel={3}
 						/>
 					))}

@@ -3,7 +3,7 @@ import { m } from "#/paraglide/messages";
 export const ANCESTORS = {
 	home: { path: "/", name: () => m.nav_home() },
 	shop: { path: "/products", name: () => m.nav_shop() },
-	routines: { path: "/routines", name: () => m.nav_routines() },
+	bundles: { path: "/sets", name: () => m.nav_bundles() },
 } as const;
 type Ancestor = keyof typeof ANCESTORS;
 

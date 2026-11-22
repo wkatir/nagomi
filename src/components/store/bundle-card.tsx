@@ -3,26 +3,33 @@ import { TextLink } from "#/components/store/ui/text-link";
 import { useMoney } from "#/hooks/use-money";
 import { cart } from "#/lib/cart";
 import { cartDrawer } from "#/lib/cart-ui";
-import type { RoutineView } from "#/lib/queries";
+import type { BundleView } from "#/lib/queries";
 import { m } from "#/paraglide/messages";
 
-export function RoutineCard({ routine }: { routine: RoutineView }) {
+export function BundleCard({
+	bundle,
+	headingLevel = 3,
+}: {
+	bundle: BundleView;
+	headingLevel?: 2 | 3;
+}) {
 	const money = useMoney();
-	const complete = routine.steps.every((s) => s.availability === "in_stock");
+	const available = bundle.availability === "in_stock";
+	const Heading = headingLevel === 2 ? "h2" : "h3";
 	return (
 		<article className="flex h-full flex-col border">
 			<div
 				className="grid aspect-[16/10] grid-rows-[minmax(0,1fr)] overflow-hidden bg-photo"
 				style={{
-					gridTemplateColumns: `repeat(${routine.steps.length}, minmax(0, 1fr))`,
+					gridTemplateColumns: `repeat(${bundle.items.length}, minmax(0, 1fr))`,
 				}}
 			>
-				{routine.steps.map((step) => {
-					const img = step.product.packshot;
+				{bundle.items.map((item) => {
+					const img = item.product.packshot;
 					return (
 						<div
-							key={step.sku}
-							className="flex h-full items-center justify-center px-[8%] py-[14%]"
+							key={item.sku}
+							className="flex h-full items-center justify-center px-[6%] py-[12%]"
 						>
 							{img && (
 								<img
@@ -39,28 +46,37 @@ export function RoutineCard({ routine }: { routine: RoutineView }) {
 				})}
 			</div>
 			<div className="flex flex-1 flex-col p-6 max-md:p-5">
-				<h3 className="type-h3">{routine.title}</h3>
-				{routine.description && (
+				<Heading className="type-h3">
+					<TextLink
+						inline
+						variant="nav"
+						to="/sets/$slug"
+						params={{ slug: bundle.slug }}
+					>
+						{bundle.name}
+					</TextLink>
+				</Heading>
+				{bundle.description && (
 					<p className="mt-2 line-clamp-3 type-small text-foreground-secondary">
-						{routine.description}
+						{bundle.description}
 					</p>
 				)}
-				<ol className="mt-5 grid gap-1.5 border-t pt-4 type-small">
-					{routine.steps.map((step) => (
-						<li key={step.sku} className="grid grid-cols-[18px_1fr] gap-2">
+				<ul className="mt-5 grid gap-1.5 border-t pt-4 type-small">
+					{bundle.items.map((item) => (
+						<li key={item.sku} className="grid grid-cols-[28px_1fr] gap-2">
 							<span className="text-muted-foreground tabular-nums">
-								{step.position}
+								{m.bundle_item_quantity({ quantity: item.quantity })}
 							</span>
 							<span>
 								<TextLink
 									inline
 									variant="nav"
 									to="/products/$slug"
-									params={{ slug: step.product.slug }}
+									params={{ slug: item.product.slug }}
 								>
-									{step.product.name}
+									{item.product.name}
 								</TextLink>
-								{step.availability === "sold_out" && (
+								{item.availability === "sold_out" && (
 									<span className="text-muted-foreground">
 										{" "}
 										· {m.product_out_of_stock()}
@@ -69,29 +85,32 @@ export function RoutineCard({ routine }: { routine: RoutineView }) {
 							</span>
 						</li>
 					))}
-				</ol>
+				</ul>
 				<div className="mt-auto flex items-end justify-between gap-4 pt-6">
 					<div>
-						<p className="type-meta text-muted-foreground">
-							{m.routine_items({ count: routine.steps.length })}
+						<p className="type-meta text-muted-foreground line-through">
+							{money(bundle.itemsTotal)}
 						</p>
-						<p className="type-stat">{money(routine.total)}</p>
+						<p className="type-stat">{money(bundle.price)}</p>
+						<p className="type-meta text-success">
+							{m.bundle_saving({ amount: money(bundle.saving) })}
+						</p>
 					</div>
 					<StoreButton
-						disabled={!complete}
+						disabled={!available}
 						onClick={(e) => {
 							cart.addMany(
-								routine.steps.map((step) => ({
-									sku: step.sku,
-									quantity: 1,
-									max: step.maxQuantity,
+								bundle.items.map((item) => ({
+									sku: item.sku,
+									quantity: item.quantity,
+									max: item.maxQuantity,
 								})),
 							);
 							cartDrawer.open(e.currentTarget);
 						}}
 						className="shrink-0"
 					>
-						{complete ? m.routine_add() : m.routine_sold_out()}
+						{available ? m.bundle_add() : m.bundle_sold_out()}
 					</StoreButton>
 				</div>
 			</div>

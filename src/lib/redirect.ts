@@ -1,5 +1,5 @@
 const ADMIN_HOME = "/admin";
-const BASE = new URL("https://eclalune.invalid");
+const BASE = new URL("https://nagomi.invalid");
 const ADMIN_PATH = /^\/(en\/)?admin(\/|$)/;
 
 // Parsed like a browser would, so tab, newline and backslash tricks cannot leave the admin.

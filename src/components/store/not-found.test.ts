@@ -50,7 +50,7 @@ const routeTree = root.addChildren([
 async function render(path: string) {
 	const queryClient = new QueryClient();
 	queryClient.setQueryData(storeQuery.queryKey, {
-		name: "Eclalune",
+		name: "Nagomi",
 		currency: "USD",
 		defaultLocale: "es",
 		countryCode: "SV",
@@ -58,11 +58,15 @@ async function render(path: string) {
 		whatsappNumber: null,
 		whatsappDisplay: null,
 		freeShippingFrom: null,
+		lowStockThreshold: 5,
 		maxQuantityPerLine: 20,
 		returnWindowDays: null,
 		checkoutOpen: false,
 		paymentMethods: [],
+		paymentOptions: [],
 		promises: { es: [], en: [] },
+		footerPages: [],
+		social: { discord: null, instagram: null, tiktok: null, youtube: null },
 		business: {
 			foundingYear: null,
 			legalName: null,
@@ -75,7 +79,6 @@ async function render(path: string) {
 	});
 	queryClient.setQueryData(navigationQuery(getLocale()).queryKey, {
 		categories: [],
-		concerns: [],
 		brands: [],
 		collections: [],
 	});
@@ -97,26 +100,26 @@ describe("store 404", () => {
 	// The layout's notFoundComponent replaces the layout and draws the store frame itself.
 	test.each([
 		["an unknown address", "/no-such-page"],
-		["an unknown nested address", "/products/serum/extra"],
+		["an unknown nested address", "/products/keyboard/extra"],
 		["a product that does not exist", "/products/missing"],
 	])("%s is the store's 404, titled and out of search results", async (_, path) => {
 		const { status, layout } = await render(path);
 		expect(status).toBe(404);
 		expect(layout.status).toBe("notFound");
 		expect(layout.meta).toEqual([
-			{ title: "Página no encontrada | Eclalune" },
+			{ title: "Página no encontrada | Nagomi" },
 			{ name: "robots", content: "noindex" },
 		]);
 		expect(layout.links).toBeUndefined();
 	});
 
 	test("an existing page keeps the store layout and its head", async () => {
-		const { status, layout } = await render("/products/serum");
+		const { status, layout } = await render("/products/keyboard");
 		expect(status).toBe(200);
 		expect(layout.status).toBe("success");
 		expect(layout.links).toContainEqual({
 			rel: "canonical",
-			href: `${origin}/products/serum`,
+			href: `${origin}/products/keyboard`,
 		});
 	});
 });

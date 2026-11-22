@@ -14,13 +14,12 @@ import { Route as AdminRouteRouteImport } from './routes/admin/route'
 import { Route as StoreIndexRouteImport } from './routes/_store/index'
 import { Route as StoreSplatRouteImport } from './routes/_store/$'
 import { Route as StoreCartRouteImport } from './routes/_store/cart'
-import { Route as StoreCompanyRouteImport } from './routes/_store/company'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as AdminAuditRouteRouteImport } from './routes/admin/audit/route'
 import { Route as AdminBrandsRouteImport } from './routes/admin/brands'
+import { Route as AdminBundlesRouteRouteImport } from './routes/admin/bundles/route'
 import { Route as AdminCategoriesRouteImport } from './routes/admin/categories'
 import { Route as AdminCollectionsRouteRouteImport } from './routes/admin/collections/route'
-import { Route as AdminConcernsRouteImport } from './routes/admin/concerns'
 import { Route as AdminCustomersRouteRouteImport } from './routes/admin/customers/route'
 import { Route as AdminInventoryRouteRouteImport } from './routes/admin/inventory/route'
 import { Route as AdminLibraryRouteRouteImport } from './routes/admin/library/route'
@@ -29,22 +28,26 @@ import { Route as AdminProductsRouteRouteImport } from './routes/admin/products/
 import { Route as AdminPromotionsRouteRouteImport } from './routes/admin/promotions/route'
 import { Route as AdminPurchasesRouteRouteImport } from './routes/admin/purchases/route'
 import { Route as AdminReportsRouteRouteImport } from './routes/admin/reports/route'
-import { Route as AdminRoutinesRouteRouteImport } from './routes/admin/routines/route'
 import { Route as AdminSettingsRouteRouteImport } from './routes/admin/settings/route'
 import { Route as AdminShippingRouteRouteImport } from './routes/admin/shipping/route'
 import { Route as AdminSlidesRouteRouteImport } from './routes/admin/slides/route'
 import { Route as AdminSuppliersRouteRouteImport } from './routes/admin/suppliers/route'
 import { Route as AdminLoginRouteImport } from './routes/admin_.login'
 import { Route as ApiSplatRouteImport } from './routes/api/$'
+import { Route as StoreAccountIndexRouteImport } from './routes/_store/account/index'
+import { Route as StoreAccountSignInRouteImport } from './routes/_store/account/sign-in'
+import { Route as StoreAccountSignUpRouteImport } from './routes/_store/account/sign-up'
 import { Route as StoreBrandsSlugRouteImport } from './routes/_store/brands/$slug'
 import { Route as StoreCategoriesSlugRouteImport } from './routes/_store/categories/$slug'
-import { Route as StoreNeedsSlugRouteImport } from './routes/_store/needs/$slug'
 import { Route as StorePagesSlugRouteImport } from './routes/_store/pages/$slug'
 import { Route as StoreProductsIndexRouteImport } from './routes/_store/products/index'
 import { Route as StoreProductsSlugRouteImport } from './routes/_store/products/$slug'
-import { Route as StoreRoutinesIndexRouteImport } from './routes/_store/routines/index'
-import { Route as StoreRoutinesSlugRouteImport } from './routes/_store/routines/$slug'
+import { Route as StoreSetsIndexRouteImport } from './routes/_store/sets/index'
+import { Route as StoreSetsSlugRouteImport } from './routes/_store/sets/$slug'
 import { Route as AdminAuditIndexRouteImport } from './routes/admin/audit/index'
+import { Route as AdminBundlesIndexRouteImport } from './routes/admin/bundles/index'
+import { Route as AdminBundlesIdRouteImport } from './routes/admin/bundles/$id'
+import { Route as AdminBundlesNewRouteImport } from './routes/admin/bundles/new'
 import { Route as AdminCollectionsIndexRouteImport } from './routes/admin/collections/index'
 import { Route as AdminCollectionsIdRouteImport } from './routes/admin/collections/$id'
 import { Route as AdminCollectionsNewRouteImport } from './routes/admin/collections/new'
@@ -57,6 +60,7 @@ import { Route as AdminInventoryReorderRouteImport } from './routes/admin/invent
 import { Route as AdminLibraryIndexRouteImport } from './routes/admin/library/index'
 import { Route as AdminOrdersIndexRouteImport } from './routes/admin/orders/index'
 import { Route as AdminOrdersIdRouteImport } from './routes/admin/orders/$id'
+import { Route as AdminOrdersFollowupsRouteImport } from './routes/admin/orders/followups'
 import { Route as AdminOrdersNewRouteImport } from './routes/admin/orders/new'
 import { Route as AdminProductsIndexRouteImport } from './routes/admin/products/index'
 import { Route as AdminProductsIdRouteImport } from './routes/admin/products/$id'
@@ -71,9 +75,6 @@ import { Route as AdminReportsLossesRouteImport } from './routes/admin/reports/l
 import { Route as AdminReportsProductsRouteImport } from './routes/admin/reports/products'
 import { Route as AdminReportsReorderRouteImport } from './routes/admin/reports/reorder'
 import { Route as AdminReportsStockRouteImport } from './routes/admin/reports/stock'
-import { Route as AdminRoutinesIndexRouteImport } from './routes/admin/routines/index'
-import { Route as AdminRoutinesIdRouteImport } from './routes/admin/routines/$id'
-import { Route as AdminRoutinesNewRouteImport } from './routes/admin/routines/new'
 import { Route as AdminSettingsIndexRouteImport } from './routes/admin/settings/index'
 import { Route as AdminSettingsPagesRouteImport } from './routes/admin/settings/pages'
 import { Route as AdminSettingsPaymentsRouteImport } from './routes/admin/settings/payments'
@@ -110,11 +111,6 @@ const StoreCartRoute = StoreCartRouteImport.update({
   path: '/cart',
   getParentRoute: () => StoreRouteRoute,
 } as any)
-const StoreCompanyRoute = StoreCompanyRouteImport.update({
-  id: '/company',
-  path: '/company',
-  getParentRoute: () => StoreRouteRoute,
-} as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -130,6 +126,11 @@ const AdminBrandsRoute = AdminBrandsRouteImport.update({
   path: '/brands',
   getParentRoute: () => AdminRouteRoute,
 } as any)
+const AdminBundlesRouteRoute = AdminBundlesRouteRouteImport.update({
+  id: '/bundles',
+  path: '/bundles',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
 const AdminCategoriesRoute = AdminCategoriesRouteImport.update({
   id: '/categories',
   path: '/categories',
@@ -138,11 +139,6 @@ const AdminCategoriesRoute = AdminCategoriesRouteImport.update({
 const AdminCollectionsRouteRoute = AdminCollectionsRouteRouteImport.update({
   id: '/collections',
   path: '/collections',
-  getParentRoute: () => AdminRouteRoute,
-} as any)
-const AdminConcernsRoute = AdminConcernsRouteImport.update({
-  id: '/concerns',
-  path: '/concerns',
   getParentRoute: () => AdminRouteRoute,
 } as any)
 const AdminCustomersRouteRoute = AdminCustomersRouteRouteImport.update({
@@ -185,11 +181,6 @@ const AdminReportsRouteRoute = AdminReportsRouteRouteImport.update({
   path: '/reports',
   getParentRoute: () => AdminRouteRoute,
 } as any)
-const AdminRoutinesRouteRoute = AdminRoutinesRouteRouteImport.update({
-  id: '/routines',
-  path: '/routines',
-  getParentRoute: () => AdminRouteRoute,
-} as any)
 const AdminSettingsRouteRoute = AdminSettingsRouteRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -220,6 +211,21 @@ const ApiSplatRoute = ApiSplatRouteImport.update({
   path: '/api/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const StoreAccountIndexRoute = StoreAccountIndexRouteImport.update({
+  id: '/account/',
+  path: '/account/',
+  getParentRoute: () => StoreRouteRoute,
+} as any)
+const StoreAccountSignInRoute = StoreAccountSignInRouteImport.update({
+  id: '/account/sign-in',
+  path: '/account/sign-in',
+  getParentRoute: () => StoreRouteRoute,
+} as any)
+const StoreAccountSignUpRoute = StoreAccountSignUpRouteImport.update({
+  id: '/account/sign-up',
+  path: '/account/sign-up',
+  getParentRoute: () => StoreRouteRoute,
+} as any)
 const StoreBrandsSlugRoute = StoreBrandsSlugRouteImport.update({
   id: '/brands/$slug',
   path: '/brands/$slug',
@@ -228,11 +234,6 @@ const StoreBrandsSlugRoute = StoreBrandsSlugRouteImport.update({
 const StoreCategoriesSlugRoute = StoreCategoriesSlugRouteImport.update({
   id: '/categories/$slug',
   path: '/categories/$slug',
-  getParentRoute: () => StoreRouteRoute,
-} as any)
-const StoreNeedsSlugRoute = StoreNeedsSlugRouteImport.update({
-  id: '/needs/$slug',
-  path: '/needs/$slug',
   getParentRoute: () => StoreRouteRoute,
 } as any)
 const StorePagesSlugRoute = StorePagesSlugRouteImport.update({
@@ -250,20 +251,35 @@ const StoreProductsSlugRoute = StoreProductsSlugRouteImport.update({
   path: '/products/$slug',
   getParentRoute: () => StoreRouteRoute,
 } as any)
-const StoreRoutinesIndexRoute = StoreRoutinesIndexRouteImport.update({
-  id: '/routines/',
-  path: '/routines/',
+const StoreSetsIndexRoute = StoreSetsIndexRouteImport.update({
+  id: '/sets/',
+  path: '/sets/',
   getParentRoute: () => StoreRouteRoute,
 } as any)
-const StoreRoutinesSlugRoute = StoreRoutinesSlugRouteImport.update({
-  id: '/routines/$slug',
-  path: '/routines/$slug',
+const StoreSetsSlugRoute = StoreSetsSlugRouteImport.update({
+  id: '/sets/$slug',
+  path: '/sets/$slug',
   getParentRoute: () => StoreRouteRoute,
 } as any)
 const AdminAuditIndexRoute = AdminAuditIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AdminAuditRouteRoute,
+} as any)
+const AdminBundlesIndexRoute = AdminBundlesIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminBundlesRouteRoute,
+} as any)
+const AdminBundlesIdRoute = AdminBundlesIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AdminBundlesRouteRoute,
+} as any)
+const AdminBundlesNewRoute = AdminBundlesNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => AdminBundlesRouteRoute,
 } as any)
 const AdminCollectionsIndexRoute = AdminCollectionsIndexRouteImport.update({
   id: '/',
@@ -323,6 +339,11 @@ const AdminOrdersIndexRoute = AdminOrdersIndexRouteImport.update({
 const AdminOrdersIdRoute = AdminOrdersIdRouteImport.update({
   id: '/$id',
   path: '/$id',
+  getParentRoute: () => AdminOrdersRouteRoute,
+} as any)
+const AdminOrdersFollowupsRoute = AdminOrdersFollowupsRouteImport.update({
+  id: '/followups',
+  path: '/followups',
   getParentRoute: () => AdminOrdersRouteRoute,
 } as any)
 const AdminOrdersNewRoute = AdminOrdersNewRouteImport.update({
@@ -395,21 +416,6 @@ const AdminReportsStockRoute = AdminReportsStockRouteImport.update({
   path: '/stock',
   getParentRoute: () => AdminReportsRouteRoute,
 } as any)
-const AdminRoutinesIndexRoute = AdminRoutinesIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => AdminRoutinesRouteRoute,
-} as any)
-const AdminRoutinesIdRoute = AdminRoutinesIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => AdminRoutinesRouteRoute,
-} as any)
-const AdminRoutinesNewRoute = AdminRoutinesNewRouteImport.update({
-  id: '/new',
-  path: '/new',
-  getParentRoute: () => AdminRoutinesRouteRoute,
-} as any)
 const AdminSettingsIndexRoute = AdminSettingsIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -470,6 +476,7 @@ export interface FileRoutesByFullPath {
   '/': typeof StoreIndexRoute
   '/admin': typeof AdminRouteRouteWithChildren
   '/admin/audit': typeof AdminAuditRouteRouteWithChildren
+  '/admin/bundles': typeof AdminBundlesRouteRouteWithChildren
   '/admin/collections': typeof AdminCollectionsRouteRouteWithChildren
   '/admin/customers': typeof AdminCustomersRouteRouteWithChildren
   '/admin/inventory': typeof AdminInventoryRouteRouteWithChildren
@@ -479,26 +486,26 @@ export interface FileRoutesByFullPath {
   '/admin/promotions': typeof AdminPromotionsRouteRouteWithChildren
   '/admin/purchases': typeof AdminPurchasesRouteRouteWithChildren
   '/admin/reports': typeof AdminReportsRouteRouteWithChildren
-  '/admin/routines': typeof AdminRoutinesRouteRouteWithChildren
   '/admin/settings': typeof AdminSettingsRouteRouteWithChildren
   '/admin/shipping': typeof AdminShippingRouteRouteWithChildren
   '/admin/slides': typeof AdminSlidesRouteRouteWithChildren
   '/admin/suppliers': typeof AdminSuppliersRouteRouteWithChildren
   '/$': typeof StoreSplatRoute
   '/cart': typeof StoreCartRoute
-  '/company': typeof StoreCompanyRoute
   '/admin/brands': typeof AdminBrandsRoute
   '/admin/categories': typeof AdminCategoriesRoute
-  '/admin/concerns': typeof AdminConcernsRoute
   '/admin/login': typeof AdminLoginRoute
   '/api/$': typeof ApiSplatRoute
   '/admin/': typeof AdminIndexRoute
+  '/account/sign-in': typeof StoreAccountSignInRoute
+  '/account/sign-up': typeof StoreAccountSignUpRoute
   '/brands/$slug': typeof StoreBrandsSlugRoute
   '/categories/$slug': typeof StoreCategoriesSlugRoute
-  '/needs/$slug': typeof StoreNeedsSlugRoute
   '/pages/$slug': typeof StorePagesSlugRoute
   '/products/$slug': typeof StoreProductsSlugRoute
-  '/routines/$slug': typeof StoreRoutinesSlugRoute
+  '/sets/$slug': typeof StoreSetsSlugRoute
+  '/admin/bundles/$id': typeof AdminBundlesIdRoute
+  '/admin/bundles/new': typeof AdminBundlesNewRoute
   '/admin/collections/$id': typeof AdminCollectionsIdRoute
   '/admin/collections/new': typeof AdminCollectionsNewRoute
   '/admin/customers/$id': typeof AdminCustomersIdRoute
@@ -506,6 +513,7 @@ export interface FileRoutesByFullPath {
   '/admin/inventory/movements': typeof AdminInventoryMovementsRoute
   '/admin/inventory/reorder': typeof AdminInventoryReorderRoute
   '/admin/orders/$id': typeof AdminOrdersIdRoute
+  '/admin/orders/followups': typeof AdminOrdersFollowupsRoute
   '/admin/orders/new': typeof AdminOrdersNewRoute
   '/admin/products/$id': typeof AdminProductsIdRoute
   '/admin/products/new': typeof AdminProductsNewRoute
@@ -516,8 +524,6 @@ export interface FileRoutesByFullPath {
   '/admin/reports/products': typeof AdminReportsProductsRoute
   '/admin/reports/reorder': typeof AdminReportsReorderRoute
   '/admin/reports/stock': typeof AdminReportsStockRoute
-  '/admin/routines/$id': typeof AdminRoutinesIdRoute
-  '/admin/routines/new': typeof AdminRoutinesNewRoute
   '/admin/settings/pages': typeof AdminSettingsPagesRoute
   '/admin/settings/payments': typeof AdminSettingsPaymentsRoute
   '/admin/settings/promises': typeof AdminSettingsPromisesRoute
@@ -525,9 +531,11 @@ export interface FileRoutesByFullPath {
   '/admin/slides/$id': typeof AdminSlidesIdRoute
   '/admin/suppliers/$id': typeof AdminSuppliersIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/account/': typeof StoreAccountIndexRoute
   '/products/': typeof StoreProductsIndexRoute
-  '/routines/': typeof StoreRoutinesIndexRoute
+  '/sets/': typeof StoreSetsIndexRoute
   '/admin/audit/': typeof AdminAuditIndexRoute
+  '/admin/bundles/': typeof AdminBundlesIndexRoute
   '/admin/collections/': typeof AdminCollectionsIndexRoute
   '/admin/customers/': typeof AdminCustomersIndexRoute
   '/admin/inventory/': typeof AdminInventoryIndexRoute
@@ -537,7 +545,6 @@ export interface FileRoutesByFullPath {
   '/admin/promotions/': typeof AdminPromotionsIndexRoute
   '/admin/purchases/': typeof AdminPurchasesIndexRoute
   '/admin/reports/': typeof AdminReportsIndexRoute
-  '/admin/routines/': typeof AdminRoutinesIndexRoute
   '/admin/settings/': typeof AdminSettingsIndexRoute
   '/admin/shipping/': typeof AdminShippingIndexRoute
   '/admin/slides/': typeof AdminSlidesIndexRoute
@@ -546,20 +553,21 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/$': typeof StoreSplatRoute
   '/cart': typeof StoreCartRoute
-  '/company': typeof StoreCompanyRoute
   '/admin/brands': typeof AdminBrandsRoute
   '/admin/categories': typeof AdminCategoriesRoute
-  '/admin/concerns': typeof AdminConcernsRoute
   '/admin/login': typeof AdminLoginRoute
   '/api/$': typeof ApiSplatRoute
   '/': typeof StoreIndexRoute
   '/admin': typeof AdminIndexRoute
+  '/account/sign-in': typeof StoreAccountSignInRoute
+  '/account/sign-up': typeof StoreAccountSignUpRoute
   '/brands/$slug': typeof StoreBrandsSlugRoute
   '/categories/$slug': typeof StoreCategoriesSlugRoute
-  '/needs/$slug': typeof StoreNeedsSlugRoute
   '/pages/$slug': typeof StorePagesSlugRoute
   '/products/$slug': typeof StoreProductsSlugRoute
-  '/routines/$slug': typeof StoreRoutinesSlugRoute
+  '/sets/$slug': typeof StoreSetsSlugRoute
+  '/admin/bundles/$id': typeof AdminBundlesIdRoute
+  '/admin/bundles/new': typeof AdminBundlesNewRoute
   '/admin/collections/$id': typeof AdminCollectionsIdRoute
   '/admin/collections/new': typeof AdminCollectionsNewRoute
   '/admin/customers/$id': typeof AdminCustomersIdRoute
@@ -567,6 +575,7 @@ export interface FileRoutesByTo {
   '/admin/inventory/movements': typeof AdminInventoryMovementsRoute
   '/admin/inventory/reorder': typeof AdminInventoryReorderRoute
   '/admin/orders/$id': typeof AdminOrdersIdRoute
+  '/admin/orders/followups': typeof AdminOrdersFollowupsRoute
   '/admin/orders/new': typeof AdminOrdersNewRoute
   '/admin/products/$id': typeof AdminProductsIdRoute
   '/admin/products/new': typeof AdminProductsNewRoute
@@ -577,8 +586,6 @@ export interface FileRoutesByTo {
   '/admin/reports/products': typeof AdminReportsProductsRoute
   '/admin/reports/reorder': typeof AdminReportsReorderRoute
   '/admin/reports/stock': typeof AdminReportsStockRoute
-  '/admin/routines/$id': typeof AdminRoutinesIdRoute
-  '/admin/routines/new': typeof AdminRoutinesNewRoute
   '/admin/settings/pages': typeof AdminSettingsPagesRoute
   '/admin/settings/payments': typeof AdminSettingsPaymentsRoute
   '/admin/settings/promises': typeof AdminSettingsPromisesRoute
@@ -586,9 +593,11 @@ export interface FileRoutesByTo {
   '/admin/slides/$id': typeof AdminSlidesIdRoute
   '/admin/suppliers/$id': typeof AdminSuppliersIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/account': typeof StoreAccountIndexRoute
   '/products': typeof StoreProductsIndexRoute
-  '/routines': typeof StoreRoutinesIndexRoute
+  '/sets': typeof StoreSetsIndexRoute
   '/admin/audit': typeof AdminAuditIndexRoute
+  '/admin/bundles': typeof AdminBundlesIndexRoute
   '/admin/collections': typeof AdminCollectionsIndexRoute
   '/admin/customers': typeof AdminCustomersIndexRoute
   '/admin/inventory': typeof AdminInventoryIndexRoute
@@ -598,7 +607,6 @@ export interface FileRoutesByTo {
   '/admin/promotions': typeof AdminPromotionsIndexRoute
   '/admin/purchases': typeof AdminPurchasesIndexRoute
   '/admin/reports': typeof AdminReportsIndexRoute
-  '/admin/routines': typeof AdminRoutinesIndexRoute
   '/admin/settings': typeof AdminSettingsIndexRoute
   '/admin/shipping': typeof AdminShippingIndexRoute
   '/admin/slides': typeof AdminSlidesIndexRoute
@@ -609,6 +617,7 @@ export interface FileRoutesById {
   '/_store': typeof StoreRouteRouteWithChildren
   '/admin': typeof AdminRouteRouteWithChildren
   '/admin/audit': typeof AdminAuditRouteRouteWithChildren
+  '/admin/bundles': typeof AdminBundlesRouteRouteWithChildren
   '/admin/collections': typeof AdminCollectionsRouteRouteWithChildren
   '/admin/customers': typeof AdminCustomersRouteRouteWithChildren
   '/admin/inventory': typeof AdminInventoryRouteRouteWithChildren
@@ -618,27 +627,27 @@ export interface FileRoutesById {
   '/admin/promotions': typeof AdminPromotionsRouteRouteWithChildren
   '/admin/purchases': typeof AdminPurchasesRouteRouteWithChildren
   '/admin/reports': typeof AdminReportsRouteRouteWithChildren
-  '/admin/routines': typeof AdminRoutinesRouteRouteWithChildren
   '/admin/settings': typeof AdminSettingsRouteRouteWithChildren
   '/admin/shipping': typeof AdminShippingRouteRouteWithChildren
   '/admin/slides': typeof AdminSlidesRouteRouteWithChildren
   '/admin/suppliers': typeof AdminSuppliersRouteRouteWithChildren
   '/_store/$': typeof StoreSplatRoute
   '/_store/cart': typeof StoreCartRoute
-  '/_store/company': typeof StoreCompanyRoute
   '/admin/brands': typeof AdminBrandsRoute
   '/admin/categories': typeof AdminCategoriesRoute
-  '/admin/concerns': typeof AdminConcernsRoute
   '/admin_/login': typeof AdminLoginRoute
   '/api/$': typeof ApiSplatRoute
   '/_store/': typeof StoreIndexRoute
   '/admin/': typeof AdminIndexRoute
+  '/_store/account/sign-in': typeof StoreAccountSignInRoute
+  '/_store/account/sign-up': typeof StoreAccountSignUpRoute
   '/_store/brands/$slug': typeof StoreBrandsSlugRoute
   '/_store/categories/$slug': typeof StoreCategoriesSlugRoute
-  '/_store/needs/$slug': typeof StoreNeedsSlugRoute
   '/_store/pages/$slug': typeof StorePagesSlugRoute
   '/_store/products/$slug': typeof StoreProductsSlugRoute
-  '/_store/routines/$slug': typeof StoreRoutinesSlugRoute
+  '/_store/sets/$slug': typeof StoreSetsSlugRoute
+  '/admin/bundles/$id': typeof AdminBundlesIdRoute
+  '/admin/bundles/new': typeof AdminBundlesNewRoute
   '/admin/collections/$id': typeof AdminCollectionsIdRoute
   '/admin/collections/new': typeof AdminCollectionsNewRoute
   '/admin/customers/$id': typeof AdminCustomersIdRoute
@@ -646,6 +655,7 @@ export interface FileRoutesById {
   '/admin/inventory/movements': typeof AdminInventoryMovementsRoute
   '/admin/inventory/reorder': typeof AdminInventoryReorderRoute
   '/admin/orders/$id': typeof AdminOrdersIdRoute
+  '/admin/orders/followups': typeof AdminOrdersFollowupsRoute
   '/admin/orders/new': typeof AdminOrdersNewRoute
   '/admin/products/$id': typeof AdminProductsIdRoute
   '/admin/products/new': typeof AdminProductsNewRoute
@@ -656,8 +666,6 @@ export interface FileRoutesById {
   '/admin/reports/products': typeof AdminReportsProductsRoute
   '/admin/reports/reorder': typeof AdminReportsReorderRoute
   '/admin/reports/stock': typeof AdminReportsStockRoute
-  '/admin/routines/$id': typeof AdminRoutinesIdRoute
-  '/admin/routines/new': typeof AdminRoutinesNewRoute
   '/admin/settings/pages': typeof AdminSettingsPagesRoute
   '/admin/settings/payments': typeof AdminSettingsPaymentsRoute
   '/admin/settings/promises': typeof AdminSettingsPromisesRoute
@@ -665,9 +673,11 @@ export interface FileRoutesById {
   '/admin/slides/$id': typeof AdminSlidesIdRoute
   '/admin/suppliers/$id': typeof AdminSuppliersIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/_store/account/': typeof StoreAccountIndexRoute
   '/_store/products/': typeof StoreProductsIndexRoute
-  '/_store/routines/': typeof StoreRoutinesIndexRoute
+  '/_store/sets/': typeof StoreSetsIndexRoute
   '/admin/audit/': typeof AdminAuditIndexRoute
+  '/admin/bundles/': typeof AdminBundlesIndexRoute
   '/admin/collections/': typeof AdminCollectionsIndexRoute
   '/admin/customers/': typeof AdminCustomersIndexRoute
   '/admin/inventory/': typeof AdminInventoryIndexRoute
@@ -677,7 +687,6 @@ export interface FileRoutesById {
   '/admin/promotions/': typeof AdminPromotionsIndexRoute
   '/admin/purchases/': typeof AdminPurchasesIndexRoute
   '/admin/reports/': typeof AdminReportsIndexRoute
-  '/admin/routines/': typeof AdminRoutinesIndexRoute
   '/admin/settings/': typeof AdminSettingsIndexRoute
   '/admin/shipping/': typeof AdminShippingIndexRoute
   '/admin/slides/': typeof AdminSlidesIndexRoute
@@ -689,6 +698,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/admin/audit'
+    | '/admin/bundles'
     | '/admin/collections'
     | '/admin/customers'
     | '/admin/inventory'
@@ -698,26 +708,26 @@ export interface FileRouteTypes {
     | '/admin/promotions'
     | '/admin/purchases'
     | '/admin/reports'
-    | '/admin/routines'
     | '/admin/settings'
     | '/admin/shipping'
     | '/admin/slides'
     | '/admin/suppliers'
     | '/$'
     | '/cart'
-    | '/company'
     | '/admin/brands'
     | '/admin/categories'
-    | '/admin/concerns'
     | '/admin/login'
     | '/api/$'
     | '/admin/'
+    | '/account/sign-in'
+    | '/account/sign-up'
     | '/brands/$slug'
     | '/categories/$slug'
-    | '/needs/$slug'
     | '/pages/$slug'
     | '/products/$slug'
-    | '/routines/$slug'
+    | '/sets/$slug'
+    | '/admin/bundles/$id'
+    | '/admin/bundles/new'
     | '/admin/collections/$id'
     | '/admin/collections/new'
     | '/admin/customers/$id'
@@ -725,6 +735,7 @@ export interface FileRouteTypes {
     | '/admin/inventory/movements'
     | '/admin/inventory/reorder'
     | '/admin/orders/$id'
+    | '/admin/orders/followups'
     | '/admin/orders/new'
     | '/admin/products/$id'
     | '/admin/products/new'
@@ -735,8 +746,6 @@ export interface FileRouteTypes {
     | '/admin/reports/products'
     | '/admin/reports/reorder'
     | '/admin/reports/stock'
-    | '/admin/routines/$id'
-    | '/admin/routines/new'
     | '/admin/settings/pages'
     | '/admin/settings/payments'
     | '/admin/settings/promises'
@@ -744,9 +753,11 @@ export interface FileRouteTypes {
     | '/admin/slides/$id'
     | '/admin/suppliers/$id'
     | '/api/auth/$'
+    | '/account/'
     | '/products/'
-    | '/routines/'
+    | '/sets/'
     | '/admin/audit/'
+    | '/admin/bundles/'
     | '/admin/collections/'
     | '/admin/customers/'
     | '/admin/inventory/'
@@ -756,7 +767,6 @@ export interface FileRouteTypes {
     | '/admin/promotions/'
     | '/admin/purchases/'
     | '/admin/reports/'
-    | '/admin/routines/'
     | '/admin/settings/'
     | '/admin/shipping/'
     | '/admin/slides/'
@@ -765,20 +775,21 @@ export interface FileRouteTypes {
   to:
     | '/$'
     | '/cart'
-    | '/company'
     | '/admin/brands'
     | '/admin/categories'
-    | '/admin/concerns'
     | '/admin/login'
     | '/api/$'
     | '/'
     | '/admin'
+    | '/account/sign-in'
+    | '/account/sign-up'
     | '/brands/$slug'
     | '/categories/$slug'
-    | '/needs/$slug'
     | '/pages/$slug'
     | '/products/$slug'
-    | '/routines/$slug'
+    | '/sets/$slug'
+    | '/admin/bundles/$id'
+    | '/admin/bundles/new'
     | '/admin/collections/$id'
     | '/admin/collections/new'
     | '/admin/customers/$id'
@@ -786,6 +797,7 @@ export interface FileRouteTypes {
     | '/admin/inventory/movements'
     | '/admin/inventory/reorder'
     | '/admin/orders/$id'
+    | '/admin/orders/followups'
     | '/admin/orders/new'
     | '/admin/products/$id'
     | '/admin/products/new'
@@ -796,8 +808,6 @@ export interface FileRouteTypes {
     | '/admin/reports/products'
     | '/admin/reports/reorder'
     | '/admin/reports/stock'
-    | '/admin/routines/$id'
-    | '/admin/routines/new'
     | '/admin/settings/pages'
     | '/admin/settings/payments'
     | '/admin/settings/promises'
@@ -805,9 +815,11 @@ export interface FileRouteTypes {
     | '/admin/slides/$id'
     | '/admin/suppliers/$id'
     | '/api/auth/$'
+    | '/account'
     | '/products'
-    | '/routines'
+    | '/sets'
     | '/admin/audit'
+    | '/admin/bundles'
     | '/admin/collections'
     | '/admin/customers'
     | '/admin/inventory'
@@ -817,7 +829,6 @@ export interface FileRouteTypes {
     | '/admin/promotions'
     | '/admin/purchases'
     | '/admin/reports'
-    | '/admin/routines'
     | '/admin/settings'
     | '/admin/shipping'
     | '/admin/slides'
@@ -827,6 +838,7 @@ export interface FileRouteTypes {
     | '/_store'
     | '/admin'
     | '/admin/audit'
+    | '/admin/bundles'
     | '/admin/collections'
     | '/admin/customers'
     | '/admin/inventory'
@@ -836,27 +848,27 @@ export interface FileRouteTypes {
     | '/admin/promotions'
     | '/admin/purchases'
     | '/admin/reports'
-    | '/admin/routines'
     | '/admin/settings'
     | '/admin/shipping'
     | '/admin/slides'
     | '/admin/suppliers'
     | '/_store/$'
     | '/_store/cart'
-    | '/_store/company'
     | '/admin/brands'
     | '/admin/categories'
-    | '/admin/concerns'
     | '/admin_/login'
     | '/api/$'
     | '/_store/'
     | '/admin/'
+    | '/_store/account/sign-in'
+    | '/_store/account/sign-up'
     | '/_store/brands/$slug'
     | '/_store/categories/$slug'
-    | '/_store/needs/$slug'
     | '/_store/pages/$slug'
     | '/_store/products/$slug'
-    | '/_store/routines/$slug'
+    | '/_store/sets/$slug'
+    | '/admin/bundles/$id'
+    | '/admin/bundles/new'
     | '/admin/collections/$id'
     | '/admin/collections/new'
     | '/admin/customers/$id'
@@ -864,6 +876,7 @@ export interface FileRouteTypes {
     | '/admin/inventory/movements'
     | '/admin/inventory/reorder'
     | '/admin/orders/$id'
+    | '/admin/orders/followups'
     | '/admin/orders/new'
     | '/admin/products/$id'
     | '/admin/products/new'
@@ -874,8 +887,6 @@ export interface FileRouteTypes {
     | '/admin/reports/products'
     | '/admin/reports/reorder'
     | '/admin/reports/stock'
-    | '/admin/routines/$id'
-    | '/admin/routines/new'
     | '/admin/settings/pages'
     | '/admin/settings/payments'
     | '/admin/settings/promises'
@@ -883,9 +894,11 @@ export interface FileRouteTypes {
     | '/admin/slides/$id'
     | '/admin/suppliers/$id'
     | '/api/auth/$'
+    | '/_store/account/'
     | '/_store/products/'
-    | '/_store/routines/'
+    | '/_store/sets/'
     | '/admin/audit/'
+    | '/admin/bundles/'
     | '/admin/collections/'
     | '/admin/customers/'
     | '/admin/inventory/'
@@ -895,7 +908,6 @@ export interface FileRouteTypes {
     | '/admin/promotions/'
     | '/admin/purchases/'
     | '/admin/reports/'
-    | '/admin/routines/'
     | '/admin/settings/'
     | '/admin/shipping/'
     | '/admin/slides/'
@@ -947,13 +959,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StoreCartRouteImport
       parentRoute: typeof StoreRouteRoute
     }
-    '/_store/company': {
-      id: '/_store/company'
-      path: '/company'
-      fullPath: '/company'
-      preLoaderRoute: typeof StoreCompanyRouteImport
-      parentRoute: typeof StoreRouteRoute
-    }
     '/admin/': {
       id: '/admin/'
       path: '/'
@@ -975,6 +980,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminBrandsRouteImport
       parentRoute: typeof AdminRouteRoute
     }
+    '/admin/bundles': {
+      id: '/admin/bundles'
+      path: '/bundles'
+      fullPath: '/admin/bundles'
+      preLoaderRoute: typeof AdminBundlesRouteRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
     '/admin/categories': {
       id: '/admin/categories'
       path: '/categories'
@@ -987,13 +999,6 @@ declare module '@tanstack/react-router' {
       path: '/collections'
       fullPath: '/admin/collections'
       preLoaderRoute: typeof AdminCollectionsRouteRouteImport
-      parentRoute: typeof AdminRouteRoute
-    }
-    '/admin/concerns': {
-      id: '/admin/concerns'
-      path: '/concerns'
-      fullPath: '/admin/concerns'
-      preLoaderRoute: typeof AdminConcernsRouteImport
       parentRoute: typeof AdminRouteRoute
     }
     '/admin/customers': {
@@ -1052,13 +1057,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminReportsRouteRouteImport
       parentRoute: typeof AdminRouteRoute
     }
-    '/admin/routines': {
-      id: '/admin/routines'
-      path: '/routines'
-      fullPath: '/admin/routines'
-      preLoaderRoute: typeof AdminRoutinesRouteRouteImport
-      parentRoute: typeof AdminRouteRoute
-    }
     '/admin/settings': {
       id: '/admin/settings'
       path: '/settings'
@@ -1101,6 +1099,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_store/account/': {
+      id: '/_store/account/'
+      path: '/account'
+      fullPath: '/account/'
+      preLoaderRoute: typeof StoreAccountIndexRouteImport
+      parentRoute: typeof StoreRouteRoute
+    }
+    '/_store/account/sign-in': {
+      id: '/_store/account/sign-in'
+      path: '/account/sign-in'
+      fullPath: '/account/sign-in'
+      preLoaderRoute: typeof StoreAccountSignInRouteImport
+      parentRoute: typeof StoreRouteRoute
+    }
+    '/_store/account/sign-up': {
+      id: '/_store/account/sign-up'
+      path: '/account/sign-up'
+      fullPath: '/account/sign-up'
+      preLoaderRoute: typeof StoreAccountSignUpRouteImport
+      parentRoute: typeof StoreRouteRoute
+    }
     '/_store/brands/$slug': {
       id: '/_store/brands/$slug'
       path: '/brands/$slug'
@@ -1113,13 +1132,6 @@ declare module '@tanstack/react-router' {
       path: '/categories/$slug'
       fullPath: '/categories/$slug'
       preLoaderRoute: typeof StoreCategoriesSlugRouteImport
-      parentRoute: typeof StoreRouteRoute
-    }
-    '/_store/needs/$slug': {
-      id: '/_store/needs/$slug'
-      path: '/needs/$slug'
-      fullPath: '/needs/$slug'
-      preLoaderRoute: typeof StoreNeedsSlugRouteImport
       parentRoute: typeof StoreRouteRoute
     }
     '/_store/pages/$slug': {
@@ -1143,18 +1155,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StoreProductsSlugRouteImport
       parentRoute: typeof StoreRouteRoute
     }
-    '/_store/routines/': {
-      id: '/_store/routines/'
-      path: '/routines'
-      fullPath: '/routines/'
-      preLoaderRoute: typeof StoreRoutinesIndexRouteImport
+    '/_store/sets/': {
+      id: '/_store/sets/'
+      path: '/sets'
+      fullPath: '/sets/'
+      preLoaderRoute: typeof StoreSetsIndexRouteImport
       parentRoute: typeof StoreRouteRoute
     }
-    '/_store/routines/$slug': {
-      id: '/_store/routines/$slug'
-      path: '/routines/$slug'
-      fullPath: '/routines/$slug'
-      preLoaderRoute: typeof StoreRoutinesSlugRouteImport
+    '/_store/sets/$slug': {
+      id: '/_store/sets/$slug'
+      path: '/sets/$slug'
+      fullPath: '/sets/$slug'
+      preLoaderRoute: typeof StoreSetsSlugRouteImport
       parentRoute: typeof StoreRouteRoute
     }
     '/admin/audit/': {
@@ -1163,6 +1175,27 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/audit/'
       preLoaderRoute: typeof AdminAuditIndexRouteImport
       parentRoute: typeof AdminAuditRouteRoute
+    }
+    '/admin/bundles/': {
+      id: '/admin/bundles/'
+      path: '/'
+      fullPath: '/admin/bundles/'
+      preLoaderRoute: typeof AdminBundlesIndexRouteImport
+      parentRoute: typeof AdminBundlesRouteRoute
+    }
+    '/admin/bundles/$id': {
+      id: '/admin/bundles/$id'
+      path: '/$id'
+      fullPath: '/admin/bundles/$id'
+      preLoaderRoute: typeof AdminBundlesIdRouteImport
+      parentRoute: typeof AdminBundlesRouteRoute
+    }
+    '/admin/bundles/new': {
+      id: '/admin/bundles/new'
+      path: '/new'
+      fullPath: '/admin/bundles/new'
+      preLoaderRoute: typeof AdminBundlesNewRouteImport
+      parentRoute: typeof AdminBundlesRouteRoute
     }
     '/admin/collections/': {
       id: '/admin/collections/'
@@ -1246,6 +1279,13 @@ declare module '@tanstack/react-router' {
       path: '/$id'
       fullPath: '/admin/orders/$id'
       preLoaderRoute: typeof AdminOrdersIdRouteImport
+      parentRoute: typeof AdminOrdersRouteRoute
+    }
+    '/admin/orders/followups': {
+      id: '/admin/orders/followups'
+      path: '/followups'
+      fullPath: '/admin/orders/followups'
+      preLoaderRoute: typeof AdminOrdersFollowupsRouteImport
       parentRoute: typeof AdminOrdersRouteRoute
     }
     '/admin/orders/new': {
@@ -1346,27 +1386,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminReportsStockRouteImport
       parentRoute: typeof AdminReportsRouteRoute
     }
-    '/admin/routines/': {
-      id: '/admin/routines/'
-      path: '/'
-      fullPath: '/admin/routines/'
-      preLoaderRoute: typeof AdminRoutinesIndexRouteImport
-      parentRoute: typeof AdminRoutinesRouteRoute
-    }
-    '/admin/routines/$id': {
-      id: '/admin/routines/$id'
-      path: '/$id'
-      fullPath: '/admin/routines/$id'
-      preLoaderRoute: typeof AdminRoutinesIdRouteImport
-      parentRoute: typeof AdminRoutinesRouteRoute
-    }
-    '/admin/routines/new': {
-      id: '/admin/routines/new'
-      path: '/new'
-      fullPath: '/admin/routines/new'
-      preLoaderRoute: typeof AdminRoutinesNewRouteImport
-      parentRoute: typeof AdminRoutinesRouteRoute
-    }
     '/admin/settings/': {
       id: '/admin/settings/'
       path: '/'
@@ -1450,31 +1469,33 @@ declare module '@tanstack/react-router' {
 interface StoreRouteRouteChildren {
   StoreSplatRoute: typeof StoreSplatRoute
   StoreCartRoute: typeof StoreCartRoute
-  StoreCompanyRoute: typeof StoreCompanyRoute
   StoreIndexRoute: typeof StoreIndexRoute
+  StoreAccountSignInRoute: typeof StoreAccountSignInRoute
+  StoreAccountSignUpRoute: typeof StoreAccountSignUpRoute
   StoreBrandsSlugRoute: typeof StoreBrandsSlugRoute
   StoreCategoriesSlugRoute: typeof StoreCategoriesSlugRoute
-  StoreNeedsSlugRoute: typeof StoreNeedsSlugRoute
   StorePagesSlugRoute: typeof StorePagesSlugRoute
   StoreProductsSlugRoute: typeof StoreProductsSlugRoute
-  StoreRoutinesSlugRoute: typeof StoreRoutinesSlugRoute
+  StoreSetsSlugRoute: typeof StoreSetsSlugRoute
+  StoreAccountIndexRoute: typeof StoreAccountIndexRoute
   StoreProductsIndexRoute: typeof StoreProductsIndexRoute
-  StoreRoutinesIndexRoute: typeof StoreRoutinesIndexRoute
+  StoreSetsIndexRoute: typeof StoreSetsIndexRoute
 }
 
 const StoreRouteRouteChildren: StoreRouteRouteChildren = {
   StoreSplatRoute: StoreSplatRoute,
   StoreCartRoute: StoreCartRoute,
-  StoreCompanyRoute: StoreCompanyRoute,
   StoreIndexRoute: StoreIndexRoute,
+  StoreAccountSignInRoute: StoreAccountSignInRoute,
+  StoreAccountSignUpRoute: StoreAccountSignUpRoute,
   StoreBrandsSlugRoute: StoreBrandsSlugRoute,
   StoreCategoriesSlugRoute: StoreCategoriesSlugRoute,
-  StoreNeedsSlugRoute: StoreNeedsSlugRoute,
   StorePagesSlugRoute: StorePagesSlugRoute,
   StoreProductsSlugRoute: StoreProductsSlugRoute,
-  StoreRoutinesSlugRoute: StoreRoutinesSlugRoute,
+  StoreSetsSlugRoute: StoreSetsSlugRoute,
+  StoreAccountIndexRoute: StoreAccountIndexRoute,
   StoreProductsIndexRoute: StoreProductsIndexRoute,
-  StoreRoutinesIndexRoute: StoreRoutinesIndexRoute,
+  StoreSetsIndexRoute: StoreSetsIndexRoute,
 }
 
 const StoreRouteRouteWithChildren = StoreRouteRoute._addFileChildren(
@@ -1492,6 +1513,21 @@ const AdminAuditRouteRouteChildren: AdminAuditRouteRouteChildren = {
 const AdminAuditRouteRouteWithChildren = AdminAuditRouteRoute._addFileChildren(
   AdminAuditRouteRouteChildren,
 )
+
+interface AdminBundlesRouteRouteChildren {
+  AdminBundlesIdRoute: typeof AdminBundlesIdRoute
+  AdminBundlesNewRoute: typeof AdminBundlesNewRoute
+  AdminBundlesIndexRoute: typeof AdminBundlesIndexRoute
+}
+
+const AdminBundlesRouteRouteChildren: AdminBundlesRouteRouteChildren = {
+  AdminBundlesIdRoute: AdminBundlesIdRoute,
+  AdminBundlesNewRoute: AdminBundlesNewRoute,
+  AdminBundlesIndexRoute: AdminBundlesIndexRoute,
+}
+
+const AdminBundlesRouteRouteWithChildren =
+  AdminBundlesRouteRoute._addFileChildren(AdminBundlesRouteRouteChildren)
 
 interface AdminCollectionsRouteRouteChildren {
   AdminCollectionsIdRoute: typeof AdminCollectionsIdRoute
@@ -1553,12 +1589,14 @@ const AdminLibraryRouteRouteWithChildren =
 
 interface AdminOrdersRouteRouteChildren {
   AdminOrdersIdRoute: typeof AdminOrdersIdRoute
+  AdminOrdersFollowupsRoute: typeof AdminOrdersFollowupsRoute
   AdminOrdersNewRoute: typeof AdminOrdersNewRoute
   AdminOrdersIndexRoute: typeof AdminOrdersIndexRoute
 }
 
 const AdminOrdersRouteRouteChildren: AdminOrdersRouteRouteChildren = {
   AdminOrdersIdRoute: AdminOrdersIdRoute,
+  AdminOrdersFollowupsRoute: AdminOrdersFollowupsRoute,
   AdminOrdersNewRoute: AdminOrdersNewRoute,
   AdminOrdersIndexRoute: AdminOrdersIndexRoute,
 }
@@ -1628,21 +1666,6 @@ const AdminReportsRouteRouteChildren: AdminReportsRouteRouteChildren = {
 const AdminReportsRouteRouteWithChildren =
   AdminReportsRouteRoute._addFileChildren(AdminReportsRouteRouteChildren)
 
-interface AdminRoutinesRouteRouteChildren {
-  AdminRoutinesIdRoute: typeof AdminRoutinesIdRoute
-  AdminRoutinesNewRoute: typeof AdminRoutinesNewRoute
-  AdminRoutinesIndexRoute: typeof AdminRoutinesIndexRoute
-}
-
-const AdminRoutinesRouteRouteChildren: AdminRoutinesRouteRouteChildren = {
-  AdminRoutinesIdRoute: AdminRoutinesIdRoute,
-  AdminRoutinesNewRoute: AdminRoutinesNewRoute,
-  AdminRoutinesIndexRoute: AdminRoutinesIndexRoute,
-}
-
-const AdminRoutinesRouteRouteWithChildren =
-  AdminRoutinesRouteRoute._addFileChildren(AdminRoutinesRouteRouteChildren)
-
 interface AdminSettingsRouteRouteChildren {
   AdminSettingsPagesRoute: typeof AdminSettingsPagesRoute
   AdminSettingsPaymentsRoute: typeof AdminSettingsPaymentsRoute
@@ -1701,6 +1724,7 @@ const AdminSuppliersRouteRouteWithChildren =
 
 interface AdminRouteRouteChildren {
   AdminAuditRouteRoute: typeof AdminAuditRouteRouteWithChildren
+  AdminBundlesRouteRoute: typeof AdminBundlesRouteRouteWithChildren
   AdminCollectionsRouteRoute: typeof AdminCollectionsRouteRouteWithChildren
   AdminCustomersRouteRoute: typeof AdminCustomersRouteRouteWithChildren
   AdminInventoryRouteRoute: typeof AdminInventoryRouteRouteWithChildren
@@ -1710,19 +1734,18 @@ interface AdminRouteRouteChildren {
   AdminPromotionsRouteRoute: typeof AdminPromotionsRouteRouteWithChildren
   AdminPurchasesRouteRoute: typeof AdminPurchasesRouteRouteWithChildren
   AdminReportsRouteRoute: typeof AdminReportsRouteRouteWithChildren
-  AdminRoutinesRouteRoute: typeof AdminRoutinesRouteRouteWithChildren
   AdminSettingsRouteRoute: typeof AdminSettingsRouteRouteWithChildren
   AdminShippingRouteRoute: typeof AdminShippingRouteRouteWithChildren
   AdminSlidesRouteRoute: typeof AdminSlidesRouteRouteWithChildren
   AdminSuppliersRouteRoute: typeof AdminSuppliersRouteRouteWithChildren
   AdminBrandsRoute: typeof AdminBrandsRoute
   AdminCategoriesRoute: typeof AdminCategoriesRoute
-  AdminConcernsRoute: typeof AdminConcernsRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
 const AdminRouteRouteChildren: AdminRouteRouteChildren = {
   AdminAuditRouteRoute: AdminAuditRouteRouteWithChildren,
+  AdminBundlesRouteRoute: AdminBundlesRouteRouteWithChildren,
   AdminCollectionsRouteRoute: AdminCollectionsRouteRouteWithChildren,
   AdminCustomersRouteRoute: AdminCustomersRouteRouteWithChildren,
   AdminInventoryRouteRoute: AdminInventoryRouteRouteWithChildren,
@@ -1732,14 +1755,12 @@ const AdminRouteRouteChildren: AdminRouteRouteChildren = {
   AdminPromotionsRouteRoute: AdminPromotionsRouteRouteWithChildren,
   AdminPurchasesRouteRoute: AdminPurchasesRouteRouteWithChildren,
   AdminReportsRouteRoute: AdminReportsRouteRouteWithChildren,
-  AdminRoutinesRouteRoute: AdminRoutinesRouteRouteWithChildren,
   AdminSettingsRouteRoute: AdminSettingsRouteRouteWithChildren,
   AdminShippingRouteRoute: AdminShippingRouteRouteWithChildren,
   AdminSlidesRouteRoute: AdminSlidesRouteRouteWithChildren,
   AdminSuppliersRouteRoute: AdminSuppliersRouteRouteWithChildren,
   AdminBrandsRoute: AdminBrandsRoute,
   AdminCategoriesRoute: AdminCategoriesRoute,
-  AdminConcernsRoute: AdminConcernsRoute,
   AdminIndexRoute: AdminIndexRoute,
 }
 

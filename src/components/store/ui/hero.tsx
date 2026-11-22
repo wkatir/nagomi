@@ -16,7 +16,7 @@ export type HeroProps = {
 	mobileImage?: Omit<HeroImage, "alt"> | null;
 	title: string;
 	body?: string | null;
-	/** `href` is an app path without locale, e.g. "/products?concern=sensitive". */
+	/** `href` is an app path without locale, e.g. "/products?category=teclados". */
 	cta: { label: string; href: string };
 };
 

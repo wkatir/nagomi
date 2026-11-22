@@ -1,9 +1,9 @@
 import { z } from "zod";
-import { type Locale, SKIN_TYPES, SLUG_REGEX } from "#/lib/enums";
+import { type Locale, SLUG_REGEX } from "#/lib/enums";
 import type { CatalogSort } from "#/server/domain/catalog-query";
 
 // Values of one facet are alternatives and travel as one comma-separated parameter
-// (?concern=oily-acne,pores), so a link with a single value (?concern=pores) is still valid.
+// (?brand=akko,pulsar), so a link with a single value (?brand=akko) is still valid.
 
 // The first is the API's default.
 export const SORTS = [
@@ -17,7 +17,7 @@ export const SORTS = [
 export const LISTING_PAGE_SIZE = 24;
 
 // In the order the filters show them.
-export const FACETS = ["concern", "category", "skinType", "brand"] as const;
+export const FACETS = ["category", "brand"] as const;
 export type Facet = (typeof FACETS)[number];
 
 // The router reads a numeric-looking value as a number; the coercion keeps it a string.
@@ -31,9 +31,7 @@ export const listingSearch = z.object({
 		.optional()
 		.catch(undefined)
 		.transform((q) => q || undefined),
-	concern: list,
 	category: list,
-	skinType: list,
 	brand: list,
 	availability: z.literal("in_stock").optional().catch(undefined),
 	sort: z.enum(SORTS).optional().catch(undefined),
@@ -84,9 +82,7 @@ export const showMore = (search: ListingSearch): ListingSearch => ({
 
 export const clearFilters = (search: ListingSearch): ListingSearch =>
 	refined(search, {
-		concern: undefined,
 		category: undefined,
-		skinType: undefined,
 		brand: undefined,
 		availability: undefined,
 	});
@@ -100,9 +96,7 @@ export const activeCount = (search: ListingSearch) =>
 export type ListingFilter = {
 	locale: Locale;
 	q?: string;
-	concern: string[];
 	category: string[];
-	skinType: string[];
 	brand: string[];
 	availability?: "in_stock";
 	sort: CatalogSort;
@@ -120,27 +114,23 @@ export function listingFilter(
 	return {
 		locale,
 		q: search.q,
-		concern: values("concern"),
 		category: values("category"),
-		skinType: values("skinType"),
 		brand: values("brand"),
 		availability: search.availability,
 		sort: search.sort ?? SORTS[0],
 	};
 }
 
-// The API refuses what is not a slug (or a skin type), and nothing has such a name: a
-// search with one is for a page that does not exist.
+// The API refuses what is not a slug, and nothing has such a name: a search with one is
+// for a page that does not exist.
 export const isKnownKind = (search: ListingSearch) =>
 	FACETS.every((facet) =>
-		listOf(search[facet]).every((value) =>
-			facet === "skinType"
-				? (SKIN_TYPES as readonly string[]).includes(value)
-				: value.length <= 80 && SLUG_REGEX.test(value),
+		listOf(search[facet]).every(
+			(value) => value.length <= 80 && SLUG_REGEX.test(value),
 		),
 	);
 
-// A value the facets do not list is a need, type or brand with no products (or none at
+// A value the facets do not list is a category or brand with no products (or none at
 // all): a page that does not exist.
 export const hasUnknownValue = (
 	search: ListingSearch,

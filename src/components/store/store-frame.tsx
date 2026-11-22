@@ -15,6 +15,13 @@ import { ProductsMenu } from "./products-menu";
 import { StoreMenu } from "./store-menu";
 import { TextAnchor, TextLink } from "./ui/text-link";
 
+const SOCIAL = [
+	{ key: "discord", label: "Discord" },
+	{ key: "instagram", label: "Instagram" },
+	{ key: "tiktok", label: "TikTok" },
+	{ key: "youtube", label: "YouTube" },
+] as const;
+
 // Shared by the store layout and its 404, which replaces the layout (routes/_store/route.tsx).
 export function StoreFrame({ children }: { children: React.ReactNode }) {
 	const { data: store } = useSuspenseQuery(storeQuery);
@@ -22,6 +29,11 @@ export function StoreFrame({ children }: { children: React.ReactNode }) {
 	const money = useMoney();
 	const seller = sellerDetails(store.business);
 	const { email } = store.business;
+	const locale = getLocale();
+	const socialLinks = SOCIAL.flatMap(({ key, label }) => {
+		const href = store.social[key];
+		return href ? [{ key, label, href }] : [];
+	});
 
 	return (
 		<>
@@ -61,6 +73,13 @@ export function StoreFrame({ children }: { children: React.ReactNode }) {
 						</TextLink>
 						{/* On phones the language switch is in the menu. */}
 						<LanguageSwitch className="max-md:hidden" />
+						<TextLink
+							variant="nav"
+							to="/account"
+							className="font-medium max-md:hidden"
+						>
+							{m.nav_account()}
+						</TextLink>
 						<CartButton />
 					</div>
 				</div>
@@ -73,14 +92,17 @@ export function StoreFrame({ children }: { children: React.ReactNode }) {
 					<p className="max-w-[30ch] type-lead text-foreground">
 						{m.footer_tagline()}
 					</p>
+					<p className="mt-2 type-small text-muted-foreground">
+						{m.footer_line()}
+					</p>
 				</div>
 				<div className="container-page grid grid-cols-6 gap-8 pb-12 type-small text-muted-foreground max-lg:grid-cols-3 max-md:grid-cols-2">
 					<FooterColumn title={m.footer_shop()}>
 						<TextLink variant="nav" to="/products">
 							{m.nav_shop()}
 						</TextLink>
-						<TextLink variant="nav" to="/routines">
-							{m.nav_routines()}
+						<TextLink variant="nav" to="/sets">
+							{m.nav_bundles()}
 						</TextLink>
 						{nav.brands.map((b) => (
 							<TextLink
@@ -90,18 +112,6 @@ export function StoreFrame({ children }: { children: React.ReactNode }) {
 								params={{ slug: b.slug }}
 							>
 								{b.name}
-							</TextLink>
-						))}
-					</FooterColumn>
-					<FooterColumn title={m.footer_needs()}>
-						{nav.concerns.map((c) => (
-							<TextLink
-								key={c.slug}
-								variant="nav"
-								to="/needs/$slug"
-								params={{ slug: c.slug }}
-							>
-								{c.name}
 							</TextLink>
 						))}
 					</FooterColumn>
@@ -118,20 +128,16 @@ export function StoreFrame({ children }: { children: React.ReactNode }) {
 						))}
 					</FooterColumn>
 					<FooterColumn title={m.footer_help()}>
-						<TextLink
-							variant="nav"
-							to="/pages/$slug"
-							params={{ slug: "shipping-returns" }}
-						>
-							{m.page_shipping()}
-						</TextLink>
-						<TextLink
-							variant="nav"
-							to="/pages/$slug"
-							params={{ slug: "terms" }}
-						>
-							{m.page_terms()}
-						</TextLink>
+						{store.footerPages.map((page) => (
+							<TextLink
+								key={page.slug}
+								variant="nav"
+								to="/pages/$slug"
+								params={{ slug: page.slug }}
+							>
+								{page.titles[locale] ?? page.titles[store.defaultLocale]}
+							</TextLink>
+						))}
 						<TextLink
 							variant="nav"
 							to="/pages/$slug"
@@ -142,14 +148,26 @@ export function StoreFrame({ children }: { children: React.ReactNode }) {
 						<TextLink variant="nav" to="/pages/$slug" params={{ slug: "faq" }}>
 							{m.page_faq()}
 						</TextLink>
-						<TextLink variant="nav" to="/company">
-							{m.footer_company()}
-						</TextLink>
 					</FooterColumn>
 					{store.paymentMethods.length > 0 && (
 						<FooterColumn title={m.footer_payments()}>
 							{store.paymentMethods.map((method) => (
 								<span key={method}>{paymentLabel[method]()}</span>
+							))}
+						</FooterColumn>
+					)}
+					{socialLinks.length > 0 && (
+						<FooterColumn title={m.footer_social()}>
+							{socialLinks.map((link) => (
+								<TextAnchor
+									key={link.key}
+									variant="nav"
+									href={link.href}
+									target="_blank"
+									rel="noopener noreferrer"
+								>
+									{link.label}
+								</TextAnchor>
 							))}
 						</FooterColumn>
 					)}

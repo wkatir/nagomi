@@ -19,7 +19,7 @@ const parse = (search: Record<string, unknown>) => listingSearch.parse(search);
 
 describe("listingSearch", () => {
 	test("keeps a numeric-looking slug as text and drops values it does not know", () => {
-		expect(parse({ concern: 123 }).concern).toBe("123");
+		expect(parse({ brand: 123 }).brand).toBe("123");
 		const bad = parse({ sort: "cheapest", availability: "sold_out", page: 0 });
 		expect(bad.sort).toBeUndefined();
 		expect(bad.availability).toBeUndefined();
@@ -27,7 +27,7 @@ describe("listingSearch", () => {
 	});
 
 	test("trims the search and treats a blank one as none", () => {
-		expect(parse({ q: "  centella " }).q).toBe("centella");
+		expect(parse({ q: "  teclado " }).q).toBe("teclado");
 		expect(parse({ q: "   " }).q).toBeUndefined();
 		expect(parse({ q: "x".repeat(81) }).q).toBeUndefined();
 	});
@@ -35,21 +35,17 @@ describe("listingSearch", () => {
 
 describe("toggle", () => {
 	test("adds a value, removes it again and drops the parameter when none is left", () => {
-		const one = toggle({}, "concern", "pores");
-		expect(one.concern).toBe("pores");
-		const two = toggle(one, "concern", "oily-acne");
-		expect(listOf(two.concern)).toEqual(["pores", "oily-acne"]);
-		const back = toggle(
-			toggle(two, "concern", "pores"),
-			"concern",
-			"oily-acne",
-		);
-		expect(back.concern).toBeUndefined();
+		const one = toggle({}, "brand", "akko");
+		expect(one.brand).toBe("akko");
+		const two = toggle(one, "brand", "pulsar");
+		expect(listOf(two.brand)).toEqual(["akko", "pulsar"]);
+		const back = toggle(toggle(two, "brand", "akko"), "brand", "pulsar");
+		expect(back.brand).toBeUndefined();
 	});
 
 	test("starts again from the first page and leaves the other facets", () => {
-		const next = toggle({ page: 3, brand: "anua" }, "category", "serum");
-		expect(next).toMatchObject({ brand: "anua", category: "serum" });
+		const next = toggle({ page: 3, brand: "akko" }, "category", "teclados");
+		expect(next).toMatchObject({ brand: "akko", category: "teclados" });
 		expect(next.page).toBeUndefined();
 	});
 });
@@ -80,14 +76,14 @@ describe("other changes", () => {
 
 	test("clearing keeps the search and the order", () => {
 		const cleared = clearFilters({
-			q: "sun",
+			q: "rgb",
 			sort: "name",
-			concern: "pores",
-			skinType: "oily",
+			category: "teclados",
+			brand: "akko",
 			availability: "in_stock",
 			page: 2,
 		});
-		expect(cleared).toMatchObject({ q: "sun", sort: "name" });
+		expect(cleared).toMatchObject({ q: "rgb", sort: "name" });
 		expect(activeCount(cleared)).toBe(0);
 		expect(cleared.page).toBeUndefined();
 	});
@@ -97,9 +93,9 @@ describe("activeCount", () => {
 	test("counts every value of every facet and availability, not the search", () => {
 		expect(
 			activeCount({
-				q: "sun",
-				concern: "pores,oily-acne",
-				brand: "anua",
+				q: "rgb",
+				category: "teclados,ratones",
+				brand: "akko",
 				availability: "in_stock",
 			}),
 		).toBe(4);
@@ -112,62 +108,57 @@ describe("listingFilter", () => {
 		expect(
 			listingFilter(
 				"es",
-				{ concern: "pores", sort: undefined },
-				{ concern: "acne" },
+				{ brand: "akko", sort: undefined },
+				{ brand: "pulsar" },
 			),
 		).toEqual({
 			locale: "es",
 			q: undefined,
-			concern: ["acne", "pores"],
 			category: [],
-			skinType: [],
-			brand: [],
+			brand: ["pulsar", "akko"],
 			availability: undefined,
 			sort: "featured",
 		});
 	});
 
 	test("the same search gives the same filter", () => {
-		const a = listingFilter("en", parse({ concern: "a,b", sort: "name" }));
-		const b = listingFilter("en", parse({ sort: "name", concern: "a,b" }));
+		const a = listingFilter("en", parse({ brand: "a,b", sort: "name" }));
+		const b = listingFilter("en", parse({ sort: "name", brand: "a,b" }));
 		expect(a).toEqual(b);
 	});
 });
 
 describe("isKnownKind", () => {
-	test("accepts slugs and skin types, and refuses anything else", () => {
+	test("accepts slugs and refuses anything else", () => {
 		expect(
-			isKnownKind(parse({ concern: "oily-acne,pores", skinType: "dry" })),
+			isKnownKind(parse({ category: "teclados,ratones", brand: "akko" })),
 		).toBe(true);
-		expect(isKnownKind(parse({ concern: "Oily Acne" }))).toBe(false);
+		expect(isKnownKind(parse({ category: "Royal Kludge" }))).toBe(false);
 		expect(isKnownKind(parse({ brand: "a".repeat(81) }))).toBe(false);
-		expect(isKnownKind(parse({ skinType: "scaly" }))).toBe(false);
 		expect(isKnownKind(parse({}))).toBe(true);
 	});
 });
 
 describe("hasUnknownValue", () => {
 	const facets = {
-		concern: [
-			{ slug: "pores", selected: true },
-			{ slug: "sensitive", selected: false },
+		category: [
+			{ slug: "teclados", selected: true },
+			{ slug: "ratones", selected: false },
 		],
-		category: [],
-		skinType: [],
-		brand: [{ slug: "anua", selected: true }],
+		brand: [{ slug: "akko", selected: true }],
 	};
 	test("is false when every value is among the selected facet values", () => {
 		expect(
-			hasUnknownValue(parse({ concern: "pores", brand: "anua" }), facets),
+			hasUnknownValue(parse({ category: "teclados", brand: "akko" }), facets),
 		).toBe(false);
 		expect(hasUnknownValue(parse({}), facets)).toBe(false);
 	});
 
 	test("is true for a value the facets do not select", () => {
-		expect(hasUnknownValue(parse({ concern: "pores,oily" }), facets)).toBe(
-			true,
-		);
-		expect(hasUnknownValue(parse({ category: "mask" }), facets)).toBe(true);
+		expect(
+			hasUnknownValue(parse({ category: "teclados,sillas" }), facets),
+		).toBe(true);
+		expect(hasUnknownValue(parse({ brand: "logitech" }), facets)).toBe(true);
 	});
 });
 

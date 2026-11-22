@@ -1,13 +1,8 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import {
-	ArrowUpRight,
-	MessageCircle,
-	Package,
-	ShoppingBag,
-} from "lucide-react";
+import { CreditCard, Package, ShoppingBag } from "lucide-react";
+import { BundleCard } from "#/components/store/bundle-card";
 import { ProductCard } from "#/components/store/product-card";
-import { RoutineCard } from "#/components/store/routine-card";
 import { Hero } from "#/components/store/ui/hero";
 import { InverseBand } from "#/components/store/ui/inverse-band";
 import { PromiseList } from "#/components/store/ui/promise-list";
@@ -21,8 +16,9 @@ import {
 	CarouselNext,
 	CarouselPrevious,
 } from "#/components/ui/carousel";
+import { categoryIcon } from "#/lib/category-icon";
 import { paymentMethodList } from "#/lib/payment";
-import { catalogQuery, routinesQuery, storeQuery } from "#/lib/queries";
+import { homeQuery, navigationQuery, storeQuery } from "#/lib/queries";
 import { whatsappLink } from "#/lib/whatsapp";
 import { m } from "#/paraglide/messages";
 import { getLocale } from "#/paraglide/runtime";
@@ -30,8 +26,8 @@ import { getLocale } from "#/paraglide/runtime";
 export const Route = createFileRoute("/_store/")({
 	loader: ({ context }) =>
 		Promise.all([
-			context.queryClient.ensureQueryData(catalogQuery(getLocale())),
-			context.queryClient.ensureQueryData(routinesQuery(getLocale())),
+			context.queryClient.ensureQueryData(homeQuery(getLocale())),
+			context.queryClient.ensureQueryData(navigationQuery(getLocale())),
 		]),
 	component: Home,
 });
@@ -40,42 +36,42 @@ const FEATURED_LIMIT = 8;
 
 function Home() {
 	const locale = getLocale();
-	const { data } = useSuspenseQuery(catalogQuery(locale));
+	const { data } = useSuspenseQuery(homeQuery(locale));
+	const { data: nav } = useSuspenseQuery(navigationQuery(locale));
 	const { data: store } = useSuspenseQuery(storeQuery);
-	const { data: allRoutines } = useSuspenseQuery(routinesQuery(locale));
 	const promises = store.promises[locale];
-	const routines = [...allRoutines].sort(
-		(a, b) => Number(b.isFeatured) - Number(a.isFeatured),
-	);
+	const bundles = data.featuredBundles;
 	const methods = paymentMethodList(store.paymentMethods, locale);
-	const types = [
-		...new Map(
-			data.products.map((p) => [p.category.slug, p.category]),
-		).values(),
-	].sort((a, b) => a.routineStep - b.routineStep);
+	const [slide] = data.slides;
 	const helpHref = store.whatsappNumber
 		? whatsappLink(store.whatsappNumber, m.home_help_message())
 		: store.business.email && `mailto:${store.business.email}`;
 
 	return (
 		<>
-			{/* Licensed editorial photo in public/editorial (credits in docs/THIRD_PARTY_NOTICES.md). */}
-			<Hero
-				image={{
-					src: "/editorial/hero-2.webp",
-					width: 2400,
-					height: 1350,
-					alt: m.home_photo_alt(),
-				}}
-				mobileImage={{
-					src: "/editorial/hero-2-mobile.webp",
-					width: 1080,
-					height: 1350,
-				}}
-				title={m.home_title()}
-				body={m.home_lead()}
-				cta={{ label: m.home_cta_shop(), href: "/products" }}
-			/>
+			{slide && (
+				<Hero
+					image={{
+						src: slide.image.url,
+						width: slide.image.width,
+						height: slide.image.height,
+						alt: slide.image.alt,
+					}}
+					mobileImage={
+						slide.mobileImage && {
+							src: slide.mobileImage.url,
+							width: slide.mobileImage.width,
+							height: slide.mobileImage.height,
+						}
+					}
+					title={slide.title}
+					body={slide.body}
+					cta={{
+						label: slide.ctaLabel ?? m.home_cta_shop(),
+						href: slide.linkPath,
+					}}
+				/>
+			)}
 
 			{/* Right under the first screen instead of near the footer
 			    (docs/research/2026-10-18-review/storefront-ux.md, S7). */}
@@ -88,60 +84,52 @@ function Home() {
 				</section>
 			)}
 
-			{data.concerns.length > 0 && (
+			{nav.categories.length > 0 && (
 				<section
-					id="needs"
-					aria-labelledby="needs-title"
-					className="container-page scroll-mt-24 py-section"
+					aria-labelledby="categories-title"
+					className="container-page py-section"
 				>
 					<SectionHeading
-						id="needs-title"
-						title={m.home_needs_title()}
-						body={m.home_needs_body()}
+						id="categories-title"
+						title={m.home_types_title()}
+						action={{ label: m.see_all(), link: { to: "/products" } }}
 					/>
-					<ul className="mt-8 flex flex-wrap gap-2 md:mt-10 md:grid md:grid-cols-4 md:gap-0 md:border-t">
-						{[
-							...data.concerns.map((c) => ({
-								key: c.slug,
-								label: c.name,
-								search: { concern: c.slug },
-							})),
-							{ key: "all", label: m.home_needs_all(), search: {} },
-						].map((need) => (
-							<li
-								key={need.key}
-								className="md:border-b md:not-nth-[4n]:border-r"
-							>
-								<Link
-									to="/products"
-									search={need.search}
-									className="group flex min-h-11 items-center gap-2 rounded-sm border px-4 type-ui font-medium transition-colors hover:bg-foreground hover:text-background md:min-h-44 md:items-end md:justify-between md:gap-3 md:rounded-none md:border-0 md:p-7 md:type-body md:font-normal"
-								>
-									<span className="md:type-h3">
-										<KeepHyphenated text={need.label} />
-									</span>
-									<ArrowUpRight
-										aria-hidden
-										strokeWidth={1.5}
-										className="size-4 shrink-0 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5 md:size-6"
-									/>
-								</Link>
-							</li>
-						))}
+					<ul className="mt-8 grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
+						{nav.categories.map((category) => {
+							const Icon = categoryIcon[category.icon];
+							return (
+								<li key={category.slug}>
+									<Link
+										to="/categories/$slug"
+										params={{ slug: category.slug }}
+										className="flex h-full flex-col gap-3 border p-5 transition-colors hover:bg-muted"
+									>
+										<Icon aria-hidden strokeWidth={1.5} className="size-7" />
+										<span className="type-ui font-medium">{category.name}</span>
+										{category.subtitle && (
+											<span className="type-meta text-muted-foreground">
+												{category.subtitle}
+											</span>
+										)}
+									</Link>
+								</li>
+							);
+						})}
 					</ul>
 				</section>
 			)}
 
-			{routines.length > 0 && (
+			{bundles.length > 0 && (
 				<section
-					id="routines"
-					aria-labelledby="routines-title"
+					id="sets"
+					aria-labelledby="bundles-title"
 					className="container-page scroll-mt-24 pb-section"
 				>
 					<SectionHeading
-						id="routines-title"
-						title={m.home_routines_title()}
-						body={m.home_routines_body()}
+						id="bundles-title"
+						title={m.home_bundles_title()}
+						body={m.home_bundles_body()}
+						action={{ label: m.see_all(), link: { to: "/sets" } }}
 					/>
 					<Carousel
 						opts={{
@@ -152,16 +140,16 @@ function Home() {
 								"(prefers-reduced-motion: reduce)": { duration: 0 },
 							},
 						}}
-						aria-label={m.home_routines_title()}
+						aria-label={m.home_bundles_title()}
 						className="mt-10"
 					>
 						<CarouselContent className="-ml-5">
-							{routines.map((r) => (
+							{bundles.map((b) => (
 								<CarouselItem
-									key={r.slug}
+									key={b.slug}
 									className="basis-[86%] pl-5 md:basis-1/2 lg:basis-1/3"
 								>
-									<RoutineCard routine={r} />
+									<BundleCard bundle={b} />
 								</CarouselItem>
 							))}
 						</CarouselContent>
@@ -179,30 +167,6 @@ function Home() {
 				</section>
 			)}
 
-			{types.length > 1 && (
-				<section
-					aria-labelledby="types-title"
-					className="container-page pb-section"
-				>
-					<SectionHeading id="types-title" title={m.home_types_title()} />
-					<ul className="mt-8 flex flex-wrap gap-2">
-						{types.map((type) => (
-							<li key={type.slug}>
-								<StoreButton
-									asChild
-									variant="outline"
-									className="px-4 type-ui font-medium"
-								>
-									<Link to="/products" search={{ category: type.slug }}>
-										{type.name}
-									</Link>
-								</StoreButton>
-							</li>
-						))}
-					</ul>
-				</section>
-			)}
-
 			<section
 				aria-labelledby="available-title"
 				className="container-page pb-section"
@@ -213,7 +177,7 @@ function Home() {
 					action={{ label: m.see_all(), link: { to: "/products" } }}
 				/>
 				<div className="mt-10 grid grid-cols-2 gap-x-3 gap-y-10 md:grid-cols-3 md:gap-x-5 md:gap-y-12 lg:grid-cols-4">
-					{data.products.slice(0, FEATURED_LIMIT).map((p) => (
+					{data.featuredProducts.slice(0, FEATURED_LIMIT).map((p) => (
 						<ProductCard key={p.sku} product={p} />
 					))}
 				</div>
@@ -236,7 +200,6 @@ function Home() {
 								target={store.whatsappNumber ? "_blank" : undefined}
 								rel={store.whatsappNumber ? "noopener noreferrer" : undefined}
 							>
-								<MessageCircle aria-hidden className="size-5" />
 								{m.home_help_cta()}
 							</a>
 						</StoreButton>
@@ -266,25 +229,11 @@ function Home() {
 					className="mt-10"
 					items={[
 						{ icon: ShoppingBag, title: m.home_step_1() },
-						{ icon: MessageCircle, title: m.home_step_2() },
+						{ icon: CreditCard, title: m.home_step_2() },
 						{ icon: Package, title: m.home_step_3({ methods }) },
 					]}
 				/>
 			</section>
-		</>
-	);
-}
-
-// Keeps a hyphenated word such as "blemish-prone" on one line instead of breaking after
-// the hyphen.
-function KeepHyphenated({ text }: { text: string }) {
-	const word = /\S+-\S+/.exec(text);
-	if (!word) return text;
-	return (
-		<>
-			{text.slice(0, word.index)}
-			<span className="whitespace-nowrap">{word[0]}</span>
-			{text.slice(word.index + word[0].length)}
 		</>
 	);
 }

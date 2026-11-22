@@ -15,7 +15,7 @@ const Lines = z.array(
 	}),
 );
 export type CartLine = z.infer<typeof Lines>[number];
-const KEY = "eclalune:cart:v1";
+const KEY = "nagomi:cart:v1";
 const listeners = new Set<() => void>();
 let cache: CartLine[] | null = null;
 

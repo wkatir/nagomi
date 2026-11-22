@@ -35,7 +35,7 @@ describe("pagedSearch", () => {
 	});
 
 	test("trims the search text and refuses an empty or oversized one", () => {
-		expect(search.parse({ q: "  serum  " }).q).toBe("serum");
+		expect(search.parse({ q: "  keyboard  " }).q).toBe("keyboard");
 		expect(search.safeParse({ q: "   " }).success).toBe(false);
 		expect(search.safeParse({ q: "x".repeat(81) }).success).toBe(false);
 	});

@@ -63,6 +63,7 @@ function CategoryPage() {
 		<LandingPage
 			trail={trailOf(slug, category.name)}
 			title={category.name}
+			subtitle={category.subtitle}
 			description={category.description}
 			scope={{ category: slug }}
 			search={search}

@@ -9,7 +9,7 @@ export function renderWithStore(
 ) {
 	const queryClient = new QueryClient();
 	queryClient.setQueryData(storeQuery.queryKey, {
-		name: "Eclalune",
+		name: "Nagomi",
 		currency: "USD",
 		defaultLocale: "es",
 		countryCode: "SV",
@@ -17,11 +17,15 @@ export function renderWithStore(
 		whatsappNumber: null,
 		whatsappDisplay: null,
 		freeShippingFrom: null,
+		lowStockThreshold: 5,
 		maxQuantityPerLine: 20,
 		returnWindowDays: null,
 		checkoutOpen: false,
 		paymentMethods: [],
+		paymentOptions: [],
 		promises: { es: [], en: [] },
+		footerPages: [],
+		social: { discord: null, instagram: null, tiktok: null, youtube: null },
 		business: {
 			foundingYear: null,
 			legalName: null,

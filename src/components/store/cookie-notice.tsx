@@ -3,7 +3,7 @@ import { StoreButton } from "#/components/store/ui/store-button";
 import { TextLink } from "#/components/store/ui/text-link";
 import { m } from "#/paraglide/messages";
 
-const KEY = "eclalune:cookie-notice:v1";
+const KEY = "nagomi:cookie-notice:v1";
 
 // The store keeps only language and cart in the browser, so this notice informs and asks
 // for no consent (docs/research/2026-10-18-review/legal-el-salvador.md, section 2.4).

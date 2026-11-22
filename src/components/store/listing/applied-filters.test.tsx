@@ -13,10 +13,8 @@ const value = (slug: string, name: string, selected = false) => ({
 });
 
 const facets: ProductPage["facets"] = {
-	category: [value("serum", "Sérum")],
-	concern: [value("pores", "Poros"), value("sensitive", "Piel sensible")],
-	skinType: [value("oily", "oily")],
-	brand: [value("anua", "Anua")],
+	category: [value("teclados", "Teclados"), value("ratones", "Ratones")],
+	brand: [value("akko", "Akko")],
 	collection: [],
 	availability: [],
 };
@@ -38,45 +36,42 @@ describe("AppliedFilters", () => {
 	});
 
 	test("one chip for each value, named, each with its own removal", () => {
-		const html = render({ concern: "pores,sensitive", brand: "anua" });
-		expect(html).toContain(">Poros<");
-		expect(html).toContain(">Piel sensible<");
-		expect(html).toContain(">Anua<");
+		const html = render({ category: "teclados,ratones", brand: "akko" });
+		expect(html).toContain(">Teclados<");
+		expect(html).toContain(">Ratones<");
+		expect(html).toContain(">Akko<");
 		expect(html).toContain(
-			`aria-label="${m.shop_remove_filter({ name: "Poros" })}"`,
+			`aria-label="${m.shop_remove_filter({ name: "Teclados" })}"`,
 		);
 		expect(html.match(/<button/g)).toHaveLength(4);
 	});
 
 	test("the search and availability are chips too", () => {
-		const html = render({ q: "sun", availability: "in_stock" });
-		expect(html).toContain(m.shop_chip_search({ q: "sun" }));
+		const html = render({ q: "rgb", availability: "in_stock" });
+		expect(html).toContain(m.shop_chip_search({ q: "rgb" }));
 		expect(html).toContain(m.shop_filter_in_stock());
 	});
 
-	test("skin types are named in the customer's language", () => {
-		const html = render({ skinType: "oily" });
-		expect(html).toContain(`>${m.skin_type_oily()}<`);
-		expect(html).not.toContain(">oily<");
-	});
-
 	test("a value the facets do not list shows its slug", () => {
-		expect(render({ concern: "unknown-need" })).toContain(">unknown-need<");
+		expect(render({ category: "unknown-type" })).toContain(">unknown-type<");
 	});
 
 	test("clear all appears from the second filter on", () => {
-		expect(render({ concern: "pores" })).not.toContain(m.shop_clear_all());
-		expect(render({ concern: "pores,sensitive" })).toContain(
+		expect(render({ category: "teclados" })).not.toContain(m.shop_clear_all());
+		expect(render({ category: "teclados,ratones" })).toContain(
 			m.shop_clear_all(),
 		);
-		expect(render({ concern: "pores", availability: "in_stock" })).toContain(
-			m.shop_clear_all(),
-		);
+		expect(
+			render({ category: "teclados", availability: "in_stock" }),
+		).toContain(m.shop_clear_all());
 	});
 
 	test("a facet the page fixes has no chip", () => {
-		const html = render({ concern: "pores", brand: "anua" }, { concern: "x" });
-		expect(html).not.toContain(">Poros<");
-		expect(html).toContain(">Anua<");
+		const html = render(
+			{ category: "teclados", brand: "akko" },
+			{ category: "x" },
+		);
+		expect(html).not.toContain(">Teclados<");
+		expect(html).toContain(">Akko<");
 	});
 });

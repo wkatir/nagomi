@@ -12,8 +12,8 @@ export type ProductPage = InferResponseType<
 	ReturnType<typeof api>["products"]["$get"],
 	200
 >;
-export type RoutineView = InferResponseType<
-	ReturnType<typeof api>["routines"]["$get"],
+export type BundleView = InferResponseType<
+	ReturnType<typeof api>["bundles"]["$get"],
 	200
 >[number];
 
@@ -33,6 +33,12 @@ export const adminSettingsQuery = queryOptions({
 	queryKey: ["admin", "settings"],
 	queryFn: () => parseResponse(api().admin.settings.$get()),
 });
+
+export const homeQuery = (locale: Locale) =>
+	queryOptions({
+		queryKey: ["home", locale],
+		queryFn: () => parseResponse(api().home.$get({ query: { locale } })),
+	});
 
 export const catalogQuery = (locale: Locale) =>
 	queryOptions({
@@ -55,16 +61,6 @@ export const productPageQuery = (filter: ListingFilter, page: number) =>
 			),
 	});
 
-// 404 when the need has no published product.
-export const concernQuery = (slug: string, locale: Locale) =>
-	queryOptions({
-		queryKey: ["concern", slug, locale],
-		queryFn: () =>
-			parseResponse(
-				api().concerns[":slug"].$get({ param: { slug }, query: { locale } }),
-			),
-	});
-
 export const categoryQuery = (slug: string, locale: Locale) =>
 	queryOptions({
 		queryKey: ["category", slug, locale],
@@ -83,18 +79,18 @@ export const brandQuery = (slug: string, locale: Locale) =>
 			),
 	});
 
-export const routinesQuery = (locale: Locale) =>
+export const bundlesQuery = (locale: Locale) =>
 	queryOptions({
-		queryKey: ["routines", locale],
-		queryFn: () => parseResponse(api().routines.$get({ query: { locale } })),
+		queryKey: ["bundles", locale],
+		queryFn: () => parseResponse(api().bundles.$get({ query: { locale } })),
 	});
 
-export const routineQuery = (slug: string, locale: Locale) =>
+export const bundleQuery = (slug: string, locale: Locale) =>
 	queryOptions({
-		queryKey: ["routine", slug, locale],
+		queryKey: ["bundle", slug, locale],
 		queryFn: () =>
 			parseResponse(
-				api().routines[":slug"].$get({ param: { slug }, query: { locale } }),
+				api().bundles[":slug"].$get({ param: { slug }, query: { locale } }),
 			),
 	});
 
@@ -122,12 +118,12 @@ export const invalidateCatalog = (queryClient: QueryClient) =>
 			"catalog",
 			"products",
 			"product",
-			"concern",
 			"category",
 			"brand",
-			"routines",
-			"routine",
+			"bundles",
+			"bundle",
 			"navigation",
+			"home",
 		].map((root) => queryClient.invalidateQueries({ queryKey: [root] })),
 	);
 

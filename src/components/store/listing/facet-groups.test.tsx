@@ -18,10 +18,11 @@ const value = (
 });
 
 const facets: ProductPage["facets"] = {
-	category: [value("serum", "Sérum", 3), value("mask", "Mascarilla", 0)],
-	concern: [value("pores", "Poros", 2), value("sensitive", "Piel sensible", 1)],
-	skinType: [value("dry", "dry", 1), value("oily", "oily", 2)],
-	brand: [value("anua", "Anua", 3)],
+	category: [
+		value("teclados", "Teclados", 3),
+		value("audifonos", "Audífonos", 0),
+	],
+	brand: [value("akko", "Akko", 3)],
 	collection: [],
 	availability: [
 		{ value: "in_stock", count: 0, selected: false },
@@ -57,12 +58,7 @@ const box = (html: string, label: string) =>
 describe("FacetGroups", () => {
 	test("has a group for each facet with something to choose, and availability", () => {
 		const html = render();
-		for (const title of [
-			m.shop_facet_need(),
-			m.shop_type_label(),
-			m.shop_facet_skin(),
-			m.shop_facet_stock(),
-		])
+		for (const title of [m.shop_type_label(), m.shop_facet_stock()])
 			expect(html).toContain(title);
 	});
 
@@ -71,42 +67,33 @@ describe("FacetGroups", () => {
 	});
 
 	test("keeps a single-valued group once its value is chosen, so it can be undone", () => {
-		expect(render({ brand: "anua" })).toContain(m.shop_facet_brand());
+		expect(render({ brand: "akko" })).toContain(m.shop_facet_brand());
 	});
 
 	test("leaves out the group a page fixes", () => {
-		const html = render({}, { concern: "pores" });
-		expect(html).not.toContain(m.shop_facet_need());
-		expect(html).toContain(m.shop_type_label());
+		const html = render({ brand: "akko" }, { category: "teclados" });
+		expect(html).not.toContain(m.shop_type_label());
+		expect(html).toContain(m.shop_facet_brand());
 	});
 
 	test("shows the number of products each value gives", () => {
 		const html = render();
-		expect(html).toMatch(/<span>Poros<\/span><span[^>]*>2<\/span>/);
-		expect(html).toMatch(/<span>Sérum<\/span><span[^>]*>3<\/span>/);
+		expect(html).toMatch(/<span>Teclados<\/span><span[^>]*>3<\/span>/);
+		expect(html).toMatch(/<span>Audífonos<\/span><span[^>]*>0<\/span>/);
 	});
 
 	test("a value that gives nothing is disabled unless it is chosen", () => {
-		expect(box(render(), "Mascarilla")).toContain(DISABLED);
-		expect(box(render({ category: "mask" }), "Mascarilla")).not.toContain(
+		expect(box(render(), "Audífonos")).toContain(DISABLED);
+		expect(box(render({ category: "audifonos" }), "Audífonos")).not.toContain(
 			DISABLED,
 		);
-		expect(box(render(), "Sérum")).not.toContain(DISABLED);
+		expect(box(render(), "Teclados")).not.toContain(DISABLED);
 	});
 
 	test("the checks follow the search, not the data", () => {
-		const html = render({ concern: "sensitive,pores", category: "serum" });
-		expect(box(html, "Poros")).toContain('aria-checked="true"');
-		expect(box(html, "Piel sensible")).toContain('aria-checked="true"');
-		expect(box(html, "Sérum")).toContain('aria-checked="true"');
-		expect(box(html, "Mascarilla")).toContain('aria-checked="false"');
-	});
-
-	test("skin types are named in the customer's language", () => {
-		const html = render();
-		expect(html).toContain(`<span>${m.skin_type_dry()}</span>`);
-		expect(html).toContain(`<span>${m.skin_type_oily()}</span>`);
-		expect(html).not.toContain("<span>dry</span>");
+		const html = render({ category: "teclados" });
+		expect(box(html, "Teclados")).toContain('aria-checked="true"');
+		expect(box(html, "Audífonos")).toContain('aria-checked="false"');
 	});
 
 	test("availability is disabled while nothing is in stock, and checked when asked", () => {

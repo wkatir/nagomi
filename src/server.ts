@@ -4,7 +4,7 @@ import { paraglideMiddleware } from "./paraglide/server.js";
 import { MEDIA_PREFIX, serveMedia } from "./server/media";
 import { withSecurityHeaders } from "./server/security";
 import { SEO_FILES } from "./server/seo-files";
-import { gone, isRetiredPath, moved, movedTo } from "./server/url-rules";
+import { moved, movedTo } from "./server/url-rules";
 
 export default {
 	async fetch(req: Request): Promise<Response> {
@@ -15,7 +15,6 @@ export default {
 		const seoFile = SEO_FILES.get(pathname);
 		if (seoFile && (req.method === "GET" || req.method === "HEAD"))
 			return withSecurityHeaders(req, await seoFile());
-		if (isRetiredPath(pathname)) return withSecurityHeaders(req, gone());
 		const target = movedTo(url);
 		if (target && (req.method === "GET" || req.method === "HEAD"))
 			return withSecurityHeaders(req, moved(target, url.origin));

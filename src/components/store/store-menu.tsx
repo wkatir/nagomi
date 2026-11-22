@@ -59,20 +59,6 @@ export function StoreMenu() {
 									>
 										{m.nav_all_products()}
 									</TextLink>
-									<Group title={m.shop_needs_label()}>
-										{nav.concerns.map((c) => (
-											<li key={c.slug}>
-												<TextLink
-													variant="nav"
-													to="/needs/$slug"
-													params={{ slug: c.slug }}
-													className={subLink}
-												>
-													{c.name}
-												</TextLink>
-											</li>
-										))}
-									</Group>
 									<Group title={m.home_types_title()}>
 										{nav.categories.map((c) => (
 											<li key={c.slug}>
@@ -106,13 +92,23 @@ export function StoreMenu() {
 						</Accordion>
 						<ul>
 							<li className="border-b">
-								<TextLink variant="nav" to="/routines" className={menuLink}>
-									{m.nav_routines()}
+								<TextLink variant="nav" to="/sets" className={menuLink}>
+									{m.nav_bundles()}
 								</TextLink>
 							</li>
 							<li className="border-b">
-								<TextLink variant="nav" to="/company" className={menuLink}>
-									{m.footer_company()}
+								<TextLink variant="nav" to="/account" className={menuLink}>
+									{m.nav_account()}
+								</TextLink>
+							</li>
+							<li className="border-b">
+								<TextLink
+									variant="nav"
+									to="/pages/$slug"
+									params={{ slug: "about" }}
+									className={menuLink}
+								>
+									{m.nav_about()}
 								</TextLink>
 							</li>
 						</ul>

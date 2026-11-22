@@ -1,8 +1,8 @@
 import { cn } from "cn";
+import { BundleCard } from "#/components/store/bundle-card";
 import { ProductCard } from "#/components/store/product-card";
-import { RoutineCard } from "#/components/store/routine-card";
 import { SectionHeading } from "#/components/store/ui/section-heading";
-import type { CatalogCard, RoutineView } from "#/lib/queries";
+import type { BundleView, CatalogCard } from "#/lib/queries";
 import { m } from "#/paraglide/messages";
 import type { Relation } from "#/server/domain/related";
 
@@ -15,15 +15,14 @@ const rail =
 // One row on a wide screen; the API sends the best first.
 const RAIL_LIMIT = 4;
 
-export function CompleteRoutine({
+export function RelatedProducts({
 	related,
-	routines,
+	bundles,
 }: {
 	related: Related[];
-	// The routines the product is a step of.
-	routines: RoutineView[];
+	bundles: BundleView[];
 }) {
-	if (related.length === 0 && routines.length === 0) return null;
+	if (related.length === 0 && bundles.length === 0) return null;
 	const complements = related
 		.filter((r) => r.relation === "complement")
 		.slice(0, RAIL_LIMIT);
@@ -34,12 +33,12 @@ export function CompleteRoutine({
 		<div className="container-page grid grid-cols-1 gap-section-sm border-t pt-section-sm">
 			{complements.length > 0 && (
 				<Rail
-					id="complete-routine-title"
-					title={m.product_complete_routine()}
+					id="complements-title"
+					title={m.product_complements()}
 					products={complements}
 				/>
 			)}
-			<ProductRoutines routines={routines} />
+			<ProductBundles bundles={bundles} />
 			{alternatives.length > 0 && (
 				<Rail
 					id="alternatives-title"
@@ -79,23 +78,20 @@ function Rail({
 	);
 }
 
-function ProductRoutines({ routines }: { routines: RoutineView[] }) {
-	if (routines.length === 0) return null;
+function ProductBundles({ bundles }: { bundles: BundleView[] }) {
+	if (bundles.length === 0) return null;
 	return (
-		<section aria-labelledby="product-routines-title">
-			<SectionHeading
-				id="product-routines-title"
-				title={m.product_routines()}
-			/>
+		<section aria-labelledby="product-bundles-title">
+			<SectionHeading id="product-bundles-title" title={m.product_bundles()} />
 			<ul
 				className={cn(
 					rail,
 					"auto-cols-[86%] gap-5 md:grid-cols-2 lg:grid-cols-3",
 				)}
 			>
-				{routines.map((r) => (
+				{bundles.map((r) => (
 					<li key={r.slug} className="snap-start">
-						<RoutineCard routine={r} />
+						<BundleCard bundle={r} />
 					</li>
 				))}
 			</ul>

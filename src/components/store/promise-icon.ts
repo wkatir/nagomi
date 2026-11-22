@@ -1,22 +1,20 @@
 import {
-	BadgeCheck,
 	Banknote,
-	CalendarCheck,
 	Check,
+	CreditCard,
 	type LucideIcon,
-	MessageCircle,
 	RotateCcw,
 	ShieldCheck,
+	Truck,
 } from "lucide-react";
 
 // Store promises are data; their slugs only pick an icon. A new promise gets a plain check.
 const icons: Record<string, LucideIcon> = {
-	"pay-on-delivery": Banknote,
-	"authorized-supplier": BadgeCheck,
-	"batch-and-expiry": CalendarCheck,
+	warranty: ShieldCheck,
+	"fast-shipping": Truck,
 	returns: RotateCcw,
-	"whatsapp-orders": MessageCircle,
-	"sanitary-registration": ShieldCheck,
+	"secure-payment": CreditCard,
+	"pay-on-delivery": Banknote,
 };
 
 export const promiseIcon = (slug: string): LucideIcon => icons[slug] ?? Check;

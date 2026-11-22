@@ -1,5 +1,4 @@
 import { cn } from "cn";
-import { MARK_CUTOUT_PATH, WORDMARK } from "./brand-paths";
 
 export function Wordmark({
 	className,
@@ -10,21 +9,12 @@ export function Wordmark({
 }) {
 	return (
 		<span
-			className={cn("inline-flex text-[26px] leading-none", className)}
-			role="img"
-			aria-label={label}
+			className={cn(
+				"inline-flex font-serif text-[26px] leading-none font-light tracking-wide",
+				className,
+			)}
 		>
-			<svg
-				viewBox={`0 0 ${WORDMARK.width} ${WORDMARK.height}`}
-				fill="currentColor"
-				aria-hidden="true"
-				style={{
-					width: `${WORDMARK.width / 1000}em`,
-					height: `${WORDMARK.height / 1000}em`,
-				}}
-			>
-				<path d={WORDMARK.path} />
-			</svg>
+			{label}
 		</span>
 	);
 }
@@ -38,14 +28,29 @@ export function LogoMark({
 }) {
 	return (
 		<svg
-			viewBox="0 0 1000 1000"
-			fill="currentColor"
-			fillRule="evenodd"
+			viewBox="0 0 100 100"
 			role="img"
 			aria-label={label}
 			className={cn("size-8 shrink-0", className)}
 		>
-			<path d={MARK_CUTOUT_PATH} />
+			<circle
+				cx="50"
+				cy="50"
+				r="44"
+				fill="none"
+				stroke="currentColor"
+				strokeWidth="6"
+			/>
+			<text
+				x="50"
+				y="52"
+				textAnchor="middle"
+				dominantBaseline="central"
+				fontSize="52"
+				fill="currentColor"
+			>
+				和
+			</text>
 		</svg>
 	);
 }

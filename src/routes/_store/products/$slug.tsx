@@ -3,10 +3,9 @@ import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { cn } from "cn";
 import { ArrowRight, ArrowUpRight, ShieldCheck } from "lucide-react";
 import { useState } from "react";
-import { CompleteRoutine } from "#/components/store/complete-routine";
 import { ProductGallery } from "#/components/store/product-gallery";
-
 import { QuantityStepper } from "#/components/store/quantity-stepper";
+import { RelatedProducts } from "#/components/store/related-products";
 import { Price } from "#/components/store/ui/price";
 import { PromiseList } from "#/components/store/ui/promise-list";
 import { StoreButton } from "#/components/store/ui/store-button";
@@ -29,6 +28,7 @@ import { isNotFound } from "#/lib/api";
 import { cart, useCart, useMaxQuantity } from "#/lib/cart";
 import { cartDrawer } from "#/lib/cart-ui";
 import { paymentMethodList } from "#/lib/payment";
+import { productBadgeLabel } from "#/lib/product-badge";
 import { productQuery, storeQuery } from "#/lib/queries";
 import {
 	breadcrumbJsonLd,
@@ -41,20 +41,12 @@ import {
 	stockAvailability,
 } from "#/lib/seo";
 import { siteOrigin } from "#/lib/site-origin";
-import { formatSize } from "#/lib/size";
-import { skinTypeLabel } from "#/lib/skin-type";
 import { whatsappLink } from "#/lib/whatsapp";
 import { m } from "#/paraglide/messages";
 import { getLocale } from "#/paraglide/runtime";
 
-const linesOf = (text: string | null) =>
-	(text ?? "")
-		.split("\n")
-		.map((l) => l.trim())
-		.filter(Boolean);
-
-// The size shown first: the cheapest in stock, else the cheapest (as on the cards).
-const defaultSize = <V extends { availability: string }>(
+// The variant shown first: the cheapest in stock, else the cheapest (as on the cards).
+const defaultVariant = <V extends { availability: string }>(
 	variants: [V, ...V[]],
 ) => variants.find((v) => v.availability === "in_stock") ?? variants[0];
 
@@ -78,7 +70,7 @@ export const Route = createFileRoute("/_store/products/$slug")({
 	head: ({ loaderData, params }) => {
 		if (!loaderData) return {};
 		const { store, product: p } = loaderData;
-		const variant = defaultSize(p.variants);
+		const variant = defaultVariant(p.variants);
 		const origin = siteOrigin();
 		const locale = getLocale();
 		const url = localizedUrl(origin, `/products/${params.slug}`, locale);
@@ -134,8 +126,8 @@ function ProductDetail({ slug }: { slug: string }) {
 	const locale = getLocale();
 	const { data: p } = useSuspenseQuery(productQuery(slug, locale));
 	const { data: store } = useSuspenseQuery(storeQuery);
-	// No product has two sizes yet, so the page sells the default one.
-	const variant = defaultSize(p.variants);
+	// No product has two variants yet, so the page sells the default one.
+	const variant = defaultVariant(p.variants);
 	const promises = store.promises[locale];
 	const money = useMoney();
 	const [quantity, setQuantity] = useState(1);
@@ -145,9 +137,7 @@ function ProductDetail({ slug }: { slug: string }) {
 	const room =
 		variant.maxQuantity -
 		(useCart().find((l) => l.sku === variant.sku)?.quantity ?? 0);
-	const size = formatSize(variant.size);
-	const benefits = linesOf(p.benefits);
-	const ingredients = linesOf(p.keyIngredients);
+	const option = variant.optionLabel;
 	const fullName = `${p.brand.name} ${p.name}`;
 	const email = store.business.email;
 	const methods = paymentMethodList(store.paymentMethods, locale);
@@ -209,8 +199,8 @@ function ProductDetail({ slug }: { slug: string }) {
 							compareAt={variant.compareAtPrice}
 							size="lg"
 						/>
-						{size && (
-							<span className="type-body text-muted-foreground">{size}</span>
+						{option && (
+							<span className="type-body text-muted-foreground">{option}</span>
 						)}
 					</p>
 					<p
@@ -221,29 +211,15 @@ function ProductDetail({ slug }: { slug: string }) {
 					>
 						{inStock ? m.product_in_stock() : m.product_out_of_stock()}
 					</p>
-					{(p.skinTypes.length > 0 || p.concerns.length > 0) && (
-						<dl className="mt-4 grid gap-1 type-small">
-							{p.skinTypes.length > 0 && (
-								<div>
-									<dt className="inline text-muted-foreground">
-										{m.product_skin_types()}:{" "}
-									</dt>
-									<dd className="inline">
-										{p.skinTypes.map((s) => skinTypeLabel[s]()).join(" · ")}
-									</dd>
-								</div>
-							)}
-							{p.concerns.length > 0 && (
-								<div>
-									<dt className="inline text-muted-foreground">
-										{m.product_helps_with()}:{" "}
-									</dt>
-									<dd className="inline">
-										{p.concerns.map((c) => c.name).join(" · ")}
-									</dd>
-								</div>
-							)}
-						</dl>
+					{p.shortSpecs && (
+						<p className="mt-4 type-small text-foreground-secondary">
+							{p.shortSpecs}
+						</p>
+					)}
+					{p.badge && (
+						<p className="mt-2 type-meta font-medium">
+							{productBadgeLabel[p.badge]()}
+						</p>
 					)}
 
 					{/* On phones the bar moves after the details, so it stays at the bottom of the
@@ -257,9 +233,9 @@ function ProductDetail({ slug }: { slug: string }) {
 							<span className="block text-lg leading-tight font-bold">
 								{money(variant.price)}
 							</span>
-							{size && (
+							{option && (
 								<span className="block type-meta text-muted-foreground">
-									{size}
+									{option}
 								</span>
 							)}
 						</p>
@@ -347,24 +323,20 @@ function ProductDetail({ slug }: { slug: string }) {
 						</TextLink>
 					</div>
 
-					{(promises.length > 0 || p.sanitaryRegistration) && (
-						<PromiseList
-							items={promises}
-							className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 border-t pt-5"
-						>
-							{p.sanitaryRegistration && (
-								<li className="col-span-2 flex items-start gap-2.5">
-									<ShieldCheck aria-hidden className="size-5 shrink-0" />
-									{m.product_sanitary_registration({
-										number: p.sanitaryRegistration,
-									})}
-								</li>
-							)}
-						</PromiseList>
-					)}
+					<PromiseList
+						items={promises}
+						className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 border-t pt-5"
+					>
+						{p.warrantyMonths > 0 && (
+							<li className="col-span-2 flex items-start gap-2.5">
+								<ShieldCheck aria-hidden className="size-5 shrink-0" />
+								{m.product_warranty({ months: p.warrantyMonths })}
+							</li>
+						)}
+					</PromiseList>
 					<TextLink
 						to="/pages/$slug"
-						params={{ slug: "shipping-returns" }}
+						params={{ slug: "shipping" }}
 						className={cn(helpLink, "mt-1")}
 					>
 						{m.page_shipping()}
@@ -374,49 +346,31 @@ function ProductDetail({ slug }: { slug: string }) {
 					<h2 className="sr-only">{m.product_details_title()}</h2>
 					<Accordion
 						type="multiple"
-						defaultValue={["what"]}
+						defaultValue={["what", "specs"]}
 						className="mt-6 border-t"
 					>
-						{(p.description || benefits.length > 0) && (
-							<Detail value="what" term={m.product_what_it_does()}>
-								{p.description && (
-									<p className="whitespace-pre-line">{p.description}</p>
-								)}
-								{benefits.length > 0 && <List items={benefits} />}
+						{p.description && (
+							<Detail value="what" term={m.product_description()}>
+								<p className="whitespace-pre-line">{p.description}</p>
 							</Detail>
 						)}
-						{ingredients.length > 0 && (
-							<Detail value="ingredients" term={m.product_key_ingredients()}>
-								{ingredients.length === 1 ? (
-									ingredients[0]
-								) : (
-									<List items={ingredients} />
-								)}
-							</Detail>
-						)}
-						{p.howToUse && (
-							<Detail value="usage" term={m.product_how_to_use()}>
-								<p className="whitespace-pre-line">{p.howToUse}</p>
-							</Detail>
-						)}
-						{p.cautions && (
-							<Detail value="cautions" term={m.product_cautions()}>
-								<p className="whitespace-pre-line">{p.cautions}</p>
-							</Detail>
-						)}
-						{p.inci && (
-							<Detail value="inci" term={m.product_inci()}>
-								{p.inci}
+						{p.specs.length > 0 && (
+							<Detail value="specs" term={m.product_specs()}>
+								<dl className="grid grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-x-4 gap-y-2">
+									{p.specs.map((spec) => (
+										<div key={spec.label} className="contents">
+											<dt className="text-muted-foreground">{spec.label}</dt>
+											<dd className="text-foreground">{spec.value}</dd>
+										</div>
+									))}
+								</dl>
 							</Detail>
 						)}
 					</Accordion>
-					<p className="mt-5 type-small text-muted-foreground">
-						{m.product_disclaimer()}
-					</p>
 				</div>
 			</div>
 
-			<CompleteRoutine related={p.related} routines={p.routines} />
+			<RelatedProducts related={p.related} bundles={p.bundles} />
 		</>
 	);
 }
@@ -447,15 +401,5 @@ function Detail({
 				{children}
 			</AccordionContent>
 		</AccordionItem>
-	);
-}
-
-function List({ items }: { items: string[] }) {
-	return (
-		<ul className="grid list-disc gap-1.5 pl-5">
-			{items.map((item) => (
-				<li key={item}>{item}</li>
-			))}
-		</ul>
 	);
 }

@@ -4,7 +4,6 @@ import { Trash2 } from "lucide-react";
 import type { CartRow } from "#/hooks/use-cart-rows";
 import { useMoney } from "#/hooks/use-money";
 import { cart, useMaxQuantity } from "#/lib/cart";
-import { formatSize } from "#/lib/size";
 import { m } from "#/paraglide/messages";
 import { QuantityStepper } from "./quantity-stepper";
 import { StoreIconButton } from "./ui/store-button";
@@ -47,9 +46,9 @@ function CartLine({ sku, quantity, product }: CartRow) {
 
 	const image =
 		product.images.find((i) => i.kind === "packshot") ?? product.images[0];
-	const size = formatSize(product.size);
+	const option = product.optionLabel;
 	const unitPrice = m.cart_unit_price({ price: money(product.price) });
-	// Units the size has left, up to the store's limit (0 when sold out).
+	// Units the variant has left, up to the store's limit (0 when sold out).
 	const max = product.maxQuantity;
 
 	return (
@@ -90,7 +89,7 @@ function CartLine({ sku, quantity, product }: CartRow) {
 					{product.name}
 				</TextLink>
 				<p className="type-meta text-muted-foreground tabular-nums">
-					{size ? `${size} · ${unitPrice}` : unitPrice}
+					{option ? `${option} · ${unitPrice}` : unitPrice}
 				</p>
 				<div className="mt-3 flex items-center gap-2">
 					{max === 0 ? (

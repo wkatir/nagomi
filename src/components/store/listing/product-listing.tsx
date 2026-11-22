@@ -15,12 +15,10 @@ import {
 	type ListingScope,
 	type ListingSearch,
 	listingFilter,
-	listOf,
 	pagesOf,
 	SORTS,
 	setSort,
 	showMore,
-	toggle,
 } from "#/lib/listing";
 import { productPageQuery } from "#/lib/queries";
 import { m } from "#/paraglide/messages";
@@ -31,7 +29,7 @@ import { SortField } from "./sort-field";
 
 const EAGER_CARDS = 4;
 
-// `scope` fixes some facets (a need's page fixes the need). `onChange` puts the change in the
+// `scope` fixes some facets (a category's page fixes the category). `onChange` puts the change in the
 // URL and returns once the new list is shown; until then the list shows the choice, not the data.
 export function ProductListing({
 	search,
@@ -76,29 +74,7 @@ export function ProductListing({
 				{facetGroups}
 			</aside>
 			<div className="min-w-0">
-				{scope.concern === undefined && facets.concern.length > 0 && (
-					<nav aria-label={m.shop_needs_label()}>
-						<ul className="-mx-4 -my-0.5 flex scroll-px-4 gap-2 overflow-x-auto px-4 py-1.5 md:mx-0 md:flex-wrap md:overflow-visible md:px-0">
-							{facets.concern.map((need) => {
-								const on = listOf(view.concern).includes(need.slug);
-								return (
-									<li key={need.slug} className="shrink-0">
-										<StoreButton
-											variant={on ? "solid" : "outline"}
-											aria-pressed={on}
-											disabled={need.count === 0 && !on}
-											onClick={() => change(toggle(view, "concern", need.slug))}
-											className="px-4 type-ui font-medium"
-										>
-											{need.name}
-										</StoreButton>
-									</li>
-								);
-							})}
-						</ul>
-					</nav>
-				)}
-				<div className="mt-6 flex items-end justify-between gap-4">
+				<div className="flex items-end justify-between gap-4">
 					<div className="flex items-center gap-4">
 						<Sheet>
 							<SheetTrigger asChild>

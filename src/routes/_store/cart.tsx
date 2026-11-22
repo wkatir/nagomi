@@ -48,7 +48,8 @@ function Cart() {
 	const [orderTried, setOrderTried] = useState(false);
 	const consentMissing = orderTried && !accepted;
 	const consentBox = useRef<HTMLButtonElement>(null);
-	const [marketing, setMarketing] = useState(false);
+	const [marketingEmail, setMarketingEmail] = useState(false);
+	const [marketingWhatsapp, setMarketingWhatsapp] = useState(false);
 	const threshold = store.freeShippingFrom;
 	const request = {
 		locale,
@@ -57,7 +58,8 @@ function Cart() {
 		consents: {
 			privacyNotice: true as const,
 			terms: true as const,
-			marketingWhatsapp: marketing,
+			marketingEmail,
+			marketingWhatsapp,
 		},
 	};
 	const idempotencyKey = useIdempotencyKey(request);
@@ -183,13 +185,32 @@ function Cart() {
 					)}
 					<Field orientation="horizontal" className="mt-3 items-start gap-2.5">
 						<Checkbox
-							id="consent-marketing"
-							checked={marketing}
-							onCheckedChange={(checked) => setMarketing(checked === true)}
+							id="consent-marketing-email"
+							checked={marketingEmail}
+							onCheckedChange={(checked) => setMarketingEmail(checked === true)}
 							className="tap-area mt-0.5 rounded-sm"
 						/>
-						<FieldLabel htmlFor="consent-marketing" className="font-normal">
-							{m.cart_consent_marketing()}
+						<FieldLabel
+							htmlFor="consent-marketing-email"
+							className="font-normal"
+						>
+							{m.cart_consent_marketing_email()}
+						</FieldLabel>
+					</Field>
+					<Field orientation="horizontal" className="mt-3 items-start gap-2.5">
+						<Checkbox
+							id="consent-marketing-whatsapp"
+							checked={marketingWhatsapp}
+							onCheckedChange={(checked) =>
+								setMarketingWhatsapp(checked === true)
+							}
+							className="tap-area mt-0.5 rounded-sm"
+						/>
+						<FieldLabel
+							htmlFor="consent-marketing-whatsapp"
+							className="font-normal"
+						>
+							{m.cart_consent_marketing_whatsapp()}
 						</FieldLabel>
 					</Field>
 					{/* Stays enabled without the legal consent, which it then asks for. */}
