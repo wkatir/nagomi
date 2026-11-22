@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
+import { and, asc, eq, isNull, sql } from "drizzle-orm";
 import type { Db } from "#/db";
 import { schema } from "#/db";
 import type { Locale } from "#/db/schema";
@@ -553,11 +553,3 @@ export async function mergeInto(
 		]),
 	);
 }
-
-export const emptyCart = (db: Db, cartId: string) => [
-	db.delete(cartItems).where(eq(cartItems.cartId, cartId)),
-	db.update(carts).set({ promotionCode: null }).where(eq(carts.id, cartId)),
-];
-
-export const itemsByIds = (db: Db, ids: number[]) =>
-	db.select().from(cartItems).where(inArray(cartItems.id, ids));

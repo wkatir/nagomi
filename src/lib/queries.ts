@@ -40,12 +40,6 @@ export const homeQuery = (locale: Locale) =>
 		queryFn: () => parseResponse(api().home.$get({ query: { locale } })),
 	});
 
-export const catalogQuery = (locale: Locale) =>
-	queryOptions({
-		queryKey: ["catalog", locale],
-		queryFn: () => parseResponse(api().catalog.$get({ query: { locale } })),
-	});
-
 export const productPageQuery = (filter: ListingFilter, page: number) =>
 	queryOptions({
 		queryKey: ["products", filter, page],
@@ -139,7 +133,6 @@ export const productQuery = (slug: string, locale: Locale) =>
 export const invalidateCatalog = (queryClient: QueryClient) =>
 	Promise.all(
 		[
-			"catalog",
 			"products",
 			"product",
 			"category",

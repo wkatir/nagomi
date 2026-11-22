@@ -5,8 +5,6 @@ export const SV_LOCATIONS: readonly {
 	municipalities: readonly string[];
 }[] = locations;
 
-export const SV_DEPARTMENTS = SV_LOCATIONS.map((l) => l.department);
-
 export const SV_MUNICIPALITIES = SV_LOCATIONS.flatMap((l) => l.municipalities);
 
 export const isSvMunicipality = (department: string, municipality: string) =>

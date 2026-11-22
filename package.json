@@ -42,7 +42,6 @@
     "cn": "^0.4.0",
     "date-fns": "4.4.0",
     "drizzle-orm": "^0.45.1",
-    "embla-carousel-react": "^8.6.0",
     "hono": "^4.13.13",
     "libphonenumber-js": "^1.13.14",
     "lucide-react": "^0.577.0",
