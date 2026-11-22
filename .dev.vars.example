@@ -12,3 +12,10 @@ BETTER_AUTH_URL=
 # sign-in is off.
 GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
+
+# Optional card payments with Wompi El Salvador (https://docs.wompi.sv). In the Wompi panel the
+# business's "App ID" is the client id and its "API Secret" the client secret; the same secret
+# signs the webhooks. Set both or neither; without them the card method shows as unavailable.
+# A business in development mode in the panel approves every test card except CVV 111.
+WOMPI_CLIENT_ID=
+WOMPI_CLIENT_SECRET=
