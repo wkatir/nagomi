@@ -93,6 +93,16 @@ export function OrderLines({
 	);
 }
 
+const providerLabel = {
+	demo: m.admin_payment_provider_demo,
+	wompi: m.admin_payment_provider_wompi,
+} as const;
+
+const paymentRecordLabel = {
+	pending: m.admin_payment_record_pending,
+	failed: m.admin_payment_record_failed,
+} as const;
+
 export function OrderPayments({
 	detail,
 	action,
@@ -138,7 +148,13 @@ export function OrderPayments({
 							<span className="type-small">
 								{row.kind === "refund" ? `${m.admin_order_refund_n()} · ` : ""}
 								{paymentLabel[row.method]()}
+								{row.recordedBy === "demo" || row.recordedBy === "wompi"
+									? ` · ${providerLabel[row.recordedBy]()}`
+									: ""}
 								{row.reference ? ` · ${row.reference}` : ""}
+								{row.status === "confirmed"
+									? ""
+									: ` · ${paymentRecordLabel[row.status]()}`}
 							</span>
 							<span className="type-small text-right tabular-nums">
 								{row.kind === "refund" ? "-" : ""}

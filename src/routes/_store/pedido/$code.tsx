@@ -49,7 +49,11 @@ function OrderPage() {
 			),
 		retry: false,
 		refetchInterval: (q) =>
-			search.pago && q.state.data?.status === "pending" ? 5000 : false,
+			search.pago &&
+			q.state.data?.status === "pending" &&
+			!q.state.data.cardDeclined
+				? 5000
+				: false,
 	});
 	const { data: store } = useSuspenseQuery(storeQuery);
 	const money = useMoney();
@@ -129,7 +133,9 @@ function OrderPage() {
 						? m.order_demo_transfer()
 						: o.paymentMethod === "cash_on_delivery"
 							? m.order_demo_cod()
-							: undefined
+							: o.cardProvider === "demo"
+								? m.order_demo_card()
+								: undefined
 				}
 				className="mb-4"
 			/>
@@ -174,8 +180,18 @@ function OrderPage() {
 								<CreditCard aria-hidden className="size-5 text-brand" />
 								{m.order_card_title()}
 							</h2>
-							{search.pago && (
-								<p className="type-small">{m.order_card_waiting()}</p>
+							{o.cardDeclined ? (
+								<p role="alert" className="type-small text-destructive">
+									{m.order_card_declined()}
+								</p>
+							) : (
+								search.pago && (
+									<p className="type-small">
+										{o.cardProvider === "demo"
+											? m.order_card_waiting_demo()
+											: m.order_card_waiting()}
+									</p>
+								)
 							)}
 							{o.cardPaymentAvailable ? (
 								<StoreButton

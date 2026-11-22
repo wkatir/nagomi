@@ -96,6 +96,7 @@ const MESSAGES: Record<string, () => string> = {
 	in_stock: m.error_in_stock,
 	gateway_unavailable: m.error_gateway_unavailable,
 	card_unavailable: m.error_card_unavailable,
+	amount_mismatch: m.error_amount_mismatch,
 	invalid_fields: m.error_invalid_fields,
 	promotion_limit_reached: m.promotion_reason_usage_limit_reached,
 	promotion_unavailable: m.promotion_reason_not_found,

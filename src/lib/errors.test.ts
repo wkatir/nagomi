@@ -38,7 +38,6 @@ const SHOWN_GENERIC = [
 	"invalid_form",
 	"collections_changed",
 	"invalid_signature",
-	"amount_mismatch",
 ];
 
 describe("errorMessage", () => {

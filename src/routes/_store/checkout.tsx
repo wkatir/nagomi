@@ -227,9 +227,14 @@ function Checkout() {
 					: o.method === "card"
 						? m.checkout_unavailable_card()
 						: m.checkout_unavailable_not_configured();
-	const availableNote = (method: Cart["paymentOptions"][number]["method"]) =>
+	const availableNote = ({
+		method,
+		provider,
+	}: Cart["paymentOptions"][number]) =>
 		method === "card"
-			? m.checkout_payment_card_note()
+			? provider === "demo"
+				? m.checkout_payment_card_demo_note()
+				: m.checkout_payment_card_note()
 			: method === "bank_transfer"
 				? store.demoStore
 					? m.checkout_payment_transfer_demo_note()
@@ -407,9 +412,7 @@ function Checkout() {
 									disabled={!o.available}
 									icon={PAYMENT_ICONS[o.method]}
 									title={paymentLabel[o.method]()}
-									body={
-										o.available ? availableNote(o.method) : unavailableReason(o)
-									}
+									body={o.available ? availableNote(o) : unavailableReason(o)}
 								/>
 							))}
 						</RadioGroup>

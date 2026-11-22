@@ -37,6 +37,7 @@ import { Route as AdminStockAlertsRouteImport } from './routes/admin/stock-alert
 import { Route as AdminSuppliersRouteRouteImport } from './routes/admin/suppliers/route'
 import { Route as AdminLoginRouteImport } from './routes/admin_.login'
 import { Route as ApiSplatRouteImport } from './routes/api/$'
+import { Route as PagoPruebaCodeRouteImport } from './routes/pago-prueba.$code'
 import { Route as StoreAccountIndexRouteImport } from './routes/_store/account/index'
 import { Route as StoreAccountReviewsRouteImport } from './routes/_store/account/reviews'
 import { Route as StoreAccountSignInRouteImport } from './routes/_store/account/sign-in'
@@ -232,6 +233,11 @@ const AdminLoginRoute = AdminLoginRouteImport.update({
 const ApiSplatRoute = ApiSplatRouteImport.update({
   id: '/api/$',
   path: '/api/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PagoPruebaCodeRoute = PagoPruebaCodeRouteImport.update({
+  id: '/pago-prueba/$code',
+  path: '/pago-prueba/$code',
   getParentRoute: () => rootRouteImport,
 } as any)
 const StoreAccountIndexRoute = StoreAccountIndexRouteImport.update({
@@ -547,6 +553,7 @@ export interface FileRoutesByFullPath {
   '/admin/stock-alerts': typeof AdminStockAlertsRoute
   '/admin/login': typeof AdminLoginRoute
   '/api/$': typeof ApiSplatRoute
+  '/pago-prueba/$code': typeof PagoPruebaCodeRoute
   '/admin/': typeof AdminIndexRoute
   '/account/reviews': typeof StoreAccountReviewsRoute
   '/account/sign-in': typeof StoreAccountSignInRoute
@@ -616,6 +623,7 @@ export interface FileRoutesByTo {
   '/admin/stock-alerts': typeof AdminStockAlertsRoute
   '/admin/login': typeof AdminLoginRoute
   '/api/$': typeof ApiSplatRoute
+  '/pago-prueba/$code': typeof PagoPruebaCodeRoute
   '/': typeof StoreIndexRoute
   '/admin': typeof AdminIndexRoute
   '/account/reviews': typeof StoreAccountReviewsRoute
@@ -704,6 +712,7 @@ export interface FileRoutesById {
   '/admin/stock-alerts': typeof AdminStockAlertsRoute
   '/admin_/login': typeof AdminLoginRoute
   '/api/$': typeof ApiSplatRoute
+  '/pago-prueba/$code': typeof PagoPruebaCodeRoute
   '/_store/': typeof StoreIndexRoute
   '/admin/': typeof AdminIndexRoute
   '/_store/account/reviews': typeof StoreAccountReviewsRoute
@@ -793,6 +802,7 @@ export interface FileRouteTypes {
     | '/admin/stock-alerts'
     | '/admin/login'
     | '/api/$'
+    | '/pago-prueba/$code'
     | '/admin/'
     | '/account/reviews'
     | '/account/sign-in'
@@ -862,6 +872,7 @@ export interface FileRouteTypes {
     | '/admin/stock-alerts'
     | '/admin/login'
     | '/api/$'
+    | '/pago-prueba/$code'
     | '/'
     | '/admin'
     | '/account/reviews'
@@ -949,6 +960,7 @@ export interface FileRouteTypes {
     | '/admin/stock-alerts'
     | '/admin_/login'
     | '/api/$'
+    | '/pago-prueba/$code'
     | '/_store/'
     | '/admin/'
     | '/_store/account/reviews'
@@ -1015,6 +1027,7 @@ export interface RootRouteChildren {
   AdminRouteRoute: typeof AdminRouteRouteWithChildren
   AdminLoginRoute: typeof AdminLoginRoute
   ApiSplatRoute: typeof ApiSplatRoute
+  PagoPruebaCodeRoute: typeof PagoPruebaCodeRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   AdminOrdersIdReceiptRoute: typeof AdminOrdersIdReceiptRoute
 }
@@ -1215,6 +1228,13 @@ declare module '@tanstack/react-router' {
       path: '/api/$'
       fullPath: '/api/$'
       preLoaderRoute: typeof ApiSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pago-prueba/$code': {
+      id: '/pago-prueba/$code'
+      path: '/pago-prueba/$code'
+      fullPath: '/pago-prueba/$code'
+      preLoaderRoute: typeof PagoPruebaCodeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_store/account/': {
@@ -1940,6 +1960,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRouteRoute: AdminRouteRouteWithChildren,
   AdminLoginRoute: AdminLoginRoute,
   ApiSplatRoute: ApiSplatRoute,
+  PagoPruebaCodeRoute: PagoPruebaCodeRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   AdminOrdersIdReceiptRoute: AdminOrdersIdReceiptRoute,
 }
