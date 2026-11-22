@@ -428,6 +428,21 @@ insert into customer_consents (customer_id, purpose, granted, page_version_id, c
 		const found = await listCustomers(getDb(), { q: "carla" }, null, 10);
 		expect(found.customers.map((c) => c.id)).toEqual([4]);
 	});
+
+	test("a campaign takes only who still accepts that channel and can be reached on it", async () => {
+		db.exec(`
+insert into pages (slug) values ('privacy');
+insert into page_versions (page_id, locale, version, title, body_markdown) values (1, 'es', 1, 'Privacidad', 'x');
+insert into customer_consents (customer_id, purpose, granted, page_version_id, channel) values (1, 'marketing_whatsapp', 1, 1, 'web'), (1, 'marketing_whatsapp', 0, 1, 'whatsapp'), (2, 'marketing_whatsapp', 1, 1, 'web'), (3, 'marketing_email', 1, 1, 'web'), (4, 'marketing_email', 1, 1, 'web');
+`);
+		const ids = async (marketing: "email" | "whatsapp") =>
+			(await listCustomers(getDb(), { marketing }, null, 10)).customers.map(
+				(c) => c.id,
+			);
+		expect(await ids("whatsapp")).toEqual([2]);
+		expect(await ids("email")).toEqual([3]);
+		expect((await list("marketing=whatsapp")).total).toBe(1);
+	});
 });
 
 describe("GET /customers/:id", () => {
