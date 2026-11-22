@@ -240,22 +240,7 @@ function Checkout() {
 				: m.checkout_payment_cod_note();
 
 	return (
-		<form
-			noValidate
-			className="container-page pt-6 md:pt-8"
-			onSubmit={(e) => {
-				e.preventDefault();
-				setTried(true);
-				const ok =
-					name.trim() &&
-					email.trim() &&
-					/^\d{8}$/.test(phone.replace(/\D/g, "")) &&
-					terms &&
-					privacy &&
-					option?.available;
-				if (ok) order.mutate();
-			}}
-		>
+		<div className="container-page pt-6 md:pt-8">
 			<div className="flex flex-wrap items-end justify-between gap-3">
 				<h1 className="type-h1">{m.checkout_title()}</h1>
 				<p className="flex items-center gap-2 type-meta text-muted-foreground">
@@ -271,7 +256,23 @@ function Checkout() {
 				</p>
 			)}
 			<div className="mt-5 grid gap-6 lg:grid-cols-[minmax(0,1fr)_23rem] lg:gap-8">
-				<div className="grid content-start gap-4">
+				<form
+					id="checkout-form"
+					noValidate
+					onSubmit={(e) => {
+						e.preventDefault();
+						setTried(true);
+						const ok =
+							name.trim() &&
+							email.trim() &&
+							/^\d{8}$/.test(phone.replace(/\D/g, "")) &&
+							terms &&
+							privacy &&
+							option?.available;
+						if (ok) order.mutate();
+					}}
+					className="grid content-start gap-4"
+				>
 					<Step number={1} title={m.checkout_contact()}>
 						<div className="grid gap-4 sm:grid-cols-2">
 							<TextField
@@ -519,7 +520,7 @@ function Checkout() {
 							</ConsentField>
 						</fieldset>
 					</Step>
-				</div>
+				</form>
 
 				<aside
 					aria-label={m.checkout_summary()}
@@ -568,6 +569,7 @@ function Checkout() {
 						)}
 					<StoreButton
 						type="submit"
+						form="checkout-form"
 						size="lg"
 						fullWidth
 						pending={order.isPending}
@@ -587,7 +589,7 @@ function Checkout() {
 					</p>
 				</aside>
 			</div>
-		</form>
+		</div>
 	);
 }
 

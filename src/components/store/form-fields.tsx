@@ -114,7 +114,7 @@ export function PhoneField({
 						hint && `${id}-hint`,
 						error && `${id}-error`,
 					)}
-					className="type-body tabular-nums md:type-ui"
+					className="type-body tabular-nums placeholder:text-muted-foreground md:type-ui"
 				/>
 			</InputGroup>
 			{hint && (
