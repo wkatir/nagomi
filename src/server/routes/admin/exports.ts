@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { z } from "zod";
 import { type Db, getDb } from "#/db";
 import { storeToday } from "#/lib/dates";
-import { customerFilters } from "#/lib/schemas/customers";
+import { campaignFilters, customerFilters } from "#/lib/schemas/customers";
 import { movementFilters } from "#/lib/schemas/inventory";
 import { orderFilters } from "#/lib/schemas/orders";
 import type { AdminEnv } from "#/server/auth";
@@ -21,6 +21,8 @@ import { getSettings, type StoreSettings } from "../../domain/settings";
 import { listMovements } from "./inventory";
 import {
 	brandsReport,
+	customersReport,
+	fulfillmentReport,
 	lossesReport,
 	productsReport,
 	rangeQuery,
@@ -28,7 +30,6 @@ import {
 	reorderReport,
 	salesQuery,
 	salesReport,
-	stockQuery,
 	stockReport,
 } from "./reports";
 
@@ -348,6 +349,9 @@ export const exportsRouter = new Hono<AdminEnv>()
 					"orders",
 					"units",
 					"revenue",
+					"tax_included",
+					"net_of_tax",
+					"average_ticket",
 					"merchandise",
 					"shipping",
 					"cost_of_goods_sold",
@@ -363,6 +367,9 @@ export const exportsRouter = new Hono<AdminEnv>()
 						p.orders,
 						p.units,
 						money(p.revenue),
+						money(p.tax),
+						money(p.netRevenue),
+						money(p.averageTicket),
 						money(p.merchandise),
 						money(p.shipping),
 						money(p.costOfGoodsSold),
@@ -379,6 +386,9 @@ export const exportsRouter = new Hono<AdminEnv>()
 									r.totals.orders,
 									r.totals.units,
 									money(r.totals.revenue),
+									money(r.totals.tax),
+									money(r.totals.netRevenue),
+									money(r.totals.averageTicket),
 									money(r.totals.merchandise),
 									money(r.totals.shipping),
 									money(r.totals.costOfGoodsSold),
@@ -415,6 +425,9 @@ export const exportsRouter = new Hono<AdminEnv>()
 					"cost_of_goods_sold",
 					"gross_profit",
 					"margin",
+					"first_sold_on",
+					"days_on_sale",
+					"units_per_day",
 				],
 				once([
 					...rows.map((p) => [
@@ -429,6 +442,9 @@ export const exportsRouter = new Hono<AdminEnv>()
 						money(p.costOfGoodsSold),
 						money(p.grossProfit),
 						p.margin,
+						p.firstSoldOn,
+						p.daysOnSale,
+						p.unitsPerDay,
 					]),
 					...(totals === "true"
 						? [
@@ -444,6 +460,9 @@ export const exportsRouter = new Hono<AdminEnv>()
 									money(r.totals.costOfGoodsSold),
 									money(r.totals.grossProfit),
 									r.totals.margin,
+									null,
+									null,
+									null,
 								],
 							]
 						: []),
@@ -557,10 +576,10 @@ export const exportsRouter = new Hono<AdminEnv>()
 			]),
 		);
 	})
-	.get("/reports/stock.csv", validate("query", stockQuery), async () => {
+	.get("/reports/stock.csv", validate("query", rangeQuery), async (c) => {
 		const db = getDb();
 		const { settings, money } = await context(db);
-		const r = await stockReport(db, settings);
+		const r = await stockReport(db, settings, c.req.valid("query"));
 		return download(
 			settings,
 			"stock",
@@ -573,6 +592,11 @@ export const exportsRouter = new Hono<AdminEnv>()
 				"value_at_cost",
 				"reorder_point",
 				"low_stock",
+				"out_of_stock",
+				"units_sold",
+				"average_on_hand",
+				"rotation",
+				"days_of_cover",
 			],
 			once(
 				r.variants.map((v) => [
@@ -584,8 +608,123 @@ export const exportsRouter = new Hono<AdminEnv>()
 					money(v.value),
 					v.reorderPoint,
 					v.lowStock,
+					v.outOfStock,
+					v.unitsSold,
+					v.averageOnHand,
+					v.rotation,
+					v.daysOfCover,
 				]),
 			),
+		);
+	})
+	.get("/reports/customers.csv", validate("query", rangeQuery), async (c) => {
+		const db = getDb();
+		const { settings, money, at } = await context(db);
+		const r = await customersReport(db, settings, c.req.valid("query"));
+		return download(
+			settings,
+			"customers-report",
+			[
+				"customer_id",
+				"name",
+				"email",
+				"segment",
+				"new_in_range",
+				"orders",
+				"value",
+				"last_order_at",
+			],
+			once(
+				r.topBuyers.map((b) => [
+					b.customerId,
+					b.name,
+					b.email,
+					b.segment,
+					b.isNew,
+					b.orders,
+					money(b.value),
+					at(b.lastOrderAt),
+				]),
+			),
+		);
+	})
+	.get("/reports/fulfillment.csv", validate("query", rangeQuery), async (c) => {
+		const db = getDb();
+		const { settings } = await context(db);
+		const r = await fulfillmentReport(db, settings, c.req.valid("query"));
+		return download(
+			settings,
+			"late-orders",
+			[
+				"code",
+				"customer",
+				"status",
+				"promised_by",
+				"delivered_on",
+				"days_late",
+			],
+			once(
+				r.late.map((o) => [
+					o.code,
+					o.customerName,
+					o.status,
+					o.promisedBy,
+					o.deliveredDay,
+					o.daysLate,
+				]),
+			),
+		);
+	})
+	.get("/campaign.csv", validate("query", campaignFilters), async (c) => {
+		const db = getDb();
+		const filters = c.req.valid("query");
+		const { settings, at } = await context(db);
+		return download(
+			settings,
+			`campaign-${filters.channel}`,
+			[
+				"name",
+				filters.channel === "email" ? "email" : "phone",
+				"segment",
+				"orders",
+				"last_order_at",
+				"consent_recorded_at",
+			],
+			await paged<number>(async (cursor) => {
+				const page = await listCustomers(
+					db,
+					{ segment: filters.segment, marketing: filters.channel },
+					cursor,
+					PAGE,
+				);
+				return {
+					next: page.nextCursor,
+					rows: page.customers.flatMap((x) => {
+						const contact = filters.channel === "email" ? x.email : x.phoneE164;
+						const consent = x.consents.find(
+							(k) => k.purpose === `marketing_${filters.channel}`,
+						);
+						if (!consent?.granted)
+							throw new Error(
+								`Customer ${x.id} has no ${filters.channel} consent`,
+							);
+						if (contact === null)
+							throw new Error(
+								`Customer ${x.id} has no ${filters.channel} contact`,
+							);
+						return [
+							[
+								x.name,
+								contact,
+								x.segment,
+								x.orders,
+								at(x.lastOrderAt),
+								at(consent.recordedAt),
+							],
+						];
+					}),
+				};
+			}),
 		);
 	})
 	.get("/reports/reorder.csv", validate("query", reorderQuery), async (c) => {

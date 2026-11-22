@@ -47,10 +47,16 @@ type Dashboard = {
 	losses: Record<string, unknown>;
 	pendingOrders: number;
 	overduePendingOrders: number;
+	newCustomers: number;
+	followups: { counts: Record<string, number>; items: unknown[] };
+	pendingReviews: number;
+	pendingStockAlerts: number;
 	byDay: Day[];
 	topProducts: { sku: string; units: number; merchandise: number }[];
 	stock: { lowStock: number; onHand: number; value: number };
 };
+const lastDays = (days: number) =>
+	`from=${addDays(today, -(days - 1))}&to=${today}`;
 const dashboard = async (query = ""): Promise<Dashboard> => {
 	const res = await app.request(`/dashboard${query ? `?${query}` : ""}`);
 	expect(res.status).toBe(200);
@@ -156,7 +162,7 @@ describe("GET /dashboard", () => {
 	});
 
 	test("a window with no sales is zero for every day, with no margin", async () => {
-		const d = await dashboard("days=7");
+		const d = await dashboard(lastDays(7));
 		expect(d.days).toBe(7);
 		expect(d.from).toBe(addDays(today, -6));
 		expect(d.byDay).toHaveLength(7);
@@ -201,9 +207,9 @@ describe("GET /dashboard", () => {
 	test("a window leaves out the sales before it", async () => {
 		sale(today);
 		sale(addDays(today, -40));
-		expect((await dashboard("days=30")).sales.orders).toBe(1);
-		expect((await dashboard("days=90")).sales.orders).toBe(2);
-		expect((await dashboard("days=7")).byDay).toHaveLength(7);
+		expect((await dashboard(lastDays(30))).sales.orders).toBe(1);
+		expect((await dashboard(lastDays(90))).sales.orders).toBe(2);
+		expect((await dashboard(lastDays(7))).byDay).toHaveLength(7);
 	});
 
 	test("lists the best sellers with the units and the merchandise sold", async () => {
@@ -236,6 +242,12 @@ describe("GET /dashboard", () => {
 		const d = await dashboard();
 		expect(d.pendingOrders).toBe(2);
 		expect(d.overduePendingOrders).toBe(1);
+		expect(d.followups.counts).toEqual({
+			collect_payment: 1,
+			ship: 0,
+			confirm_delivery: 0,
+		});
+		expect(d.followups.items).toHaveLength(1);
 	});
 
 	test("books the orders placed in the window at what they owe", async () => {
@@ -268,7 +280,7 @@ describe("GET /dashboard", () => {
 			writeOffs: { units: 14, cost: 9800 },
 			totalLoss: 9800,
 		});
-		expect((await dashboard("days=90")).losses).toMatchObject({
+		expect((await dashboard(lastDays(90))).losses).toMatchObject({
 			writeOffs: { units: 16, cost: 11200 },
 		});
 	});
@@ -286,11 +298,32 @@ update variants set reorder_point = 10 where id = 2;
 		expect((await dashboard()).stock.lowStock).toBe(0);
 	});
 
-	test("refuses a window that is not 1 to 365 days", async () => {
-		for (const days of ["0", "366", "abc", "1.5"])
-			expect((await app.request(`/dashboard?days=${days}`)).status).toBe(400);
-		expect((await app.request("/dashboard?days=1")).status).toBe(200);
-		expect((await app.request("/dashboard?days=365")).status).toBe(200);
+	test("counts a customer as new in the window of their first purchase", async () => {
+		db.exec(
+			"insert into customers (id, name, email, search_key) values (1, 'Ana', 'ana@example.com', 'ana')",
+		);
+		sale(addDays(today, -40));
+		sale(today);
+		db.exec("update orders set customer_id = 1");
+		expect((await dashboard()).newCustomers).toBe(0);
+		expect((await dashboard(lastDays(90))).newCustomers).toBe(1);
+		expect((await dashboard(`from=${today}&to=${today}`)).days).toBe(1);
+	});
+
+	test("refuses a range that is reversed, half given or too long", async () => {
+		for (const query of [
+			`from=${today}`,
+			`from=${today}&to=${addDays(today, -1)}`,
+			`from=${addDays(today, -1096)}&to=${today}`,
+		])
+			expect((await app.request(`/dashboard?${query}`)).status).toBe(400);
+		expect(
+			(
+				await app.request(
+					`/dashboard?from=${addDays(today, -1095)}&to=${today}`,
+				)
+			).status,
+		).toBe(200);
 	});
 });
 
@@ -322,12 +355,18 @@ describe("the dashboard and the reports of the same days", () => {
 		const products = (await (
 			await app.request(`/reports/products?${range}`)
 		).json()) as { products: Dashboard["topProducts"] };
-		expect(d.topProducts).toEqual(products.products.slice(0, 5));
+		expect(products.products.slice(0, 5)).toMatchObject(d.topProducts);
 
-		const stock = (await (await app.request("/reports/stock")).json()) as {
+		const stock = (await (
+			await app.request(`/reports/stock?${range}`)
+		).json()) as {
 			totals: Record<string, number>;
 		};
-		expect(d.stock).toMatchObject(stock.totals);
+		expect(stock.totals).toMatchObject({
+			onHand: d.stock.onHand,
+			value: d.stock.value,
+			lowStock: d.stock.lowStock,
+		});
 
 		const {
 			from: _from,

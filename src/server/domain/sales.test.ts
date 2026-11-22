@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
+	keptTax,
 	orderSale,
 	type SoldLine,
 	type SoldOrder,
@@ -58,6 +59,8 @@ const orders: SoldOrder[] = [
 		subtotal: 5800,
 		discount: 0,
 		shipping: 300,
+		total: 6100,
+		taxIncluded: 702,
 		lines: [line(SAC, 2, 1700, 2, 80_000), line(LCO, 1, 2400, 1, 160_745)],
 	},
 	{
@@ -67,6 +70,8 @@ const orders: SoldOrder[] = [
 		subtotal: 9900,
 		discount: 0,
 		shipping: 300,
+		total: 10200,
+		taxIncluded: 1173,
 		lines: [line(SAC, 3, 1700, 0, 80_000), line(LCO, 2, 2400, 0, 160_745)],
 	},
 	{
@@ -76,6 +81,8 @@ const orders: SoldOrder[] = [
 		subtotal: 5300,
 		discount: 1000,
 		shipping: 0,
+		total: 4300,
+		taxIncluded: 495,
 		lines: [line(SAC, 2, 1700, 1, 80_000), line(PSE, 1, 1900, 0, 110_000)],
 	},
 ];
@@ -122,6 +129,14 @@ describe("orderSale", () => {
 	});
 });
 
+describe("keptTax", () => {
+	test("the order's IVA in proportion to what it still owes", () => {
+		expect(keptTax({ total: 4300, taxIncluded: 495 }, 4300)).toBe(495);
+		expect(keptTax({ total: 4300, taxIncluded: 495 }, 2921)).toBe(336);
+		expect(keptTax({ total: 4300, taxIncluded: 495 }, 0)).toBe(0);
+	});
+});
+
 describe("aggregates", () => {
 	const sales = orders.map(orderSale);
 
@@ -131,6 +146,9 @@ describe("aggregates", () => {
 			units: 5 + 2,
 			// 0 + (9900 + 300) + 2921
 			revenue: 13_121,
+			tax: 1173 + 336,
+			netRevenue: 13_121 - 1509,
+			averageTicket: 4374,
 			merchandise: 9900 + 2921,
 			shipping: 300,
 			// 3 x 8.00 + 2 x 16.0745 + 8.00 + 11.00 = 75.149 -> 75.15
