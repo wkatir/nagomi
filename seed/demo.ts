@@ -1,8 +1,3 @@
-// Demo orders, reviewers and reviews for the course reports. Every row goes through the same
-// triggers as the store: orders start pending, take their units from the lots, become paid,
-// shipped and delivered with their own timestamps (the status history copies them), and a
-// cancellation puts the units back. Dates are relative to the day the seed is built; the seed
-// is re-runnable because every insert is skipped once its key exists.
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { allocateBundle, includedTax } from '../src/server/domain/cart-pricing'
@@ -61,12 +56,12 @@ type Method = 'card' | 'bank_transfer' | 'cash_on_delivery'
 type Plan = {
   who: string
   status: Status
-  // Days before the seed is built that the order was placed.
+  // Days before the seed is built.
   age: number
   method: Method
   coupon?: string
   bundle?: string
-  // For an open order: hours since its last step (shipping, payment).
+  // Hours since the last step of an open order.
   since?: number
 }
 
@@ -157,7 +152,11 @@ export function demoSql(input: DemoInput) {
     if (!p) throw new Error(`Unknown SKU ${sku}`)
     return p
   }
-  const brandName = (slug: string) => input.brands.find((b) => b.slug === slug)?.name ?? slug
+  const brandName = (slug: string) => {
+    const brand = input.brands.find((b) => b.slug === slug)
+    if (!brand) throw new Error(`Unknown brand ${slug}`)
+    return brand.name
+  }
   const zoneOf = (municipality: string) =>
     input.zones.find((z) => z.municipalities.includes(municipality)) ?? input.zones.find((z) => z.coversRest)!
   const sellable = input.products.filter((p) => p.stock > 0)
@@ -166,7 +165,8 @@ export function demoSql(input: DemoInput) {
   type Person = { id: number; name: string; email: string; phone: string; department: string; municipality: string; line: string; reference: string | null; createdAt: number }
   const people = new Map<string, Person>()
   input.customers.forEach((c, i) => {
-    const a = c.addresses.find((x) => x.default) ?? c.addresses[0]!
+    const a = c.addresses.find((x) => x.default)
+    if (!a) throw new Error(`${c.email} has no default address`)
     people.set(`c${i + 1}`, { id: i + 1, name: c.name, email: c.email, phone: c.phone, department: a.department, municipality: a.municipality, line: a.line, reference: a.reference, createdAt: 0 })
   })
   let nextCustomer = input.customers.length + 1
@@ -197,10 +197,10 @@ export function demoSql(input: DemoInput) {
   GUESTS.forEach(([name, department, municipality], i) => {
     if (!isSvMunicipality(department, municipality)) throw new Error(`${municipality} is not in ${department}`)
     const [first, , last] = name.split(' ')
-    people.set(`g${i + 1}`, { id: nextCustomer++, name, email: `${ascii(first!)}.${ascii(last ?? 'x')}@correo.example`, phone: phone(), department, municipality, line: pick(STREETS), reference: pick(REFERENCES), createdAt: 0 })
+    if (!first || !last) throw new Error(`${name} needs a first name, a middle name and a last name`)
+    people.set(`g${i + 1}`, { id: nextCustomer++, name, email: `${ascii(first)}.${ascii(last)}@correo.example`, phone: phone(), department, municipality, line: pick(STREETS), reference: pick(REFERENCES), createdAt: 0 })
   })
 
-  // Each reviewer gets the products of their reviews, in one delivered order.
   const reviewPlan: { who: string; sku: string; rating: number }[] = []
   let cursor = 0
   for (const [sku, [average, count]] of Object.entries(reviews.ratings)) {
@@ -221,7 +221,6 @@ export function demoSql(input: DemoInput) {
     cursor += count
   }
   const reviewerOrders: Plan[] = reviewerIds.map((who, i) => ({ who, status: 'D', age: 95 + ((i * 37) % 70) + rand(), method: rand() < 0.6 ? 'card' : 'bank_transfer' }))
-  // The expired summer code, used while it ran.
   let summer = 0
   const reviewerSubtotal = (who: string) =>
     reviewPlan.filter((r) => r.who === who).reduce((n, r) => n + product(r.sku).price, 0)
@@ -460,7 +459,6 @@ export function demoSql(input: DemoInput) {
       moderated_at: iso(createdAt + 3 * H),
     }
   })
-  // Waiting for moderation, from demo customers with delivered orders.
   const pendingReviews = [
     { who: 'c1', rating: 5, title: 'Me encantó', body: 'Ya es mi segundo pedido y todo llega rapidísimo. Muy contenta con la calidad.' },
     { who: 'c2', rating: 4, title: 'Buen producto', body: 'Funciona muy bien. El repartidor llegó a la hora indicada.' },

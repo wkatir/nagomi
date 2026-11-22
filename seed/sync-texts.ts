@@ -1,6 +1,3 @@
-// For a database that already has data. Safe to run again.
-// Run: bun seed/sync-texts.ts, then
-//   bunx wrangler d1 execute DB --local --file=./seed/sync-texts.sql
 import { readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { LOCALES } from '../src/db/schema'

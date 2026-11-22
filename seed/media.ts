@@ -1,8 +1,3 @@
-// Uploads the seed photos to R2 and registers them in D1: product photos, home slides and
-// collection covers. Run once after `bun run db:seed`, with the wrangler target, e.g.:
-//   bun seed/media.ts --local [--persist-to <dir>]
-//   bun seed/media.ts --remote   (production, only with authorization)
-// Every file must be in seed/images and seed/editorial (with its manifest.json).
 import { spawnSync } from 'node:child_process'
 import { readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -36,7 +31,6 @@ const badLink = home.slides.find((s) => !isStorePath(s.linkPath))
 if (badLink) throw new Error(`Slide link ${badLink.linkPath} is not a storefront path`)
 
 const { catalog: photos, editorial } = await seedPhotos(catalog.products)
-// One media_files row per content key: a file used twice is one row.
 const files = [...new Map([...photos, ...editorial].map((f) => [f.key, f])).values()]
 
 const wrangler = (command: string[]) => spawnSync('bunx', ['wrangler', ...command, ...args], { stdio: ['ignore', 'ignore', 'inherit'], shell: process.platform === 'win32' })

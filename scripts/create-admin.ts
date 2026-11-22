@@ -1,9 +1,3 @@
-// Public sign-up only creates customers, so this is the only way to create staff.
-//
-//   bun run admin:create -- --email you@example.com --name "Your Name" [--role admin|support] [--remote] [--google-only]
-//
-// The password is read from ADMIN_PASSWORD; without it a random one is generated and
-// printed once. With --google-only no password is stored.
 import { spawnSync } from "node:child_process";
 import { randomBytes, randomUUID } from "node:crypto";
 import { rmSync, writeFileSync } from "node:fs";
@@ -15,7 +9,6 @@ import { ADMIN_ROLE, STAFF_ROLES } from "../src/lib/roles";
 import { authOptions } from "../src/server/auth/options";
 
 const { minPasswordLength, maxPasswordLength } = authOptions.emailAndPassword;
-// The binding of wrangler.jsonc, so the script follows whichever database it names.
 const DATABASE = "DB";
 
 const { values } = parseArgs({

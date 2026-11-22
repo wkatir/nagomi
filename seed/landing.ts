@@ -6,7 +6,6 @@ type PageText = { description: string; seoTitle: string; seoDescription: string 
 type PerLocale = Record<string, PageText>
 export type Landing = { categories: Record<string, PerLocale> }
 
-// The same limits the admin forms enforce.
 const LIMITS = { description: 1000, seoTitle: 70, seoDescription: 160 } as const
 
 export function readLanding(categories: string[]): Landing {

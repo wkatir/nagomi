@@ -1,5 +1,3 @@
-// Served from R2 under their content key, like uploaded ones: media.ts uploads them and
-// registers their rows.
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { sha256Hex } from '../src/server/domain/hash'
@@ -25,8 +23,6 @@ const catalogFiles = (products: CatalogProduct[]) =>
     return { productId: i + 1, position: 0, kind: 'packshot', file, path: join(IMAGES_DIR, file), alt: { es: p.es.name, en: p.en.name } as Record<string, string> }
   })
 
-// Every file the catalogue and seed/editorial/manifest.json name; the missing ones are
-// reported together.
 export async function seedPhotos(products: CatalogProduct[]) {
   const hasManifest = existsSync(EDITORIAL_MANIFEST)
   const entries = hasManifest ? (JSON.parse(readFileSync(EDITORIAL_MANIFEST, 'utf8')) as EditorialEntry[]) : []

@@ -1,6 +1,3 @@
-// The catalogue, settings, pages and purchasing history. Photos, home slides and collection
-// covers need the image files, so `bun run media:seed` adds them afterwards.
-// Run: bun run db:migrate && bun run db:seed && bun run media:seed
 import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { CATEGORY_ICONS, LOCALES, PRODUCT_BADGES, SKU_REGEX } from '../src/lib/enums'
@@ -222,7 +219,7 @@ const demo = demoSql({
   pageVersion: (slug) => pageVersion(slug, base),
   now: Date.now(),
 })
-// The opening stock covers what the demo orders sold, so each product ends with its stock.
+// Opening stock includes the units the demo orders sell.
 const opening = (p: (typeof data.products)[number]) => p.stock + (demo.sold.get(p.sku) ?? 0)
 const createdOf = (c: (typeof data.customers)[number], i: number) => {
   const first = demo.firstSeen.get(i + 1)
@@ -327,7 +324,6 @@ const sql = [
   insertMissing('inventory_movements', ['id'], openingItems.map((it, i) => ({ id: i + 1, lot_id: i + 1, kind: 'receive', quantity: opening(it.product), created_at: `${data.purchasing.openingReceivedOn}T16:00:00Z`, created_by: 'seed' }))),
   openingOrders.length ? `UPDATE purchase_orders SET status = 'received' WHERE status = 'ordered' AND id IN (${ids(openingOrders)});` : '',
   insertMissing('pages', ['id'], pageSlugs.map((slug, i) => ({ id: i + 1, slug, is_published: true, footer_position: data.pages[slug] }))),
-  // Version 1 of every text: checkout consents point at the exact version shown.
   insertMissing('page_versions', ['page_id', 'locale', 'version'], pageSlugs.flatMap((slug, i) => LOCALES.map((l) => ({ page_id: i + 1, locale: l, version: 1, ...(({ title, body }) => ({ title, body_markdown: body }))(page(slug, l)) })))),
   insertMissing('customers', ['id'], data.customers.map((c, i) => ({ id: i + 1, name: c.name, phone_e164: c.phone, email: c.email, search_key: searchKey(c.name, c.email, phoneDigits(c.phone)), created_at: createdOf(c, i) }))),
   insertMissing(

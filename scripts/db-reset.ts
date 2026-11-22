@@ -1,5 +1,3 @@
-// Deletes the local D1 database (wrangler's default --local state), never the remote one.
-// Run bun run db:migrate and bun run db:seed afterwards.
 import { existsSync, rmSync } from "node:fs";
 import { join } from "node:path";
 
