@@ -10,6 +10,7 @@ export const testStore: TestStore = {
 	name: "Nagomi",
 	currency: "USD",
 	defaultLocale: "es",
+	demoStore: false,
 	countryCode: "SV",
 	timeZone: "America/El_Salvador",
 	whatsappNumber: null,

@@ -1,8 +1,9 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Banknote, CircleCheck, CreditCard, PackageSearch } from "lucide-react";
 import { useState } from "react";
 import { z } from "zod";
+import { DemoNotice } from "#/components/store/demo-notice";
 import { TextField } from "#/components/store/form-fields";
 import {
 	BankTransferBox,
@@ -18,6 +19,7 @@ import { useMoney } from "#/hooks/use-money";
 import { useStoreDate } from "#/hooks/use-store-date";
 import { api, apiErrorOf, parseResponse } from "#/lib/api";
 import { errorMessage } from "#/lib/errors";
+import { storeQuery } from "#/lib/queries";
 import { m } from "#/paraglide/messages";
 
 export const Route = createFileRoute("/_store/pedido/$code")({
@@ -49,6 +51,7 @@ function OrderPage() {
 		refetchInterval: (q) =>
 			search.pago && q.state.data?.status === "pending" ? 5000 : false,
 	});
+	const { data: store } = useSuspenseQuery(storeQuery);
 	const money = useMoney();
 	const formatDate = useStoreDate();
 	const pay = useMutation({
@@ -120,6 +123,16 @@ function OrderPage() {
 				<h1 className="mb-4 type-h1">{m.order_page_title({ code: o.code })}</h1>
 			)}
 
+			<DemoNotice
+				message={
+					o.paymentMethod === "bank_transfer"
+						? m.order_demo_transfer()
+						: o.paymentMethod === "cash_on_delivery"
+							? m.order_demo_cod()
+							: undefined
+				}
+				className="mb-4"
+			/>
 			<div className="panel flex flex-wrap items-center gap-x-8 gap-y-3 p-4 md:px-5">
 				<Meta label={m.order_code_label()}>
 					<span className="font-semibold tabular-nums">{o.code}</span>
@@ -196,6 +209,7 @@ function OrderPage() {
 						<BankTransferBox transfer={o.bankTransfer} total={o.total} />
 					)}
 					{o.paymentMethod === "cash_on_delivery" &&
+						!store.demoStore &&
 						!o.paid &&
 						o.status !== "cancelled" && (
 							<p className="panel flex items-start gap-3 p-5 type-small">

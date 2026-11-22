@@ -17,5 +17,8 @@ const CHECKOUT_REQUIRED = [
 export type CheckoutField = (typeof CHECKOUT_REQUIRED)[number];
 
 export const missingCheckoutSettings = (
-	settings: Record<CheckoutField, string | null>,
-): CheckoutField[] => CHECKOUT_REQUIRED.filter((key) => !settings[key]?.trim());
+	settings: Record<CheckoutField, string | null> & { demoStore: boolean },
+): CheckoutField[] =>
+	settings.demoStore
+		? []
+		: CHECKOUT_REQUIRED.filter((key) => !settings[key]?.trim());

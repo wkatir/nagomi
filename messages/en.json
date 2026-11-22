@@ -1810,5 +1810,13 @@
   "error_invalid_fields": "Check the highlighted fields.",
   "order_iva_included": "VAT included: {amount}",
   "admin_col_actions": "Actions",
-  "admin_audit_entity_review": "Review"
+  "admin_audit_entity_review": "Review",
+  "store_demo_notice": "Demo store: orders are not charged or shipped.",
+  "store_demo_seller": "Nagomi — academic project for the Modelos de Comercio Electrónico (E-commerce Models) course, Universidad Francisco Gavidia, San Salvador, El Salvador.",
+  "checkout_payment_transfer_demo_note": "Do not transfer any money: this is a demo store and there is no bank account.",
+  "checkout_payment_cod_demo_note": "Nothing is delivered or collected: this is a demo store.",
+  "order_demo_transfer": "Do not transfer any money. This is a demo store: the order is recorded, but it is not charged or shipped.",
+  "order_demo_cod": "This is a demo store: the order is recorded, but it is not delivered and no cash is collected.",
+  "admin_field_demo_store": "Demo store",
+  "admin_settings_demo_store_help": "Tells shoppers that orders are not charged or shipped, presents the seller as an academic project and takes orders without legal details or a bank account. Turn it off before selling for real."
 }

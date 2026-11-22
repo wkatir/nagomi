@@ -42,6 +42,7 @@ export const storefront = new Hono()
 			name: s.name,
 			currency: s.currency,
 			defaultLocale: s.defaultLocale,
+			demoStore: s.demoStore,
 			countryCode: s.countryCode,
 			timeZone: s.timeZone,
 			// Digits only, as wa.me expects.

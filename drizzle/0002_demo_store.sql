@@ -1,0 +1,1 @@
+ALTER TABLE `store_settings` ADD `demo_store` integer DEFAULT false NOT NULL;

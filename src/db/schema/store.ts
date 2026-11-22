@@ -25,6 +25,9 @@ export const storeSettings = sqliteTable(
 		name: text("name").notNull(),
 		currency: text("currency").notNull(),
 		defaultLocale: locale("default_locale"),
+		demoStore: integer("demo_store", { mode: "boolean" })
+			.notNull()
+			.default(false),
 		// International format without "+" or spaces, as wa.me expects.
 		whatsappNumber: text("whatsapp_number"),
 		// Legal identity shown to customers; checkout stays closed until it is complete.

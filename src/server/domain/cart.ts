@@ -382,6 +382,7 @@ export async function shippingQuote(
 }
 
 export const bankConfigured = (settings: StoreSettings) =>
+	settings.demoStore ||
 	[
 		settings.bankName,
 		settings.bankAccountType,

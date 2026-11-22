@@ -402,7 +402,9 @@ async function orderView(db: Db, settings: StoreSettings, code: string) {
 		cardPaymentAvailable:
 			awaitingPayment && o.paymentMethod === "card" && wompi() !== null,
 		bankTransfer:
-			awaitingPayment && o.paymentMethod === "bank_transfer"
+			awaitingPayment &&
+			o.paymentMethod === "bank_transfer" &&
+			!settings.demoStore
 				? {
 						bank: settings.bankName,
 						accountType: settings.bankAccountType,

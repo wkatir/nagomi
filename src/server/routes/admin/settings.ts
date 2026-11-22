@@ -44,6 +44,7 @@ const settingsFields = z.object({
 	name: z.string().trim().min(1).max(80),
 	currency: z.string().refine(isCurrencyCode, "Unknown ISO 4217 currency"),
 	defaultLocale: z.enum(LOCALES),
+	demoStore: z.boolean(),
 	// International format without "+" or spaces, as wa.me expects.
 	whatsappNumber: z
 		.string()

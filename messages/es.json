@@ -1810,5 +1810,13 @@
   "error_invalid_fields": "Revise los campos marcados.",
   "order_iva_included": "IVA incluido: {amount}",
   "admin_col_actions": "Acciones",
-  "admin_audit_entity_review": "Reseña"
+  "admin_audit_entity_review": "Reseña",
+  "store_demo_notice": "Tienda de demostración: los pedidos no se cobran ni se envían.",
+  "store_demo_seller": "Nagomi — proyecto académico de la asignatura Modelos de Comercio Electrónico, Universidad Francisco Gavidia, San Salvador, El Salvador.",
+  "checkout_payment_transfer_demo_note": "No transfieras dinero: es una tienda de demostración y no hay cuenta bancaria.",
+  "checkout_payment_cod_demo_note": "No se hace ninguna entrega ni se cobra: es una tienda de demostración.",
+  "order_demo_transfer": "No transfieras dinero. Esta es una tienda de demostración: el pedido queda registrado, pero no se cobra ni se envía.",
+  "order_demo_cod": "Esta es una tienda de demostración: el pedido queda registrado, pero no se entrega ni se cobra en efectivo.",
+  "admin_field_demo_store": "Tienda de demostración",
+  "admin_settings_demo_store_help": "Muestra en la tienda que los pedidos no se cobran ni se envían, presenta al vendedor como proyecto académico y permite pedidos sin datos legales ni cuenta bancaria. Desactívalo antes de vender de verdad."
 }

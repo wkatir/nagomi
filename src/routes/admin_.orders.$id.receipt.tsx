@@ -15,6 +15,7 @@ import { errorMessage } from "#/lib/errors";
 import { basisPointsLabel } from "#/lib/money";
 import { paymentLabel } from "#/lib/payment";
 import { storeQuery } from "#/lib/queries";
+import { sellerDetails } from "#/lib/seller";
 import { m } from "#/paraglide/messages";
 
 // Outside the back-office frame; the order API checks the staff session.
@@ -53,12 +54,9 @@ function Receipt() {
 			<header className="flex justify-between gap-6 border-b-2 border-primary pb-5">
 				<div className="grid gap-0.5">
 					<Logo label={s.name} className="mb-2 h-12 text-primary" />
-					<p>{s.business.legalName}</p>
-					<p>
-						{s.business.taxIdLabel} {s.business.taxId}
-					</p>
-					<p>{s.business.address}</p>
-					<p>{s.business.email}</p>
+					{sellerDetails(s).map((line) => (
+						<p key={line}>{line}</p>
+					))}
 				</div>
 				<div className="grid content-start gap-0.5 text-right">
 					<p className="type-meta font-bold tracking-wide text-primary uppercase">

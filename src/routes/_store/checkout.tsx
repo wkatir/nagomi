@@ -9,6 +9,7 @@ import { cn } from "cn";
 import { Banknote, CreditCard, Landmark, Lock, Truck } from "lucide-react";
 import { useEffect, useState } from "react";
 import { CartTotals, CouponForm } from "#/components/store/cart-totals";
+import { DemoNotice } from "#/components/store/demo-notice";
 import {
 	ConsentField,
 	LocationFields,
@@ -230,12 +231,16 @@ function Checkout() {
 		method === "card"
 			? m.checkout_payment_card_note()
 			: method === "bank_transfer"
-				? store.paymentDueHours === null
-					? null
-					: m.checkout_payment_transfer_note({
-							hours: String(store.paymentDueHours),
-						})
-				: m.checkout_payment_cod_note();
+				? store.demoStore
+					? m.checkout_payment_transfer_demo_note()
+					: store.paymentDueHours === null
+						? null
+						: m.checkout_payment_transfer_note({
+								hours: String(store.paymentDueHours),
+							})
+				: store.demoStore
+					? m.checkout_payment_cod_demo_note()
+					: m.checkout_payment_cod_note();
 
 	return (
 		<div className="container-page pt-6 md:pt-8">
@@ -530,6 +535,7 @@ function Checkout() {
 							{m.cart_items_count({ count: data.count })}
 						</p>
 					</div>
+					<DemoNotice />
 					<CouponForm cart={data} />
 					<CartTotals cart={data} />
 					{failure?.code === "cart_changed" && (

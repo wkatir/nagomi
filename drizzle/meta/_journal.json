@@ -15,6 +15,13 @@
       "when": 1795311844813,
       "tag": "0001_integrity_triggers",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1795356714106,
+      "tag": "0002_demo_store",
+      "breakpoints": true
     }
   ]
 }

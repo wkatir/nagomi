@@ -21,6 +21,7 @@ const settings: AdminSettings = {
 	name: "Nagomi",
 	currency: "USD",
 	defaultLocale: "es",
+	demoStore: false,
 	whatsappNumber: "50371234567",
 	legalName: "Nagomi, S.A. de C.V.",
 	taxIdLabel: "NIT",
@@ -165,6 +166,22 @@ describe("LegalCard", () => {
 		expect(control(html, "phone")).toContain('value=""');
 		expect(control(html, "email")).toContain('value=""');
 		expect(html).toContain(m.admin_settings_business_help());
+	});
+
+	test("shows whether the store is a demo", () => {
+		const demoSwitch = (html: string) =>
+			html
+				.slice(0, html.indexOf(m.admin_field_demo_store()))
+				.match(/role="switch"[^>]*aria-checked="(true|false)"/)?.[1];
+		expect(demoSwitch(render(<LegalCard settings={settings} />))).toBe("false");
+		expect(
+			demoSwitch(
+				render(<LegalCard settings={{ ...settings, demoStore: true }} />),
+			),
+		).toBe("true");
+		expect(render(<LegalCard settings={settings} />)).toContain(
+			m.admin_settings_demo_store_help(),
+		);
 	});
 });
 

@@ -39,7 +39,7 @@ function Page() {
 	const { data: page } = useSuspenseQuery(pageQuery(slug, locale));
 	const { data: store } = useSuspenseQuery(storeQuery);
 	const formatDate = useStoreDate();
-	const seller = sellerDetails(store.business);
+	const seller = sellerDetails(store);
 	const updated = formatDate(page.updatedAt);
 
 	return (

@@ -6,6 +6,7 @@ const complete = {
 	taxIdLabel: "NIT",
 	taxId: "0614-000000-000-0",
 	address: "San Salvador",
+	demoStore: false,
 };
 
 test("checkout opens only with the legal identity", () => {
@@ -19,6 +20,19 @@ test("checkout opens only with the legal identity", () => {
 			taxIdLabel: null,
 			taxId: null,
 			address: null,
+			demoStore: false,
 		}),
 	).toEqual(["legalName", "taxIdLabel", "taxId", "address"]);
+});
+
+test("a demo store opens checkout without a legal identity", () => {
+	expect(
+		missingCheckoutSettings({
+			legalName: null,
+			taxIdLabel: null,
+			taxId: null,
+			address: null,
+			demoStore: true,
+		}),
+	).toEqual([]);
 });

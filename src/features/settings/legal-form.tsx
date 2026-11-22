@@ -6,11 +6,13 @@ import {
 import { FormCard } from "#/components/admin/form-card";
 import type { AdminSettings } from "#/lib/api";
 import { m } from "#/paraglide/messages";
+import { Hint } from "./hint";
 import { useSaveSettings } from "./mutations";
 import { numberText, optionalWholeNumber } from "./numbers";
 import { settingsErrors } from "./server-errors";
 
 const FIELDS = [
+	"demoStore",
 	"legalName",
 	"taxIdLabel",
 	"taxId",
@@ -28,6 +30,7 @@ function LegalForm({ settings }: { settings: AdminSettings }) {
 
 	const schema = z
 		.object({
+			demoStore: z.boolean(),
 			legalName: z.string().trim().max(120),
 			taxIdLabel: z.string().trim().max(20),
 			taxId: z.string().trim().max(40),
@@ -53,6 +56,7 @@ function LegalForm({ settings }: { settings: AdminSettings }) {
 
 	const form = useAppForm({
 		defaultValues: {
+			demoStore: settings.demoStore,
 			legalName: settings.legalName ?? "",
 			taxIdLabel: settings.taxIdLabel ?? "",
 			taxId: settings.taxId ?? "",
@@ -68,6 +72,7 @@ function LegalForm({ settings }: { settings: AdminSettings }) {
 				const text = schema.parse(value);
 				try {
 					await save.mutateAsync({
+						demoStore: text.demoStore,
 						legalName: orNull(text.legalName),
 						taxIdLabel: orNull(text.taxIdLabel),
 						taxId: orNull(text.taxId),
@@ -95,6 +100,14 @@ function LegalForm({ settings }: { settings: AdminSettings }) {
 				}}
 				footer={<form.SaveButton>{m.admin_save()}</form.SaveButton>}
 			>
+				<div className="grid gap-1.5">
+					<form.AppField name="demoStore">
+						{(field) => (
+							<field.SwitchField label={m.admin_field_demo_store()} />
+						)}
+					</form.AppField>
+					<Hint>{m.admin_settings_demo_store_help()}</Hint>
+				</div>
 				<div className="grid items-start gap-4 sm:grid-cols-2">
 					<form.AppField name="legalName">
 						{(field) => (
@@ -164,6 +177,7 @@ function LegalForm({ settings }: { settings: AdminSettings }) {
 // Keyed by what is stored, so a save remounts the form clean.
 export function LegalCard({ settings }: { settings: AdminSettings }) {
 	const stored = [
+		settings.demoStore,
 		settings.legalName,
 		settings.taxIdLabel,
 		settings.taxId,

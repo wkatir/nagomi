@@ -345,6 +345,30 @@ describe("checkout", () => {
 		expect(view.history.map((h) => h.to)).toEqual(["pending"]);
 	});
 
+	test("a demo store takes orders without a legal identity or bank account, and gives no account to pay", async () => {
+		db.exec(
+			"update store_settings set demo_store = 1, legal_name = null, tax_id_label = null, tax_id = null, address = null, bank_name = null, bank_account_type = null, bank_account_number = null, bank_account_holder = null",
+		);
+		await add({ sku: "RAT-002", quantity: 1 });
+		const res = await checkout();
+		expect(res.status).toBe(201);
+		const { code } = await json<{ code: string }>(res);
+		const view = await json<{ status: string; bankTransfer: unknown }>(
+			await send("GET", `/orders/${code}`),
+		);
+		expect(view).toMatchObject({ status: "pending", bankTransfer: null });
+	});
+
+	test("without the demo flag, a missing legal identity closes checkout", async () => {
+		db.exec("update store_settings set legal_name = null");
+		await add({ sku: "RAT-002", quantity: 1 });
+		const res = await checkout();
+		expect(res.status).toBe(503);
+		expect(await json<{ fields: string[] }>(res)).toMatchObject({
+			fields: ["legalName"],
+		});
+	});
+
 	test("another browser opens the order only with its email", async () => {
 		await add({ sku: "RAT-002", quantity: 1 });
 		const { code } = await json<{ code: string }>(await checkout());
