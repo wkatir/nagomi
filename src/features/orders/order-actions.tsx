@@ -1,4 +1,5 @@
-import { MoreHorizontalIcon } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import { MoreHorizontalIcon, PrinterIcon } from "lucide-react";
 import { useState } from "react";
 import { HeaderActions } from "#/components/admin/page-header";
 import {
@@ -16,32 +17,36 @@ import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
-	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "#/components/ui/dropdown-menu";
 import { Input } from "#/components/ui/input";
 import { Label } from "#/components/ui/label";
 import type { AdminOrder } from "#/lib/api";
 import { m } from "#/paraglide/messages";
-import { ConfirmOrderDialog } from "./confirm-order-dialog";
-import { EditOrderDialog } from "./edit-order-dialog";
 import type { useOrderActions } from "./mutations";
 import { RefundOrderDialog } from "./refund-order-dialog";
 import { ReturnOrderDialog } from "./return-order-dialog";
 
-export type OrderDialog = "confirm" | "edit" | "cancel" | "return" | "refund";
+export type OrderDialog = "ship" | "cancel" | "pay" | "return" | "refund";
 type Actions = ReturnType<typeof useOrderActions>;
 type Open = (dialog: OrderDialog) => void;
+type Order = AdminOrder["order"];
 
-// Offered only in the states the API accepts, so a refusal is rare.
-const canCancel = (status: AdminOrder["order"]["status"]) =>
-	status === "pending" || status === "confirmed" || status === "fulfilled";
+// Offered only in the states the API (and the triggers) accept, so a refusal is rare.
+export const canCancel = (order: Pick<Order, "status">) =>
+	order.status === "pending" || order.status === "paid";
+
+export const canShip = (order: Pick<Order, "status" | "paymentMethod">) =>
+	order.status === "paid" ||
+	(order.status === "pending" && order.paymentMethod === "cash_on_delivery");
 
 export const canReturn = ({ order, lines }: AdminOrder) =>
-	(order.status === "fulfilled" || order.status === "delivered") &&
+	(order.status === "shipped" || order.status === "delivered") &&
 	lines.some((line) => line.quantity > line.returned);
 
-// Editing and cancelling are behind "more": they are the exception.
+const takesPayment = ({ order, payment }: AdminOrder) =>
+	["pending", "paid", "shipped"].includes(order.status) && payment.balance > 0;
+
 export function OrderHeaderActions({
 	detail,
 	actions,
@@ -51,35 +56,45 @@ export function OrderHeaderActions({
 	actions: Actions;
 	open: Open;
 }) {
-	const { status } = detail.order;
+	const { order, payment } = detail;
 	const busy = Object.values(actions).some((action) => action.isPending);
-	const hasMore = status === "pending" || canCancel(status);
+	const cod = order.paymentMethod === "cash_on_delivery";
 	return (
 		<HeaderActions>
-			{status === "pending" && (
-				<Button className="max-sm:flex-1" onClick={() => open("confirm")}>
-					{m.admin_order_confirm()}
+			<Button variant="outline" asChild>
+				<Link to="/admin/orders/$id/receipt" params={{ id: String(order.id) }}>
+					<PrinterIcon aria-hidden />
+					{m.admin_order_print_receipt()}
+				</Link>
+			</Button>
+			{order.status === "pending" && !cod && takesPayment(detail) && (
+				<Button className="max-sm:flex-1" onClick={() => open("pay")}>
+					{m.admin_order_mark_paid()}
 				</Button>
 			)}
-			{status === "confirmed" && (
-				<Button
-					className="max-sm:flex-1"
-					disabled={busy}
-					onClick={() => actions.fulfill.mutate()}
-				>
-					{m.admin_order_fulfill()}
+			{canShip(order) && (
+				<Button className="max-sm:flex-1" onClick={() => open("ship")}>
+					{m.admin_order_mark_shipped()}
 				</Button>
 			)}
-			{status === "fulfilled" && (
+			{order.status === "shipped" && cod && payment.balance > 0 && (
+				<Button className="max-sm:flex-1" onClick={() => open("pay")}>
+					{m.admin_order_record_cash()}
+				</Button>
+			)}
+			{order.status === "shipped" && (
 				<Button
 					className="max-sm:flex-1"
-					disabled={busy}
+					disabled={busy || payment.balance > 0}
+					title={
+						payment.balance > 0 ? m.admin_order_cod_needs_cash() : undefined
+					}
 					onClick={() => actions.deliver.mutate()}
 				>
-					{m.admin_order_deliver()}
+					{m.admin_order_mark_delivered()}
 				</Button>
 			)}
-			{hasMore && (
+			{canCancel(order) && (
 				<DropdownMenu modal={false}>
 					<DropdownMenuTrigger asChild>
 						<Button
@@ -91,22 +106,12 @@ export function OrderHeaderActions({
 						</Button>
 					</DropdownMenuTrigger>
 					<DropdownMenuContent align="end">
-						{status === "pending" && (
-							<DropdownMenuItem onSelect={() => open("edit")}>
-								{m.admin_order_edit()}
-							</DropdownMenuItem>
-						)}
-						{status === "pending" && canCancel(status) && (
-							<DropdownMenuSeparator />
-						)}
-						{canCancel(status) && (
-							<DropdownMenuItem
-								variant="destructive"
-								onSelect={() => open("cancel")}
-							>
-								{m.admin_order_cancel()}
-							</DropdownMenuItem>
-						)}
+						<DropdownMenuItem
+							variant="destructive"
+							onSelect={() => open("cancel")}
+						>
+							{m.admin_order_cancel()}
+						</DropdownMenuItem>
 					</DropdownMenuContent>
 				</DropdownMenu>
 			)}
@@ -130,28 +135,18 @@ export function ReturnAction({
 
 export function PaymentActions({
 	detail,
-	actions,
 	open,
 }: {
 	detail: AdminOrder;
-	actions: Actions;
 	open: Open;
 }) {
-	const { order, payment } = detail;
-	const takes =
-		order.status !== "pending" &&
-		order.status !== "cancelled" &&
-		payment.balance > 0;
+	const { payment } = detail;
+	const takes = takesPayment(detail);
 	if (!takes && payment.refundable <= 0) return null;
 	return (
 		<div className="flex gap-2">
 			{takes && (
-				<Button
-					size="sm"
-					variant="outline"
-					disabled={actions.markPaid.isPending}
-					onClick={() => actions.markPaid.mutate()}
-				>
+				<Button size="sm" variant="outline" onClick={() => open("pay")}>
 					{m.admin_order_mark_paid()}
 				</Button>
 			)}
@@ -164,48 +159,60 @@ export function PaymentActions({
 	);
 }
 
-function CancelOrderDialog({
-	order,
+function TextDialog({
+	title,
+	description,
+	fields,
+	submit,
 	onClose,
-	onCancel,
+	onSubmit,
 }: {
-	order: AdminOrder["order"];
+	title: string;
+	description?: string;
+	fields: { id: string; label: string; required: boolean }[];
+	submit: string;
 	onClose: () => void;
-	onCancel: (reason: string | undefined) => void;
+	onSubmit: (values: Record<string, string>) => void;
 }) {
-	const [reason, setReason] = useState("");
+	const [values, setValues] = useState<Record<string, string>>({});
+	const missing = fields.some((f) => f.required && !values[f.id]?.trim());
 	return (
 		<AlertDialog open onOpenChange={(open) => !open && onClose()}>
 			<AlertDialogContent
-				{...(order.status === "fulfilled"
-					? {}
-					: { "aria-describedby": undefined })}
+				{...(description ? {} : { "aria-describedby": undefined })}
 			>
 				<AlertDialogHeader>
-					<AlertDialogTitle>
-						{m.admin_order_cancel_confirm({ code: order.code })}
-					</AlertDialogTitle>
-					{order.status === "fulfilled" && (
-						<AlertDialogDescription>
-							{m.admin_order_cancel_returns()}
-						</AlertDialogDescription>
+					<AlertDialogTitle>{title}</AlertDialogTitle>
+					{description && (
+						<AlertDialogDescription>{description}</AlertDialogDescription>
 					)}
 				</AlertDialogHeader>
-				<div className="grid gap-1.5">
-					<Label htmlFor="cancel-reason">{m.admin_order_cancel_reason()}</Label>
-					<Input
-						id="cancel-reason"
-						maxLength={200}
-						value={reason}
-						onChange={(event) => setReason(event.target.value)}
-					/>
-				</div>
+				{fields.map((f) => (
+					<div key={f.id} className="grid gap-1.5">
+						<Label htmlFor={f.id}>{f.label}</Label>
+						<Input
+							id={f.id}
+							maxLength={200}
+							value={values[f.id] ?? ""}
+							onChange={(e) =>
+								setValues((v) => ({ ...v, [f.id]: e.target.value }))
+							}
+						/>
+					</div>
+				))}
 				<AlertDialogFooter>
 					<AlertDialogCancel>{m.admin_cancel()}</AlertDialogCancel>
 					<AlertDialogAction
-						onClick={() => onCancel(reason.trim() || undefined)}
+						disabled={missing}
+						onClick={() =>
+							onSubmit(
+								Object.fromEntries(
+									Object.entries(values).map(([k, v]) => [k, v.trim()]),
+								),
+							)
+						}
 					>
-						{m.admin_order_cancel()}
+						{submit}
 					</AlertDialogAction>
 				</AlertDialogFooter>
 			</AlertDialogContent>
@@ -226,10 +233,66 @@ export function OrderDialogs({
 }) {
 	const { order, payment } = detail;
 	switch (dialog) {
-		case "confirm":
-			return <ConfirmOrderDialog order={order} onClose={onClose} />;
-		case "edit":
-			return <EditOrderDialog detail={detail} onClose={onClose} />;
+		case "ship":
+			return (
+				<TextDialog
+					title={m.admin_order_ship_title({ code: order.code })}
+					description={m.admin_order_ship_body()}
+					fields={[
+						{ id: "courier", label: m.admin_order_courier(), required: true },
+						{
+							id: "trackingCode",
+							label: m.admin_order_tracking_code(),
+							required: false,
+						},
+					]}
+					submit={m.admin_order_mark_shipped()}
+					onClose={onClose}
+					onSubmit={(v) =>
+						actions.ship.mutate({
+							courier: v.courier ?? "",
+							...(v.trackingCode ? { trackingCode: v.trackingCode } : {}),
+						})
+					}
+				/>
+			);
+		case "pay":
+			return (
+				<TextDialog
+					title={
+						order.paymentMethod === "cash_on_delivery"
+							? m.admin_order_record_cash()
+							: m.admin_order_mark_paid()
+					}
+					fields={[
+						{
+							id: "reference",
+							label: m.admin_order_payment_reference(),
+							required: false,
+						},
+					]}
+					submit={m.admin_order_mark_paid()}
+					onClose={onClose}
+					onSubmit={(v) => actions.markPaid.mutate(v.reference || undefined)}
+				/>
+			);
+		case "cancel":
+			return (
+				<TextDialog
+					title={m.admin_order_cancel_confirm({ code: order.code })}
+					description={m.admin_order_cancel_body()}
+					fields={[
+						{
+							id: "reason",
+							label: m.admin_order_cancel_reason(),
+							required: true,
+						},
+					]}
+					submit={m.admin_order_cancel()}
+					onClose={onClose}
+					onSubmit={(v) => actions.cancel.mutate(v.reason ?? "")}
+				/>
+			);
 		case "return":
 			return <ReturnOrderDialog detail={detail} onClose={onClose} />;
 		case "refund":
@@ -238,14 +301,6 @@ export function OrderDialogs({
 					order={order}
 					refundable={payment.refundable}
 					onClose={onClose}
-				/>
-			);
-		case "cancel":
-			return (
-				<CancelOrderDialog
-					order={order}
-					onClose={onClose}
-					onCancel={(reason) => actions.cancel.mutate(reason)}
 				/>
 			);
 		case null:

@@ -29,7 +29,8 @@ const valid = {
 	startsOn: "",
 	endsOn: "",
 	usageLimit: "",
-	perCustomerLimit: "",
+	oncePerCustomer: false,
+	firstOrderOnly: false,
 	status: "inactive",
 	translations: {
 		es: { description: "10% de descuento" },
@@ -62,12 +63,12 @@ describe("promotionSchema", () => {
 		expect(refusals({ code: "a_b-9" })).toEqual([]);
 	});
 
-	test("a percentage is a whole number from 1 to 100", () => {
-		for (const value of ["", "0", "101", "10.5", "-5", "abc", "1e2"])
+	test("a percentage is a whole number from 1 to 50", () => {
+		for (const value of ["", "0", "51", "100", "10.5", "-5", "abc", "1e2"])
 			expect(refusals({ value })).toEqual([
 				["value", m.admin_promotion_percent_range()],
 			]);
-		for (const value of ["1", "50", "100", " 15 "])
+		for (const value of ["1", "25", "50", " 15 "])
 			expect(refusals({ value })).toEqual([]);
 	});
 
@@ -89,8 +90,8 @@ describe("promotionSchema", () => {
 			]);
 	});
 
-	test("each limit may be left empty, and is a whole number from 1 to a million when given", () => {
-		for (const key of ["usageLimit", "perCustomerLimit"]) {
+	test("the usage limit may be left empty, and is a whole number from 1 to a million when given", () => {
+		for (const key of ["usageLimit"]) {
 			for (const value of ["", "1", "1000000"])
 				expect(refusals({ [key]: value })).toEqual([]);
 			for (const value of ["0", "1.5", "-1", "abc", "1000001"])
@@ -100,12 +101,13 @@ describe("promotionSchema", () => {
 		}
 	});
 
-	test("the end cannot be before the start; either date may be empty", () => {
-		expect(refusals({ startsOn: "2026-06-01", endsOn: "2026-05-31" })).toEqual([
-			["endsOn", m.admin_promotion_dates_order()],
-		]);
+	test("the end must be after the start; either date may be empty", () => {
+		for (const endsOn of ["2026-05-31", "2026-06-01"])
+			expect(refusals({ startsOn: "2026-06-01", endsOn })).toEqual([
+				["endsOn", m.admin_promotion_dates_order()],
+			]);
 		for (const dates of [
-			{ startsOn: "2026-06-01", endsOn: "2026-06-01" },
+			{ startsOn: "2026-06-01", endsOn: "2026-06-02" },
 			{ startsOn: "2026-06-01", endsOn: "" },
 			{ startsOn: "", endsOn: "2026-06-01" },
 		])
@@ -172,7 +174,15 @@ describe("promotionTerms", () => {
 			type: "percentage",
 			value: 10,
 			minSubtotal: null,
+			perCustomerLimit: null,
+			firstOrderOnly: false,
 		});
+		expect(
+			promotionTerms(
+				parsed({ oncePerCustomer: true, firstOrderOnly: true }),
+				amount,
+			),
+		).toMatchObject({ perCustomerLimit: 1, firstOrderOnly: true });
 		expect(
 			promotionTerms(parsed({ minSubtotal: "20.50" }), amount),
 		).toMatchObject({ minSubtotal: 2050 });
@@ -198,7 +208,6 @@ describe("promotionSettings", () => {
 			startsOn: null,
 			endsOn: null,
 			usageLimit: null,
-			perCustomerLimit: null,
 			status: "active",
 		});
 		expect(
@@ -208,14 +217,12 @@ describe("promotionSettings", () => {
 					startsOn: "2026-03-01",
 					endsOn: "2026-03-31",
 					usageLimit: "100",
-					perCustomerLimit: "2",
 				}),
 			),
 		).toEqual({
 			startsOn: "2026-03-01",
 			endsOn: "2026-03-31",
 			usageLimit: 100,
-			perCustomerLimit: 2,
 			status: "inactive",
 		});
 	});

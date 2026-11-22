@@ -1,5 +1,6 @@
 import {
 	BadgePercent,
+	Bell,
 	Boxes,
 	ChartColumn,
 	ClipboardList,
@@ -14,6 +15,7 @@ import {
 	ScrollText,
 	Settings,
 	ShoppingCart,
+	Star,
 	Tag,
 	TimerReset,
 	Truck,
@@ -67,6 +69,12 @@ export const navGroups: NavGroup[] = [
 				area: "customers",
 				label: m.admin_nav_customers,
 				icon: Users,
+			},
+			{
+				to: "/admin/reviews",
+				area: "customers",
+				label: m.admin_nav_reviews,
+				icon: Star,
 			},
 			{
 				to: "/admin/promotions",
@@ -125,6 +133,12 @@ export const navGroups: NavGroup[] = [
 				area: "inventory",
 				label: m.admin_nav_inventory,
 				icon: Boxes,
+			},
+			{
+				to: "/admin/stock-alerts",
+				area: "inventory",
+				label: m.admin_nav_stock_alerts,
+				icon: Bell,
 			},
 			{
 				to: "/admin/purchases",

@@ -39,7 +39,8 @@ export function promotionSchema({
 			startsOn: day,
 			endsOn: day,
 			usageLimit: z.string().trim(),
-			perCustomerLimit: z.string().trim(),
+			oncePerCustomer: z.boolean(),
+			firstOrderOnly: z.boolean(),
 			status: z.enum(PROMOTION_STATUSES),
 			translations: z.record(
 				z.enum(LOCALES),
@@ -56,7 +57,7 @@ export function promotionSchema({
 					if (
 						!/^\d+$/.test(v.value) ||
 						Number(v.value) < 1 ||
-						Number(v.value) > 100
+						Number(v.value) > 50
 					)
 						issue(["value"], m.admin_promotion_percent_range());
 				} else {
@@ -70,7 +71,7 @@ export function promotionSchema({
 						issue(["minSubtotal"], m.admin_invalid_amount());
 				}
 			}
-			for (const key of ["usageLimit", "perCustomerLimit"] as const)
+			for (const key of ["usageLimit"] as const)
 				if (
 					v[key] !== "" &&
 					(!/^\d+$/.test(v[key]) ||
@@ -78,7 +79,7 @@ export function promotionSchema({
 						Number(v[key]) > PROMOTION_MAX_USES)
 				)
 					issue([key], m.admin_promotion_limit_invalid());
-			if (v.startsOn !== "" && v.endsOn !== "" && v.startsOn > v.endsOn)
+			if (v.startsOn !== "" && v.endsOn !== "" && v.startsOn >= v.endsOn)
 				issue(["endsOn"], m.admin_promotion_dates_order());
 			for (const locale of LOCALES)
 				if (
@@ -102,14 +103,14 @@ export const promotionTerms = (v: PromotionValues, amount: Amount) => ({
 	type: v.type,
 	value: v.type === "percentage" ? Number(v.value) : amountOf(amount, v.value),
 	minSubtotal: v.minSubtotal === "" ? null : amountOf(amount, v.minSubtotal),
+	perCustomerLimit: v.oncePerCustomer ? (1 as const) : null,
+	firstOrderOnly: v.firstOrderOnly,
 });
 
 export const promotionSettings = (v: PromotionValues) => ({
 	startsOn: v.startsOn === "" ? null : v.startsOn,
 	endsOn: v.endsOn === "" ? null : v.endsOn,
 	usageLimit: v.usageLimit === "" ? null : Number(v.usageLimit),
-	perCustomerLimit:
-		v.perCustomerLimit === "" ? null : Number(v.perCustomerLimit),
 	status: v.status,
 });
 

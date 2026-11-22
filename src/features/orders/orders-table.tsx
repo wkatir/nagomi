@@ -1,6 +1,5 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
-import { DownloadIcon, PlusIcon } from "lucide-react";
+import { DownloadIcon } from "lucide-react";
 import { DataTable } from "#/components/admin/data-table/data-table";
 import { DateRangeFilter } from "#/components/admin/data-table/date-range-filter";
 import { SelectFilter } from "#/components/admin/data-table/select-filter";
@@ -107,12 +106,6 @@ export function OrdersTable({
 								<DownloadIcon aria-hidden />
 								{m.admin_export_csv()}
 							</a>
-						</Button>
-						<Button size="sm" asChild>
-							<Link to="/admin/orders/new">
-								<PlusIcon aria-hidden />
-								{m.admin_orders_new()}
-							</Link>
 						</Button>
 					</>
 				}

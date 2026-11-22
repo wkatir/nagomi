@@ -7,14 +7,14 @@ export const languageName = {
 
 export const orderStatusLabel = {
 	pending: m.admin_status_pending,
-	confirmed: m.admin_status_confirmed,
-	fulfilled: m.admin_status_fulfilled,
+	paid: m.admin_status_paid,
+	shipped: m.admin_status_shipped,
 	delivered: m.admin_status_delivered,
 	cancelled: m.admin_status_cancelled,
 } as const;
 export const channelLabel = {
+	web: m.admin_channel_web,
 	whatsapp: m.admin_channel_whatsapp,
-
 	instagram: m.admin_channel_instagram,
 	in_person: m.admin_channel_in_person,
 } as const;
@@ -53,10 +53,7 @@ export const zoneStatusLabel = {
 	active: m.admin_zone_status_active,
 	archived: m.admin_zone_status_archived,
 } as const;
-export const consentChannelLabel = {
-	web: m.admin_customer_channel_web,
-	...channelLabel,
-} as const;
+export const consentChannelLabel = channelLabel;
 export const customerSegmentLabel = {
 	new: m.admin_segment_new,
 	occasional: m.admin_segment_occasional,
@@ -84,7 +81,6 @@ export const returnReasonLabel = {
 	withdrawal: m.admin_return_reason_withdrawal,
 	defective: m.admin_return_reason_defective,
 	wrong_item: m.admin_return_reason_wrong_item,
-	delivery_failed: m.admin_return_reason_delivery_failed,
 	other: m.admin_return_reason_other,
 } as const;
 export const dispositionLabel = {
@@ -104,6 +100,7 @@ export const supplierStatusLabel = {
 export const movementKindLabel = {
 	receive: m.admin_movement_kind_receive,
 	sale: m.admin_movement_kind_sale,
+	cancellation: m.admin_movement_kind_cancellation,
 	return: m.admin_movement_kind_return,
 	adjustment: m.admin_movement_kind_adjustment,
 	waste: m.admin_movement_kind_waste,
@@ -111,4 +108,14 @@ export const movementKindLabel = {
 export const stockViewLabel = {
 	low: m.admin_inventory_view_low,
 	out: m.admin_inventory_view_out,
+} as const;
+export const reviewStatusLabel = {
+	pending: m.admin_review_status_pending,
+	approved: m.admin_review_status_approved,
+	rejected: m.admin_review_status_rejected,
+} as const;
+export const followupActionLabel = {
+	collect_payment: m.admin_followup_action_collect_payment,
+	ship: m.admin_followup_action_ship,
+	confirm_delivery: m.admin_followup_action_confirm_delivery,
 } as const;

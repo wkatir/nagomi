@@ -1,9 +1,9 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, notFound } from "@tanstack/react-router";
+import { z } from "zod";
 import { DetailSkeleton, RecordNotFound } from "#/components/admin/skeletons";
 import { OrderDetail } from "#/features/orders/order-detail";
 import { orderQuery } from "#/features/orders/queries";
-import { activeZonesQuery } from "#/features/shipping/queries";
 import { isNotFound } from "#/lib/api";
 import { storeQuery } from "#/lib/queries";
 import type { LoaderCrumb } from "#/lib/route-data";
@@ -18,12 +18,11 @@ export const Route = createFileRoute("/admin/orders/$id")({
 		},
 		stringify: ({ id }) => ({ id: String(id) }),
 	},
-	// What the confirm dialog needs is loaded with the order, so opening it never waits.
+	validateSearch: z.object({ action: z.enum(["ship"]).optional() }),
 	loader: async ({ context, params }): Promise<LoaderCrumb> => {
 		try {
 			const [detail] = await Promise.all([
 				context.queryClient.ensureQueryData(orderQuery(params.id)),
-				context.queryClient.ensureQueryData(activeZonesQuery),
 				context.queryClient.ensureQueryData(storeQuery),
 			]);
 			return { crumb: detail.order.code };
@@ -38,6 +37,7 @@ export const Route = createFileRoute("/admin/orders/$id")({
 
 function Order() {
 	const { id } = Route.useParams();
+	const { action } = Route.useSearch();
 	const { data } = useSuspenseQuery(orderQuery(id));
-	return <OrderDetail detail={data} />;
+	return <OrderDetail detail={data} initialDialog={action ?? null} />;
 }

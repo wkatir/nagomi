@@ -10,9 +10,9 @@ const detail = (status: string, lines: [number, number][]) =>
 
 describe("canReturn", () => {
 	test("only a shipped order can have units come back", () => {
-		for (const status of ["pending", "confirmed", "cancelled"])
+		for (const status of ["pending", "paid", "cancelled"])
 			expect(canReturn(detail(status, [[2, 0]]))).toBe(false);
-		for (const status of ["fulfilled", "delivered"])
+		for (const status of ["shipped", "delivered"])
 			expect(canReturn(detail(status, [[2, 0]]))).toBe(true);
 	});
 

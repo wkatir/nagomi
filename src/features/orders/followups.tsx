@@ -1,9 +1,13 @@
 import { queryOptions, useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { orderStatusLabel } from "#/components/admin/labels";
+import {
+	followupActionLabel,
+	orderStatusLabel,
+} from "#/components/admin/labels";
 import { QueryError } from "#/components/admin/query-error";
 import { Section } from "#/components/admin/section";
 import { Badge } from "#/components/ui/badge";
+import { Button } from "#/components/ui/button";
 import { Skeleton } from "#/components/ui/skeleton";
 import {
 	Table,
@@ -16,6 +20,7 @@ import {
 import { useStoreDate } from "#/hooks/use-store-date";
 import { api, parseResponse } from "#/lib/api";
 import { m } from "#/paraglide/messages";
+import { useExpirePending } from "./mutations";
 
 export const followupsQuery = queryOptions({
 	queryKey: ["admin", "orders", "followups"],
@@ -30,11 +35,37 @@ const hours = (value: number) =>
 export function Followups() {
 	const query = useQuery(followupsQuery);
 	const formatDate = useStoreDate();
+	const expire = useExpirePending();
+	const unpaid =
+		query.data?.orders.filter((o) => o.action === "collect_payment").length ??
+		0;
 	return (
 		<Section
 			title={m.admin_followup_title()}
 			description={m.admin_followup_help()}
 		>
+			<div className="grid gap-2 border-b p-admin-card">
+				<p className="type-small text-muted-foreground">
+					{m.admin_order_expire_pending_body()}
+				</p>
+				<div className="flex flex-wrap items-center gap-3">
+					<Button
+						size="sm"
+						variant="outline"
+						disabled={expire.isPending || unpaid === 0}
+						onClick={() => expire.mutate()}
+					>
+						{m.admin_order_expire_pending()}
+					</Button>
+					{expire.isSuccess && (
+						<span className="type-small">
+							{m.admin_order_expire_pending_done({
+								count: String(expire.data.cancelled.length),
+							})}
+						</span>
+					)}
+				</div>
+			</div>
 			{query.isPending ? (
 				<div className="p-admin-card">
 					<Skeleton className="h-24" />
@@ -87,9 +118,14 @@ export function Followups() {
 									</div>
 								</TableCell>
 								<TableCell>
-									<Badge variant="secondary">
-										{orderStatusLabel[order.status]()}
-									</Badge>
+									<div className="grid justify-items-start gap-1">
+										<Badge variant="secondary">
+											{orderStatusLabel[order.status]()}
+										</Badge>
+										<span className="type-meta text-muted-foreground">
+											{followupActionLabel[order.action]()}
+										</span>
+									</div>
 								</TableCell>
 								<TableCell className="max-md:hidden">
 									{formatDate(order.dueAt, {

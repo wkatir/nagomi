@@ -18,7 +18,6 @@ const row = (overrides: Partial<ProductRow>): ProductRow => ({
 	variantStatus: "active",
 	reorderPoint: null,
 	onHand: 0,
-	committed: 0,
 	available: 0,
 	latestUnitCost: null,
 	...overrides,

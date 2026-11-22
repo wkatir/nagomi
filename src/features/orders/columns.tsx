@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { createColumnHelper } from "@tanstack/react-table";
+import { RowActions } from "#/components/admin/data-table/row-actions";
 import type { ListFeatures } from "#/components/admin/data-table/use-data-table";
 import {
 	channelLabel,
@@ -7,6 +8,7 @@ import {
 	paymentStatusLabel,
 } from "#/components/admin/labels";
 import { Badge } from "#/components/ui/badge";
+import { DropdownMenuItem } from "#/components/ui/dropdown-menu";
 import { useMoney } from "#/hooks/use-money";
 import { useStoreDate } from "#/hooks/use-store-date";
 import type { AdminOrders } from "#/lib/api";
@@ -91,6 +93,45 @@ export function useOrderColumns() {
 			meta: { hideOnMobile: true },
 			cell: ({ getValue }) =>
 				formatDate(getValue(), { dateStyle: "medium", timeStyle: "short" }),
+		}),
+		column.display({
+			id: "actions",
+			header: () => <span className="sr-only">{m.admin_col_actions()}</span>,
+			meta: { align: "right" },
+			cell: ({ row }) => {
+				const o = row.original;
+				const shippable =
+					o.status === "paid" ||
+					(o.status === "pending" && o.paymentMethod === "cash_on_delivery");
+				return (
+					<RowActions label={m.admin_order_more_actions()}>
+						<DropdownMenuItem asChild>
+							<Link to="/admin/orders/$id" params={{ id: o.id }}>
+								{m.admin_order_view_detail()}
+							</Link>
+						</DropdownMenuItem>
+						{shippable && (
+							<DropdownMenuItem asChild>
+								<Link
+									to="/admin/orders/$id"
+									params={{ id: o.id }}
+									search={{ action: "ship" }}
+								>
+									{m.admin_order_mark_shipped()}
+								</Link>
+							</DropdownMenuItem>
+						)}
+						<DropdownMenuItem asChild>
+							<Link
+								to="/admin/orders/$id/receipt"
+								params={{ id: String(o.id) }}
+							>
+								{m.admin_order_print_receipt()}
+							</Link>
+						</DropdownMenuItem>
+					</RowActions>
+				);
+			},
 		}),
 	]);
 }

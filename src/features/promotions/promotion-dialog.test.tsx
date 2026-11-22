@@ -14,6 +14,7 @@ const promotion = (over: Partial<AdminPromotion> = {}): AdminPromotion => ({
 	endsOn: null,
 	usageLimit: 100,
 	perCustomerLimit: null,
+	firstOrderOnly: false,
 	status: "active",
 	createdAt: "2026-01-01T12:00:00Z",
 	updatedAt: "2026-01-01T12:00:00Z",
@@ -28,12 +29,18 @@ const promotion = (over: Partial<AdminPromotion> = {}): AdminPromotion => ({
 
 const render = (p?: AdminPromotion) =>
 	renderAdmin(<PromotionForm promotion={p} onClose={() => {}} />);
-const TERMS = ["code", "type", "value", "minSubtotal"];
+const TERMS = [
+	"code",
+	"type",
+	"value",
+	"minSubtotal",
+	"oncePerCustomer",
+	"firstOrderOnly",
+];
 const SETTINGS = [
 	"startsOn",
 	"endsOn",
 	"usageLimit",
-	"perCustomerLimit",
 	"status",
 	"translations.es.description",
 ];

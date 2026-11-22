@@ -20,7 +20,7 @@ import { m } from "#/paraglide/messages";
 import { useRefreshAfterOrderChange } from "./mutations";
 
 // A delivery that failed is recorded by cancelling the order, not typed here.
-const reasonSchema = z.enum(RETURN_REASONS).exclude(["delivery_failed"]);
+const reasonSchema = z.enum(RETURN_REASONS);
 type Reason = z.infer<typeof reasonSchema>;
 
 type ReturnLine = {

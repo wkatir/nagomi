@@ -27,12 +27,3 @@ export const orderQuery = (id: number) =>
 				api().admin.orders[":id"].$get({ param: { id: String(id) } }),
 			),
 	});
-
-export const sellableVariantsQuery = (q: string) =>
-	queryOptions({
-		queryKey: ["admin", "products", "sellable", q],
-		queryFn: () =>
-			parseResponse(
-				api().admin.products.$get({ query: { q, status: "published" } }),
-			),
-	});

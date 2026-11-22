@@ -25,10 +25,16 @@ import {
 	OrderReturns,
 } from "./order-sections";
 
-export function OrderDetail({ detail }: { detail: AdminOrder }) {
+export function OrderDetail({
+	detail,
+	initialDialog = null,
+}: {
+	detail: AdminOrder;
+	initialDialog?: OrderDialog | null;
+}) {
 	const { order, payment } = detail;
 	const actions = useOrderActions(order.id);
-	const [dialog, setDialog] = useState<OrderDialog | null>(null);
+	const [dialog, setDialog] = useState<OrderDialog | null>(initialDialog);
 	const formatDate = useStoreDate();
 	return (
 		<DetailPage>
@@ -79,13 +85,7 @@ export function OrderDetail({ detail }: { detail: AdminOrder }) {
 				/>
 				<OrderPayments
 					detail={detail}
-					action={
-						<PaymentActions
-							detail={detail}
-							actions={actions}
-							open={setDialog}
-						/>
-					}
+					action={<PaymentActions detail={detail} open={setDialog} />}
 				/>
 				{detail.returns.length > 0 && <OrderReturns detail={detail} />}
 			</DetailColumns>

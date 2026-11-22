@@ -49,7 +49,8 @@ const FIELD_OF = {
 	startsOn: "startsOn",
 	endsOn: "endsOn",
 	usageLimit: "usageLimit",
-	perCustomerLimit: "perCustomerLimit",
+	perCustomerLimit: "oncePerCustomer",
+	firstOrderOnly: "firstOrderOnly",
 	status: "status",
 } as const;
 type Field =
@@ -137,10 +138,8 @@ export function PromotionForm({
 			endsOn: promotion?.endsOn ?? "",
 			usageLimit:
 				promotion?.usageLimit != null ? String(promotion.usageLimit) : "",
-			perCustomerLimit:
-				promotion?.perCustomerLimit != null
-					? String(promotion.perCustomerLimit)
-					: "",
+			oncePerCustomer: promotion?.perCustomerLimit != null,
+			firstOrderOnly: promotion?.firstOrderOnly ?? false,
 			status: promotion?.status ?? "inactive",
 			translations: {
 				es: { description: stored.get("es") ?? "" },
@@ -284,15 +283,24 @@ export function PromotionForm({
 							/>
 						)}
 					</form.AppField>
-					<form.AppField name="perCustomerLimit">
-						{(field) => (
-							<field.TextField
-								label={m.admin_promotion_per_customer_limit()}
-								inputMode="numeric"
-								maxLength={7}
-							/>
-						)}
-					</form.AppField>
+					{!locked && (
+						<>
+							<form.AppField name="oncePerCustomer">
+								{(field) => (
+									<field.CheckboxField
+										label={m.admin_promotion_once_per_customer()}
+									/>
+								)}
+							</form.AppField>
+							<form.AppField name="firstOrderOnly">
+								{(field) => (
+									<field.CheckboxField
+										label={m.admin_promotion_first_order_only()}
+									/>
+								)}
+							</form.AppField>
+						</>
+					)}
 					<form.AppField name="status">
 						{(field) => (
 							<field.SelectField

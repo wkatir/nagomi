@@ -23,22 +23,39 @@ export function useOrderActions(id: number) {
 		onError: (error: unknown) => toast.error(errorMessage(error)),
 	};
 	return {
-		fulfill: useMutation({
-			mutationFn: () => parseResponse(order().fulfill.$post({ param })),
+		markPaid: useMutation({
+			mutationFn: (reference: string | undefined) =>
+				parseResponse(
+					order()["mark-paid"].$post({
+						param,
+						json: reference ? { reference } : {},
+					}),
+				),
+			...options,
+		}),
+		ship: useMutation({
+			mutationFn: (input: { courier: string; trackingCode?: string }) =>
+				parseResponse(order().ship.$post({ param, json: input })),
 			...options,
 		}),
 		deliver: useMutation({
 			mutationFn: () => parseResponse(order().deliver.$post({ param })),
 			...options,
 		}),
-		markPaid: useMutation({
-			mutationFn: () => parseResponse(order()["mark-paid"].$post({ param })),
-			...options,
-		}),
 		cancel: useMutation({
-			mutationFn: (reason: string | undefined) =>
+			mutationFn: (reason: string) =>
 				parseResponse(order().cancel.$post({ param, json: { reason } })),
 			...options,
 		}),
 	};
+}
+
+export function useExpirePending() {
+	const refresh = useRefreshAfterOrderChange();
+	return useMutation({
+		mutationFn: () =>
+			parseResponse(api().admin.orders["expire-pending"].$post()),
+		onSuccess: refresh,
+		onError: (error: unknown) => toast.error(errorMessage(error)),
+	});
 }

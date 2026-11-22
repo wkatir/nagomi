@@ -257,7 +257,24 @@ export function OrderDelivery({ detail }: { detail: AdminOrder }) {
 		<Section title={m.admin_order_delivery_section()}>
 			<dl className="grid gap-3 p-admin-card">
 				<Fact label={m.admin_order_shipping_method()} value={method} />
-				<Fact label={m.admin_order_ship_to()} value={order.shipTo} />
+				<Fact
+					label={m.admin_order_ship_to()}
+					value={
+						[
+							order.shipAddressLine,
+							order.shipMunicipality,
+							order.shipDepartment,
+							order.shipReference,
+						]
+							.filter(Boolean)
+							.join(", ") || null
+					}
+				/>
+				<Fact label={m.admin_order_courier()} value={order.courier} />
+				<Fact
+					label={m.admin_order_tracking_code()}
+					value={order.trackingCode}
+				/>
 				<Fact label={m.admin_order_delivery_estimate()} value={estimate} />
 				<Fact label={m.admin_order_notes()} value={order.notes} />
 				<Fact

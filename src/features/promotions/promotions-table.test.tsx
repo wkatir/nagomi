@@ -23,6 +23,7 @@ const promotion = (over: Partial<AdminPromotion> = {}): AdminPromotion => ({
 	endsOn: "2026-03-31",
 	usageLimit: 100,
 	perCustomerLimit: null,
+	firstOrderOnly: false,
 	status: "active",
 	createdAt: "2026-01-01T12:00:00Z",
 	updatedAt: "2026-01-01T12:00:00Z",
