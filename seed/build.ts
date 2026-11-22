@@ -1,13 +1,12 @@
-// Photos are registered under their R2 key; `bun seed/media.ts` uploads them.
-// Run: bun seed/build.ts && bun run db:seed && bun run media:seed
+// The catalogue, settings, pages and purchasing history. Photos, home slides and collection
+// covers need the image files, so `bun run media:seed` adds them afterwards.
+// Run: bun run db:migrate && bun run db:seed && bun run media:seed
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { LOCALES, SKIN_TYPES } from '../src/db/schema'
 import { usesReturnWindow } from '../src/lib/promises'
 import { normalizePhone } from '../src/server/domain/phone'
 import { searchKey } from '../src/server/domain/search'
-import { isStorePath } from '../src/lib/store-path'
-import { catalogPhotos, editorialPhotos } from './images'
 import { readLanding } from './landing'
 import { lit } from './sql'
 
@@ -69,11 +68,6 @@ type Catalog = {
   // on WhatsApp.
   shippingZones: { slug: string; method: string; fee: number; freeFrom: number | null; deliveryDaysMin: number; deliveryDaysMax: number; es: { name: string; description: string | null }; en: { name: string; description: string | null } }[]
 }
-// Alt text comes from the seed/editorial manifest.
-type Home = {
-  slides: { image: string; mobileImage?: string; linkPath: string; es: SlideText; en: SlideText }[]
-}
-type SlideText = { title: string; body: string | null; ctaLabel: string | null }
 // Products by slug: SKUs may change while sizes are confirmed.
 type Collections = {
   slug: string
@@ -87,7 +81,6 @@ type Collections = {
 const dir = import.meta.dir
 const readJson = <T,>(file: string): T => JSON.parse(readFileSync(join(dir, file), 'utf8'))
 const data = readJson<Catalog>('catalog.json')
-const home = readJson<Home>('home.json')
 const collections = readJson<Collections>('collections.json')
 
 const insert = (table: string, rows: Record<string, unknown>[]) => {
@@ -116,27 +109,7 @@ const page = (slug: string, locale: string) => {
 const unbacked = data.promises.find((p) => p.published && usesReturnWindow(LOCALES.map((l) => p[l])) && data.settings.returnWindowDays === null)
 if (unbacked) throw new Error(`Promise ${unbacked.slug} quotes the return window but settings.returnWindowDays is null`)
 
-const brandName = (slug: string) => data.brands[bySlug(data.brands, slug) - 1]!.name
-const photos = await catalogPhotos(data.products, brandName)
 const published = data.products.flatMap((p, i) => (p.status === 'published' ? [i + 1] : []))
-
-const editorial = await editorialPhotos()
-// One media_files row per content key: a file used twice is one row.
-const files = [...new Map([...photos, ...editorial].map((f) => [f.key, f])).values()]
-const fileId = (key: string) => {
-  const index = files.findIndex((f) => f.key === key)
-  if (index < 0) throw new Error(`No media file for ${key}`)
-  return index + 1
-}
-const editorialIndex = (file: string) => idOf(editorial, (e) => e.file, file)
-const mediaId = (file: string) => fileId(editorial[editorialIndex(file) - 1]!.key)
-const editorialAlt = (file: string, locale: string) => {
-  const alt = editorial[editorialIndex(file) - 1]!.alt[locale]
-  if (!alt) throw new Error(`seed/editorial/manifest.json has no ${locale} alt text for ${file}`)
-  return alt
-}
-const badLink = home.slides.find((s) => !isStorePath(s.linkPath))
-if (badLink) throw new Error(`Slide link ${badLink.linkPath} is not a storefront path`)
 
 const badSkinType = data.products.flatMap((p) => (p.skinTypes ?? []).filter((s) => !(SKIN_TYPES as readonly string[]).includes(s)).map((s) => `${p.slug}: ${s}`))
 if (badSkinType.length) throw new Error(`Unknown skin types: ${badSkinType.join(', ')}`)
@@ -168,16 +141,11 @@ const sql = [
   insert('product_skin_types', data.products.flatMap((p, i) => (p.skinTypes ?? []).map((skin_type) => ({ product_id: i + 1, skin_type })))),
   insert('variants', data.products.map((p, i) => ({ id: i + 1, product_id: i + 1, sku: p.variant.sku, search_key: searchKey(p.variant.sku), size_value: p.variant.size ?? null, size_unit: p.variant.unit ?? null, price: p.variant.price ?? null }))),
   published.length ? `UPDATE products SET status = 'published' WHERE id IN (${published.join(', ')});\n` : '',
-  insert('media_files', files.map((f, i) => ({ id: i + 1, r2_key: f.key, content_type: f.contentType, byte_size: f.byteSize, width: f.width, height: f.height }))),
-  insert('product_images', photos.map((ph, i) => ({ id: i + 1, product_id: ph.productId, media_file_id: fileId(ph.key), kind: ph.kind, position: ph.position }))),
-  insert('product_image_translations', photos.flatMap((ph, i) => LOCALES.map((l) => ({ image_id: i + 1, locale: l, alt: ph.alt })))),
   insert('routines', data.routines.map((r, i) => ({ id: i + 1, slug: r.slug, status: r.published ? 'published' : 'draft', is_featured: r.featured, position: i, concern_id: landing.routines[r.slug] ? bySlug(data.concerns, landing.routines[r.slug]!) : null }))),
   insert('routine_translations', data.routines.flatMap((r, i) => LOCALES.map((l) => ({ routine_id: i + 1, locale: l, title: r[l].title, description: r[l].description })))),
   insert('routine_items', data.routines.flatMap((r, i) => r.skus.map((sku, n) => ({ routine_id: i + 1, variant_id: skuId(sku), position: n + 1 })))),
-  insert('home_slides', home.slides.map((s, i) => ({ id: i + 1, status: 'published', position: i, desktop_media_id: mediaId(s.image), mobile_media_id: s.mobileImage ? mediaId(s.mobileImage) : null, link_path: s.linkPath }))),
-  insert('home_slide_translations', home.slides.flatMap((s, i) => LOCALES.map((l) => ({ slide_id: i + 1, locale: l, title: s[l].title, body: s[l].body, cta_label: s[l].ctaLabel, image_alt: editorialAlt(s.image, l) })))),
-  insert('collections', collections.map((c, i) => ({ id: i + 1, slug: c.slug, status: 'published', position: i, show_on_home: c.showOnHome, cover_media_id: c.cover ? mediaId(c.cover) : null }))),
-  insert('collection_translations', collections.flatMap((c, i) => LOCALES.map((l) => ({ collection_id: i + 1, locale: l, title: c[l].title, description: c[l].description, cover_alt: c.cover ? editorialAlt(c.cover, l) : null })))),
+  insert('collections', collections.map((c, i) => ({ id: i + 1, slug: c.slug, status: 'published', position: i, show_on_home: c.showOnHome, cover_media_id: null }))),
+  insert('collection_translations', collections.flatMap((c, i) => LOCALES.map((l) => ({ collection_id: i + 1, locale: l, title: c[l].title, description: c[l].description, cover_alt: null })))),
   insert('collection_products', collections.flatMap((c, i) => c.products.map((slug, n) => ({ collection_id: i + 1, product_id: bySlug(data.products, slug), position: n + 1 })))),
   // Lead times are not known yet.
   insert('suppliers', data.suppliers.map((s, i) => ({ id: i + 1, name: s.name, contact_name: s.contactName, search_key: searchKey(s.name, s.contactName), notes: s.notes, lead_time_days: null }))),
@@ -195,4 +163,4 @@ const sql = [
 ].join('\n')
 
 writeFileSync(join(dir, 'seed.sql'), sql)
-console.log(`seed.sql written: ${data.products.length} products, ${photos.length} photos, ${editorial.length} editorial photos, ${files.length} media files, ${home.slides.length} slides, ${collections.length} collections, ${pageSlugs.length} pages`)
+console.log(`seed.sql written: ${data.products.length} products, ${collections.length} collections, ${pageSlugs.length} pages`)

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { sha256Hex } from "./hash";
 import { mediaKey, mediaKeyType, readImageInfo } from "./images";
@@ -107,8 +107,9 @@ describe("readImageInfo", () => {
 		expect(readImageInfo(new Uint8Array())).toBeNull();
 	});
 
-	test("reads every seed photo", () => {
-		const dir = join(import.meta.dir, "../../../seed/images");
+	const seedImages = join(import.meta.dir, "../../../seed/images");
+	test.skipIf(!existsSync(seedImages))("reads every seed photo", () => {
+		const dir = seedImages;
 		const files = readdirSync(dir);
 		expect(files.length).toBeGreaterThan(0);
 		for (const file of files) {
