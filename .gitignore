@@ -27,3 +27,4 @@ worker-configuration.d.ts
 /Base de datos ejemplo.sql
 /23d8fed8-716f-4c7f-bf6d-de075fbd32d3.jpg
 !.dev.vars.example
+!docs/informe/*.pdf
