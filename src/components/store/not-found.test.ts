@@ -7,6 +7,7 @@ import {
 	createRouter,
 	notFound,
 } from "@tanstack/react-router";
+import { testStore } from "#/test/store-fixture";
 
 const origin = "https://shop.example";
 mock.module("cloudflare:workers", () => ({
@@ -49,37 +50,7 @@ const routeTree = root.addChildren([
 
 async function render(path: string) {
 	const queryClient = new QueryClient();
-	queryClient.setQueryData(storeQuery.queryKey, {
-		name: "Nagomi",
-		currency: "USD",
-		defaultLocale: "es",
-		countryCode: "SV",
-		timeZone: "America/El_Salvador",
-		whatsappNumber: null,
-		whatsappDisplay: null,
-		taxRateBp: 1300,
-		paymentDueHours: 48,
-		cardPaymentsConfigured: false,
-		freeShippingFrom: null,
-		lowStockThreshold: 5,
-		maxQuantityPerLine: 20,
-		returnWindowDays: null,
-		checkoutOpen: false,
-		paymentMethods: [],
-		paymentOptions: [],
-		promises: { es: [], en: [] },
-		footerPages: [],
-		social: { discord: null, instagram: null, tiktok: null, youtube: null },
-		business: {
-			foundingYear: null,
-			legalName: null,
-			taxIdLabel: null,
-			taxId: null,
-			address: null,
-			phone: null,
-			email: null,
-		},
-	});
+	queryClient.setQueryData(storeQuery.queryKey, testStore);
 	queryClient.setQueryData(navigationQuery(getLocale()).queryKey, {
 		categories: [],
 		brands: [],

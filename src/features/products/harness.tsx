@@ -7,47 +7,15 @@ import {
 	Outlet,
 	RouterContextProvider,
 } from "@tanstack/react-router";
-import type { InferResponseType } from "hono/client";
+
 import type { ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { StaffAccessProvider } from "#/components/admin/staff-access";
-import type { api } from "#/lib/api";
 import { storeQuery } from "#/lib/queries";
+import { testStore } from "#/test/store-fixture";
 import { productOptionsQuery } from "./options";
 
-type Store = InferResponseType<ReturnType<typeof api>["store"]["$get"], 200>;
-
-const store: Store = {
-	name: "Nagomi",
-	currency: "USD",
-	defaultLocale: "es",
-	countryCode: "SV",
-	timeZone: "America/El_Salvador",
-	whatsappNumber: null,
-	whatsappDisplay: null,
-	taxRateBp: 1300,
-	paymentDueHours: 48,
-	cardPaymentsConfigured: false,
-	freeShippingFrom: null,
-	lowStockThreshold: 5,
-	maxQuantityPerLine: 20,
-	returnWindowDays: null,
-	checkoutOpen: true,
-	paymentMethods: [],
-	paymentOptions: [],
-	promises: { es: [], en: [] },
-	footerPages: [],
-	social: { discord: null, instagram: null, tiktok: null, youtube: null },
-	business: {
-		foundingYear: null,
-		legalName: null,
-		taxIdLabel: null,
-		taxId: null,
-		address: null,
-		phone: null,
-		email: null,
-	},
-};
+const store = { ...testStore, checkoutOpen: true };
 
 const options = {
 	brands: [

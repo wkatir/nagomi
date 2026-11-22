@@ -9,38 +9,7 @@ import type { ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { StaffAccessProvider } from "#/components/admin/staff-access";
 import { storeQuery } from "#/lib/queries";
-
-const store = {
-	name: "Nagomi",
-	currency: "USD",
-	defaultLocale: "es",
-	countryCode: "SV",
-	timeZone: "America/El_Salvador",
-	whatsappNumber: null,
-	whatsappDisplay: null,
-	taxRateBp: 1300,
-	paymentDueHours: 48,
-	cardPaymentsConfigured: false,
-	freeShippingFrom: null,
-	lowStockThreshold: 5,
-	maxQuantityPerLine: 20,
-	returnWindowDays: null,
-	checkoutOpen: false,
-	paymentMethods: [],
-	paymentOptions: [],
-	promises: { es: [], en: [] },
-	footerPages: [],
-	social: { discord: null, instagram: null, tiktok: null, youtube: null },
-	business: {
-		foundingYear: null,
-		legalName: null,
-		taxIdLabel: null,
-		taxId: null,
-		address: null,
-		phone: null,
-		email: null,
-	},
-};
+import { testStore } from "./store-fixture";
 
 type Options = {
 	defaultLocale?: "es" | "en";
@@ -51,7 +20,10 @@ type Options = {
 
 function clientWith({ defaultLocale = "es", queries = [] }: Options) {
 	const queryClient = new QueryClient();
-	queryClient.setQueryData(storeQuery.queryKey, { ...store, defaultLocale });
+	queryClient.setQueryData(storeQuery.queryKey, {
+		...testStore,
+		defaultLocale,
+	});
 	for (const [key, data] of queries) queryClient.setQueryData(key, data);
 	return queryClient;
 }
