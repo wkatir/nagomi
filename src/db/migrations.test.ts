@@ -811,7 +811,7 @@ INSERT INTO customers (name, phone_e164, search_key) VALUES ('Ana', '+5037123456
 		expect(
 			refused(
 				db,
-				slide("/products?category=sunscreen", "'2026-11-01', '2026-11-01'"),
+				slide("/products?category=iluminacion", "'2026-11-01', '2026-11-01'"),
 			),
 		).toBe("accepted");
 	});

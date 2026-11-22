@@ -42,7 +42,6 @@ const supplierFields = z.object({
 		.transform((v) => v || null)
 		.pipe(z.email().nullable()),
 	paymentTerms: optionalText(500),
-	// Null while not known.
 	leadTimeDays: z.number().int().min(0).max(365).nullable(),
 	notes: optionalText(2000),
 });
@@ -122,8 +121,6 @@ const clearPreferred = (
 const nameTaken = (name: string, exceptId: number | null) =>
 	sql`exists (select 1 from ${suppliers} s where lower(s.name) = lower(${name})${exceptId === null ? sql`` : sql` and s.id <> ${exceptId}`})`;
 
-// Suppliers are archived, never deleted; new purchase orders need an active supplier
-// (also a trigger).
 export const suppliersRouter = new Hono<AdminEnv>()
 	.get("/", validate("query", supplierListSearch), async (c) =>
 		c.json(await pagedSuppliers(getDb(), c.req.valid("query"))),
@@ -346,7 +343,6 @@ export const suppliersRouter = new Hono<AdminEnv>()
 			return c.json(withoutSearchKey(row), 201);
 		},
 	)
-	// An archived supplier's open purchase orders can still be received or cancelled.
 	.patch(
 		"/:id",
 		validate("param", idParam),

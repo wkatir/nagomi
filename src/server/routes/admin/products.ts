@@ -112,7 +112,6 @@ const variantFields = z.object({
 	reorderPoint: z.number().int().min(0).max(100_000).nullable(),
 	status: z.enum(ARCHIVABLE_STATUSES),
 });
-// Mirrors the table checks on the variant as it would be stored.
 const variantState = z
 	.object({
 		price: z.number().nullable(),
@@ -555,7 +554,6 @@ export const productsRouter = new Hono<AdminEnv>()
 			if (!available) return c.json({ error: "reference_unavailable" }, 409);
 			const { defaultLocale } = await getSettings(db);
 			if (publishing) {
-				// The brand and the category were checked above, as they will be.
 				const missing = await publishMissing(db, id, defaultLocale);
 				if (missing.includes("price"))
 					return c.json({ error: "publish_requires_price" }, 409);

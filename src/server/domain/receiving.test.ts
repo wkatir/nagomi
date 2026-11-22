@@ -15,7 +15,6 @@ describe("allocateLandedCost", () => {
 	});
 
 	test("spreads shipping by line value and adds up exactly", () => {
-		// Sugar Glamour order: 8 x 15.51, 2 x 15.91, 4 x 7.20, 7 x 9.48 with $5.00 freight.
 		const lines = [
 			{ quantity: 8, unitCost: 1551 },
 			{ quantity: 2, unitCost: 1591 },

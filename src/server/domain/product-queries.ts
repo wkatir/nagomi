@@ -24,8 +24,6 @@ type ProductFilter = Pick<
 	"q" | "status" | "brandId" | "categoryId"
 >;
 
-// For a query that joins the products to their brand and to their default-locale text
-// (productSearch).
 export const productFilter = (db: Db, filter: ProductFilter) =>
 	and(
 		filter.status ? eq(products.status, filter.status) : undefined,
@@ -39,7 +37,6 @@ export async function pagedProducts(
 	clock: { defaultLocale: Locale },
 	query: ProductListSearch,
 ) {
-	// The sellable units of stock.ts, in SQL.
 	const sizes = db
 		.select({
 			productId: variants.productId,

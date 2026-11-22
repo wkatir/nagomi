@@ -22,7 +22,7 @@ function shippedOrder(sqlite: Database, id: number, subtotal: number) {
 			shippedAt: "2026-10-10T16:00:00Z",
 			lines:
 				subtotal > 0
-					? [{ variantId: 1, quantity: 1, unitPrice: subtotal, sku: "OIL-001" }]
+					? [{ variantId: 1, quantity: 1, unitPrice: subtotal, sku: "KBD-001" }]
 					: [],
 		}),
 	);
@@ -33,10 +33,10 @@ let db: Db;
 beforeEach(() => {
 	sqlite = migratedDatabase();
 	sqlite.exec(`
-		insert into brands (slug, name, search_key) values ('skin1004', 'SKIN1004', 'skin1004');
-		insert into categories (slug, icon, sort_order) values ('cleanser', 'package', 1);
-		insert into products (slug, brand_id, category_id) values ('oil', 1, 1);
-		insert into variants (product_id, sku, price, search_key) values (1, 'OIL-001', 1500, 'oil');
+		insert into brands (slug, name, search_key) values ('razer', 'Razer', 'razer');
+		insert into categories (slug, icon, sort_order) values ('teclados', 'keyboard', 1);
+		insert into products (slug, brand_id, category_id) values ('keyboard', 1, 1);
+		insert into variants (product_id, sku, price, search_key) values (1, 'KBD-001', 1500, 'kbd');
 		insert into suppliers (name, search_key) values ('Supplier', 'supplier');
 		insert into purchase_orders (supplier_id, reference, status, ordered_on) values (1, 'PO-1', 'ordered', '2026-10-01');
 		insert into purchase_order_items (purchase_order_id, variant_id, quantity, unit_cost) values (1, 1, 5, 700);

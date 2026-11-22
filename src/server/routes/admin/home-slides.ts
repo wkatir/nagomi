@@ -42,13 +42,12 @@ const slideFields = z.object({
 		.trim()
 		.refine(
 			isStorePath,
-			"A storefront path without the locale prefix, e.g. /products?category=sunscreen",
+			"A storefront path without the locale prefix, e.g. /products?category=teclados",
 		),
 	// Local days of the store, both included; null leaves that side open.
 	startsOn: calendarDate.nullable(),
 	endsOn: calendarDate.nullable(),
 });
-// The table checks, applied to the slide as it would be stored.
 const slideState = z
 	.object({ startsOn: z.string().nullable(), endsOn: z.string().nullable() })
 	.refine((s) => !s.startsOn || !s.endsOn || s.startsOn <= s.endsOn, {
@@ -56,7 +55,7 @@ const slideState = z
 		path: ["endsOn"],
 	});
 
-const mediaView = (file: typeof mediaFiles.$inferSelect | null) =>
+const mediaView = (file: typeof mediaFiles.$inferSelect | undefined) =>
 	file ? { ...file, url: mediaUrl(file.r2Key) } : null;
 
 async function slideDetails(db: Db, ids: number[]) {
@@ -80,7 +79,7 @@ async function slideDetails(db: Db, ids: number[]) {
 			.where(inList(homeSlideTranslations.slideId, ids)),
 	]);
 	const image = (id: number | null) =>
-		mediaView(images.find((m) => m.id === id) ?? null);
+		mediaView(images.find((m) => m.id === id));
 	return rows.map((slide) => ({
 		...slide,
 		desktopImage: image(slide.desktopMediaId),

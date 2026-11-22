@@ -1,6 +1,5 @@
 import type { ConsentPurpose } from "#/db/schema";
 
-// Marketing permissions are explained in the privacy notice.
 export const CHECKOUT_PAGES = ["privacy", "terms"] as const;
 export type CheckoutPage = (typeof CHECKOUT_PAGES)[number];
 

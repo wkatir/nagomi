@@ -85,7 +85,7 @@ function order(o: {
 	);
 	o.lines.forEach((line, n) => {
 		db.exec(
-			`insert into order_items (order_id, variant_id, quantity, unit_price, sku, brand_name, product_name) values (${id}, ${n + 1}, ${line.quantity}, ${line.unitPrice}, 'SKU${n + 1}', 'Brand', 'Aceite')`,
+			`insert into order_items (order_id, variant_id, quantity, unit_price, sku, brand_name, product_name) values (${id}, ${n + 1}, ${line.quantity}, ${line.unitPrice}, 'SKU${n + 1}', 'Brand', 'Teclado')`,
 		);
 		if (line.returned) {
 			db.exec(
@@ -112,10 +112,10 @@ beforeEach(() => {
 		.all() as { name: string }[];
 	for (const { name } of triggers) db.exec(`drop trigger "${name}"`);
 	db.exec(`
-insert into store_settings (id, name, currency, default_locale, time_zone, country_code, order_code_prefix, max_quantity_per_line, low_stock_threshold, frequent_customer_min_orders, inactive_customer_days) values (1, 'Store', 'USD', 'es', 'America/El_Salvador', 'SV', 'ECL', 20, 5, 3, 90);
+insert into store_settings (id, name, currency, default_locale, time_zone, country_code, order_code_prefix, max_quantity_per_line, low_stock_threshold, frequent_customer_min_orders, inactive_customer_days) values (1, 'Store', 'USD', 'es', 'America/El_Salvador', 'SV', 'NAG', 20, 5, 3, 90);
 insert into brands (slug, name, search_key) values ('b', 'Brand', 'brand b');
 insert into categories (slug, icon) values ('teclados', 'keyboard');
-insert into products (slug, brand_id, category_id) values ('oil', 1, 1);
+insert into products (slug, brand_id, category_id) values ('teclado', 1, 1);
 insert into variants (product_id, sku, price, search_key) values (1, 'SKU-001', 1000, 'sku-001'), (1, 'SKU-002', 1000, 'sku-002'), (1, 'SKU-003', 1000, 'sku-003');
 insert into suppliers (name, search_key) values ('Supplier', 'supplier');
 insert into purchase_orders (supplier_id, reference, status, ordered_on) values (1, 'PO-1', 'ordered', '2026-01-01');
@@ -330,7 +330,6 @@ describe("GET /customers", () => {
 		expect(ids(await list("q=%2B503%207567%208901"))).toEqual([5]);
 		const none = await list("q=zzz");
 		expect(none).toMatchObject({ items: [], total: 0, pageCount: 1 });
-		// The total follows the search, and the sort applies to what matches.
 		const both = await list("q=50373&sort=name&dir=desc");
 		expect(ids(both)).toEqual([3]);
 		expect(both.total).toBe(1);

@@ -80,42 +80,42 @@ beforeEach(() => {
 	receiptLines = 0;
 	db = migratedDatabase();
 	db.exec(`
-insert into store_settings (id, name, currency, default_locale, time_zone, country_code, order_code_prefix, max_quantity_per_line, low_stock_threshold) values (1, 'Store', 'USD', 'es', 'America/El_Salvador', 'SV', 'ECL', 20, 5);
+insert into store_settings (id, name, currency, default_locale, time_zone, country_code, order_code_prefix, max_quantity_per_line, low_stock_threshold) values (1, 'Store', 'USD', 'es', 'America/El_Salvador', 'SV', 'NAG', 20, 5);
 insert into brands (slug, name, search_key) values ('beta', 'Beta', '${searchKey("Beta", "beta")}');
 insert into brands (slug, name, search_key) values ('alfa', 'Alfa', '${searchKey("Alfa", "alfa")}');
-insert into categories (slug, icon, sort_order) values ('cleanser', 'package', 1);
-insert into categories (slug, icon, sort_order) values ('toner', 'package', 2);
-insert into category_translations (category_id, locale, name) values (1, 'es', 'Limpiador');
+insert into categories (slug, icon, sort_order) values ('audio', 'package', 1);
+insert into categories (slug, icon, sort_order) values ('accesorios', 'package', 2);
+insert into category_translations (category_id, locale, name) values (1, 'es', 'Audio');
 insert into suppliers (name, search_key) values ('Supplier', 'supplier');
 insert into purchase_orders (supplier_id, reference, status, ordered_on) values (1, 'PO-1', 'ordered', '2026-01-01');
 insert into purchase_receipts (purchase_order_id, received_on, created_by) values (1, '2026-01-02', 'u');
 
--- 1 oil: Beta, cleanser, published, two variants and an archived one.
-insert into products (slug, brand_id, category_id, created_at) values ('oil', 1, 1, '2026-01-01T00:00:00Z');
-insert into product_translations (product_id, locale, name, search_key) values (1, 'es', 'Aceite', 'aceite');
-insert into variants (product_id, sku, price, search_key) values (1, 'OIL-001', 1500, '${searchKey("OIL-001", null)}');
-insert into variants (product_id, sku, price, search_key) values (1, 'OIL-002', 2500, '${searchKey("OIL-002", null)}');
-insert into variants (product_id, sku, price, status, search_key) values (1, 'OIL-003', 100, 'archived', '${searchKey("OIL-003", null)}');
--- 2 cream: Alfa, toner (no text of its own), a draft with one size at the same price.
-insert into products (slug, brand_id, category_id, created_at) values ('cream', 2, 2, '2026-01-02T00:00:00Z');
-insert into product_translations (product_id, locale, name, search_key) values (2, 'es', 'Crema', 'crema');
-insert into variants (product_id, sku, price, search_key) values (2, 'CRM-001', 1500, '${searchKey("CRM-001", null)}');
--- 3 keyboard: Beta, cleanser, archived, no variants at all.
+-- 1 headphones: Beta, audio, published, two variants and an archived one.
+insert into products (slug, brand_id, category_id, created_at) values ('audifonos', 1, 1, '2026-01-01T00:00:00Z');
+insert into product_translations (product_id, locale, name, search_key) values (1, 'es', 'Audífonos', 'audifonos');
+insert into variants (product_id, sku, price, search_key) values (1, 'AUD-001', 1500, '${searchKey("AUD-001", null)}');
+insert into variants (product_id, sku, price, search_key) values (1, 'AUD-002', 2500, '${searchKey("AUD-002", null)}');
+insert into variants (product_id, sku, price, status, search_key) values (1, 'AUD-003', 100, 'archived', '${searchKey("AUD-003", null)}');
+-- 2 mouse: Alfa, accesorios (no text of its own), a draft with one size at the same price.
+insert into products (slug, brand_id, category_id, created_at) values ('raton', 2, 2, '2026-01-02T00:00:00Z');
+insert into product_translations (product_id, locale, name, search_key) values (2, 'es', 'Ratón', 'raton');
+insert into variants (product_id, sku, price, search_key) values (2, 'MOU-001', 1500, '${searchKey("MOU-001", null)}');
+-- 3 keyboard: Beta, audio, archived, no variants at all.
 insert into products (slug, brand_id, category_id, created_at) values ('keyboard', 1, 1, '2026-01-02T00:00:00Z');
-insert into product_translations (product_id, locale, name, search_key) values (3, 'es', 'Suero', 'suero');
--- 4 toner: Alfa, toner, published, no text in the default language.
-insert into products (slug, brand_id, category_id, created_at) values ('toner', 2, 2, '2026-01-03T00:00:00Z');
-insert into variants (product_id, sku, price, gtin, search_key) values (4, 'TON-001', 1200, '00012345678905', '${searchKey("TON-001", "00012345678905")}');
+insert into product_translations (product_id, locale, name, search_key) values (3, 'es', 'Teclado', 'teclado');
+-- 4 webcam: Alfa, accesorios, published, no text in the default language.
+insert into products (slug, brand_id, category_id, created_at) values ('webcam', 2, 2, '2026-01-03T00:00:00Z');
+insert into variants (product_id, sku, price, gtin, search_key) values (4, 'CAM-001', 1200, '00012345678905', '${searchKey("CAM-001", "00012345678905")}');
 update products set status = 'published' where id in (1, 4);
 update products set status = 'archived' where id = 3;
 
 insert into media_files (r2_key, content_type, byte_size, width, height) values ('${KEY_A}', 'image/jpeg', 10, 4, 3), ('${KEY_B}', 'image/jpeg', 10, 4, 3), ('${KEY_C}', 'image/jpeg', 10, 4, 3);
--- Oil's photos: the first by position is B; the archived one at position 0 does not count.
+-- The headphones' photos: the first by position is B; the archived one at position 0 does not count.
 insert into product_images (product_id, media_file_id, kind, position) values (1, 1, 'packshot', 2);
 insert into product_images (product_id, media_file_id, kind, position) values (1, 2, 'detail', 1);
 insert into product_images (product_id, media_file_id, kind, position, status) values (1, 3, 'lifestyle', 0, 'archived');
 `);
-	// OIL-001: 50 units. OIL-002: 15 units in two lots. The archived variant's 100 units do not
+	// AUD-001: 50 units. AUD-002: 15 units in two lots. The archived variant's 100 units do not
 	// count.
 	lot(1, 50);
 	lot(2, 10);
@@ -135,15 +135,15 @@ describe("GET /products/list", () => {
 			pageSize: 25,
 			pageCount: 1,
 		});
-		const [toner, keyboard, cream, oil] = page.items;
-		expect(oil).toEqual({
+		const [webcam, keyboard, mouse, headphones] = page.items;
+		expect(headphones).toEqual({
 			id: 1,
-			slug: "oil",
+			slug: "audifonos",
 			status: "published",
 			createdAt: "2026-01-01T00:00:00Z",
-			name: "Aceite",
+			name: "Audífonos",
 			brand: "Beta",
-			category: "Limpiador",
+			category: "Audio",
 			// The archived variant is not counted, nor its price.
 			variantCount: 2,
 			priceFrom: 1500,
@@ -152,11 +152,11 @@ describe("GET /products/list", () => {
 			stock: 65,
 			photoUrl: `/media/${KEY_B}`,
 		});
-		expect(cream).toMatchObject({
-			name: "Crema",
+		expect(mouse).toMatchObject({
+			name: "Ratón",
 			brand: "Alfa",
 			// A category without text in the default language shows its slug.
-			category: "toner",
+			category: "accesorios",
 			variantCount: 1,
 			priceFrom: 1500,
 			priceTo: 1500,
@@ -171,8 +171,12 @@ describe("GET /products/list", () => {
 			stock: 0,
 		});
 		// Without a name in the default language, the slug stands in.
-		expect(toner).toMatchObject({ name: "toner", priceFrom: 1200, stock: 20 });
-		expect(Object.keys(oil).sort()).toEqual(
+		expect(webcam).toMatchObject({
+			name: "webcam",
+			priceFrom: 1200,
+			stock: 20,
+		});
+		expect(Object.keys(headphones).sort()).toEqual(
 			[
 				"brand",
 				"category",
@@ -193,7 +197,7 @@ describe("GET /products/list", () => {
 	test("sorts by each column in both directions, equal values keeping the id order", async () => {
 		const sorted = async (sort: string, dir: string) =>
 			ids(await list(`sort=${sort}&dir=${dir}`));
-		// Names: Aceite, Crema, Suero, and the slug "toner".
+		// Names: Audífonos, Ratón, Teclado, and the slug "webcam".
 		expect(await sorted("name", "asc")).toEqual([1, 2, 3, 4]);
 		expect(await sorted("name", "desc")).toEqual([4, 3, 2, 1]);
 		// Two products of each brand.
@@ -201,13 +205,13 @@ describe("GET /products/list", () => {
 		expect(await sorted("brand", "desc")).toEqual([3, 1, 4, 2]);
 		expect(await sorted("status", "asc")).toEqual([3, 2, 1, 4]);
 		expect(await sorted("status", "desc")).toEqual([4, 1, 2, 3]);
-		// Cream and keyboard were created at the same instant.
+		// The mouse and the keyboard were created at the same instant.
 		expect(await sorted("createdAt", "asc")).toEqual([1, 2, 3, 4]);
 		expect(await sorted("createdAt", "desc")).toEqual([4, 3, 2, 1]);
-		// Keyboard has no price, oil and cream start at the same one.
+		// The keyboard has no price; the headphones and the mouse start at the same one.
 		expect(await sorted("priceFrom", "asc")).toEqual([3, 4, 1, 2]);
 		expect(await sorted("priceFrom", "desc")).toEqual([2, 1, 4, 3]);
-		// Oil has the most units, then the toner; the rest have none.
+		// The headphones have the most units, then the webcam; the rest have none.
 		expect(await sorted("stock", "asc")).toEqual([2, 3, 4, 1]);
 		expect(await sorted("stock", "desc")).toEqual([1, 4, 3, 2]);
 	});
@@ -247,16 +251,15 @@ describe("GET /products/list", () => {
 	test("searches the name, the brand, the SKU or barcode of any variant and the slug", async () => {
 		const found = async (q: string) =>
 			ids(await list(`q=${encodeURIComponent(q)}&sort=name&dir=asc`));
-		// Accents and case do not matter.
-		expect(await found("ACEITE")).toEqual([1]);
-		expect(await found("crema")).toEqual([2]);
+		expect(await found("AUDIFONOS")).toEqual([1]);
+		expect(await found("ratón")).toEqual([2]);
 		expect(await found("alfa")).toEqual([2, 4]);
-		expect(await found("crm")).toEqual([2]);
+		expect(await found("mou")).toEqual([2]);
 		// The SKU of the archived variant finds its product too.
-		expect(await found("oil-003")).toEqual([1]);
+		expect(await found("aud-003")).toEqual([1]);
 		expect(await found("12345678905")).toEqual([4]);
 		// A product without a name is found by its slug.
-		expect(await found("toner")).toEqual([4]);
+		expect(await found("webcam")).toEqual([4]);
 		expect(await found("nothing like this")).toEqual([]);
 		expect(ids(await list("q=alfa&status=draft"))).toEqual([2]);
 		expect((await list("q=alfa")).total).toBe(2);
@@ -292,22 +295,22 @@ describe("GET /products (one row per variant)", () => {
 		const all = await get();
 		// By brand name, then product slug, then size: keyboard has no size and is not there.
 		expect(all.map((v) => v.sku)).toEqual([
-			"CRM-001",
-			"TON-001",
-			"OIL-001",
-			"OIL-002",
-			"OIL-003",
+			"MOU-001",
+			"CAM-001",
+			"AUD-001",
+			"AUD-002",
+			"AUD-003",
 		]);
-		expect(all.find((v) => v.sku === "OIL-001")?.available).toBe(50);
-		expect((await get("status=draft")).map((v) => v.sku)).toEqual(["CRM-001"]);
-		expect((await get("q=aceite")).map((v) => v.sku)).toEqual([
-			"OIL-001",
-			"OIL-002",
-			"OIL-003",
+		expect(all.find((v) => v.sku === "AUD-001")?.available).toBe(50);
+		expect((await get("status=draft")).map((v) => v.sku)).toEqual(["MOU-001"]);
+		expect((await get("q=audifonos")).map((v) => v.sku)).toEqual([
+			"AUD-001",
+			"AUD-002",
+			"AUD-003",
 		]);
 		expect((await get("categoryId=2&brandId=2")).map((v) => v.sku)).toEqual([
-			"CRM-001",
-			"TON-001",
+			"MOU-001",
+			"CAM-001",
 		]);
 	});
 });

@@ -81,11 +81,11 @@ describe("csvMoney", () => {
 describe("csvStream", () => {
 	test("streams a BOM, the header and every page, and reads back", async () => {
 		async function* pages(): AsyncGenerator<Cell[][]> {
-			yield [["ECL-1", 'María, "Mery"', csvMoney(2450, "USD")]];
+			yield [["NAG-1", 'María, "Mery"', csvMoney(2450, "USD")]];
 			yield [];
 			yield [
-				["ECL-2", "=cmd|' /C calc'!A0", csvMoney(-100, "USD")],
-				["ECL-3", "línea\nnueva", null],
+				["NAG-2", "=cmd|' /C calc'!A0", csvMoney(-100, "USD")],
+				["NAG-3", "línea\nnueva", null],
 			];
 		}
 		const text = await new Response(
@@ -99,9 +99,9 @@ describe("csvStream", () => {
 		expect(text.endsWith("\r\n")).toBe(true);
 		expect(parseCsv(text)).toEqual([
 			["code", "name", "total"],
-			["ECL-1", 'María, "Mery"', "24.50"],
-			["ECL-2", "'=cmd|' /C calc'!A0", "-1.00"],
-			["ECL-3", "línea\nnueva", ""],
+			["NAG-1", 'María, "Mery"', "24.50"],
+			["NAG-2", "'=cmd|' /C calc'!A0", "-1.00"],
+			["NAG-3", "línea\nnueva", ""],
 		]);
 		expect(csvRow(["x", 1])).toBe("x,1\r\n");
 	});

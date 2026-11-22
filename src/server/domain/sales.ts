@@ -4,9 +4,7 @@ import { SHIPPED_STATUSES } from "./order-state";
 import { amountOwed } from "./payments";
 import { e4ToMinor } from "./receiving";
 
-// A sale is dated by the local day its order was fulfilled, net of every return of its
-// units. Costs are landed lot costs in `_e4` units, rounded to minor units only when a
-// figure is reported.
+// Costs stay in `_e4` units and are rounded to minor units only when reported.
 
 export type SoldLine = {
 	orderItemId: number;
@@ -98,8 +96,6 @@ export function keptTax(
 	return Math.round((order.taxIncluded * revenue) / order.total);
 }
 
-// The discount the order keeps is spread over its lines by kept value, so line figures add
-// up to the order's.
 export function orderSale(order: SoldOrder): OrderSale {
 	if (!(SHIPPED_STATUSES as readonly OrderStatus[]).includes(order.status))
 		throw new Error(`Order ${order.id} (${order.status}) is not a sale`);
@@ -146,7 +142,6 @@ type SalesFigures = {
 	shipping: number;
 	costOfGoodsSold: number;
 	grossProfit: number;
-	// grossProfit / merchandise, 4 decimals; null without merchandise.
 	margin: number | null;
 };
 
@@ -288,7 +283,6 @@ const byMerchandise = (
 	b: { merchandise: number; units: number },
 ) => b.merchandise - a.merchandise || b.units - a.units;
 
-// Named as last sold (order line snapshot).
 export function salesByProduct(sales: OrderSale[]): ProductSales[] {
 	return groupLines(sales, (l) => l.variantId)
 		.map(({ acc, latest }) => ({
@@ -305,7 +299,6 @@ type BrandSales = Omit<ProductSales, "variantId" | "sku" | "name"> & {
 	products: number;
 };
 
-// As written on the order lines.
 export function salesByBrand(sales: OrderSale[]): BrandSales[] {
 	return groupLines(sales, (l) => l.brand)
 		.map(({ acc, latest }) => ({

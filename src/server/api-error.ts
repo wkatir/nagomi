@@ -10,7 +10,6 @@ export const apiError: ErrorHandler = (err, c) => {
 		return c.json({ error: "invalid_phone" }, 400);
 	if (err instanceof StoreNotConfiguredError)
 		return c.json({ error: "store_not_configured", fields: err.fields }, 503);
-	// The whole batch rolled back, so the request can be retried after a reload.
 	const refused = mapDbError(err);
 	if (refused) {
 		console.warn(`${c.req.method} ${c.req.path}: ${refused.cause}`);

@@ -32,7 +32,6 @@ const categoryText = z.object({
 });
 const categoryFields = z.object({
 	slug,
-	// Orders the catalogue.
 	sortOrder: z.number().int().min(0).max(1000),
 	icon: z.enum(CATEGORY_ICONS),
 	status: z.enum(ARCHIVABLE_STATUSES),

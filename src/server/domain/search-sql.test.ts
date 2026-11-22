@@ -20,23 +20,23 @@ function seeded() {
 	const db = drizzle(migratedDatabase(), { schema });
 	db.insert(brands)
 		.values({
-			slug: "creme-lab",
-			name: "Crème Lab",
-			searchKey: searchKey("Crème Lab", "creme-lab"),
+			slug: "echo-audio",
+			name: "Écho Audio",
+			searchKey: searchKey("Écho Audio", "echo-audio"),
 		})
 		.run();
 	db.insert(categories)
 		.values({ slug: "teclados", icon: "keyboard", sortOrder: 1 })
 		.run();
 	db.insert(products)
-		.values({ slug: "ampoule", brandId: 1, categoryId: 1 })
+		.values({ slug: "silent-mouse", brandId: 1, categoryId: 1 })
 		.run();
 	db.insert(productTranslations)
 		.values({
 			productId: 1,
 			locale: "es",
-			name: "Ámpula Centella Calmante",
-			searchKey: searchKey("Ámpula Centella Calmante"),
+			name: "Ratón Óptico Silencioso",
+			searchKey: searchKey("Ratón Óptico Silencioso"),
 		})
 		.run();
 	db.insert(variants)
@@ -96,15 +96,15 @@ describe("accent- and case-insensitive admin search", () => {
 
 	test("products by name or brand", () => {
 		for (const term of [
-			"ampula",
-			"AMPULA",
-			"Ámpula",
-			"centella calm",
-			"creme",
-			"CRÈME",
+			"raton",
+			"RATON",
+			"Ratón",
+			"optico silen",
+			"echo",
+			"ÉCHO",
 		])
 			expect(productIds(term)).toEqual([1]);
-		expect(productIds("rose")).toEqual([]);
+		expect(productIds("webcam")).toEqual([]);
 	});
 
 	test("products by SKU or barcode", () => {
@@ -120,9 +120,9 @@ describe("accent- and case-insensitive admin search", () => {
 				.from(brands)
 				.where(searchMatch(term, [brands.searchKey]))
 				.all().length;
-		expect(found("CREME")).toBe(1);
-		expect(found("crème lab")).toBe(1);
-		expect(found("creme-lab")).toBe(1);
+		expect(found("ECHO")).toBe(1);
+		expect(found("écho audio")).toBe(1);
+		expect(found("echo-audio")).toBe(1);
 		expect(found("lux")).toBe(0);
 	});
 

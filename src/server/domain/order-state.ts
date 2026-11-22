@@ -1,8 +1,6 @@
 import type { OrderStatus, PaymentMethod } from "#/db/schema";
 
-// The same table is enforced in SQL by the orders_status_transition trigger
-// (drizzle/0001_integrity_triggers.sql). A cash-on-delivery order is shipped before it is
-// paid; its cash is recorded before it is marked delivered.
+// Mirrors the orders_status_transition trigger. Cash on delivery ships before it is paid.
 export const ORDER_TRANSITIONS: Record<OrderStatus, readonly OrderStatus[]> = {
 	pending: ["paid", "shipped", "cancelled"],
 	paid: ["shipped", "cancelled"],
@@ -26,14 +24,12 @@ export const SHIPPED_STATUSES = [
 	"shipped",
 	"delivered",
 ] as const satisfies readonly OrderStatus[];
-// Orders that count as sales: everything except cancelled.
 export const SOLD_STATUSES = [
 	"pending",
 	"paid",
 	"shipped",
 	"delivered",
 ] as const satisfies readonly OrderStatus[];
-// Payment confirmed or the goods on their way (cash on delivery).
 export const COMMITTED_STATUSES = [
 	"paid",
 	"shipped",

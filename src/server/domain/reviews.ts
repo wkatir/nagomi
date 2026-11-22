@@ -64,7 +64,7 @@ export async function approvedReviews(db: Db, productId: number, limit = 50) {
 			)
 			.groupBy(productReviews.rating),
 	]);
-	const rating: Rating = ratingOf(totals?.ratingSum ?? 0, totals?.reviews ?? 0);
+	const rating: Rating = ratingOf(totals.ratingSum, totals.reviews);
 	return {
 		...rating,
 		distribution: [5, 4, 3, 2, 1].map((stars) => ({

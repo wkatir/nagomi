@@ -18,9 +18,8 @@ export function onHandByVariant(db: Db, variantIds?: number[]) {
 		.groupBy(lots.variantId);
 }
 
-// Units are taken from the lots when an order is placed, so what is on hand is what can be
-// sold. Read before a write to say how many are left; the write itself is guarded by the
-// lot_balance_negative trigger.
+// Read before a write to say how many are left; the lot_balance_negative trigger guards the
+// write itself.
 export async function sellableByVariant(db: Db, variantIds: number[]) {
 	const stock = await onHandByVariant(db, variantIds);
 	const onHand = new Map(stock.map((r) => [r.variantId, r.onHand]));
@@ -29,7 +28,6 @@ export async function sellableByVariant(db: Db, variantIds: number[]) {
 	);
 }
 
-// Lines of the same size (alone and inside sets) are added up.
 export async function linesBeyondStock<
 	L extends { variantId: number; quantity: number },
 >(db: Db, lines: L[]) {
@@ -75,8 +73,7 @@ export async function stockByVariant(db: Db) {
 	return new Map(rows.map(({ variantId, ...units }) => [variantId, units]));
 }
 
-// Cost basis of the catalogue and the reorder report: the latest lot received at a price;
-// free units (cost 0) are left out.
+// The latest lot received at a price; free units (cost 0) are left out.
 export async function latestLandedCostE4(db: Db) {
 	const rows = await db
 		.select({ variantId: lots.variantId, unitCostE4: lots.unitCostE4 })

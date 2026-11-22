@@ -42,7 +42,6 @@ function stockPerVariant(db: Db) {
 
 type Stock = ReturnType<typeof stockPerVariant>;
 
-// A variant with no lot has no row in the stock.
 const orZero = (column: SQLWrapper) => sql<number>`coalesce(${column}, 0)`;
 
 const lowPoint = (clock: StockClock) =>

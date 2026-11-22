@@ -7,9 +7,9 @@ import type { AdminEnv } from "#/server/auth";
 import {
 	addPurchase,
 	addSupplier,
-	CRM_30,
-	OIL_50,
-	OIL_100,
+	MOU_BLACK,
+	PAD_M,
+	PAD_XL,
 	seedSupply,
 } from "./supply-fixtures";
 
@@ -58,8 +58,8 @@ beforeEach(() => {
 
 describe("POST /purchase-orders", () => {
 	const lines = [
-		{ variantId: OIL_50, quantity: 10, unitCost: 700 },
-		{ variantId: OIL_100, quantity: 5, unitCost: 1200 },
+		{ variantId: PAD_M, quantity: 10, unitCost: 700 },
+		{ variantId: PAD_XL, quantity: 5, unitCost: 1200 },
 	];
 
 	test("writes a draft with its lines, and an order that already has a date as ordered", async () => {
@@ -91,8 +91,8 @@ describe("POST /purchase-orders", () => {
 				)
 				.all(),
 		).toEqual([
-			{ variant_id: OIL_50, quantity: 10, unit_cost: 700 },
-			{ variant_id: OIL_100, quantity: 5, unit_cost: 1200 },
+			{ variant_id: PAD_M, quantity: 10, unit_cost: 700 },
+			{ variant_id: PAD_XL, quantity: 5, unit_cost: 1200 },
 		]);
 		expect(
 			db
@@ -169,8 +169,8 @@ describe("POST /purchase-orders", () => {
 	test("refuses a purchase order without lines or with a line that makes no sense", async () => {
 		for (const items of [
 			[],
-			[{ variantId: OIL_50, quantity: 0, unitCost: 100 }],
-			[{ variantId: OIL_50, quantity: 1, unitCost: -1 }],
+			[{ variantId: PAD_M, quantity: 0, unitCost: 100 }],
+			[{ variantId: PAD_M, quantity: 1, unitCost: -1 }],
 		]) {
 			const res = await send("POST", "", {
 				supplierId: 1,
@@ -189,7 +189,7 @@ describe("a purchase order's status", () => {
 			supplierId: 1,
 			reference: "PO-1",
 			status: "draft",
-			items: [{ variantId: OIL_50, quantity: 1, unitCost: 100 }],
+			items: [{ variantId: PAD_M, quantity: 1, unitCost: 100 }],
 		});
 		const order = await send("POST", "/1/order", { orderedOn: "2026-10-04" });
 		expect(order.status).toBe(200);
@@ -219,7 +219,7 @@ describe("a purchase order's status", () => {
 			supplierId: 2,
 			reference: "PO-1",
 			status: "draft",
-			items: [{ variantId: OIL_50, quantity: 1, unitCost: 100 }],
+			items: [{ variantId: PAD_M, quantity: 1, unitCost: 100 }],
 		});
 		db.exec("update suppliers set status = 'archived' where id = 2");
 		const res = await send("POST", "/1/order", { orderedOn: "2026-10-04" });
@@ -234,8 +234,8 @@ describe("a purchase order's status", () => {
 			reference: "PO-1",
 			status: "draft",
 			items: [
-				{ variantId: OIL_50, quantity: 10, unitCost: 700 },
-				{ variantId: OIL_100, quantity: 5, unitCost: 1200 },
+				{ variantId: PAD_M, quantity: 10, unitCost: 700 },
+				{ variantId: PAD_XL, quantity: 5, unitCost: 1200 },
 			],
 		});
 		const edit = await send("PATCH", "/1", {
@@ -243,8 +243,8 @@ describe("a purchase order's status", () => {
 			notes: "Rush",
 			taxIncluded: false,
 			items: [
-				{ id: 1, variantId: OIL_50, quantity: 12, unitCost: 650 },
-				{ variantId: CRM_30, quantity: 3, unitCost: 500 },
+				{ id: 1, variantId: PAD_M, quantity: 12, unitCost: 650 },
+				{ variantId: MOU_BLACK, quantity: 3, unitCost: 500 },
 			],
 		});
 		expect(edit.status).toBe(200);
@@ -267,8 +267,8 @@ describe("a purchase order's status", () => {
 				)
 				.all(),
 		).toEqual([
-			{ variant_id: OIL_50, quantity: 12, unit_cost: 650 },
-			{ variant_id: CRM_30, quantity: 3, unit_cost: 500 },
+			{ variant_id: PAD_M, quantity: 12, unit_cost: 650 },
+			{ variant_id: MOU_BLACK, quantity: 3, unit_cost: 500 },
 		]);
 
 		await send("POST", "/1/order", { orderedOn: "2026-10-04" });
@@ -303,8 +303,8 @@ describe("POST /purchase-orders/:id/receive", () => {
 			status: "ordered",
 			orderedOn: "2026-10-01",
 			items: [
-				{ variantId: OIL_50, quantity: 10, unitCost: 700 },
-				{ variantId: CRM_30, quantity: 4, unitCost: 500 },
+				{ variantId: PAD_M, quantity: 10, unitCost: 700 },
+				{ variantId: MOU_BLACK, quantity: 4, unitCost: 500 },
 			],
 		});
 	});
@@ -328,13 +328,13 @@ describe("POST /purchase-orders/:id/receive", () => {
 				.all(),
 		).toEqual([
 			{
-				variant_id: OIL_50,
+				variant_id: PAD_M,
 				code: "L-9",
 				// 700.00 plus 10889 hundredths of a cent of shipping, over 10 units.
 				unit_cost_e4: 71089,
 			},
 			{
-				variant_id: CRM_30,
+				variant_id: MOU_BLACK,
 				code: null,
 				unit_cost_e4: 50778,
 			},
@@ -489,13 +489,13 @@ describe("POST /purchase-orders/:id/receive", () => {
 			supplierId: 1,
 			reference: "PO-2",
 			status: "draft",
-			items: [{ variantId: OIL_50, quantity: 1, unitCost: 100 }],
+			items: [{ variantId: PAD_M, quantity: 1, unitCost: 100 }],
 		});
 		addPurchase(db, {
 			supplierId: 1,
 			reference: "PO-3",
 			status: "cancelled",
-			items: [{ variantId: OIL_50, quantity: 1, unitCost: 100 }],
+			items: [{ variantId: PAD_M, quantity: 1, unitCost: 100 }],
 		});
 		for (const id of [2, 3]) {
 			const res = await send("POST", `/${id}/receive`, receipt);
@@ -515,24 +515,24 @@ describe("POST /purchase-orders/from-reorder", () => {
 	const body = {
 		supplierId: 1,
 		targetWeeks: 4,
-		variantIds: [OIL_50, OIL_100],
+		variantIds: [PAD_M, PAD_XL],
 	};
 
 	beforeEach(() => {
-		// Reorder points and sellers: Alpha sells both oils (the 50 ml in packs of 6, at least
-		// 8), Beta the cream. Nothing has sold, so only the points below the stock suggest.
+		// Alpha sells both pads (the M in packs of 6, at least 8), Beta the mouse. Nothing has
+		// sold, so only the points below the stock suggest.
 		db.exec(`
-update variants set reorder_point = 4 where id = ${OIL_100};
-update variants set reorder_point = 3 where id = ${CRM_30};
-insert into supplier_items (supplier_id, variant_id, pack_size, min_order_quantity) values (1, ${OIL_50}, 6, 8), (1, ${OIL_100}, NULL, NULL), (2, ${CRM_30}, NULL, NULL);
+update variants set reorder_point = 4 where id = ${PAD_XL};
+update variants set reorder_point = 3 where id = ${MOU_BLACK};
+insert into supplier_items (supplier_id, variant_id, pack_size, min_order_quantity) values (1, ${PAD_M}, 6, 8), (1, ${PAD_XL}, NULL, NULL), (2, ${MOU_BLACK}, NULL, NULL);
 `);
-		// The 50 ml was bought once at 7.00 and its 5 units have since been written off:
-		// no stock, but a cost to start the draft from.
+		// The M was bought once at 7.00 and its 5 units were written off: no stock, but a
+		// cost to start the draft from.
 		addPurchase(db, {
 			supplierId: 1,
 			reference: "OLD",
 			status: "received",
-			items: [{ variantId: OIL_50, quantity: 5, unitCost: 700, received: 5 }],
+			items: [{ variantId: PAD_M, quantity: 5, unitCost: 700, received: 5 }],
 		});
 		db.exec(
 			"insert into inventory_movements (lot_id, kind, quantity, reason, created_by) values (1, 'waste', -5, 'damaged', 'admin')",
@@ -566,9 +566,9 @@ insert into supplier_items (supplier_id, variant_id, pack_size, min_order_quanti
 				.all(),
 		).toEqual([
 			// 10 to reach the reorder point, over the minimum of 8, in packs of 6.
-			{ variant_id: OIL_50, quantity: 12, unit_cost: 700 },
+			{ variant_id: PAD_M, quantity: 12, unit_cost: 700 },
 			// 4 to reach its point; never bought, so no cost yet.
-			{ variant_id: OIL_100, quantity: 4, unit_cost: 0 },
+			{ variant_id: PAD_XL, quantity: 4, unit_cost: 0 },
 		]);
 		const events = db
 			.query(
@@ -583,7 +583,7 @@ insert into supplier_items (supplier_id, variant_id, pack_size, min_order_quanti
 	test("takes only the sizes chosen, and leaves out those another supplier sells or that need nothing", async () => {
 		const only = await send("POST", "/from-reorder", {
 			...body,
-			variantIds: [OIL_100],
+			variantIds: [PAD_XL],
 		});
 		expect(only.status).toBe(201);
 		expect(
@@ -592,12 +592,12 @@ insert into supplier_items (supplier_id, variant_id, pack_size, min_order_quanti
 					"select variant_id from purchase_order_items where purchase_order_id = 2",
 				)
 				.all(),
-		).toEqual([{ variant_id: OIL_100 }]);
+		).toEqual([{ variant_id: PAD_XL }]);
 
-		// The cream is Beta's: asked from Alpha it is left out.
+		// The mouse is Beta's: asked from Alpha it is left out.
 		const mixed = await send("POST", "/from-reorder", {
 			...body,
-			variantIds: [OIL_50, CRM_30],
+			variantIds: [PAD_M, MOU_BLACK],
 		});
 		expect(mixed.status).toBe(201);
 		expect(
@@ -606,11 +606,11 @@ insert into supplier_items (supplier_id, variant_id, pack_size, min_order_quanti
 					"select variant_id from purchase_order_items where purchase_order_id = 3",
 				)
 				.all(),
-		).toEqual([{ variant_id: OIL_50 }]);
+		).toEqual([{ variant_id: PAD_M }]);
 
 		const none = await send("POST", "/from-reorder", {
 			...body,
-			variantIds: [CRM_30],
+			variantIds: [MOU_BLACK],
 		});
 		expect(none.status).toBe(409);
 		expect(await json(none)).toEqual({ error: "nothing_to_order" });
@@ -637,7 +637,7 @@ insert into supplier_items (supplier_id, variant_id, pack_size, min_order_quanti
 		const archived = await send("POST", "/from-reorder", {
 			...body,
 			supplierId: 2,
-			variantIds: [CRM_30],
+			variantIds: [MOU_BLACK],
 		});
 		expect(archived.status).toBe(409);
 		expect(await json(archived)).toEqual({ error: "supplier_archived" });

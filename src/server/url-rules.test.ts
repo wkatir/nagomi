@@ -16,7 +16,7 @@ describe("addresses that moved to a page of their own", () => {
 		expect(to("/products?brand=akko&sort=name")).toBeNull();
 		expect(to("/products?brand=akko,pulsar")).toBeNull();
 		expect(to("/products?brand=akko&brand=pulsar")).toBeNull();
-		expect(to("/products?concern=pores")).toBeNull();
+		expect(to("/products?connection=wireless")).toBeNull();
 		expect(to("/products?q=mouse")).toBeNull();
 		expect(to("/products?brand=")).toBeNull();
 	});

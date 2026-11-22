@@ -1,6 +1,5 @@
-// Database refusals that are answers, not bugs: trigger aborts (RAISE(ABORT, '<code>') in
-// drizzle/0001_integrity_triggers.sql) and unique keys a request can collide with. Anything
-// else stays a 500.
+// Trigger aborts (RAISE(ABORT, '<code>')) and unique keys a request can collide with;
+// anything else stays a 500.
 export const DB_ERRORS = {
 	// Another order took the units between reading the lots and writing this one.
 	lot_balance_negative: "stock_changed",

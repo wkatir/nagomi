@@ -43,8 +43,7 @@ const named = (
 		return { slug, name, productCount };
 	});
 
-// The same values and counts as the unrefined facets of GET /products, counted in SQL
-// instead of reading the whole catalogue: the header is on every page.
+// Counted in SQL rather than reading the whole catalogue: the header is on every page.
 export async function storeNavigation(db: Db, context: CatalogContext) {
 	const [categoryRows, brandRows, collectionRows] = await db.batch([
 		db
@@ -107,19 +106,18 @@ export async function storeNavigation(db: Db, context: CatalogContext) {
 	]);
 	const collator = new Intl.Collator(context.locale, { sensitivity: "base" });
 	return {
-		categories: [...categoryRows]
-			.sort(
-				(a, b) =>
-					a.sortOrder - b.sortOrder ||
-					collator.compare(a.name ?? "", b.name ?? ""),
-			)
-			.map(({ slug, name, productCount, icon, subtitle }) => {
+		categories: categoryRows
+			.map(({ slug, name, productCount, icon, subtitle, sortOrder }) => {
 				if (name === null)
 					throw new Error(
 						`Category ${slug} has no text in ${context.locale} or ${context.fallback}`,
 					);
-				return { slug, name, productCount, icon, subtitle };
-			}),
+				return { slug, name, productCount, icon, subtitle, sortOrder };
+			})
+			.sort(
+				(a, b) => a.sortOrder - b.sortOrder || collator.compare(a.name, b.name),
+			)
+			.map(({ sortOrder: _, ...category }) => category),
 		brands: [...brandRows].sort((a, b) => collator.compare(a.name, b.name)),
 		collections: named(collectionRows, "Collection", context),
 	};

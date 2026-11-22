@@ -19,7 +19,6 @@ export const suppliers = sqliteTable(
 		id: id(),
 		name: text("name").notNull().unique(),
 		contactName: text("contact_name"),
-		// searchKey() of name and contact name (src/server/domain/search.ts), written by the API.
 		searchKey: text("search_key").notNull(),
 		phoneE164: text("phone_e164"),
 		email: text("email"),
@@ -142,7 +141,6 @@ export const purchaseOrderItems = sqliteTable(
 		variantId: integer("variant_id")
 			.notNull()
 			.references(() => variants.id),
-		// Receipts may bring them in several deliveries.
 		quantity: integer("quantity").notNull(),
 		// Minor units, before landed cost.
 		unitCost: integer("unit_cost").notNull(),
@@ -177,7 +175,6 @@ export const purchaseReceipts = sqliteTable(
 	],
 );
 
-// Each line creates exactly one lot.
 export const purchaseReceiptLines = sqliteTable(
 	"purchase_receipt_lines",
 	{

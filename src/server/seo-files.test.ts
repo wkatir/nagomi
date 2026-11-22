@@ -16,7 +16,7 @@ const read = async (path: string) => {
 beforeEach(() => {
 	const db = migratedDatabase();
 	db.exec(`
-insert into store_settings (id, name, currency, default_locale, time_zone, country_code, order_code_prefix, max_quantity_per_line, low_stock_threshold) values (1, 'Store', 'USD', 'es', 'America/El_Salvador', 'SV', 'ECL', 20, 5);
+insert into store_settings (id, name, currency, default_locale, time_zone, country_code, order_code_prefix, max_quantity_per_line, low_stock_threshold) values (1, 'Store', 'USD', 'es', 'America/El_Salvador', 'SV', 'NAG', 20, 5);
 insert into brands (slug, name, search_key) values ('akko', 'Akko', 'akko');
 insert into categories (slug, icon, sort_order) values ('teclados', 'keyboard', 1);
 insert into category_translations (category_id, locale, name) values (1, 'es', 'Teclados'), (1, 'en', 'Keyboards');

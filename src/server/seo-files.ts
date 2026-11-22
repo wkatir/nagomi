@@ -19,7 +19,6 @@ import {
 import { getPaymentMethods, getSettings } from "./domain/settings";
 import { catalogContext, loadCatalog } from "./domain/storefront-catalog";
 
-// Crawlers fetch these often; an hour keeps a new product out of the sitemap for at most that.
 const CACHE_CONTROL = "public, max-age=3600";
 
 export const SEO_FILES = new Map<string, () => Promise<Response>>([
@@ -50,7 +49,6 @@ export const SEO_FILES = new Map<string, () => Promise<Response>>([
 			);
 		},
 	],
-	// One per language, at the address that language uses (/llms.txt, /en/llms.txt).
 	...locales.map((locale): [string, () => Promise<Response>] => [
 		new URL(localizedUrl("http://localhost", "/llms.txt", locale)).pathname,
 		async () =>

@@ -12,14 +12,14 @@ import {
 import { searchKey } from "./search";
 
 const brands = {
-	s1004: { slug: "skin1004", name: "SKIN1004" },
-	fr: { slug: "face-republic", name: "Face Republic" },
+	razer: { slug: "razer", name: "Razer" },
+	akko: { slug: "akko", name: "Akko" },
 };
 const categories = {
-	oil: { slug: "cleansing-oil", name: "Aceite limpiador", sortOrder: 1 },
-	cleanser: { slug: "cleanser", name: "Limpiador", sortOrder: 2 },
-	keyboard: { slug: "keyboard", name: "Teclado", sortOrder: 4 },
-	sunscreen: { slug: "sunscreen", name: "Protector solar", sortOrder: 6 },
+	keyboards: { slug: "teclados", name: "Teclados", sortOrder: 1 },
+	mice: { slug: "ratones", name: "Ratones", sortOrder: 2 },
+	deskMats: { slug: "alfombrillas", name: "Alfombrillas", sortOrder: 4 },
+	lighting: { slug: "iluminacion", name: "Iluminación", sortOrder: 6 },
 };
 const variant = (
 	sku: string,
@@ -70,61 +70,61 @@ function entry(
 	};
 }
 
-const oil = entry({
-	slug: "light-cleansing-oil",
-	name: "Light Cleansing Oil",
-	brand: brands.s1004,
-	category: categories.oil,
+const keyboard = entry({
+	slug: "low-profile-keyboard",
+	name: "Low Profile Keyboard",
+	brand: brands.razer,
+	category: categories.keyboards,
 	collections: [{ slug: "essentials", position: 1 }],
-	variants: [variant("S1004-LCO-200", 2400, true)],
+	variants: [variant("RZR-LPK-200", 2400, true)],
 	createdAt: "2026-10-03T10:00:00Z",
 });
-const sunKeyboard = entry({
-	slug: "water-fit-sun-keyboard",
-	name: "Hyalu-Cica Water-Fit Sun Keyboard",
-	brand: brands.s1004,
-	category: categories.sunscreen,
+const lightBar = entry({
+	slug: "halo-rgb-light-bar",
+	name: "Halo RGB Light Bar",
+	brand: brands.razer,
+	category: categories.lighting,
 	collections: [
 		{ slug: "essentials", position: 3 },
 		{ slug: "new", position: 1 },
 	],
-	variants: [variant("S1004-WFSS-50", 2200, false)],
+	variants: [variant("RZR-HLB-50", 2200, false)],
 	createdAt: "2026-10-14T10:00:00Z",
 });
-const cleanser = entry({
-	slug: "salicylic-cleanser",
-	name: "Calming Salicylic Acid Cleanser",
-	brand: brands.fr,
-	category: categories.cleanser,
+const mouse = entry({
+	slug: "ergonomic-silent-mouse",
+	name: "Ergonomic Silent Mouse",
+	brand: brands.akko,
+	category: categories.mice,
 	collections: [{ slug: "essentials", position: 2 }],
 	variants: [
-		variant("FR-SAC-100", 1700, true),
-		variant("FR-SAC-200", 2900, false, { optionLabel: "200 ml" }),
+		variant("AKK-ESM-100", 1700, true),
+		variant("AKK-ESM-200", 2900, false, { optionLabel: "Inalámbrico" }),
 	],
 	createdAt: "2026-10-03T10:00:00Z",
 });
-const sunEssence = entry({
-	slug: "purity-sun-essence",
-	name: "Purity Sun Essence",
-	brand: brands.fr,
-	category: categories.sunscreen,
-	variants: [variant("FR-PSE-50", 1900, false, { compareAtPrice: 2300 })],
+const lamp = entry({
+	slug: "prism-rgb-desk-lamp",
+	name: "Prism RGB Desk Lamp",
+	brand: brands.akko,
+	category: categories.lighting,
+	variants: [variant("AKK-PDL-50", 1900, false, { compareAtPrice: 2300 })],
 	createdAt: "2026-10-03T10:00:00Z",
 });
-const ampoule = entry({
-	slug: "centella-ampoule",
-	name: "Centella Ampoule",
-	brand: brands.s1004,
-	category: categories.keyboard,
+const deskMat = entry({
+	slug: "gaming-desk-mat",
+	name: "Gaming Desk Mat",
+	brand: brands.razer,
+	category: categories.deskMats,
 	collections: [{ slug: "new", position: 2 }],
-	variants: [variant("S1004-CA-100", 2500, false)],
+	variants: [variant("RZR-GDM-100", 2500, false)],
 	createdAt: "2026-10-14T10:00:00Z",
 });
-const entries = [oil, sunKeyboard, cleanser, sunEssence, ampoule];
+const entries = [keyboard, lightBar, mouse, lamp, deskMat];
 
 const dimensions: FacetDimensions = {
 	category: Object.values(categories),
-	brand: [brands.fr, brands.s1004],
+	brand: [brands.akko, brands.razer],
 	collection: [
 		{ slug: "essentials", name: "Lo esencial" },
 		{ slug: "new", name: "Recién llegados" },
@@ -148,17 +148,17 @@ const counts = (values: { slug: string; count: number }[]) =>
 
 describe("toCard", () => {
 	test("shows the cheapest size in stock, the number of sizes and its stock", () => {
-		const card = toCard(cleanser);
+		const card = toCard(mouse);
 		expect(card).toMatchObject({
-			sku: "FR-SAC-100",
+			sku: "AKK-ESM-100",
 			price: 1700,
 			optionLabel: null,
 			variantsCount: 2,
 			availability: "in_stock",
 			maxQuantity: 5,
-			category: { slug: "cleanser", name: "Limpiador" },
+			category: { slug: "ratones", name: "Ratones" },
 		});
-		expect(toCard(sunEssence)).toMatchObject({
+		expect(toCard(lamp)).toMatchObject({
 			availability: "sold_out",
 			maxQuantity: 0,
 			compareAtPrice: 2300,
@@ -168,23 +168,23 @@ describe("toCard", () => {
 	test("skips a sold-out cheaper size, and shows the cheapest when all are sold out", () => {
 		const sizes = (inStock: boolean) =>
 			entry({
-				slug: "toner",
-				name: "Toner",
-				brand: brands.fr,
-				category: categories.cleanser,
+				slug: "wired-mouse",
+				name: "Wired Mouse",
+				brand: brands.akko,
+				category: categories.mice,
 				variants: [
-					variant("T-100", 1500, false),
-					variant("T-200", 2500, inStock),
+					variant("M-100", 1500, false),
+					variant("M-200", 2500, inStock),
 				],
 			});
 		expect(toCard(sizes(true))).toMatchObject({
-			sku: "T-200",
+			sku: "M-200",
 			price: 2500,
 			availability: "in_stock",
 			maxQuantity: 5,
 		});
 		expect(toCard(sizes(false))).toMatchObject({
-			sku: "T-100",
+			sku: "M-100",
 			price: 1500,
 			availability: "sold_out",
 			maxQuantity: 0,
@@ -197,58 +197,56 @@ describe("queryCatalog", () => {
 		const r = query({});
 		expect(r.total).toBe(5);
 		expect(slugs(r)).toEqual([
-			"light-cleansing-oil",
-			"salicylic-cleanser",
-			"centella-ampoule",
-			// Same step, by name: Hyalu-Cica... before Purity...
-			"water-fit-sun-keyboard",
-			"purity-sun-essence",
+			"low-profile-keyboard",
+			"ergonomic-silent-mouse",
+			"gaming-desk-mat",
+			// Same category, by name: Halo before Prism.
+			"halo-rgb-light-bar",
+			"prism-rgb-desk-lamp",
 		]);
 		expect(r.priceRange).toEqual({ min: 1700, max: 2500 });
 	});
 
 	test("search ignores accents and case and needs every word", () => {
-		expect(slugs(query({ q: "PROTECTÓR" }))).toEqual([
-			"water-fit-sun-keyboard",
-			"purity-sun-essence",
+		expect(slugs(query({ q: "ILUMINACION" }))).toEqual([
+			"halo-rgb-light-bar",
+			"prism-rgb-desk-lamp",
 		]);
-		expect(slugs(query({ q: "skin1004 sun" }))).toEqual([
-			"water-fit-sun-keyboard",
-		]);
-		expect(slugs(query({ q: "fr-sac" }))).toEqual(["salicylic-cleanser"]);
-		expect(query({ q: "retinol" }).total).toBe(0);
+		expect(slugs(query({ q: "razer rgb" }))).toEqual(["halo-rgb-light-bar"]);
+		expect(slugs(query({ q: "akk-esm" }))).toEqual(["ergonomic-silent-mouse"]);
+		expect(query({ q: "webcam" }).total).toBe(0);
 		expect(query({ q: "   " }).total).toBe(5);
 	});
 
 	test("values of one facet are alternatives; facets narrow each other", () => {
 		expect(
-			slugs(query({ category: ["sunscreen", "cleanser"], sort: "name" })),
+			slugs(query({ category: ["iluminacion", "ratones"], sort: "name" })),
 		).toEqual([
-			"salicylic-cleanser",
-			"water-fit-sun-keyboard",
-			"purity-sun-essence",
+			"ergonomic-silent-mouse",
+			"halo-rgb-light-bar",
+			"prism-rgb-desk-lamp",
 		]);
 		expect(
-			slugs(query({ category: ["sunscreen"], brand: ["face-republic"] })),
-		).toEqual(["purity-sun-essence"]);
+			slugs(query({ category: ["iluminacion"], brand: ["akko"] })),
+		).toEqual(["prism-rgb-desk-lamp"]);
 	});
 
 	test("a facet's counts keep every other refinement but not its own", () => {
-		const r = query({ category: ["sunscreen"], brand: ["skin1004"] });
-		expect(slugs(r)).toEqual(["water-fit-sun-keyboard"]);
-		// Categories counted among SKIN1004 products; brands among sunscreens.
+		const r = query({ category: ["iluminacion"], brand: ["razer"] });
+		expect(slugs(r)).toEqual(["halo-rgb-light-bar"]);
+		// Categories counted among Razer products; brands among lighting.
 		expect(counts(r.facets.category)).toEqual({
-			"cleansing-oil": 1,
-			cleanser: 0,
-			keyboard: 1,
-			sunscreen: 1,
+			teclados: 1,
+			ratones: 0,
+			alfombrillas: 1,
+			iluminacion: 1,
 		});
 		expect(counts(r.facets.brand)).toEqual({
-			"face-republic": 1,
-			skin1004: 1,
+			akko: 1,
+			razer: 1,
 		});
 		expect(
-			r.facets.category.find((c) => c.slug === "sunscreen")?.selected,
+			r.facets.category.find((c) => c.slug === "iluminacion")?.selected,
 		).toBe(true);
 	});
 
@@ -258,9 +256,9 @@ describe("queryCatalog", () => {
 	});
 
 	test("facets list the values found by the search and the selected ones", () => {
-		const r = query({ q: "cleanser", collection: ["empty"] });
+		const r = query({ q: "mouse", collection: ["empty"] });
 		expect(r.total).toBe(0);
-		expect(r.facets.category.map((c) => c.slug)).toEqual(["cleanser"]);
+		expect(r.facets.category.map((c) => c.slug)).toEqual(["ratones"]);
 		expect(r.facets.collection).toEqual([
 			{ slug: "essentials", name: "Lo esencial", count: 1, selected: false },
 			{ slug: "empty", name: "Sin productos", count: 0, selected: true },
@@ -270,27 +268,30 @@ describe("queryCatalog", () => {
 	test("price bounds are inclusive and the range ignores the price refinement", () => {
 		const r = query({ minPrice: 1900, maxPrice: 2400 });
 		expect(slugs(r).sort()).toEqual([
-			"light-cleansing-oil",
-			"purity-sun-essence",
-			"water-fit-sun-keyboard",
+			"halo-rgb-light-bar",
+			"low-profile-keyboard",
+			"prism-rgb-desk-lamp",
 		]);
 		expect(r.priceRange).toEqual({ min: 1700, max: 2500 });
-		expect(query({ category: ["sunscreen"] }).priceRange).toEqual({
+		expect(query({ category: ["iluminacion"] }).priceRange).toEqual({
 			min: 1900,
 			max: 2200,
 		});
-		expect(query({ q: "retinol" }).priceRange).toBeNull();
+		expect(query({ q: "webcam" }).priceRange).toBeNull();
 	});
 
 	test("availability: in stock when any size has units, else sold out", () => {
 		const r = query({ availability: "in_stock" });
-		expect(slugs(r)).toEqual(["light-cleansing-oil", "salicylic-cleanser"]);
+		expect(slugs(r)).toEqual([
+			"low-profile-keyboard",
+			"ergonomic-silent-mouse",
+		]);
 		expect(r.facets.availability).toEqual([
 			{ value: "in_stock", count: 2, selected: true },
 			{ value: "sold_out", count: 3, selected: false },
 		]);
 		expect(
-			query({ availability: "sold_out", category: ["sunscreen"] }).facets
+			query({ availability: "sold_out", category: ["iluminacion"] }).facets
 				.availability,
 		).toEqual([
 			{ value: "in_stock", count: 0, selected: false },
@@ -301,43 +302,43 @@ describe("queryCatalog", () => {
 	test("sorts by price, name and newest with stable ties", () => {
 		// What is in stock is ordered first, then the sold-out ones in the same order.
 		expect(slugs(query({ sort: "price_asc" }))).toEqual([
-			"salicylic-cleanser",
-			"light-cleansing-oil",
-			"purity-sun-essence",
-			"water-fit-sun-keyboard",
-			"centella-ampoule",
+			"ergonomic-silent-mouse",
+			"low-profile-keyboard",
+			"prism-rgb-desk-lamp",
+			"halo-rgb-light-bar",
+			"gaming-desk-mat",
 		]);
 		expect(slugs(query({ sort: "price_desc" }))).toEqual([
-			"light-cleansing-oil",
-			"salicylic-cleanser",
-			"centella-ampoule",
-			"water-fit-sun-keyboard",
-			"purity-sun-essence",
+			"low-profile-keyboard",
+			"ergonomic-silent-mouse",
+			"gaming-desk-mat",
+			"halo-rgb-light-bar",
+			"prism-rgb-desk-lamp",
 		]);
 		expect(slugs(query({ sort: "name" }))).toEqual([
-			"salicylic-cleanser",
-			"light-cleansing-oil",
-			"centella-ampoule",
-			"water-fit-sun-keyboard",
-			"purity-sun-essence",
+			"ergonomic-silent-mouse",
+			"low-profile-keyboard",
+			"gaming-desk-mat",
+			"halo-rgb-light-bar",
+			"prism-rgb-desk-lamp",
 		]);
 		// Same creation time: the later id first.
 		expect(slugs(query({ sort: "newest" }))).toEqual([
-			"salicylic-cleanser",
-			"light-cleansing-oil",
-			"centella-ampoule",
-			"water-fit-sun-keyboard",
-			"purity-sun-essence",
+			"ergonomic-silent-mouse",
+			"low-profile-keyboard",
+			"gaming-desk-mat",
+			"halo-rgb-light-bar",
+			"prism-rgb-desk-lamp",
 		]);
 	});
 
 	test("best rated first: the average, then the number of reviews, unrated last", () => {
 		const rated = [
-			{ ...oil, rating: { average: 4.5, count: 3 } },
-			{ ...cleanser, rating: { average: 4.5, count: 9 } },
-			{ ...sunKeyboard, rating: { average: 4.9, count: 2 } },
-			sunEssence,
-			{ ...ampoule, rating: { average: 3, count: 1 } },
+			{ ...keyboard, rating: { average: 4.5, count: 3 } },
+			{ ...mouse, rating: { average: 4.5, count: 9 } },
+			{ ...lightBar, rating: { average: 4.9, count: 2 } },
+			lamp,
+			{ ...deskMat, rating: { average: 3, count: 1 } },
 		];
 		const r = queryCatalog(
 			rated,
@@ -346,18 +347,18 @@ describe("queryCatalog", () => {
 			"es",
 		);
 		expect(slugs(r)).toEqual([
-			"salicylic-cleanser",
-			"light-cleansing-oil",
-			"water-fit-sun-keyboard",
-			"centella-ampoule",
-			"purity-sun-essence",
+			"ergonomic-silent-mouse",
+			"low-profile-keyboard",
+			"halo-rgb-light-bar",
+			"gaming-desk-mat",
+			"prism-rgb-desk-lamp",
 		]);
 	});
 
 	test("a list of slugs narrows the list to those products", () => {
 		expect(
-			slugs(query({ slug: ["centella-ampoule", "light-cleansing-oil"] })),
-		).toEqual(["light-cleansing-oil", "centella-ampoule"]);
+			slugs(query({ slug: ["gaming-desk-mat", "low-profile-keyboard"] })),
+		).toEqual(["low-profile-keyboard", "gaming-desk-mat"]);
 		expect(query({ slug: [] }).total).toBe(5);
 	});
 
@@ -376,13 +377,13 @@ describe("queryCatalog", () => {
 
 	test("featured within one collection follows the collection's order", () => {
 		expect(slugs(query({ collection: ["essentials"] }))).toEqual([
-			"light-cleansing-oil",
-			"salicylic-cleanser",
-			"water-fit-sun-keyboard",
+			"low-profile-keyboard",
+			"ergonomic-silent-mouse",
+			"halo-rgb-light-bar",
 		]);
 		expect(slugs(query({ collection: ["new"] }))).toEqual([
-			"water-fit-sun-keyboard",
-			"centella-ampoule",
+			"halo-rgb-light-bar",
+			"gaming-desk-mat",
 		]);
 		expect(
 			sortEntries(
@@ -391,20 +392,23 @@ describe("queryCatalog", () => {
 				"featured",
 				["new"],
 			).map((e) => e.slug),
-		).toEqual(["water-fit-sun-keyboard", "centella-ampoule"]);
+		).toEqual(["halo-rgb-light-bar", "gaming-desk-mat"]);
 	});
 
 	test("pages through the results", () => {
 		const first = query({ sort: "price_asc", pageSize: 2 });
 		expect(first).toMatchObject({ total: 5, page: 1, pageCount: 3 });
-		expect(slugs(first)).toEqual(["salicylic-cleanser", "light-cleansing-oil"]);
+		expect(slugs(first)).toEqual([
+			"ergonomic-silent-mouse",
+			"low-profile-keyboard",
+		]);
 		expect(slugs(query({ sort: "price_asc", pageSize: 2, page: 3 }))).toEqual([
-			"centella-ampoule",
+			"gaming-desk-mat",
 		]);
 		const beyond = query({ pageSize: 2, page: 9 });
 		expect(beyond.items).toEqual([]);
 		expect(beyond.total).toBe(5);
-		expect(query({ q: "retinol" }).pageCount).toBe(1);
+		expect(query({ q: "webcam" }).pageCount).toBe(1);
 		expect(() => query({ page: 0 })).toThrow("Invalid page");
 		expect(() => query({ pageSize: 0 })).toThrow("Invalid page size");
 	});

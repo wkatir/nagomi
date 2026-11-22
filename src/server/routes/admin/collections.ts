@@ -252,7 +252,7 @@ export const collectionsRouter = new Hono<AdminEnv>()
 				return c.json({ error: "invalid_transition" }, 409);
 			const publishing = moving && patch.status === "published";
 			const { defaultLocale } = await readSettings(db);
-			// Publishing needs the default locale's text and a product, also inside the batch.
+			// Checked again inside the batch against a concurrent change.
 			const ready = sql`exists (select 1 from ${collectionTranslations} t where t.collection_id = ${id} and t.locale = ${defaultLocale}) and exists (select 1 from ${collectionProducts} cp where cp.collection_id = ${id})`;
 			if (publishing) {
 				const [state] = await db
@@ -352,8 +352,7 @@ export const collectionsRouter = new Hono<AdminEnv>()
 				return c.json({ error: "collection_requires_products" }, 409);
 			if (!(await productsAvailable(db, ids)))
 				return c.json({ error: "reference_unavailable" }, 409);
-			// The emptiness check above holds inside the batch: the collection is still in
-			// the status that was read.
+			// Keeps the emptiness check above true inside the batch.
 			const asRead = and(
 				eq(collections.id, id),
 				eq(collections.status, collection.status),

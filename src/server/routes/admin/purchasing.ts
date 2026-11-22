@@ -101,8 +101,7 @@ const receiveInput = z.object({
 const receivedOf = (itemId: typeof purchaseOrderItems.id) =>
 	sql<number>`(select coalesce(sum(${purchaseReceiptLines.quantity}), 0) from ${purchaseReceiptLines} where ${qualified(purchaseReceiptLines.purchaseOrderItemId)} = ${qualified(itemId)})`;
 
-// A reference already used by one of the supplier's purchase orders that is not cancelled
-// fails the first insert: 409 duplicate_reference.
+// A reference the supplier already used on an order that is not cancelled fails the first insert.
 async function createPurchaseOrder(
 	db: Db,
 	actor: string,

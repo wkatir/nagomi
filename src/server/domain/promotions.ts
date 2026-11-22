@@ -4,7 +4,6 @@ import type { PromotionType } from "#/db/schema";
 // (drizzle/0001_integrity_triggers.sql).
 type PromotionTerms = {
 	type: PromotionType;
-	// percentage: whole percent (1-50); fixed: minor units.
 	value: number;
 	minSubtotal: number | null;
 };
@@ -23,7 +22,6 @@ export type PromotionRules = PromotionTerms & {
 export type PromotionUsage = {
 	orders: number;
 	customerOrders: number | null;
-	// Orders of that email that were not cancelled.
 	priorOrders: number | null;
 };
 
@@ -69,7 +67,6 @@ export function promotionDiscount(
 	return Math.min(terms.value, subtotal);
 }
 
-// `today` is the store's local date.
 export function evaluatePromotion(
 	promotion: PromotionRules,
 	{

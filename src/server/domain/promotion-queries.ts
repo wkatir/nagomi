@@ -13,8 +13,7 @@ const { promotions, promotionTranslations } = schema;
 // The triggers count usage the same way.
 const promotionUsage = sql<number>`(select count(*) from promotion_redemptions r where r.promotion_id = ${qualified(promotions.id)} and r.released_at is null)`;
 
-// Released ones included: once any order used the code, its code and terms are fixed (the
-// API and a trigger refuse to change them).
+// Released ones included: once any order used the code, its terms are fixed.
 export const promotionTermsLocked =
 	sql<boolean>`exists (select 1 from promotion_redemptions r where r.promotion_id = ${qualified(promotions.id)})`.mapWith(
 		Boolean,

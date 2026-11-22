@@ -41,7 +41,6 @@ export const orders = sqliteTable(
 		customerEmail: text("customer_email").notNull(),
 		// E.164 (+503 and 8 digits).
 		customerPhone: text("customer_phone").notNull(),
-		// searchKey() of code, customer name, email and phone digits (src/server/domain/search.ts).
 		searchKey: text("search_key").notNull(),
 		locale: locale(),
 		channel: text("channel", { enum: ORDER_CHANNELS }).notNull(),

@@ -35,8 +35,7 @@ export const customersRouter = new Hono<AdminEnv>()
 		if (!detail) return c.json({ error: "not_found" }, 404);
 		return c.json(detail);
 	})
-	// A phone or an email another customer has fails the unique index: 409 duplicate_phone
-	// or duplicate_email.
+	// A phone or email another customer has fails the unique index (409).
 	.patch(
 		"/:id",
 		validate("param", idParam),

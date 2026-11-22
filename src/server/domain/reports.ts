@@ -7,8 +7,7 @@ import { addDays, daysBetween } from "#/lib/dates";
 import type { Granularity } from "#/lib/schemas/reports";
 import { e4ToMinor } from "./receiving";
 
-// Every report works on the store's local calendar days (YYYY-MM-DD in
-// store_settings.time_zone); src/lib/dates.ts turns them into UTC bounds, DST-safe.
+// Ranges are local calendar days; src/lib/dates.ts turns them into UTC bounds.
 
 // Weeks start on Monday (ISO 8601).
 export function periodStart(date: string, granularity: Granularity): string {
@@ -78,7 +77,6 @@ const stockFigures = (a: StockAcc): StockFigures => ({
 	value: e4ToMinor(a.valueE4),
 });
 
-// Valued at landed lot cost.
 export function stockPosition(lots: LotBalance[]) {
 	const total = emptyStock();
 	const byVariant = new Map<number, StockAcc>();
@@ -149,7 +147,6 @@ export function stockLosses(movements: LossMovement[]) {
 			units: adjustmentUnits,
 			value: e4ToMinor(adjustmentE4),
 		},
-		// Write-offs plus net shrinkage (positive adjustments reduce it).
 		totalLoss: e4ToMinor(totalE4 - adjustmentE4),
 	};
 }

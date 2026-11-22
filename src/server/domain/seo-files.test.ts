@@ -37,7 +37,7 @@ describe("sitemap.xml", () => {
 	test("lists each page once per locale with its alternates", () => {
 		const xml = sitemapXml(origin, [
 			{ path: "/" },
-			{ path: "/products/oil", lastmod: "2026-10-11T12:00:00Z" },
+			{ path: "/products/keyboard", lastmod: "2026-10-11T12:00:00Z" },
 		]);
 		expect(xml).toStartWith('<?xml version="1.0" encoding="UTF-8"?>\n');
 		expect(xml).toContain(
@@ -47,19 +47,19 @@ describe("sitemap.xml", () => {
 		expect(urls.map((u) => u.match(/<loc>(.*?)<\/loc>/)?.[1])).toEqual([
 			`${origin}/`,
 			`${origin}/en/`,
-			`${origin}/products/oil`,
-			`${origin}/en/products/oil`,
+			`${origin}/products/keyboard`,
+			`${origin}/en/products/keyboard`,
 		]);
 		for (const url of urls.slice(2)) {
 			expect(url).toContain("<lastmod>2026-10-11T12:00:00Z</lastmod>");
 			expect(url).toContain(
-				`<xhtml:link rel="alternate" hreflang="es" href="${origin}/products/oil"/>`,
+				`<xhtml:link rel="alternate" hreflang="es" href="${origin}/products/keyboard"/>`,
 			);
 			expect(url).toContain(
-				`<xhtml:link rel="alternate" hreflang="en" href="${origin}/en/products/oil"/>`,
+				`<xhtml:link rel="alternate" hreflang="en" href="${origin}/en/products/keyboard"/>`,
 			);
 			expect(url).toContain(
-				`<xhtml:link rel="alternate" hreflang="x-default" href="${origin}/products/oil"/>`,
+				`<xhtml:link rel="alternate" hreflang="x-default" href="${origin}/products/keyboard"/>`,
 			);
 		}
 		expect(urls[0]).not.toContain("<lastmod>");
@@ -89,19 +89,19 @@ describe("sitemap entries", () => {
 	function seeded() {
 		const raw = migratedDatabase();
 		raw.exec(`
-insert into brands (slug, name, search_key) values ('skin1004', 'SKIN1004', 'skin1004'), ('face-republic', 'Face Republic', 'face'), ('old-brand', 'Old', 'old');
-insert into categories (slug, icon, sort_order) values ('cleanser', 'package', 1), ('unused', 'package', 2);
-insert into category_translations (category_id, locale, name) values (1, 'es', 'Limpiador'), (2, 'es', 'Sin uso');
-insert into products (slug, brand_id, category_id) values ('oil', 1, 1), ('draft-cream', 2, 1), ('retired', 3, 1);
-insert into product_translations (product_id, locale, name, search_key) values (1, 'es', 'Aceite', 'aceite'), (2, 'es', 'Crema', 'crema'), (3, 'es', 'Retirado', 'retirado');
-insert into variants (product_id, sku, price, search_key) values (1, 'OIL-001', 1551, 'oil'), (3, 'RET-001', 900, 'ret'), (1, 'OIL-002', 1000, 'oil 2');
-update products set status = 'published', updated_at = '2026-10-11T12:00:00Z' where slug = 'oil';
+insert into brands (slug, name, search_key) values ('keychron', 'Keychron', 'keychron'), ('logitech', 'Logitech', 'logitech'), ('old-brand', 'Old', 'old');
+insert into categories (slug, icon, sort_order) values ('teclados', 'keyboard', 1), ('unused', 'package', 2);
+insert into category_translations (category_id, locale, name) values (1, 'es', 'Teclados'), (2, 'es', 'Sin uso');
+insert into products (slug, brand_id, category_id) values ('keyboard', 1, 1), ('draft-mouse', 2, 1), ('retired', 3, 1);
+insert into product_translations (product_id, locale, name, search_key) values (1, 'es', 'Teclado', 'teclado'), (2, 'es', 'Ratón', 'raton'), (3, 'es', 'Retirado', 'retirado');
+insert into variants (product_id, sku, price, search_key) values (1, 'KBD-001', 1551, 'kbd'), (3, 'RET-001', 900, 'ret'), (1, 'KBD-002', 1000, 'kbd 2');
+update products set status = 'published', updated_at = '2026-10-11T12:00:00Z' where slug = 'keyboard';
 update products set status = 'archived' where slug = 'retired';
 insert into pages (slug, is_published, updated_at) values ('terms', 1, '2026-10-05T00:00:00Z'), ('draft-page', 0, '2026-10-05T00:00:00Z');
-insert into bundles (slug, price) values ('morning', 100), ('evening', 100);
-insert into bundle_translations (bundle_id, locale, name) values (1, 'es', 'Mañana'), (2, 'es', 'Noche');
+insert into bundles (slug, price) values ('starter', 100), ('streaming', 100);
+insert into bundle_translations (bundle_id, locale, name) values (1, 'es', 'Kit inicial'), (2, 'es', 'Kit streaming');
 insert into bundle_items (bundle_id, variant_id, position) values (1, 1, 1), (2, 1, 1), (2, 3, 2);
-update bundles set status = 'published' where slug = 'evening';
+update bundles set status = 'published' where slug = 'streaming';
 `);
 		return drizzle(d1(raw) as unknown as D1Database, {
 			schema,
@@ -113,10 +113,10 @@ update bundles set status = 'published' where slug = 'evening';
 			{ path: "/" },
 			{ path: "/products" },
 			{ path: "/sets" },
-			{ path: "/categories/cleanser" },
-			{ path: "/brands/skin1004" },
-			{ path: "/sets/evening" },
-			{ path: "/products/oil", lastmod: "2026-10-11T12:00:00Z" },
+			{ path: "/categories/teclados" },
+			{ path: "/brands/keychron" },
+			{ path: "/sets/streaming" },
+			{ path: "/products/keyboard", lastmod: "2026-10-11T12:00:00Z" },
 			{ path: "/pages/terms", lastmod: "2026-10-05T00:00:00Z" },
 		]);
 	});
@@ -125,11 +125,11 @@ update bundles set status = 'published' where slug = 'evening';
 		const paths = (await sitemapEntries(seeded(), context)).map((e) => e.path);
 		for (const gone of [
 			"/categories/unused",
-			"/brands/face-republic",
+			"/brands/logitech",
 			"/brands/old-brand",
-			"/sets/morning",
+			"/sets/starter",
 			"/pages/draft-page",
-			"/products/draft-cream",
+			"/products/draft-mouse",
 			"/products/retired",
 		])
 			expect(paths).not.toContain(gone);
@@ -145,7 +145,7 @@ describe("llms.txt", () => {
 				sections: [
 					{
 						title: "Products",
-						lines: ["[Oil](https://shop.example/products/oil)"],
+						lines: ["[Keyboard](https://shop.example/products/keyboard)"],
 					},
 					{ title: "Sets", lines: [] },
 				],
@@ -158,7 +158,7 @@ describe("llms.txt", () => {
 				"",
 				"## Products",
 				"",
-				"- [Oil](https://shop.example/products/oil)",
+				"- [Keyboard](https://shop.example/products/keyboard)",
 				"",
 			].join("\n"),
 		);

@@ -6,9 +6,9 @@ import type { AdminEnv } from "#/server/auth";
 import {
 	addPurchase,
 	addSupplier,
-	CRM_30,
-	OIL_50,
-	OIL_100,
+	MOU_BLACK,
+	PAD_M,
+	PAD_XL,
 	seedSupply,
 } from "./supply-fixtures";
 
@@ -90,8 +90,7 @@ beforeEach(() => {
 	env.DB = d1(db);
 	env.EXPORT_LIMITER = { limit: async () => ({ success: true }) };
 	addSupplier(db, { name: "Alpha" });
-	// Lots 1 to 5. OIL-001 has two lots, OIL-100 one, and the cream has a lot to sell and
-	// one that sold out.
+	// Lots 1 to 5: PAD-001 has two, PAD-100 one, MOU-001 one to sell and one sold out.
 	addPurchase(db, {
 		supplierId: 1,
 		reference: "PO-1",
@@ -99,28 +98,28 @@ beforeEach(() => {
 		receipt: { at: "2026-10-01T10:00:00Z" },
 		items: [
 			{
-				variantId: OIL_50,
+				variantId: PAD_M,
 				quantity: 10,
 				unitCost: 700,
 				received: 10,
 				lotCode: "L1",
 			},
 			{
-				variantId: OIL_50,
+				variantId: PAD_M,
 				quantity: 20,
 				unitCost: 600,
 				received: 20,
 				lotCode: "L2",
 			},
 			{
-				variantId: OIL_100,
+				variantId: PAD_XL,
 				quantity: 6,
 				unitCost: 1200,
 				received: 6,
 				lotCode: "L3",
 			},
 			{
-				variantId: CRM_30,
+				variantId: MOU_BLACK,
 				quantity: 8,
 				unitCost: 500,
 				received: 8,
@@ -136,7 +135,7 @@ beforeEach(() => {
 		receipt: { at: "2026-10-02T10:00:00Z" },
 		items: [
 			{
-				variantId: CRM_30,
+				variantId: MOU_BLACK,
 				quantity: 3,
 				unitCost: 500,
 				received: 3,
@@ -147,13 +146,13 @@ beforeEach(() => {
 	// The ledger after the receipts (movements 6 to 9). The sale happened at 21:00 of
 	// October 15 in the store, which is October 16 in UTC.
 	db.exec(`
-update variants set reorder_point = 8 where id = ${CRM_30};
-insert into variants (product_id, sku, search_key, status) values (1, 'OIL-200', 'oil-200', 'archived'), (2, 'NEW-001', 'new-1', 'active');
+update variants set reorder_point = 8 where id = ${MOU_BLACK};
+insert into variants (product_id, sku, search_key, status) values (1, 'PAD-200', 'pad-200', 'archived'), (2, 'NEW-001', 'new-1', 'active');
 insert into inventory_movements (lot_id, kind, quantity, reason, note, created_by, created_at) values (2, 'waste', -2, 'damaged', 'Dropped', 'admin', '2026-10-10T15:00:00Z');
 insert into inventory_movements (lot_id, kind, quantity, reason, created_by, created_at) values (5, 'waste', -3, 'lost_theft', 'admin', '2026-10-12T15:00:00Z');
 insert into inventory_movements (lot_id, kind, quantity, reason, created_by, created_at) values (1, 'adjustment', -1, 'count_difference', 'admin', '2026-10-14T15:00:00Z');
-insert into orders (id, code, idempotency_key, request_hash, locale, channel, status, payment_method, shipping_method, confirmation_message, customer_name, customer_email, customer_phone, subtotal, total, search_key, created_at) values (1, 'ECL-1', 'k1', 'h', 'es', 'web', 'pending', 'bank_transfer', 'pickup', 'm', 'Ana', 'ana@example.com', '+50371234567', 1400, 1400, 'ecl-1', '2026-10-15T12:00:00Z');
-insert into order_items (order_id, variant_id, quantity, unit_price, sku, brand_name, product_name) values (1, ${OIL_50}, 2, 700, 'OIL-001', 'Brand', 'Aceite');
+insert into orders (id, code, idempotency_key, request_hash, locale, channel, status, payment_method, shipping_method, confirmation_message, customer_name, customer_email, customer_phone, subtotal, total, search_key, created_at) values (1, 'NAG-1', 'k1', 'h', 'es', 'web', 'pending', 'bank_transfer', 'pickup', 'm', 'Ana', 'ana@example.com', '+50371234567', 1400, 1400, 'nag-1', '2026-10-15T12:00:00Z');
+insert into order_items (order_id, variant_id, quantity, unit_price, sku, brand_name, product_name) values (1, ${PAD_M}, 2, 700, 'PAD-001', 'Brand', 'Alfombrilla');
 insert into inventory_movements (lot_id, kind, quantity, order_item_id, created_by, created_at) values (1, 'sale', -2, 1, 'admin', '2026-10-16T03:00:00Z');
 `);
 });
@@ -161,7 +160,7 @@ insert into inventory_movements (lot_id, kind, quantity, order_item_id, created_
 describe("GET /inventory", () => {
 	test("gives the stock of each variant: what can be sold, its value, and whether it is low", async () => {
 		const page = await stock();
-		expect(skus(page)).toEqual(["OIL-001", "OIL-100", "CRM-001", "NEW-001"]);
+		expect(skus(page)).toEqual(["PAD-001", "PAD-100", "MOU-001", "NEW-001"]);
 		expect(page).toMatchObject({
 			total: 4,
 			page: 1,
@@ -170,9 +169,9 @@ describe("GET /inventory", () => {
 		});
 		const bySku = Object.fromEntries(page.items.map((r) => [r.sku, r]));
 		// Lot 1: 10 - 1 - 2 = 7 at 7.00. Lot 2: 20 - 2 = 18 at 6.00.
-		expect(bySku["OIL-001"]).toMatchObject({
+		expect(bySku["PAD-001"]).toMatchObject({
 			brand: "Brand",
-			name: "Aceite",
+			name: "Alfombrilla",
 			optionLabel: null,
 			reorderPoint: 10,
 			onHand: 25,
@@ -180,14 +179,14 @@ describe("GET /inventory", () => {
 			lowStock: false,
 		});
 		// No reorder point of its own: the store's threshold of 5 applies.
-		expect(bySku["OIL-100"]).toMatchObject({
+		expect(bySku["PAD-100"]).toMatchObject({
 			onHand: 6,
 			stockValue: 7200,
 			reorderPoint: null,
 			lowStock: false,
 		});
 		// 8 in lot 4; lot 5 sold out (3 received, 3 written off). At its reorder point.
-		expect(bySku["CRM-001"]).toMatchObject({
+		expect(bySku["MOU-001"]).toMatchObject({
 			onHand: 8,
 			stockValue: 4000,
 			reorderPoint: 8,
@@ -199,11 +198,11 @@ describe("GET /inventory", () => {
 			stockValue: 0,
 			lowStock: true,
 		});
-		expect(bySku["OIL-200"]).toBeUndefined();
+		expect(bySku["PAD-200"]).toBeUndefined();
 	});
 
 	test("lists an archived variant while it still holds units", async () => {
-		db.exec("update variants set status = 'active' where sku = 'OIL-200'");
+		db.exec("update variants set status = 'active' where sku = 'PAD-200'");
 		addPurchase(db, {
 			supplierId: 1,
 			reference: "PO-3",
@@ -217,16 +216,16 @@ describe("GET /inventory", () => {
 				},
 			],
 		});
-		db.exec("update variants set status = 'archived' where sku = 'OIL-200'");
+		db.exec("update variants set status = 'archived' where sku = 'PAD-200'");
 		const page = await stock("sort=sku&dir=asc");
 		expect(skus(page)).toEqual([
-			"CRM-001",
+			"MOU-001",
 			"NEW-001",
-			"OIL-001",
-			"OIL-100",
-			"OIL-200",
+			"PAD-001",
+			"PAD-100",
+			"PAD-200",
 		]);
-		expect(page.items.find((r) => r.sku === "OIL-200")).toMatchObject({
+		expect(page.items.find((r) => r.sku === "PAD-200")).toMatchObject({
 			onHand: 5,
 			stockValue: 1500,
 			variantStatus: "archived",
@@ -238,84 +237,84 @@ describe("GET /inventory", () => {
 			skus(await stock(`sort=${sort}&dir=${dir}`));
 		expect(await sorted("product", "desc")).toEqual([
 			"NEW-001",
-			"CRM-001",
-			"OIL-100",
-			"OIL-001",
+			"MOU-001",
+			"PAD-100",
+			"PAD-001",
 		]);
 		expect(await sorted("sku", "asc")).toEqual([
-			"CRM-001",
+			"MOU-001",
 			"NEW-001",
-			"OIL-001",
-			"OIL-100",
+			"PAD-001",
+			"PAD-100",
 		]);
 		expect(await sorted("sku", "desc")).toEqual([
-			"OIL-100",
-			"OIL-001",
+			"PAD-100",
+			"PAD-001",
 			"NEW-001",
-			"CRM-001",
+			"MOU-001",
 		]);
 		expect(await sorted("onHand", "asc")).toEqual([
 			"NEW-001",
-			"OIL-100",
-			"CRM-001",
-			"OIL-001",
+			"PAD-100",
+			"MOU-001",
+			"PAD-001",
 		]);
 		expect(await sorted("onHand", "desc")).toEqual([
-			"OIL-001",
-			"CRM-001",
-			"OIL-100",
+			"PAD-001",
+			"MOU-001",
+			"PAD-100",
 			"NEW-001",
 		]);
 		expect(await sorted("stockValue", "asc")).toEqual([
 			"NEW-001",
-			"CRM-001",
-			"OIL-100",
-			"OIL-001",
+			"MOU-001",
+			"PAD-100",
+			"PAD-001",
 		]);
 		expect(await sorted("stockValue", "desc")).toEqual([
-			"OIL-001",
-			"OIL-100",
-			"CRM-001",
+			"PAD-001",
+			"PAD-100",
+			"MOU-001",
 			"NEW-001",
 		]);
 		// No point set comes first when ascending.
 		expect(await sorted("reorderPoint", "asc")).toEqual([
-			"OIL-100",
+			"PAD-100",
 			"NEW-001",
-			"CRM-001",
-			"OIL-001",
+			"MOU-001",
+			"PAD-001",
 		]);
 		expect(await sorted("reorderPoint", "desc")).toEqual([
-			"OIL-001",
-			"CRM-001",
+			"PAD-001",
+			"MOU-001",
 			"NEW-001",
-			"OIL-100",
+			"PAD-100",
 		]);
 	});
 
 	test("narrows to the variants that are low or out, and the total follows", async () => {
 		const low = await stock("view=low");
-		expect(skus(low)).toEqual(["CRM-001", "NEW-001"]);
+		expect(skus(low)).toEqual(["MOU-001", "NEW-001"]);
 		expect(low.total).toBe(2);
 		expect(skus(await stock("view=out"))).toEqual(["NEW-001"]);
 		db.exec("update store_settings set low_stock_threshold = 6");
 		expect(skus(await stock("view=low"))).toEqual([
-			"OIL-100",
-			"CRM-001",
+			"PAD-100",
+			"MOU-001",
 			"NEW-001",
 		]);
 	});
 
 	test("searches the product, the brand and the SKU of the variant itself", async () => {
-		expect(skus(await stock("q=aceite"))).toEqual(["OIL-001", "OIL-100"]);
-		expect(skus(await stock("q=OIL-100"))).toEqual(["OIL-100"]);
+		expect(skus(await stock("q=alfombrilla"))).toEqual(["PAD-001", "PAD-100"]);
+		expect(skus(await stock("q=PAD-100"))).toEqual(["PAD-100"]);
 		expect(skus(await stock("q=BRAND&sort=sku&dir=asc"))).toEqual([
-			"CRM-001",
+			"MOU-001",
 			"NEW-001",
-			"OIL-001",
-			"OIL-100",
+			"PAD-001",
+			"PAD-100",
 		]);
-		expect(skus(await stock("q=crema&view=out"))).toEqual(["NEW-001"]);
+		expect(skus(await stock("q=raton&view=out"))).toEqual(["NEW-001"]);
 		expect((await stock("q=nothing")).items).toEqual([]);
 	});
 
@@ -330,8 +329,8 @@ describe("GET /inventory", () => {
 		expect(full).toMatchObject({ total: 12, pageSize: 10, pageCount: 2 });
 		expect(full.items).toHaveLength(10);
 		expect(skus(await stock("pageSize=10&page=2&sort=sku&dir=asc"))).toEqual([
-			"OIL-001",
-			"OIL-100",
+			"PAD-001",
+			"PAD-100",
 		]);
 		expect(await stock("pageSize=10&page=9")).toMatchObject({
 			items: [],
@@ -391,9 +390,9 @@ describe("GET /inventory/lots", () => {
 		const byCode = Object.fromEntries(page.items.map((l) => [l.code, l]));
 		expect(byCode.L1).toMatchObject({
 			lotId: 1,
-			sku: "OIL-001",
+			sku: "PAD-001",
 			brand: "Brand",
-			name: "Aceite",
+			name: "Alfombrilla",
 			available: 7,
 			received: 10,
 			unitCost: 700,
@@ -435,10 +434,10 @@ describe("GET /inventory/lots", () => {
 
 	test("searches the variant or the lot code", async () => {
 		expect((await lotList("q=l2")).items.map((l) => l.code)).toEqual(["L2"]);
-		expect((await lotList("q=OIL-100")).items.map((l) => l.code)).toEqual([
+		expect((await lotList("q=PAD-100")).items.map((l) => l.code)).toEqual([
 			"L3",
 		]);
-		expect((await lotList("q=crema")).items.map((l) => l.code)).toEqual(["L4"]);
+		expect((await lotList("q=raton")).items.map((l) => l.code)).toEqual(["L4"]);
 		expect((await lotList("q=nothing")).items).toEqual([]);
 	});
 
@@ -457,7 +456,7 @@ describe("GET /inventory/lots", () => {
 				status: "received",
 				items: [
 					{
-						variantId: CRM_30,
+						variantId: MOU_BLACK,
 						quantity: 1,
 						unitCost: 100,
 						received: 1,
@@ -490,15 +489,15 @@ describe("GET /inventory/movements", () => {
 			kind: "sale",
 			quantity: -2,
 			reason: null,
-			sku: "OIL-001",
+			sku: "PAD-001",
 			brand: "Brand",
-			name: "Aceite",
+			name: "Alfombrilla",
 			optionLabel: null,
 			lotId: 1,
 			lotCode: "L1",
 			unitCost: 700,
 			value: -1400,
-			orderCode: "ECL-1",
+			orderCode: "NAG-1",
 			createdByName: "Admin",
 		});
 		expect(all.items[3]).toMatchObject({
@@ -533,17 +532,17 @@ describe("GET /inventory/movements", () => {
 		expect(ids(await feed("kind=receive"))).toEqual([5, 4, 3, 2, 1]);
 		expect(ids(await feed("reason=damaged"))).toEqual([6]);
 		expect(ids(await feed("reason=count_difference"))).toEqual([8]);
-		expect(ids(await feed("sku=OIL-001"))).toEqual([9, 8, 6, 2, 1]);
-		expect(ids(await feed("sku=CRM-001&kind=waste"))).toEqual([7]);
+		expect(ids(await feed("sku=PAD-001"))).toEqual([9, 8, 6, 2, 1]);
+		expect(ids(await feed("sku=MOU-001&kind=waste"))).toEqual([7]);
 		expect(ids(await feed("sku=NEW-001"))).toEqual([]);
 		expect(ids(await feed("lotId=2"))).toEqual([6, 2]);
-		const first = await feed("sku=OIL-001&limit=2");
+		const first = await feed("sku=PAD-001&limit=2");
 		expect(ids(first)).toEqual([9, 8]);
 		expect(first.nextCursor).toBe(8);
-		const second = await feed("sku=OIL-001&limit=2&cursor=8");
+		const second = await feed("sku=PAD-001&limit=2&cursor=8");
 		expect(ids(second)).toEqual([6, 2]);
 		expect(second.nextCursor).toBe(2);
-		expect(ids(await feed("sku=OIL-001&limit=2&cursor=2"))).toEqual([1]);
+		expect(ids(await feed("sku=PAD-001&limit=2&cursor=2"))).toEqual([1]);
 	});
 
 	test("filters by the days of the store, not of UTC", async () => {
@@ -582,8 +581,8 @@ describe("GET /exports/movements.csv", () => {
 		expect(all[0]).toContain("id,created_at,kind,quantity,reason");
 		const damaged = await lines("reason=damaged");
 		expect(damaged).toHaveLength(2);
-		expect(damaged[1]).toContain(",waste,-2,damaged,Dropped,OIL-001,");
-		expect(await lines("sku=CRM-001&kind=waste")).toHaveLength(2);
+		expect(damaged[1]).toContain(",waste,-2,damaged,Dropped,PAD-001,");
+		expect(await lines("sku=MOU-001&kind=waste")).toHaveLength(2);
 		expect(await lines("from=2026-10-15&to=2026-10-15")).toHaveLength(2);
 	});
 });

@@ -364,7 +364,6 @@ export const storeCatalog = new Hono()
 			promises: promises[locale],
 		});
 	})
-	// Prices are in minor units.
 	.get("/products", validate("query", productsQuery), async (c) => {
 		const db = getDb();
 		const { locale, ...filter } = c.req.valid("query");
@@ -565,7 +564,6 @@ export const storeCatalog = new Hono()
 		const list = await activeBrands(db, ctx);
 		return c.json(list.filter((b) => b.productCount > 0));
 	})
-	// Like the list and the sitemap, only a brand with a published product has a page.
 	.get(
 		"/brands/:slug",
 		validate("param", slugParam),
@@ -588,8 +586,6 @@ export const storeCatalog = new Hono()
 		const list = await publishedCollections(db, ctx);
 		return c.json(list.filter((x) => x.productCount > 0));
 	})
-	// Like the list and the sitemap, only a collection with a published product has a
-	// page.
 	.get(
 		"/collections/:slug",
 		validate("param", slugParam),

@@ -2,8 +2,7 @@ import { mediaKeyType } from "./domain/images";
 
 export const MEDIA_PREFIX = "/media/";
 
-// The key is the hash of the content, so a URL always names the same bytes: cached for a
-// year and revalidated with the ETag, answered without reading R2.
+// The key is the content hash, so a URL always names the same bytes.
 export async function serveMedia(request: Request, bucket: R2Bucket) {
 	if (request.method !== "GET" && request.method !== "HEAD")
 		return new Response(null, { status: 405, headers: { Allow: "GET, HEAD" } });

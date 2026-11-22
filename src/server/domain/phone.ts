@@ -12,8 +12,7 @@ export class InvalidPhoneError extends Error {
 	}
 }
 
-// The E.164 number is the customer's identity: "7123-4567", "+503 7123 4567" and
-// "50371234567" must be the same customer.
+// The E.164 number is the customer's identity: "7123-4567" and "+503 7123 4567" are one.
 export function normalizePhone(input: string, defaultCountry: string): string {
 	if (!isSupportedCountry(defaultCountry))
 		throw new Error(`Unsupported phone country ${defaultCountry}`);

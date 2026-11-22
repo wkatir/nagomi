@@ -1,6 +1,6 @@
 import type { Context } from "hono";
 
-// The runtime rejects a broken multipart body with a TypeError: the client's error, a 400.
+// The runtime rejects a broken multipart body with a TypeError.
 export async function multipartForm(c: Context): Promise<FormData | Response> {
 	const type = c.req.header("content-type")?.toLowerCase() ?? "";
 	if (!type.startsWith("multipart/form-data"))

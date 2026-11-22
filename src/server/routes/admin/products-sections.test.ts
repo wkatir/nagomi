@@ -62,13 +62,13 @@ const audits = (action: string) =>
 beforeEach(() => {
 	db = migratedDatabase();
 	db.exec(`
-insert into store_settings (id, name, currency, default_locale, time_zone, country_code, order_code_prefix, max_quantity_per_line, low_stock_threshold) values (1, 'Store', 'USD', 'es', 'America/El_Salvador', 'SV', 'ECL', 20, 5);
+insert into store_settings (id, name, currency, default_locale, time_zone, country_code, order_code_prefix, max_quantity_per_line, low_stock_threshold) values (1, 'Store', 'USD', 'es', 'America/El_Salvador', 'SV', 'NAG', 20, 5);
 insert into brands (slug, name, search_key) values ('brand', 'Brand', 'brand brand');
 insert into brands (slug, name, search_key, status) values ('old-brand', 'Old', 'old old-brand', 'archived');
-insert into categories (slug, icon, sort_order) values ('cleanser', 'package', 1);
+insert into categories (slug, icon, sort_order) values ('ratones', 'package', 1);
 insert into categories (slug, icon, sort_order, status) values ('old-cat', 'package', 2, 'archived');
-insert into products (slug, brand_id, category_id, updated_at) values ('oil', 1, 1, '2026-01-01T00:00:00Z');
-insert into product_translations (product_id, locale, name, search_key, tagline) values (1, 'es', 'Aceite', 'aceite', 'Frase');
+insert into products (slug, brand_id, category_id, updated_at) values ('raton', 1, 1, '2026-01-01T00:00:00Z');
+insert into product_translations (product_id, locale, name, search_key, tagline) values (1, 'es', 'Ratón', 'raton', 'Frase');
 `);
 	env.DB = d1(db);
 });
@@ -81,7 +81,7 @@ afterEach(() => {
 
 const readyToPublish = () =>
 	db.exec(`
-insert into variants (product_id, sku, price, search_key) values (1, 'OIL-001', 1500, 'oil-30');
+insert into variants (product_id, sku, price, search_key) values (1, 'RAT-001', 1500, 'rat-001');
 `);
 
 describe("what stops a product from being published", () => {
@@ -91,10 +91,10 @@ describe("what stops a product from being published", () => {
 		db.exec("delete from product_translations");
 		expect((await detail()).publishMissing).toEqual(["text", "price"]);
 		db.exec(`
-insert into product_translations (product_id, locale, name, search_key) values (1, 'en', 'Oil', 'oil');
+insert into product_translations (product_id, locale, name, search_key) values (1, 'en', 'Mouse', 'mouse');
 insert into media_files (r2_key, content_type, byte_size, width, height) values ('${"a".repeat(64)}.jpg', 'image/jpeg', 10, 4, 3);
 insert into product_images (product_id, media_file_id, kind) values (1, 1, 'packshot');
-insert into product_image_translations (image_id, locale, alt) values (1, 'en', 'A bottle');
+insert into product_image_translations (image_id, locale, alt) values (1, 'en', 'A mouse');
 `);
 		// Text in another language is no text in the default one; the same goes for a photo's.
 		expect((await detail()).publishMissing).toEqual([
@@ -103,8 +103,8 @@ insert into product_image_translations (image_id, locale, alt) values (1, 'en', 
 			"photo_alt",
 		]);
 		db.exec(`
-insert into product_translations (product_id, locale, name, search_key) values (1, 'es', 'Aceite', 'aceite');
-insert into product_image_translations (image_id, locale, alt) values (1, 'es', 'Un frasco');
+insert into product_translations (product_id, locale, name, search_key) values (1, 'es', 'Ratón', 'raton');
+insert into product_image_translations (image_id, locale, alt) values (1, 'es', 'Un ratón');
 `);
 		readyToPublish();
 		expect((await detail()).publishMissing).toEqual([]);
@@ -139,11 +139,11 @@ insert into product_image_translations (image_id, locale, alt) values (1, 'es', 
 		db.exec(`
 insert into media_files (r2_key, content_type, byte_size, width, height) values ('${"a".repeat(64)}.jpg', 'image/jpeg', 10, 4, 3);
 insert into product_images (product_id, media_file_id, kind) values (1, 1, 'packshot');
-insert into product_image_translations (image_id, locale, alt) values (1, 'en', 'A bottle');
+insert into product_image_translations (image_id, locale, alt) values (1, 'en', 'A mouse');
 `);
 		await refused("image_alt_required");
 		db.exec(
-			"insert into product_image_translations (image_id, locale, alt) values (1, 'es', 'Un frasco')",
+			"insert into product_image_translations (image_id, locale, alt) values (1, 'es', 'Un ratón')",
 		);
 		db.exec("update brands set status = 'archived' where id = 1");
 		await refused("reference_unavailable");
@@ -183,8 +183,8 @@ insert into product_image_translations (image_id, locale, alt) values (1, 'en', 
 describe("the variants of the detail", () => {
 	test("say whether the SKU can change and how many units the variant holds", async () => {
 		db.exec(`
-insert into variants (product_id, sku, price, search_key) values (1, 'OIL-001', 1500, 'oil-30');
-insert into variants (product_id, sku, price, search_key) values (1, 'OIL-002', 2500, 'oil-50');
+insert into variants (product_id, sku, price, search_key) values (1, 'RAT-001', 1500, 'rat-001');
+insert into variants (product_id, sku, price, search_key) values (1, 'RAT-002', 2500, 'rat-002');
 insert into suppliers (name, search_key) values ('Supplier', 'supplier');
 insert into purchase_orders (supplier_id, reference, status, ordered_on) values (1, 'PO-1', 'ordered', '2026-01-01');
 insert into purchase_order_items (purchase_order_id, variant_id, quantity, unit_cost) values (1, 2, 100, 700);
@@ -196,8 +196,8 @@ insert into inventory_movements (lot_id, kind, quantity, created_by) values (1, 
 		const { variants } = await detail();
 		// The second variant was purchased: its SKU is locked.
 		expect(variants.map((v) => [v.sku, v.skuEditable, v.onHand])).toEqual([
-			["OIL-001", true, 0],
-			["OIL-002", false, 30],
+			["RAT-001", true, 0],
+			["RAT-002", false, 30],
 		]);
 		db.exec(
 			"update variants set price = 1500 where id = 1; update products set status = 'published'",
@@ -211,19 +211,19 @@ insert into inventory_movements (lot_id, kind, quantity, created_by) values (1, 
 
 	test("a SKU changes only while its product is a draft and the variant was never ordered", async () => {
 		db.exec(
-			"insert into variants (product_id, sku, price, search_key) values (1, 'OIL-001', 1500, 'oil-30')",
+			"insert into variants (product_id, sku, price, search_key) values (1, 'RAT-001', 1500, 'rat-001')",
 		);
 		const rename = (sku: string) => send("PATCH", "/variants/1", { sku });
-		expect((await rename("OIL-031")).status).toBe(200);
-		expect(one("select sku from variants where id = 1").sku).toBe("OIL-031");
+		expect((await rename("RAT-031")).status).toBe(200);
+		expect(one("select sku from variants where id = 1").sku).toBe("RAT-031");
 		db.exec(`
-insert into orders (code, idempotency_key, request_hash, locale, channel, status, payment_method, shipping_method, confirmation_message, customer_name, customer_email, customer_phone, subtotal, total, search_key) values ('ECL-1', 'k1', 'h', 'es', 'whatsapp', 'pending', 'bank_transfer', 'pickup', 'm', 'Ana', 'ana@example.com', '+50371234567', 1500, 1500, 'ecl-1');
-insert into order_items (order_id, variant_id, quantity, unit_price, sku, brand_name, product_name) values (1, 1, 1, 1500, 'OIL-031', 'Brand', 'Aceite');
+insert into orders (code, idempotency_key, request_hash, locale, channel, status, payment_method, shipping_method, confirmation_message, customer_name, customer_email, customer_phone, subtotal, total, search_key) values ('NAG-1', 'k1', 'h', 'es', 'whatsapp', 'pending', 'bank_transfer', 'pickup', 'm', 'Ana', 'ana@example.com', '+50371234567', 1500, 1500, 'nag-1');
+insert into order_items (order_id, variant_id, quantity, unit_price, sku, brand_name, product_name) values (1, 1, 1, 1500, 'RAT-031', 'Brand', 'Ratón');
 `);
-		const locked = await rename("OIL-032");
+		const locked = await rename("RAT-032");
 		expect(locked.status).toBe(409);
 		expect(await errorOf(locked)).toBe("sku_locked");
-		expect(one("select sku from variants where id = 1").sku).toBe("OIL-031");
+		expect(one("select sku from variants where id = 1").sku).toBe("RAT-031");
 	});
 });
 
@@ -231,8 +231,8 @@ describe("PUT /products/:id/translations", () => {
 	test("writes every language given in one request: the new one, and the one that existed", async () => {
 		const res = await send("PUT", "/1/translations", {
 			translations: {
-				es: { name: "Aceite limpiador", tagline: null, seoTitle: "SEO es" },
-				en: { name: "Cleansing oil", description: "A balm" },
+				es: { name: "Ratón inalámbrico", tagline: null, seoTitle: "SEO es" },
+				en: { name: "Wireless mouse", description: "A light mouse" },
 			},
 		});
 		expect(res.status).toBe(200);
@@ -242,15 +242,15 @@ describe("PUT /products/:id/translations", () => {
 				.map((t) => [t.locale, t.name, t.tagline])
 				.sort((a, b) => String(a[0]).localeCompare(String(b[0]))),
 		).toEqual([
-			["en", "Cleansing oil", null],
-			["es", "Aceite limpiador", null],
+			["en", "Wireless mouse", null],
+			["es", "Ratón inalámbrico", null],
 		]);
 		const stored = db
 			.query("select locale, search_key, seo_title from product_translations")
 			.all();
 		expect(stored).toEqual([
-			{ locale: "es", search_key: "aceite limpiador", seo_title: "SEO es" },
-			{ locale: "en", search_key: "cleansing oil", seo_title: null },
+			{ locale: "es", search_key: "raton inalambrico", seo_title: "SEO es" },
+			{ locale: "en", search_key: "wireless mouse", seo_title: null },
 		]);
 		expect(one("select updated_at from products").updated_at).not.toBe(
 			"2026-01-01T00:00:00Z",
@@ -260,27 +260,27 @@ describe("PUT /products/:id/translations", () => {
 
 	test("never fills in a language that was left out, nor from another one", async () => {
 		const res = await send("PUT", "/1/translations", {
-			translations: { en: { name: "Oil" } },
+			translations: { en: { name: "Mouse" } },
 		});
 		expect(res.status).toBe(200);
 		const { translations } = await detail();
 		const byLocale = Object.fromEntries(translations.map((t) => [t.locale, t]));
 		expect(Object.keys(byLocale).sort()).toEqual(["en", "es"]);
-		expect(byLocale.en.name).toBe("Oil");
+		expect(byLocale.en.name).toBe("Mouse");
 		// The Spanish text is as it was; only English was written.
-		expect(byLocale.es).toMatchObject({ name: "Aceite", tagline: "Frase" });
+		expect(byLocale.es).toMatchObject({ name: "Ratón", tagline: "Frase" });
 	});
 
 	test("a field left out stays as it is, and one given as null is cleared", async () => {
 		await send("PUT", "/1/translations", {
-			translations: { es: { name: "Aceite 2" } },
+			translations: { es: { name: "Ratón 2" } },
 		});
 		expect((await detail()).translations[0]).toMatchObject({
-			name: "Aceite 2",
+			name: "Ratón 2",
 			tagline: "Frase",
 		});
 		await send("PUT", "/1/translations", {
-			translations: { es: { name: "Aceite 2", tagline: null } },
+			translations: { es: { name: "Ratón 2", tagline: null } },
 		});
 		expect((await detail()).translations[0].tagline).toBeNull();
 	});
@@ -288,8 +288,8 @@ describe("PUT /products/:id/translations", () => {
 	test("refuses a language without a name, and writes none of the others", async () => {
 		const before = await detail();
 		for (const translations of [
-			{ es: { name: "Aceite 3" }, en: { tagline: "No name" } },
-			{ es: { name: "Aceite 3" }, en: { name: "   " } },
+			{ es: { name: "Ratón 3" }, en: { tagline: "No name" } },
+			{ es: { name: "Ratón 3" }, en: { name: "   " } },
 			{},
 		]) {
 			const res = await send("PUT", "/1/translations", { translations });
@@ -314,14 +314,14 @@ describe("PUT /products/:id/translations", () => {
 		);
 		const res = await send("PUT", "/1/translations", {
 			translations: {
-				es: { name: "Aceite cambiado" },
-				en: { name: "Oil" },
+				es: { name: "Ratón cambiado" },
+				en: { name: "Mouse" },
 			},
 		});
 		expect(res.status).toBe(500);
 		const { translations } = await detail();
 		expect(translations.map((t) => [t.locale, t.name])).toEqual([
-			["es", "Aceite"],
+			["es", "Ratón"],
 		]);
 		expect(one("select updated_at from products").updated_at).toBe(
 			"2026-01-01T00:00:00Z",
@@ -333,14 +333,14 @@ describe("PUT /products/:id/translations", () => {
 describe("PATCH /products/:id sections", () => {
 	test("saves the basics and the organization as one write", async () => {
 		const res = await send("PATCH", "/1", {
-			slug: "cleansing-oil",
+			slug: "wireless-mouse",
 			warrantyMonths: 12,
 			isFeatured: true,
 			badge: "new",
 		});
 		expect(res.status).toBe(200);
 		expect(await detail()).toMatchObject({
-			slug: "cleansing-oil",
+			slug: "wireless-mouse",
 			warrantyMonths: 12,
 			isFeatured: true,
 			badge: "new",
@@ -375,13 +375,13 @@ describe("PATCH /products/:id sections", () => {
 	});
 
 	test("the slug changes only while the product is a draft", async () => {
-		expect((await send("PATCH", "/1", { slug: "aceite" })).status).toBe(200);
+		expect((await send("PATCH", "/1", { slug: "mouse" })).status).toBe(200);
 		readyToPublish();
 		await send("PATCH", "/1", { status: "published" });
 		const res = await send("PATCH", "/1", { slug: "otro" });
 		expect(res.status).toBe(409);
 		expect(await errorOf(res)).toBe("slug_locked");
-		expect(one("select slug from products").slug).toBe("aceite");
+		expect(one("select slug from products").slug).toBe("mouse");
 	});
 });
 
@@ -391,7 +391,7 @@ describe("POST /products with a first variant", () => {
 		brandId: 1,
 		categoryId: 1,
 		warrantyMonths: 12,
-		translations: { es: { name: "Suero" }, en: { name: "Keyboard" } },
+		translations: { es: { name: "Teclado" }, en: { name: "Keyboard" } },
 		...extra,
 	});
 
@@ -401,7 +401,7 @@ describe("POST /products with a first variant", () => {
 			"",
 			body({
 				variant: {
-					sku: "ser-001",
+					sku: "tec-001",
 					price: 1800,
 					compareAtPrice: 2200,
 					optionLabel: "Negro",
@@ -419,11 +419,11 @@ describe("POST /products with a first variant", () => {
 		});
 		expect(created.translations.map((t) => t.name).sort()).toEqual([
 			"Keyboard",
-			"Suero",
+			"Teclado",
 		]);
 		expect(created.variants).toMatchObject([
 			{
-				sku: "SER-001",
+				sku: "TEC-001",
 				price: 1800,
 				compareAtPrice: 2200,
 				optionLabel: "Negro",
@@ -449,13 +449,13 @@ describe("POST /products with a first variant", () => {
 		console.error = () => {};
 		console.warn = () => {};
 		db.exec(
-			"insert into variants (product_id, sku, price, gtin, search_key) values (1, 'SER-001', 1500, '04006381333931', 'ser-30')",
+			"insert into variants (product_id, sku, price, gtin, search_key) values (1, 'TEC-001', 1500, '04006381333931', 'tec-001')",
 		);
 		const products = count("products");
 		const translations = count("product_translations");
 		for (const [variant, error] of [
-			[{ sku: "SER-001" }, "duplicate_sku"],
-			[{ sku: "SER-031", gtin: "4006381333931" }, "duplicate_gtin"],
+			[{ sku: "TEC-001" }, "duplicate_sku"],
+			[{ sku: "TEC-031", gtin: "4006381333931" }, "duplicate_gtin"],
 		] as const) {
 			const res = await send("POST", "", body({ variant }));
 			expect(res.status).toBe(409);
@@ -469,12 +469,12 @@ describe("POST /products with a first variant", () => {
 	test("refuses a variant that breaks the rules, naming the field", async () => {
 		for (const [variant, path] of [
 			[
-				{ sku: "SER-001", price: 1000, compareAtPrice: 900 },
+				{ sku: "TEC-001", price: 1000, compareAtPrice: 900 },
 				"variant.compareAtPrice",
 			],
-			[{ sku: "SER-001", optionLabel: "a".repeat(61) }, "variant.optionLabel"],
-			[{ sku: "SER 30" }, "variant.sku"],
-			[{ sku: "SER-001", gtin: "123" }, "variant.gtin"],
+			[{ sku: "TEC-001", optionLabel: "a".repeat(61) }, "variant.optionLabel"],
+			[{ sku: "TEC 30" }, "variant.sku"],
+			[{ sku: "TEC-001", gtin: "123" }, "variant.gtin"],
 		] as const) {
 			const res = await send("POST", "", body({ variant }));
 			expect(res.status).toBe(400);
@@ -497,17 +497,17 @@ describe("POST /products with a first variant", () => {
 
 describe("POST /products/:id/variants", () => {
 	test("adds a variant with what is left out as null, and refuses a compare-at price under the price", async () => {
-		const ok = await send("POST", "/1/variants", { sku: "oil-001" });
+		const ok = await send("POST", "/1/variants", { sku: "rat-001" });
 		expect(ok.status).toBe(201);
 		expect(await ok.json()).toMatchObject({
-			sku: "OIL-001",
+			sku: "RAT-001",
 			price: null,
 			compareAtPrice: null,
 			optionLabel: null,
 			gtin: null,
 		});
 		const bad = await send("POST", "/1/variants", {
-			sku: "OIL-002",
+			sku: "RAT-002",
 			price: 500,
 			compareAtPrice: 500,
 		});
@@ -523,7 +523,7 @@ describe("the limits the forms let a person type", () => {
 	test("each text takes its longest and refuses one more character", async () => {
 		const put = (text: Record<string, string>) =>
 			send("PUT", "/1/translations", {
-				translations: { es: { name: "Aceite", ...text } },
+				translations: { es: { name: "Ratón", ...text } },
 			});
 		for (const field of [
 			"name",

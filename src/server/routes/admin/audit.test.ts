@@ -63,7 +63,7 @@ function event(e: {
 beforeEach(() => {
 	db = migratedDatabase();
 	db.exec(`
-insert into store_settings (id, name, currency, default_locale, time_zone, country_code, order_code_prefix, max_quantity_per_line, low_stock_threshold) values (1, 'Store', 'USD', 'es', 'America/El_Salvador', 'SV', 'ECL', 20, 5);
+insert into store_settings (id, name, currency, default_locale, time_zone, country_code, order_code_prefix, max_quantity_per_line, low_stock_threshold) values (1, 'Store', 'USD', 'es', 'America/El_Salvador', 'SV', 'NAG', 20, 5);
 insert into users (id, name, email, role) values ('ana', 'Ana Admin', 'ana@example.com', 'admin');
 insert into users (id, name, email, role) values ('beto', 'Beto Admin', 'beto@example.com', 'admin');
 insert into users (id, name, email, role) values ('idle', 'Idle Admin', 'idle@example.com', 'admin');
@@ -178,8 +178,7 @@ describe("GET /audit-events", () => {
 			}); // 4
 			event({ action: "brand.archive", entityType: "brand", entityId: "1" }); // 5
 			event({ action: "brand.update", entityType: "brand", entityId: "1" }); // 6
-			// Near misses: an action that only ends like a verb, one that only starts like an
-			// entity.
+			// Near misses: ends like a verb, or only starts like an entity.
 			event({ action: "brand.unarchive", entityType: "brand", entityId: "1" }); // 7
 			event({
 				action: "order_line.rename",

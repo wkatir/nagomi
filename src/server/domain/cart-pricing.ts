@@ -5,8 +5,7 @@ const minor = (n: number, what: string) => {
 		throw new Error(`Invalid ${what} ${n}`);
 };
 
-// Prices include IVA: the tax is the part of the total above total / (1 + rate), rounded
-// half up. `rateBp` is store_settings.tax_rate_bp (1300 = 13 %).
+// Prices include IVA: tax = total - total / (1 + rate), rounded half up (1300 bp = 13 %).
 export function includedTax(total: number, rateBp: number): number {
 	minor(total, "total");
 	minor(rateBp, "tax rate");
@@ -21,10 +20,8 @@ export class BundleAllocationError extends Error {
 	}
 }
 
-// A set is sold at its own price; each of its units gets a share of that price in
-// proportion to its list price, so the order lines add up to exactly the set's price and
-// returns refund a fair share. The rounding remainder goes to the first item sold one unit
-// at a time.
+// Splits a set's price by list price so the lines add up to it exactly and returns refund
+// a fair share; the rounding remainder goes to the first single unit.
 export function allocateBundle(
 	price: number,
 	items: { quantity: number; listPrice: number }[],
@@ -54,8 +51,7 @@ export type CartTotals = {
 	taxIncluded: number;
 };
 
-// `shipping` is null until the delivery municipality is known: the total then leaves it
-// out and says so.
+// `shipping` is null until the delivery municipality is known.
 export function cartTotals(input: {
 	subtotal: number;
 	discount: number;
@@ -91,9 +87,6 @@ export type PaymentOption = {
 	zone: string | null;
 };
 
-// The methods the store accepts online, each with why it cannot be used for this order:
-// the card needs the Wompi keys and the transfer the bank details; a method limited to a
-// zone (cash on delivery) needs an address in it and a total within its maximum.
 export function paymentOptions(
 	accepted: {
 		method: string;
@@ -151,8 +144,7 @@ export class OutOfStockError extends Error {
 	}
 }
 
-// First in, first out across every line of the order: two lines of the same size (alone and
-// inside a set) draw from the same lots.
+// FIFO across the whole order: a size alone and inside a set draw from the same lots.
 export function allocateLines(lots: LotBalance[], lines: LineDemand[]) {
 	const left = new Map(
 		[...lots].sort((a, b) => a.lotId - b.lotId).map((l) => [l.lotId, { ...l }]),

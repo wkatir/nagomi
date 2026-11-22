@@ -5,8 +5,7 @@ import * as schema from "#/db/schema";
 import { migratedDatabase } from "#/db/test-database";
 import { storeNavigation } from "./navigation";
 
-// D1 runs a batch as one transaction; bun:sqlite has no batch, so its statements run in
-// order here.
+// bun:sqlite has no batch, so its statements run in order.
 function database(sql: string) {
 	const raw = migratedDatabase();
 	raw.exec(sql);
@@ -18,12 +17,12 @@ function database(sql: string) {
 }
 
 const catalogue = `
-INSERT INTO brands (slug, name, search_key) VALUES ('skin1004', 'SKIN1004', 'skin1004'), ('face-republic', 'Face Republic', 'face'), ('idle', 'Idle', 'idle');
-INSERT INTO categories (slug, icon, sort_order) VALUES ('sunscreen', 'lightbulb', 6), ('cleanser', 'keyboard', 2), ('toner', 'mouse', 3);
-INSERT INTO category_translations (category_id, locale, name, subtitle) VALUES (1, 'es', 'Protector solar', 'Para el sol'), (1, 'en', 'Sunscreen', NULL), (2, 'es', 'Limpiador', NULL), (3, 'es', 'Tónico', NULL);
-INSERT INTO products (slug, brand_id, category_id) VALUES ('sun', 1, 1), ('foam', 1, 2), ('cleanser', 2, 2), ('toner', 2, 3);
-INSERT INTO variants (product_id, sku, price, search_key) VALUES (1, 'SUN-001', 2200, 'sun'), (2, 'FOA-001', 1800, 'foam'), (3, 'CLN-001', 1700, 'cln'), (4, 'TON-001', 1500, 'ton');
-INSERT INTO product_translations (product_id, locale, name, search_key) VALUES (1, 'es', 'Sun', 'sun'), (2, 'es', 'Foam', 'foam'), (3, 'es', 'Cleanser', 'cleanser'), (4, 'es', 'Toner', 'toner');
+INSERT INTO brands (slug, name, search_key) VALUES ('razer', 'Razer', 'razer'), ('akko', 'Akko', 'akko'), ('idle', 'Idle', 'idle');
+INSERT INTO categories (slug, icon, sort_order) VALUES ('iluminacion', 'lightbulb', 6), ('ratones', 'mouse', 2), ('audifonos', 'headphones', 3);
+INSERT INTO category_translations (category_id, locale, name, subtitle) VALUES (1, 'es', 'Iluminación', 'Para el escritorio'), (1, 'en', 'Lighting', NULL), (2, 'es', 'Ratones', NULL), (3, 'es', 'Audífonos', NULL);
+INSERT INTO products (slug, brand_id, category_id) VALUES ('light-bar', 1, 1), ('viper', 1, 2), ('silent-mouse', 2, 2), ('headset', 2, 3);
+INSERT INTO variants (product_id, sku, price, search_key) VALUES (1, 'LBR-001', 2200, 'lbr'), (2, 'VIP-001', 1800, 'vip'), (3, 'MOU-001', 1700, 'mou'), (4, 'HDS-001', 1500, 'hds');
+INSERT INTO product_translations (product_id, locale, name, search_key) VALUES (1, 'es', 'Light Bar', 'light bar'), (2, 'es', 'Viper', 'viper'), (3, 'es', 'Silent Mouse', 'silent mouse'), (4, 'es', 'Headset', 'headset');
 UPDATE products SET status = 'published' WHERE id IN (1, 2, 3);
 INSERT INTO collections (slug, status, position) VALUES ('essentials', 'published', 2), ('soon', 'published', 1), ('draft', 'draft', 0), ('new', 'published', 3);
 INSERT INTO collection_translations (collection_id, locale, title) VALUES (1, 'es', 'Lo esencial'), (1, 'en', 'The essentials'), (2, 'es', 'Pronto'), (3, 'es', 'Borrador'), (4, 'es', 'Nuevo');
@@ -43,23 +42,23 @@ describe("storeNavigation", () => {
 		const nav = await storeNavigation(database(catalogue), context("es"));
 		expect(nav.categories).toEqual([
 			{
-				slug: "cleanser",
-				name: "Limpiador",
+				slug: "ratones",
+				name: "Ratones",
 				productCount: 2,
-				icon: "keyboard",
+				icon: "mouse",
 				subtitle: null,
 			},
 			{
-				slug: "sunscreen",
-				name: "Protector solar",
+				slug: "iluminacion",
+				name: "Iluminación",
 				productCount: 1,
 				icon: "lightbulb",
-				subtitle: "Para el sol",
+				subtitle: "Para el escritorio",
 			},
 		]);
 		expect(nav.brands).toEqual([
-			{ slug: "face-republic", name: "Face Republic", productCount: 1 },
-			{ slug: "skin1004", name: "SKIN1004", productCount: 2 },
+			{ slug: "akko", name: "Akko", productCount: 1 },
+			{ slug: "razer", name: "Razer", productCount: 2 },
 		]);
 		expect(nav.collections).toEqual([
 			{ slug: "essentials", name: "Lo esencial", productCount: 2 },
@@ -69,10 +68,7 @@ describe("storeNavigation", () => {
 
 	test("reads the page's locale, else the store's default", async () => {
 		const nav = await storeNavigation(database(catalogue), context("en"));
-		expect(nav.categories.map((c) => c.name)).toEqual([
-			"Limpiador",
-			"Sunscreen",
-		]);
+		expect(nav.categories.map((c) => c.name)).toEqual(["Ratones", "Lighting"]);
 		expect(nav.collections.map((c) => c.name)).toEqual([
 			"The essentials",
 			"Nuevo",
@@ -84,7 +80,7 @@ describe("storeNavigation", () => {
 			`${catalogue}\nDELETE FROM category_translations WHERE category_id = 2;`,
 		);
 		await expect(storeNavigation(db, context("en"))).rejects.toThrow(
-			"Category cleanser has no text in en or es",
+			"Category ratones has no text in en or es",
 		);
 	});
 });

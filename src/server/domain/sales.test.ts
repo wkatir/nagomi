@@ -11,28 +11,28 @@ import {
 	splitByWeight,
 } from "./sales";
 
-const SAC = {
+const MOUSE = {
 	variantId: 3,
-	sku: "FR-SAC",
-	brand: "Face Republic",
-	name: "Cleanser",
+	sku: "AKK-MOU",
+	brand: "Akko",
+	name: "Silent Mouse",
 };
-const LCO = {
+const KEYBOARD = {
 	variantId: 1,
-	sku: "S1004-LCO",
-	brand: "SKIN1004",
-	name: "Cleansing Oil",
+	sku: "RZR-KBD",
+	brand: "Razer",
+	name: "Mechanical Keyboard",
 };
-const PSE = {
+const LAMP = {
 	variantId: 4,
-	sku: "FR-PSE",
-	brand: "Face Republic",
-	name: "Sun Essence",
+	sku: "AKK-LMP",
+	brand: "Akko",
+	name: "Desk Lamp",
 };
 
 let nextItem = 1;
 const line = (
-	product: typeof SAC,
+	product: typeof MOUSE,
 	quantity: number,
 	unitPrice: number,
 	returned: number,
@@ -48,9 +48,9 @@ const line = (
 	returnedCostE4,
 });
 
-// Order 1: delivered, 3.00 shipping; every unit came back (one SAC restocked, the rest
+// Order 1: delivered, 3.00 shipping; every unit came back (one MOUSE restocked, the rest
 // written off). Order 4: delivered, 3.00 shipping. Order 5: shipped with a 10.00
-// discount and one of two SAC returned. Lot costs: SAC 8.00, LCO 16.0745, PSE 11.00.
+// discount and one of two MOUSE returned. Lot costs: MOUSE 8.00, KEYBOARD 16.0745, LAMP 11.00.
 const orders: SoldOrder[] = [
 	{
 		id: 1,
@@ -61,7 +61,10 @@ const orders: SoldOrder[] = [
 		shipping: 300,
 		total: 6100,
 		taxIncluded: 702,
-		lines: [line(SAC, 2, 1700, 2, 80_000), line(LCO, 1, 2400, 1, 160_745)],
+		lines: [
+			line(MOUSE, 2, 1700, 2, 80_000),
+			line(KEYBOARD, 1, 2400, 1, 160_745),
+		],
 	},
 	{
 		id: 4,
@@ -72,7 +75,10 @@ const orders: SoldOrder[] = [
 		shipping: 300,
 		total: 10200,
 		taxIncluded: 1173,
-		lines: [line(SAC, 3, 1700, 0, 80_000), line(LCO, 2, 2400, 0, 160_745)],
+		lines: [
+			line(MOUSE, 3, 1700, 0, 80_000),
+			line(KEYBOARD, 2, 2400, 0, 160_745),
+		],
 	},
 	{
 		id: 5,
@@ -83,7 +89,7 @@ const orders: SoldOrder[] = [
 		shipping: 0,
 		total: 4300,
 		taxIncluded: 495,
-		lines: [line(SAC, 2, 1700, 1, 80_000), line(PSE, 1, 1900, 0, 110_000)],
+		lines: [line(MOUSE, 2, 1700, 1, 80_000), line(LAMP, 1, 1900, 0, 110_000)],
 	},
 ];
 
@@ -170,12 +176,12 @@ describe("aggregates", () => {
 	test("by product and brand", () => {
 		const products = salesByProduct(sales);
 		expect(products.map((p) => [p.sku, p.units, p.merchandise])).toEqual([
-			["FR-SAC", 4, 5100 + 1379],
-			["S1004-LCO", 2, 4800],
-			["FR-PSE", 1, 1542],
+			["AKK-MOU", 4, 5100 + 1379],
+			["RZR-KBD", 2, 4800],
+			["AKK-LMP", 1, 1542],
 		]);
-		const sac = products.find((p) => p.sku === "FR-SAC");
-		expect(sac).toMatchObject({
+		const mouse = products.find((p) => p.sku === "AKK-MOU");
+		expect(mouse).toMatchObject({
 			orders: 3,
 			unitsSold: 7,
 			unitsReturned: 3,
@@ -184,8 +190,8 @@ describe("aggregates", () => {
 		});
 		const brands = salesByBrand(sales);
 		expect(brands.map((b) => [b.brand, b.products, b.units])).toEqual([
-			["Face Republic", 2, 5],
-			["SKIN1004", 1, 2],
+			["Akko", 2, 5],
+			["Razer", 1, 2],
 		]);
 		expect(brands.reduce((n, b) => n + b.merchandise, 0)).toBe(
 			salesTotals(sales).merchandise,

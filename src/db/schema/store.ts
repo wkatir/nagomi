@@ -29,7 +29,6 @@ export const storeSettings = sqliteTable(
 		whatsappNumber: text("whatsapp_number"),
 		// Legal identity shown to customers; checkout stays closed until it is complete.
 		legalName: text("legal_name"),
-		// E.g. NIT, RFC, VAT.
 		taxIdLabel: text("tax_id_label"),
 		taxId: text("tax_id"),
 		address: text("address"),
@@ -56,7 +55,6 @@ export const storeSettings = sqliteTable(
 		),
 		// IVA included in every price, in basis points (1300 = 13 %).
 		taxRateBp: integer("tax_rate_bp"),
-		// Shown to customers who pay by bank transfer.
 		bankName: text("bank_name"),
 		bankAccountType: text("bank_account_type"),
 		bankAccountNumber: text("bank_account_number"),

@@ -66,18 +66,18 @@ const dashboard = async (query = ""): Promise<Dashboard> => {
 let db: Database;
 let nextOrder = 0;
 
-// [id, price] by SKU. Only OIL has stock from the start.
+// [id, price] by SKU. Only TEC-001 has stock from the start.
 const SIZES = {
-	"OIL-001": [1, 1500],
-	"SKB-001": [3, 1000],
-	"SKC-001": [4, 900],
-	"SKD-001": [5, 800],
-	"SKE-001": [6, 700],
-	"SKF-001": [7, 600],
+	"TEC-001": [1, 1500],
+	"KCB-001": [3, 1000],
+	"KCC-001": [4, 900],
+	"KCD-001": [5, 800],
+	"KCE-001": [6, 700],
+	"KCF-001": [7, 600],
 } as const;
 type Sku = keyof typeof SIZES;
 
-function sale(day: string, units = 1, sku: Sku = "OIL-001", shipping = 0) {
+function sale(day: string, units = 1, sku: Sku = "TEC-001", shipping = 0) {
 	const [variantId, price] = SIZES[sku];
 	const id = ++nextOrder;
 	db.exec(
@@ -94,14 +94,13 @@ function sale(day: string, units = 1, sku: Sku = "OIL-001", shipping = 0) {
 	);
 }
 
-// Ten units of the other sizes, so orders for them can be placed.
 function stockOtherSizes() {
 	for (const sku of [
-		"SKB-001",
-		"SKC-001",
-		"SKD-001",
-		"SKE-001",
-		"SKF-001",
+		"KCB-001",
+		"KCC-001",
+		"KCD-001",
+		"KCE-001",
+		"KCF-001",
 	] as const) {
 		const [variantId, price] = SIZES[sku];
 		db.exec(`
@@ -121,7 +120,7 @@ function pending(createdAt: string) {
 			id,
 			code: `E-${id}`,
 			createdAt,
-			lines: [{ variantId: 1, quantity: 1, unitPrice: 1500, sku: "OIL-001" }],
+			lines: [{ variantId: 1, quantity: 1, unitPrice: 1500, sku: "TEC-001" }],
 		}),
 	);
 }
@@ -130,12 +129,12 @@ beforeEach(() => {
 	nextOrder = 0;
 	db = migratedDatabase();
 	db.exec(`
-insert into store_settings (id, name, currency, default_locale, time_zone, country_code, order_code_prefix, max_quantity_per_line, low_stock_threshold, followup_pending_payment_hours) values (1, 'Store', 'USD', 'es', '${TIME_ZONE}', 'SV', 'ECL', 20, 5, 48);
-insert into brands (slug, name, search_key) values ('skin1004', 'SKIN1004', 'skin1004');
-insert into categories (slug, icon, sort_order) values ('cleanser', 'package', 1);
-insert into products (slug, brand_id, category_id) values ('oil', 1, 1);
-insert into variants (product_id, sku, price, reorder_point, search_key) values (1, 'OIL-001', 1500, 10, 'oil');
-insert into variants (product_id, sku, price, search_key) values (1, 'OIL-002', 2500, 'oil 2');
+insert into store_settings (id, name, currency, default_locale, time_zone, country_code, order_code_prefix, max_quantity_per_line, low_stock_threshold, followup_pending_payment_hours) values (1, 'Store', 'USD', 'es', '${TIME_ZONE}', 'SV', 'NAG', 20, 5, 48);
+insert into brands (slug, name, search_key) values ('keychron', 'Keychron', 'keychron');
+insert into categories (slug, icon, sort_order) values ('teclados', 'package', 1);
+insert into products (slug, brand_id, category_id) values ('teclado', 1, 1);
+insert into variants (product_id, sku, price, reorder_point, search_key) values (1, 'TEC-001', 1500, 10, 'tec');
+insert into variants (product_id, sku, price, search_key) values (1, 'TEC-002', 2500, 'tec 2');
 insert into suppliers (name, search_key) values ('Supplier', 'supplier');
 insert into purchase_orders (supplier_id, reference, status, ordered_on) values (1, 'PO-1', 'ordered', '2026-01-01');
 insert into purchase_order_items (purchase_order_id, variant_id, quantity, unit_cost) values (1, 1, 50, 700);
@@ -181,7 +180,7 @@ describe("GET /dashboard", () => {
 	});
 
 	test("puts each sale on the local day it was shipped", async () => {
-		sale(today, 2, "OIL-001", 300);
+		sale(today, 2, "TEC-001", 300);
 		sale(addDays(today, -2), 1);
 		const d = await dashboard();
 		const byDay = new Map(d.byDay.map((x) => [x.day, x]));
@@ -215,24 +214,24 @@ describe("GET /dashboard", () => {
 	test("lists the best sellers with the units and the merchandise sold", async () => {
 		sale(today, 3);
 		expect((await dashboard()).topProducts).toMatchObject([
-			{ sku: "OIL-001", units: 3, merchandise: 4500 },
+			{ sku: "TEC-001", units: 3, merchandise: 4500 },
 		]);
 	});
 
 	test("lists the five best sellers, the most merchandise first", async () => {
 		stockOtherSizes();
-		sale(today, 1, "SKF-001"); // 600
-		sale(today, 1, "SKE-001"); // 700
-		sale(today, 1, "SKD-001"); // 800
-		sale(today, 1, "SKC-001"); // 900
-		sale(today, 1, "SKB-001"); // 1000
-		sale(today, 1, "OIL-001"); // 1500
+		sale(today, 1, "KCF-001");
+		sale(today, 1, "KCE-001");
+		sale(today, 1, "KCD-001");
+		sale(today, 1, "KCC-001");
+		sale(today, 1, "KCB-001");
+		sale(today, 1, "TEC-001");
 		expect((await dashboard()).topProducts.map((p) => p.sku)).toEqual([
-			"OIL-001",
-			"SKB-001",
-			"SKC-001",
-			"SKD-001",
-			"SKE-001",
+			"TEC-001",
+			"KCB-001",
+			"KCC-001",
+			"KCD-001",
+			"KCE-001",
 		]);
 	});
 
@@ -329,7 +328,7 @@ update variants set reorder_point = 10 where id = 2;
 
 describe("the dashboard and the reports of the same days", () => {
 	test("the figures are the reports', and the days add up to the total", async () => {
-		sale(today, 2, "OIL-001", 300);
+		sale(today, 2, "TEC-001", 300);
 		sale(addDays(today, -2), 1);
 		sale(addDays(today, -9), 4);
 		const d = await dashboard();

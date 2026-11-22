@@ -1,8 +1,7 @@
 import type { ProductBadge } from "#/lib/enums";
 import { searchKey } from "./search";
 
-// Pure: the published catalogue is small enough to be read whole and refined in memory
-// (storefront-catalog.ts loads it).
+// The published catalogue is small enough to refine in memory (loaded by storefront-catalog.ts).
 
 export const CATALOG_SORTS = [
 	"featured",
@@ -26,7 +25,6 @@ export type CatalogImage = {
 };
 export type CatalogVariant = {
 	sku: string;
-	// GTIN-14.
 	gtin: string | null;
 	optionLabel: string | null;
 	price: number;
@@ -35,7 +33,6 @@ export type CatalogVariant = {
 	maxQuantity: number;
 };
 
-// Approved reviews: the average to one decimal, null without any.
 export type Rating = { average: number | null; count: number };
 
 export const ratingOf = (sum: number, count: number): Rating => ({
@@ -62,7 +59,6 @@ export type CatalogEntry = {
 	packshot: CatalogImage | null;
 	lifestyle: CatalogImage | null;
 	createdAt: string;
-	// searchKey() of what a customer may type.
 	searchText: string;
 };
 
@@ -129,7 +125,6 @@ export type CatalogFilter = {
 	category: string[];
 	brand: string[];
 	collection: string[];
-	// Minor units, inclusive, on the price a card shows.
 	minPrice?: number;
 	maxPrice?: number;
 	availability?: Availability;
@@ -138,7 +133,6 @@ export type CatalogFilter = {
 	pageSize: number;
 };
 
-// Each in display order.
 export type FacetDimensions = {
 	category: Named[];
 	brand: Named[];
@@ -188,7 +182,6 @@ function matchesSearch(e: CatalogEntry, q: string | undefined) {
 	return words.every((w) => e.searchText.includes(w));
 }
 
-// Sold out last in every order, so a customer sees what can be bought first.
 function comparator(
 	f: Pick<CatalogFilter, "sort" | "collection">,
 	locale: string,
@@ -250,8 +243,7 @@ export function sortEntries(
 	return [...entries].sort(comparator({ sort, collection }, locale));
 }
 
-// Standard faceting: a facet's own selection does not narrow its counts. A facet lists the
-// values found among the search matches, plus the selected ones.
+// A facet's own selection does not narrow its counts.
 export function queryCatalog(
 	entries: CatalogEntry[],
 	dimensions: FacetDimensions,

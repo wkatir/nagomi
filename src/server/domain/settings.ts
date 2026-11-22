@@ -11,7 +11,6 @@ export type StoreSettings = Omit<Row, (typeof REQUIRED_SETTINGS)[number]> & {
 	[K in (typeof REQUIRED_SETTINGS)[number]]: NonNullable<Row[K]>;
 };
 
-// Answered as 503 store_not_configured (src/server/api-error.ts).
 export class StoreNotConfiguredError extends Error {
 	constructor(readonly fields: string[]) {
 		super(`store_settings is missing ${fields.join(", ")}`);

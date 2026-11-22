@@ -18,7 +18,6 @@ const {
 	variants,
 } = schema;
 
-// Moderation: a review is published once approved; editing it sends it back to pending.
 export const reviewsRouter = new Hono<AdminEnv>()
 	.get(
 		"/",
@@ -114,8 +113,6 @@ export const reviewsRouter = new Hono<AdminEnv>()
 		},
 	);
 
-// Requests to hear when a sold-out size is back. Nothing is sent automatically: staff
-// write to these addresses and mark each one notified.
 export const stockAlertsRouter = new Hono<AdminEnv>()
 	.get("/", async (c) => {
 		const db = getDb();
@@ -157,12 +154,15 @@ export const stockAlertsRouter = new Hono<AdminEnv>()
 			}
 		>();
 		for (const r of rows) {
+			const unitsOnHand = units.get(r.variantId);
+			if (unitsOnHand === undefined)
+				throw new Error(`No stock for variant ${r.variantId}`);
 			const group = groups.get(r.variantId) ?? {
 				variantId: r.variantId,
 				sku: r.sku,
 				productSlug: r.productSlug,
 				productName: r.productName,
-				unitsOnHand: units.get(r.variantId) ?? 0,
+				unitsOnHand,
 				alerts: [],
 			};
 			group.alerts.push({ id: r.id, email: r.email, createdAt: r.createdAt });

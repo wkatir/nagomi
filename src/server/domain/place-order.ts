@@ -56,8 +56,6 @@ export type BundlePlan = {
 	name: string;
 };
 
-// Order lines from priced cart lines: a size alone is one line at its price; a set is one
-// order_bundles row and one line per item, priced so the items add up to the set's price.
 export function planLines(lines: CartLine[], view: StockView) {
 	const items: OrderLinePlan[] = [];
 	const sets: BundlePlan[] = [];
@@ -161,10 +159,8 @@ export type PlaceOrderInput = {
 	createdBy: string;
 };
 
-// One D1 batch, one transaction: the customer, the order with its price snapshot, the sale
-// movements that take its units (a lot can never go below zero: the batch rolls back), the
-// coupon's redemption, the consents and the emptied cart. A retry with the same key inserts
-// no order, so every guarded statement after it is skipped.
+// One D1 batch, one transaction. A retry with the same key inserts no order, so every
+// guarded statement after it is skipped.
 export function placeOrderStatements(db: Db, input: PlaceOrderInput) {
 	const { settings, customer, delivery, totals } = input;
 	const code = newOrderCode(settings.orderCodePrefix);

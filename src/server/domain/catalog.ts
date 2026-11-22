@@ -25,7 +25,6 @@ const {
 	variants,
 } = schema;
 
-// `fallback` is the store default locale.
 export type CatalogContext = {
 	locale: Locale;
 	fallback: Locale;
@@ -170,8 +169,7 @@ export async function listCatalog(
 			compareAtPrice: r.compareAtPrice,
 			availability: unitsAvailability(sellable),
 			maxQuantity: lineMax(sellable, maxQuantityPerLine),
-			// Publishing and the default-locale change require the default locale's alt (checked
-			// by the API, not the schema); the brand and name only label data that slipped by.
+			// Accessibility fallback: the API requires the default locale's alt, the schema does not.
 			images: images
 				.filter(
 					(i) =>
@@ -194,7 +192,6 @@ export async function listCatalog(
 			variantId: r.variantId,
 		};
 	});
-	// Stable sort: sold out last, otherwise in category order.
 	return list.sort(
 		(a, b) =>
 			Number(a.availability === "sold_out") -

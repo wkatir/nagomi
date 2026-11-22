@@ -11,9 +11,7 @@ export const slug = z
 	.regex(SLUG_REGEX, "Lowercase letters, digits and single hyphens");
 
 export const requiredText = (max: number) => z.string().trim().min(1).max(max);
-// An amount in the currency's minor unit.
 export const money = z.number().int().min(0).max(100_000_000);
-// Blank is stored as null.
 export const optionalText = (max: number) =>
 	z
 		.string()
@@ -29,8 +27,7 @@ export const seoFields = {
 
 export const searchQuery = z.string().trim().min(1).max(80).optional();
 
-// The default locale's text is required, checked in the handlers since the default locale
-// lives in the database.
+// The handlers check the default locale's text: the default locale lives in the database.
 export const translations = <T extends z.ZodType>(text: T) =>
 	z
 		.partialRecord(z.enum(LOCALES), text)

@@ -39,7 +39,7 @@ import { idempotencyKey, requestHash } from "../domain/idempotency";
 import { linesBeyondStock } from "../domain/inventory";
 import { paidSum } from "../domain/order-sql";
 import { checkoutPageVersions } from "../domain/pages";
-import { normalizePhone } from "../domain/phone";
+import { InvalidPhoneError, normalizePhone } from "../domain/phone";
 import {
 	allocateStock,
 	placeOrderStatements,
@@ -92,8 +92,6 @@ async function rememberedOrders(c: Context): Promise<string[]> {
 	return value ? value.split(".") : [];
 }
 
-// Lets this browser open the orders it placed (and come back from the card payment page)
-// without typing the email again.
 async function rememberOrder(c: Context, code: string) {
 	const codes = [
 		code,
@@ -114,8 +112,6 @@ async function rememberOrder(c: Context, code: string) {
 	);
 }
 
-// The guest cart of this browser becomes the customer's at sign-in: merged into the one they
-// already have, or claimed. A cart of another customer is never used.
 async function resolveCart(
 	c: Context,
 	db: Db,
@@ -251,8 +247,9 @@ export function salvadoranPhone(input: string) {
 	try {
 		const phone = normalizePhone(input, "SV");
 		return SV_PHONE_REGEX.test(phone) ? phone : null;
-	} catch {
-		return null;
+	} catch (e) {
+		if (e instanceof InvalidPhoneError) return null;
+		throw e;
 	}
 }
 
@@ -423,7 +420,6 @@ async function orderView(db: Db, settings: StoreSettings, code: string) {
 
 export type OrderView = NonNullable<Awaited<ReturnType<typeof orderView>>>;
 
-// The signed-in owner, the browser that placed it, or (rate limited) its email.
 async function mayOpen(
 	c: Context,
 	db: Db,
@@ -476,13 +472,14 @@ export const shop = new Hono()
 						columns: { id: true },
 						where: eq(variants.sku, input.sku),
 					})
-				: await db.query.bundles.findFirst({
+				: input.bundle &&
+					(await db.query.bundles.findFirst({
 						columns: { id: true },
 						where: and(
-							eq(bundles.slug, input.bundle ?? ""),
+							eq(bundles.slug, input.bundle),
 							eq(bundles.status, "published"),
 						),
-					});
+					}));
 			if (!target) return c.json({ error: "product_unavailable" }, 404);
 			const cart = await resolveCart(c, db, settings, true);
 			if (!cart) throw new Error("A cart was not created");
@@ -578,7 +575,7 @@ export const shop = new Hono()
 			]);
 		return respondCart(c, db, settings, cart, c.req.valid("query"));
 	})
-	// Rate limited because codes are guessable. Only a code that applies is kept.
+	// Rate limited because codes are guessable.
 	.put(
 		"/cart/coupon",
 		validate("query", cartQuery),
@@ -644,8 +641,6 @@ export const shop = new Hono()
 			c.req.valid("query"),
 		);
 	})
-	// One page, guest allowed. Prices, shipping and the coupon come from the database; the
-	// order, its stock, its coupon use and the emptied cart are one transaction.
 	.post("/checkout", validate("json", checkoutInput), async (c) => {
 		const db = getDb();
 		const input = c.req.valid("json");
@@ -916,7 +911,6 @@ export const shop = new Hono()
 			return c.json(view);
 		},
 	)
-	// A new payment page for a card order still waiting for its payment.
 	.post(
 		"/orders/:code/pay",
 		validate("param", orderCode),
@@ -947,8 +941,7 @@ export const shop = new Hono()
 			}
 		},
 	)
-	// Wompi calls this once a card payment succeeds. Signed with the API secret; repeated
-	// notices change nothing. The order is paid only when approved and for its exact total.
+	// Signed with the API secret; repeated notices change nothing.
 	.post("/payments/wompi/webhook", async (c) => {
 		const credentials = wompi();
 		if (!credentials) return c.json({ error: "card_unavailable" }, 404);

@@ -1,12 +1,6 @@
-// Receiving a supplier delivery: each line becomes a lot whose unit cost is the supplier
-// price plus a share of the delivery's shipping cost (landed cost).
-//
-// Precision: lot costs are integers in hundredths of the currency's minor unit (`_e4`,
-// 1/10,000 of a dollar). Shipping is split over the lines by line value (quantity x
-// supplier unit cost), by quantity when every line is free, with the largest-remainder
-// method so the shares add up exactly to the shipping cost. A lot's unit cost is its
-// line's landed total divided by its units, rounded half up: at most half a hundredth of
-// a cent per unit away from the invoice.
+// Shipping is split by line value (by quantity when every line is free) with the
+// largest-remainder method, so the shares add up exactly. Costs are `_e4` (1/10,000 of a
+// currency unit), so a unit cost is at most half a hundredth of a cent off the invoice.
 
 const E4_PER_MINOR = 100;
 

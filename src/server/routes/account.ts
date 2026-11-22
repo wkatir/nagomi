@@ -113,13 +113,11 @@ const reviewInput = z.object({
 	body: z.string().trim().min(1).max(2000),
 });
 
-async function publishedProduct(slug: string) {
-	return (
-		(await getDb().query.products.findFirst({
-			columns: { id: true },
-			where: and(eq(products.slug, slug), eq(products.status, "published")),
-		})) ?? null
-	);
+function publishedProduct(slug: string) {
+	return getDb().query.products.findFirst({
+		columns: { id: true },
+		where: and(eq(products.slug, slug), eq(products.status, "published")),
+	});
 }
 const orderCode = z.object({ code: z.string().trim().min(1).max(40) });
 
@@ -422,7 +420,6 @@ export const account = new Hono<AccountEnv>()
 		const { id: _, ...head } = order;
 		return c.json({ ...head, lines, statusHistory: history });
 	})
-	// Products of a delivered order, each with the customer's review if written.
 	.get(
 		"/reviews",
 		validate("query", z.object({ locale: z.enum(LOCALES) })),
@@ -472,8 +469,7 @@ export const account = new Hono<AccountEnv>()
 			);
 		},
 	)
-	// Writing or editing a review sends it back to moderation. Only a customer with a
-	// delivered order of the product may (trigger product_reviews_requires_delivered_order).
+	// The product_reviews_requires_delivered_order trigger refuses customers without a delivered order.
 	.put(
 		"/reviews/:slug",
 		validate("param", productSlug),

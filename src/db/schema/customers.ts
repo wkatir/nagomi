@@ -29,7 +29,6 @@ export const customers = sqliteTable(
 		name: text("name"),
 		phoneE164: text("phone_e164").unique(),
 		email: text("email"),
-		// searchKey() of name, email and phone digits (src/server/domain/search.ts), written by the API.
 		searchKey: text("search_key").notNull(),
 
 		notes: text("notes"),
@@ -100,10 +99,8 @@ export const customerAddresses = sqliteTable(
 	],
 );
 
-// Append-only: a withdrawal is a new row with granted = false. The current consent is the
-// latest row per (customer, purpose). Each row points at the exact page version shown.
-// A consent given at checkout belongs to the order and gets its customer once the order is
-// linked to one (the only change a row accepts).
+// Append-only: a withdrawal is a new row with granted = false; the latest row per (customer,
+// purpose) is current. A checkout consent gets its customer once the order is linked to one.
 export const customerConsents = sqliteTable(
 	"customer_consents",
 	{

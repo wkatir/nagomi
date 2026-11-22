@@ -3,12 +3,7 @@ import { beforeEach, describe, expect, mock, test } from "bun:test";
 import { Hono } from "hono";
 import { d1, migratedDatabase } from "#/db/test-database";
 import type { AdminEnv } from "#/server/auth";
-import {
-	addPurchase,
-	addSupplier,
-	OIL_50,
-	seedSupply,
-} from "./supply-fixtures";
+import { addPurchase, addSupplier, PAD_M, seedSupply } from "./supply-fixtures";
 
 const env: { DB?: ReturnType<typeof d1>; BETTER_AUTH_URL: string } = {
 	BETTER_AUTH_URL: "http://localhost",
@@ -52,7 +47,7 @@ beforeEach(() => {
 	env.DB = d1(db);
 	// Ids 1 to 4. Lead times: Alpha and delta share 7 days, Gamma does not know its own.
 	addSupplier(db, {
-		name: "Alpha Cosmetics",
+		name: "Alpha Peripherals",
 		contactName: "Ángela",
 		leadTimeDays: 7,
 		createdAt: "2026-09-01T10:00:00Z",
@@ -68,7 +63,7 @@ beforeEach(() => {
 		leadTimeDays: 7,
 		createdAt: "2026-09-04T10:00:00Z",
 	});
-	const line = { variantId: OIL_50, quantity: 5, unitCost: 700 };
+	const line = { variantId: PAD_M, quantity: 5, unitCost: 700 };
 	// Alpha has two open purchase orders and a received one; beta a partly received one;
 	// Gamma only a cancelled one.
 	addPurchase(db, {
@@ -109,7 +104,7 @@ describe("GET /suppliers", () => {
 	test("pages by name ignoring case, with the total and the open purchase orders", async () => {
 		const page = await list();
 		expect(names(page)).toEqual([
-			"Alpha Cosmetics",
+			"Alpha Peripherals",
 			"beta imports",
 			"delta supply",
 			"Gamma",
@@ -131,35 +126,35 @@ describe("GET /suppliers", () => {
 			"Gamma",
 			"delta supply",
 			"beta imports",
-			"Alpha Cosmetics",
+			"Alpha Peripherals",
 		]);
 		// Nobody knows Gamma's lead time: unknown comes first when ascending.
 		expect(await sorted("leadTimeDays", "asc")).toEqual([
 			"Gamma",
-			"Alpha Cosmetics",
+			"Alpha Peripherals",
 			"delta supply",
 			"beta imports",
 		]);
 		expect(await sorted("leadTimeDays", "desc")).toEqual([
 			"beta imports",
 			"delta supply",
-			"Alpha Cosmetics",
+			"Alpha Peripherals",
 			"Gamma",
 		]);
 		expect(await sorted("openPurchaseOrders", "asc")).toEqual([
 			"Gamma",
 			"delta supply",
 			"beta imports",
-			"Alpha Cosmetics",
+			"Alpha Peripherals",
 		]);
 		expect(await sorted("openPurchaseOrders", "desc")).toEqual([
-			"Alpha Cosmetics",
+			"Alpha Peripherals",
 			"beta imports",
 			"delta supply",
 			"Gamma",
 		]);
 		expect(await sorted("createdAt", "asc")).toEqual([
-			"Alpha Cosmetics",
+			"Alpha Peripherals",
 			"beta imports",
 			"Gamma",
 			"delta supply",
@@ -168,7 +163,7 @@ describe("GET /suppliers", () => {
 			"delta supply",
 			"Gamma",
 			"beta imports",
-			"Alpha Cosmetics",
+			"Alpha Peripherals",
 		]);
 	});
 
@@ -177,7 +172,7 @@ describe("GET /suppliers", () => {
 		expect(names(archived)).toEqual(["Gamma"]);
 		expect(archived.total).toBe(1);
 		expect(names(await list("status=active"))).toEqual([
-			"Alpha Cosmetics",
+			"Alpha Peripherals",
 			"beta imports",
 			"delta supply",
 		]);
@@ -185,11 +180,11 @@ describe("GET /suppliers", () => {
 
 	test("searches the name and the contact, ignoring accents and case", async () => {
 		expect(names(await list("q=DELTA"))).toEqual(["delta supply"]);
-		expect(names(await list("q=angela"))).toEqual(["Alpha Cosmetics"]);
+		expect(names(await list("q=angela"))).toEqual(["Alpha Peripherals"]);
 		expect(names(await list("q=a&status=active&sort=name&dir=desc"))).toEqual([
 			"delta supply",
 			"beta imports",
-			"Alpha Cosmetics",
+			"Alpha Peripherals",
 		]);
 		expect((await list("q=nobody")).items).toEqual([]);
 	});
@@ -228,7 +223,7 @@ describe("GET /suppliers/options", () => {
 	test("offers every supplier by name, or those with a status", async () => {
 		const all = await app.request("/suppliers/options");
 		expect(await json(all)).toEqual([
-			{ id: 1, name: "Alpha Cosmetics", leadTimeDays: 7, status: "active" },
+			{ id: 1, name: "Alpha Peripherals", leadTimeDays: 7, status: "active" },
 			{ id: 2, name: "beta imports", leadTimeDays: 14, status: "active" },
 			{ id: 4, name: "delta supply", leadTimeDays: 7, status: "active" },
 			{ id: 3, name: "Gamma", leadTimeDays: null, status: "archived" },
@@ -249,7 +244,7 @@ describe("GET /suppliers/:id", () => {
 			reference: "A-4",
 			status: "ordered",
 			createdAt: "2026-10-05T10:00:00Z",
-			items: [{ variantId: OIL_50, quantity: 3, unitCost: 500 }],
+			items: [{ variantId: PAD_M, quantity: 3, unitCost: 500 }],
 		});
 		const res = await app.request("/suppliers/1");
 		expect(res.status).toBe(200);
@@ -263,7 +258,7 @@ describe("GET /suppliers/:id", () => {
 		};
 		expect(body).toMatchObject({
 			id: 1,
-			name: "Alpha Cosmetics",
+			name: "Alpha Peripherals",
 			openPurchaseOrders: 3,
 		});
 		expect(body.openOrders.map((o) => o.reference)).toEqual([

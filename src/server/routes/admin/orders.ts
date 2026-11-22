@@ -223,9 +223,7 @@ const markPaidInput = z.object({
 	reference: z.string().trim().min(1).max(120).optional(),
 });
 
-// A status change conditioned on the status read, so a concurrent change makes it a no-op
-// (409). The triggers check the rest: the transition table, the money recorded for paid and
-// delivered, and the stock a cancellation puts back.
+// Conditioned on the status read, so a concurrent change makes it a no-op; triggers check the rest.
 function statusUpdate(
 	db: Db,
 	id: number,
@@ -245,9 +243,7 @@ export const ordersRouter = new Hono<AdminEnv>()
 			await pagedOrders(getDb(), settings.timeZone, c.req.valid("query")),
 		);
 	})
-	// Card and transfer orders still unpaid past the payment deadline
-	// (store_settings.followup_pending_payment_hours) are cancelled: their units go back to
-	// stock and their coupon is released (triggers). Running it again changes nothing.
+	// Triggers put the units back and release the coupon; running it again changes nothing.
 	.post("/expire-pending", async (c) => {
 		const db = getDb();
 		const actor = c.var.adminUserId;
@@ -302,8 +298,6 @@ export const ordersRouter = new Hono<AdminEnv>()
 			cost: costs ? detail.cost : null,
 		});
 	})
-	// Records what is still owed with the order's method (a transfer seen in the bank, the
-	// cash a courier collected). A pending order becomes paid in the same batch.
 	.post(
 		"/:id/mark-paid",
 		validate("param", idParam),
@@ -432,7 +426,6 @@ export const ordersRouter = new Hono<AdminEnv>()
 			return c.json({ ok: true }, 201);
 		},
 	)
-	// Paid orders, and cash-on-delivery orders before their cash is collected.
 	.post(
 		"/:id/ship",
 		validate("param", idParam),
@@ -467,7 +460,6 @@ export const ordersRouter = new Hono<AdminEnv>()
 			return c.json({ ok: true });
 		},
 	)
-	// Final. Needs the whole total paid (for cash on delivery: record the cash first).
 	.post("/:id/deliver", validate("param", idParam), async (c) => {
 		const db = getDb();
 		const { id } = c.req.valid("param");
@@ -496,9 +488,7 @@ export const ordersRouter = new Hono<AdminEnv>()
 		if (!results[0].meta.changes) return invalidTransition(c, "deliver");
 		return c.json({ ok: true });
 	})
-	// Pending or paid only. The orders_cancel_returns_stock trigger puts every unit back in
-	// the lot it left and orders_cancel_releases_coupon frees the coupon; a paid order then
-	// owes a refund (POST /:id/refunds).
+	// Triggers put every unit back in its lot and free the coupon.
 	.post(
 		"/:id/cancel",
 		validate("param", idParam),
@@ -533,7 +523,6 @@ export const ordersRouter = new Hono<AdminEnv>()
 			return c.json({ ok: true });
 		},
 	)
-	// The order keeps its status; the money goes back with POST /:id/refunds.
 	.post(
 		"/:id/returns",
 		validate("param", idParam),

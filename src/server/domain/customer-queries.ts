@@ -99,7 +99,6 @@ const totalsOf = (
 	customerId: number,
 ): CustomerTotals => totals.get(customerId) ?? noOrders;
 
-// Lifetime value: what booked orders owe, net of returns.
 async function lifetimeTotals(db: Db, customerIds: number[]) {
 	if (customerIds.length === 0) return new Map<number, Totals>();
 	const booked = await db

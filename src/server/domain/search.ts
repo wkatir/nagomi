@@ -1,9 +1,5 @@
-// SQLite's lower() and LIKE fold ASCII only, so "Crème" and "ÁNGELA" would not match
-// "creme" or "angela". Searchable rows keep a `search_key` column written by the API with
-// searchKey(), and a search term is normalized the same way (searchPatterns).
-
-// Phone numbers are added as their digits (phoneDigits) so "7123-4567" and
-// "+503 7123 4567" both find them.
+// SQLite's lower() and LIKE fold ASCII only, so searchable rows keep a `search_key` written
+// with searchKey() and terms are normalized the same way.
 export function searchKey(...parts: (string | null | undefined)[]): string {
 	return parts
 		.filter((p): p is string => typeof p === "string" && p.trim() !== "")

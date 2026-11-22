@@ -6,11 +6,8 @@ import { baseLocale, locales } from "#/paraglide/runtime";
 import type { CatalogContext } from "./catalog";
 import { loadCatalog } from "./storefront-catalog";
 
-// `path` has no locale prefix.
 export type SitemapEntry = { path: string; lastmod?: string };
 
-// Categories, brands and bundles follow the same rule as the menu and the pages
-// themselves.
 export async function sitemapEntries(
 	db: Db,
 	context: CatalogContext,
@@ -86,8 +83,7 @@ export function sitemapXml(origin: string, entries: readonly SitemapEntry[]) {
 	].join("\n");
 }
 
-// The back office and the API are not for crawlers. The cart is crawlable on purpose: it is
-// linked from every page and carries noindex, which Google only sees on pages it may crawl.
+// The cart stays crawlable: Google only sees its noindex on pages it may crawl.
 export function robotsTxt(origin: string) {
 	const admin = locales.map(
 		(l) => new URL(localizedUrl(origin, "/admin", l)).pathname,

@@ -1,8 +1,7 @@
 import { SLUG_REGEX } from "#/lib/enums";
 
-// The list filtered by only one category or brand (/products?brand=akko), an old address,
-// moves to that facet's page for good. Decided here, for document requests only: inside
-// the app the same list is a filter that must stay a list.
+// /products?brand=akko moves to /brands/akko for document requests only: inside the app the
+// same list is a filter.
 const LISTING = /^(\/en)?\/products\/?$/;
 const FACET_PAGES = {
 	category: "categories",

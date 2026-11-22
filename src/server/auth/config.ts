@@ -1,12 +1,9 @@
-// Kept apart from src/lib/auth.ts so it can be tested without a Worker.
-// Optional secrets: wrangler.jsonc does not require them.
 export type GoogleEnv = {
 	GOOGLE_CLIENT_ID?: string;
 	GOOGLE_CLIENT_SECRET?: string;
 };
 
-// Both credentials unset: off, as in local development. It never creates users: an admin
-// must already exist (scripts/create-admin.ts) with the same email.
+// Never creates users: the admin must already exist (scripts/create-admin.ts).
 export function googleProvider(env: GoogleEnv) {
 	if (Boolean(env.GOOGLE_CLIENT_ID) !== Boolean(env.GOOGLE_CLIENT_SECRET))
 		throw new Error(
@@ -21,15 +18,12 @@ export function googleProvider(env: GoogleEnv) {
 	};
 }
 
-// Customers sign up and sign in with a password; Google is an extra way in for staff whose
-// account already exists.
 export const signInMethods = (google: object | undefined) => ({
 	google: google !== undefined,
 	password: true,
 });
 
-// Sessions travel in a Secure cookie, which a plain-http origin would lose. Only a local
-// development URL may be http.
+// The session cookie is Secure, so a plain-http origin would lose it.
 export function assertSecureBaseUrl(url: string) {
 	const { protocol, hostname } = new URL(url);
 	if (

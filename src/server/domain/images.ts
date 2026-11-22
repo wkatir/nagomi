@@ -198,7 +198,7 @@ function avif(b: Uint8Array): ImageInfo | null {
 	};
 }
 
-// Read from the file's own structure, never from its name or the declared type.
+// From the file's own bytes, never its name or declared type.
 export function readImageInfo(bytes: Uint8Array): ImageInfo | null {
 	let info: ImageInfo | null = null;
 	if (bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff)
@@ -212,7 +212,6 @@ export function readImageInfo(bytes: Uint8Array): ImageInfo | null {
 	return fits(info.width) && fits(info.height) ? info : null;
 }
 
-// Content-addressed, so a key never points at other content and can be cached forever.
 export const mediaKey = (sha256: string, type: ImageType) =>
 	`${sha256}.${EXTENSIONS[type]}`;
 

@@ -38,7 +38,6 @@ export const carts = sqliteTable(
 	],
 );
 
-// One line per variant or per set, never both.
 export const cartItems = sqliteTable(
 	"cart_items",
 	{

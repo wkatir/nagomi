@@ -46,15 +46,15 @@ const slugs = (r: ReturnType<typeof relatedProducts>) =>
 
 describe("relatedProducts", () => {
 	const keyboard = entry("rk75", "teclados", 1, "royal-kludge", {
-		bundles: ["set-noche"],
+		bundles: ["set-streaming"],
 	});
 	const mouse = entry("pulsar-x2", "ratones", 2, "pulsar", {
-		bundles: ["set-noche"],
+		bundles: ["set-streaming"],
 	});
 	const otherKeyboard = entry("sakura-65", "teclados", 1, "akko");
 	const sameBrand = entry("kuro-60", "teclados", 1, "royal-kludge");
 	const mat = entry("gran-ola", "alfombrillas", 3, "nagomi", {
-		bundles: ["set-noche"],
+		bundles: ["set-streaming"],
 	});
 	const light = entry("barra-rgb", "iluminacion", 5, "luminex");
 

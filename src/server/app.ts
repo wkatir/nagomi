@@ -27,8 +27,7 @@ const publicBodyLimit = limitBody(16 * 1024);
 
 export const api = new Hono()
 	.basePath("/api")
-	// Requests a cross-site form could send (form or plain-text bodies) must come from this
-	// origin; JSON requests from another origin need a CORS preflight this API never grants.
+	// Cross-site form posts are refused; cross-origin JSON needs a preflight this API never grants.
 	.use("*", csrf())
 	.use("*", (c, next) =>
 		c.req.method === "POST" && IMAGE_UPLOAD_PATHS.includes(c.req.path)

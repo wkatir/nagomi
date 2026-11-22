@@ -6,9 +6,9 @@ import type { AdminEnv } from "#/server/auth";
 import {
 	addPurchase,
 	addSupplier,
-	CRM_30,
-	OIL_50,
-	OIL_100,
+	MOU_BLACK,
+	PAD_M,
+	PAD_XL,
 	seedSupply,
 } from "./supply-fixtures";
 
@@ -66,8 +66,8 @@ beforeEach(() => {
 		status: "draft",
 		createdAt: "2026-10-01T10:00:00Z",
 		items: [
-			{ variantId: OIL_50, quantity: 10, unitCost: 700 },
-			{ variantId: OIL_100, quantity: 5, unitCost: 1200 },
+			{ variantId: PAD_M, quantity: 10, unitCost: 700 },
+			{ variantId: PAD_XL, quantity: 5, unitCost: 1200 },
 		],
 	});
 	addPurchase(db, {
@@ -76,7 +76,7 @@ beforeEach(() => {
 		status: "ordered",
 		orderedOn: "2026-10-03",
 		createdAt: "2026-10-03T12:00:00Z",
-		items: [{ variantId: CRM_30, quantity: 4, unitCost: 500 }],
+		items: [{ variantId: MOU_BLACK, quantity: 4, unitCost: 500 }],
 	});
 	addPurchase(db, {
 		supplierId: 2,
@@ -91,7 +91,7 @@ beforeEach(() => {
 		},
 		items: [
 			{
-				variantId: OIL_50,
+				variantId: PAD_M,
 				quantity: 20,
 				unitCost: 650,
 				received: 8,
@@ -106,14 +106,14 @@ beforeEach(() => {
 		status: "received",
 		orderedOn: "2026-10-05",
 		createdAt: "2026-10-06T03:00:00Z",
-		items: [{ variantId: CRM_30, quantity: 2, unitCost: 500, received: 2 }],
+		items: [{ variantId: MOU_BLACK, quantity: 2, unitCost: 500, received: 2 }],
 	});
 	addPurchase(db, {
 		supplierId: 1,
 		reference: "PO-300",
 		status: "cancelled",
 		createdAt: "2026-10-07T12:00:00Z",
-		items: [{ variantId: OIL_100, quantity: 1, unitCost: 1300 }],
+		items: [{ variantId: PAD_XL, quantity: 1, unitCost: 1300 }],
 	});
 });
 
@@ -166,7 +166,6 @@ describe("GET /purchase-orders", () => {
 			"B-8",
 			"PO-300",
 		]);
-		// References sort ignoring case.
 		expect(await sorted("reference", "asc")).toEqual([
 			"B-7",
 			"B-8",
@@ -289,7 +288,7 @@ describe("GET /purchase-orders", () => {
 				supplierId: 1,
 				reference: `X-${n}`,
 				createdAt: `2026-09-${String(10 + n)}T10:00:00Z`,
-				items: [{ variantId: OIL_50, quantity: 1, unitCost: 100 }],
+				items: [{ variantId: PAD_M, quantity: 1, unitCost: 100 }],
 			});
 		const first = await list("pageSize=10");
 		expect(first.items).toHaveLength(10);
@@ -356,10 +355,10 @@ describe("GET /purchase-orders/:id", () => {
 			items: [
 				{
 					id: 4,
-					variantId: OIL_50,
-					sku: "OIL-001",
+					variantId: PAD_M,
+					sku: "PAD-001",
 					brand: "Brand",
-					name: "Aceite",
+					name: "Alfombrilla",
 					optionLabel: null,
 					quantity: 20,
 					received: 8,
@@ -396,8 +395,8 @@ describe("GET /purchase-orders/:id", () => {
 		expect(body.status).toBe("draft");
 		expect(body.receipts).toEqual([]);
 		expect(body.items.map((i) => [i.sku, i.quantity, i.received])).toEqual([
-			["OIL-001", 10, 0],
-			["OIL-100", 5, 0],
+			["PAD-001", 10, 0],
+			["PAD-100", 5, 0],
 		]);
 	});
 

@@ -124,7 +124,6 @@ export async function pagedCategories(
 	return toPaged(items, totalOf(counted), query);
 }
 
-// An archived one may lack the default-language name.
 export const categoryOptions = (db: Db, defaultLocale: Locale) =>
 	db
 		.select({
@@ -192,7 +191,6 @@ export async function pagedBundles(
 	return toPaged(items, totalOf(counted), query);
 }
 
-// An archived one may lack the default-language name.
 export const bundleOptions = (db: Db, defaultLocale: Locale) =>
 	db
 		.select({
@@ -264,7 +262,6 @@ export async function pagedCollections(
 	return toPaged(items, totalOf(counted), query);
 }
 
-// An archived one may lack the default-language title.
 export const collectionOptions = (db: Db, defaultLocale: Locale) =>
 	db
 		.select({

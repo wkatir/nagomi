@@ -72,7 +72,6 @@ export type StockView = {
 	sellable: Map<number, number>;
 };
 
-// The catalogue entries and exact units for sale of every size the items touch.
 export async function stockView(
 	db: Db,
 	settings: StoreSettings,
@@ -95,7 +94,6 @@ export async function stockView(
 	return { products, bundles, sellable };
 }
 
-// Units of each size one item takes.
 function demandOf(item: Item, view: StockView) {
 	if (item.variantId !== null)
 		return new Map([[item.variantId, item.quantity]]);
@@ -106,7 +104,6 @@ function demandOf(item: Item, view: StockView) {
 	);
 }
 
-// How many of this item fit next to the other items, up to the store's limit per line.
 export function itemMax(
 	item: Pick<Item, "id" | "variantId" | "bundleId">,
 	others: Item[],
@@ -398,8 +395,7 @@ export const priceCart = async (
 	...args: Parameters<typeof priceCartWithStock>
 ) => (await priceCartWithStock(...args)).cart;
 
-// Every figure the customer sees before paying, recomputed from the catalogue on each read:
-// the browser never sends a price.
+// Recomputed from the catalogue on every read: the browser never sends a price.
 export async function priceCartWithStock(
 	db: Db,
 	settings: StoreSettings,
@@ -487,8 +483,6 @@ export async function priceCartWithStock(
 	};
 }
 
-// Sums the quantities of the same size or set, each capped at what is left; the guest cart
-// is then removed.
 export async function mergeInto(
 	db: Db,
 	settings: StoreSettings,

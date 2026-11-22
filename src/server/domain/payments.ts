@@ -49,7 +49,6 @@ export type PaymentSummary = {
 	status: OrderPaymentStatus;
 };
 
-// The payment status is never stored, so it cannot drift from the money recorded.
 export function paymentSummary(
 	owed: number,
 	paid: number,

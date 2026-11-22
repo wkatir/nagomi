@@ -48,7 +48,7 @@ const photo = (productId: number) =>
 	upload("/product-images", {
 		productId: String(productId),
 		kind: "packshot",
-		"alt.es": "Un frasco",
+		"alt.es": "Un teclado",
 	});
 
 let db: Database;
@@ -78,7 +78,7 @@ describe("POST /product-images", () => {
 			width: 40,
 			height: 30,
 			url: `/media/${pngKey}`,
-			alt: { es: "Un frasco" },
+			alt: { es: "Un teclado" },
 		});
 		expect(objects.has(pngKey)).toBe(true);
 		expect(count("media_files")).toBe(1);
@@ -134,7 +134,7 @@ describe("POST /product-images", () => {
 		const res = await upload("/product-images", {
 			productId: "1",
 			kind: "packshot",
-			"alt.en": "A bottle",
+			"alt.en": "A keyboard",
 		});
 		expect(res.status).toBe(409);
 		expect(count("media_files")).toBe(0);

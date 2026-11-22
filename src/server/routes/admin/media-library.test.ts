@@ -174,10 +174,10 @@ insert into collection_translations (collection_id, locale, title) values (1, 'e
 		files(2);
 		db.exec(`
 insert into product_images (id, product_id, media_file_id, kind, position, status) values (1, 1, 1, 'packshot', 1, 'active'), (2, 2, 1, 'lifestyle', 1, 'archived'), (3, 2, 2, 'detail', 2, 'active');
-insert into product_translations (product_id, locale, name, search_key) values (1, 'es', 'Aceite', 'aceite');
+insert into product_translations (product_id, locale, name, search_key) values (1, 'es', 'Teclado', 'teclado');
 `);
 		expect((await usage(1)).photos).toEqual([
-			{ id: 1, productId: 1, slug: "p", status: "active", name: "Aceite" },
+			{ id: 1, productId: 1, slug: "p", status: "active", name: "Teclado" },
 			{ id: 2, productId: 2, slug: "q", status: "archived", name: null },
 		]);
 		expect((await usage(2)).photos.map((p) => p.id)).toEqual([3]);

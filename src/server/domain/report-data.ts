@@ -17,9 +17,6 @@ import { amountOwed } from "./payments";
 import type { LossMovement, ReturnedLine } from "./reports";
 import { type OrderSale, orderSale, type SoldOrder } from "./sales";
 
-// Every report, the dashboard and the CSV exports read their facts here, so a figure means
-// the same everywhere. Ranges are whole local days.
-
 const {
 	brands,
 	customers,
@@ -54,16 +51,14 @@ const between = (column: Parameters<typeof gte>[0], range: LocalRange) => {
 const soldCostOfLine = sql<number>`(select coalesce(-sum(m.quantity * l.unit_cost_e4), 0) from inventory_movements m join lots l on l.id = m.lot_id where m.kind = 'sale' and m.order_item_id = ${qualified(orderItems.id)})`;
 const returnedCostOfLine = sql<number>`(select coalesce(sum(m.quantity * l.unit_cost_e4), 0) from inventory_movements m join lots l on l.id = m.lot_id join return_lines rl on rl.id = m.return_line_id where m.kind = 'return' and rl.order_item_id = ${qualified(orderItems.id)})`;
 
-// A confirmed or later order always has lines (trigger orders_require_lines). Heads and
-// lines are read in one batch: two separate reads would miss the lines of an order that
-// reached the status between them.
+// One batch: two separate reads would miss the lines of an order that reached the status
+// between them.
 function linesOf<T>(byOrder: Map<number, T[]>, orderId: number): T[] {
 	const lines = byOrder.get(orderId);
 	if (lines === undefined) throw new Error(`Order ${orderId} has no lines`);
 	return lines;
 }
 
-// Net of every return of their units, whenever it was recorded.
 export async function loadSales(
 	db: Db,
 	range: LocalRange,
@@ -123,7 +118,6 @@ export async function loadSales(
 	});
 }
 
-// Valued at what the orders owe now, net of returns.
 export async function loadBookings(db: Db, range: LocalRange) {
 	const booked = and(
 		inArray(orders.status, [...SOLD_STATUSES]),

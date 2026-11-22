@@ -158,7 +158,6 @@ export async function listOrders(
 		if (match === null) throw new Error(`Invalid cursor ${cursor}`);
 		keyset = sql`(${orders.createdAt} < ${match[1]} or (${orders.createdAt} = ${match[1]} and ${orders.id} < ${Number(match[2])}))`;
 	}
-	// One row more than needed tells whether another page exists.
 	const rows = await db
 		.select(listColumns)
 		.from(orders)
@@ -257,8 +256,6 @@ export async function orderDetail(db: Db, id: number) {
 		.leftJoin(customers, eq(customers.id, orders.customerId))
 		.where(eq(orders.id, id));
 	if (!head) return null;
-	// Two indexed lookups: sales of its lines, and the returns and write-offs of its return
-	// lines.
 	const ofOrder = sql`${inventoryMovements.id} in (select m.id from inventory_movements m where m.order_item_id in (select oi.id from order_items oi where oi.order_id = ${id}) union select m.id from inventory_movements m where m.return_line_id in (select rl.id from return_lines rl join returns r on r.id = rl.return_id where r.order_id = ${id}))`;
 	const [lines, money, returnRows, movements, consents, trail] =
 		await Promise.all([
@@ -351,7 +348,6 @@ export async function orderDetail(db: Db, id: number) {
 				})
 				.from(auditEvents)
 				.leftJoin(users, eq(users.id, auditEvents.actorUserId))
-				// The order's own events and those of its payments and returns.
 				.where(
 					or(
 						and(

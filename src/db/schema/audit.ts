@@ -7,8 +7,7 @@ export const auditEvents = sqliteTable(
 	{
 		id: id(),
 		actorUserId: actor("actor_user_id").notNull(),
-		// <entity>.create, .update, .archive or .status (with from and to in data), e.g.
-		// "order.status", "payment.create", "settings.update"
+		// <entity>.create, .update, .archive or .status (from and to in data).
 		action: text("action").notNull(),
 		entityType: text("entity_type").notNull(),
 		entityId: text("entity_id").notNull(),

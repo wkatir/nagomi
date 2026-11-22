@@ -1,7 +1,3 @@
-// A size is sold only from units the store has. An order takes its units from the lots when
-// it is placed and a cancellation puts them back, so the units on hand are the units for
-// sale.
-
 export type StockAvailability = "in_stock" | "sold_out";
 
 export const sellableUnits = (onHand: number) => Math.max(0, onHand);

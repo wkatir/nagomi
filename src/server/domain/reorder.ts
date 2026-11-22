@@ -1,10 +1,7 @@
 import { addDays, daysBetween } from "#/lib/dates";
 import { e4ToMinor } from "./receiving";
 
-// Every intermediate figure is returned so the back office can explain the suggestion.
-
 type ReorderParams = {
-	// Store's local date.
 	today: string;
 	lookbackWeeks: number;
 	targetWeeks: number;
@@ -181,7 +178,6 @@ export function reorderSuggestion(input: ReorderInput, params: ReorderParams) {
 
 type ReorderSuggestion = ReturnType<typeof reorderSuggestion>;
 
-// Those without a known margin after the ones with one.
 export const byPriority = (a: ReorderSuggestion, b: ReorderSuggestion) =>
 	Number(b.suggestedQuantity > 0) - Number(a.suggestedQuantity > 0) ||
 	(b.priorityScore ?? -1) - (a.priorityScore ?? -1) ||

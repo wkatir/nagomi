@@ -87,7 +87,6 @@ export type VisibleBundle = {
 	items: { sku: string; productId: number; quantity: number }[];
 };
 
-// One D1 batch, whatever the catalogue size.
 export async function loadCatalog(db: Db, context: CatalogContext) {
 	const locales = localesOf(context);
 	const [

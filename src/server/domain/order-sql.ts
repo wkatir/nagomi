@@ -15,16 +15,14 @@ export const returnedOfLine = returnedUnits(qualified(orderItems.id));
 export const keptValue = (orderId: SQL) =>
 	sql<number>`(select coalesce(sum((oi.quantity - ${returnedUnits(sql.raw("oi.id"))}) * oi.unit_price), 0) from order_items oi where oi.order_id = ${orderId})`;
 
-// amountOwed (payments.ts) written in SQL. `row` is the alias of a row with the order's
-// status, subtotal, discount, shipping and its `kept` value (keptValue).
+// amountOwed (payments.ts) in SQL; must stay in step with it.
 export const owedOf = (row: string) =>
 	sql.raw(`case when ${row}.status = 'cancelled' or ${row}.kept = 0 then 0
 				else ${row}.kept
 					- (case when ${row}.subtotal = 0 then 0 else (2 * ${row}.discount * ${row}.kept + ${row}.subtotal) / (2 * ${row}.subtotal) end)
 					+ ${row}.shipping end`);
 
-// amountOwed and paymentSummary (payments.ts) written in SQL, so a list can be filtered and
-// counted by status; order-sql.test.ts checks both give the same status.
+// paymentSummary (payments.ts) in SQL, so lists can filter by it; order-sql.test.ts checks both agree.
 export const paymentStatusIs = (status: OrderPaymentStatus) => {
 	const id = sql.raw("o.id");
 	return sql`${orders.id} in (

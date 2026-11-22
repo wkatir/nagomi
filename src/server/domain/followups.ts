@@ -8,7 +8,6 @@ const { orders } = schema;
 export const orderFollowups = sqliteView("order_followups", {
 	orderId: integer("order_id").notNull(),
 	status: text("status", { enum: ORDER_STATUSES }).notNull(),
-	// collect_payment (cancelled once overdue), ship, confirm_delivery.
 	action: text("action", {
 		enum: ["collect_payment", "ship", "confirm_delivery"],
 	}).notNull(),

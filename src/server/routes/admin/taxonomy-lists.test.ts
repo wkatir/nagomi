@@ -93,10 +93,10 @@ beforeEach(() => {
 				"insert into brands (slug, name, search_key, country_code, status) values (?, ?, ?, ?, ?)",
 			)
 			.run(slug, name, searchKey(name, slug), country, status);
-	brand("creme-lab", "Crème Lab", "KR");
-	brand("anua", "Anua", "KR");
-	brand("innisfree", "innisfree", null);
-	brand("eclat", "Éclat", "FR");
+	brand("cle-lab", "Clé Lab", "KR");
+	brand("akko", "Akko", "KR");
+	brand("logitech", "logitech", null);
+	brand("elan-audio", "Élan Audio", "FR");
 	brand("zeta", "Zeta", "KR", "archived");
 
 	const category = (
@@ -119,10 +119,10 @@ beforeEach(() => {
 		["es", "Teclado"],
 		["en", "Keyboard"],
 	]);
-	category("cleanser", 1, [["es", "Limpiador"]]);
+	category("mice", 1, [["es", "Ratones"]]);
 	// Archived, named only in English: it has no name in the store's language.
-	category("sunscreen", 5, [["en", "Sunscreen"]], "archived");
-	category("acids", 2, [["es", "Ácidos exfoliantes"]]);
+	category("lighting", 5, [["en", "Lighting"]], "archived");
+	category("optical", 2, [["es", "Ópticos"]]);
 
 	// Brand 1 has a published and a draft product, brand 2 only an archived one, brand 3 a
 	// draft. Category 1 has the published and the draft one, category 2 the archived one.
@@ -150,36 +150,36 @@ describe("GET /brands", () => {
 			pageSize: 25,
 			pageCount: 1,
 		});
-		// Binary order would put "Zeta" before "innisfree" and "Éclat" last.
+		// Binary order would put "Zeta" before "logitech" and "Élan Audio" last.
 		expect(page.items).toEqual([
 			{
 				id: 2,
-				slug: "anua",
-				name: "Anua",
+				slug: "akko",
+				name: "Akko",
 				countryCode: "KR",
 				status: "active",
 				products: 0,
 			},
 			{
 				id: 1,
-				slug: "creme-lab",
-				name: "Crème Lab",
+				slug: "cle-lab",
+				name: "Clé Lab",
 				countryCode: "KR",
 				status: "active",
 				products: 2,
 			},
 			{
 				id: 4,
-				slug: "eclat",
-				name: "Éclat",
+				slug: "elan-audio",
+				name: "Élan Audio",
 				countryCode: "FR",
 				status: "active",
 				products: 0,
 			},
 			{
 				id: 3,
-				slug: "innisfree",
-				name: "innisfree",
+				slug: "logitech",
+				name: "logitech",
 				countryCode: null,
 				status: "active",
 				products: 1,
@@ -220,11 +220,11 @@ describe("GET /brands", () => {
 	});
 
 	test("searches the name and the slug without accents or case", async () => {
-		expect(ids(await list<Brand>("brands", "q=creme"))).toEqual([1]);
-		expect(ids(await list<Brand>("brands", "q=CRÈME"))).toEqual([1]);
-		expect(ids(await list<Brand>("brands", "q=%C3%89CLAT"))).toEqual([4]);
-		expect(ids(await list<Brand>("brands", "q=eclat"))).toEqual([4]);
-		expect(ids(await list<Brand>("brands", "q=%20ANUA%20"))).toEqual([2]);
+		expect(ids(await list<Brand>("brands", "q=cle"))).toEqual([1]);
+		expect(ids(await list<Brand>("brands", "q=CLÉ"))).toEqual([1]);
+		expect(ids(await list<Brand>("brands", "q=%C3%89LAN"))).toEqual([4]);
+		expect(ids(await list<Brand>("brands", "q=elan"))).toEqual([4]);
+		expect(ids(await list<Brand>("brands", "q=%20AKKO%20"))).toEqual([2]);
 		expect(ids(await list<Brand>("brands", "q=lab"))).toEqual([1]);
 		const none = await list<Brand>("brands", "q=zzz");
 		expect(none).toMatchObject({ items: [], total: 0, pageCount: 1 });
@@ -285,10 +285,10 @@ describe("GET /brands", () => {
 describe("GET /brands/options", () => {
 	test("is every brand as id, name and status, by name without accents", async () => {
 		expect(await get<Option[]>("brands/options")).toEqual([
-			{ id: 2, name: "Anua", status: "active" },
-			{ id: 1, name: "Crème Lab", status: "active" },
-			{ id: 4, name: "Éclat", status: "active" },
-			{ id: 3, name: "innisfree", status: "active" },
+			{ id: 2, name: "Akko", status: "active" },
+			{ id: 1, name: "Clé Lab", status: "active" },
+			{ id: 4, name: "Élan Audio", status: "active" },
+			{ id: 3, name: "logitech", status: "active" },
 			{ id: 5, name: "Zeta", status: "archived" },
 		]);
 	});
@@ -346,8 +346,8 @@ describe("GET /categories", () => {
 		expect(page.items).toEqual([
 			{
 				id: 2,
-				slug: "cleanser",
-				name: "Limpiador",
+				slug: "mice",
+				name: "Ratones",
 				sortOrder: 1,
 				icon: "package",
 				status: "active",
@@ -365,8 +365,8 @@ describe("GET /categories", () => {
 			},
 			{
 				id: 4,
-				slug: "acids",
-				name: "Ácidos exfoliantes",
+				slug: "optical",
+				name: "Ópticos",
 				sortOrder: 2,
 				icon: "package",
 				status: "active",
@@ -374,7 +374,7 @@ describe("GET /categories", () => {
 			},
 			{
 				id: 3,
-				slug: "sunscreen",
+				slug: "lighting",
 				name: null,
 				sortOrder: 5,
 				icon: "package",
@@ -385,7 +385,7 @@ describe("GET /categories", () => {
 	});
 
 	test.each([
-		// A category with no name sorts first; "Ácidos" sorts with the A's.
+		// A category with no name sorts first; "Ópticos" sorts with the O's.
 		["name", "asc", [3, 4, 2, 1]],
 		["name", "desc", [1, 2, 4, 3]],
 		["sortOrder", "asc", [2, 1, 4, 3]],
@@ -408,17 +408,15 @@ describe("GET /categories", () => {
 	});
 
 	test("searches the name in the default language and the slug without accents or case", async () => {
-		expect(ids(await list<Category>("categories", "q=acidos"))).toEqual([4]);
-		expect(ids(await list<Category>("categories", "q=%C3%81CIDOS"))).toEqual([
+		expect(ids(await list<Category>("categories", "q=opticos"))).toEqual([4]);
+		expect(ids(await list<Category>("categories", "q=%C3%93PTICOS"))).toEqual([
 			4,
 		]);
 		expect(ids(await list<Category>("categories", "q=keyboard"))).toEqual([1]);
-		expect(ids(await list<Category>("categories", "q=TECLADO"))).toEqual([
-			1,
-		]);
+		expect(ids(await list<Category>("categories", "q=TECLADO"))).toEqual([1]);
 		// The English name is not searched, but the slug is.
-		expect(ids(await list<Category>("categories", "q=sunscreen"))).toEqual([3]);
-		expect(ids(await list<Category>("categories", "q=Limpia"))).toEqual([2]);
+		expect(ids(await list<Category>("categories", "q=lighting"))).toEqual([3]);
+		expect(ids(await list<Category>("categories", "q=Rato"))).toEqual([2]);
 		const none = await list<Category>("categories", "q=zzz");
 		expect(none).toMatchObject({ items: [], total: 0, pageCount: 1 });
 	});
@@ -432,8 +430,8 @@ describe("GET /categories/options", () => {
 	test("is the categories named in the default language, by name without accents", async () => {
 		// The archived one without a Spanish name is left out.
 		expect(await get<Option[]>("categories/options")).toEqual([
-			{ id: 4, name: "Ácidos exfoliantes", status: "active" },
-			{ id: 2, name: "Limpiador", status: "active" },
+			{ id: 4, name: "Ópticos", status: "active" },
+			{ id: 2, name: "Ratones", status: "active" },
 			{ id: 1, name: "Teclado", status: "active" },
 		]);
 	});
@@ -442,7 +440,7 @@ describe("GET /categories/options", () => {
 		db.exec("update store_settings set default_locale = 'en'");
 		expect(await get<Option[]>("categories/options")).toEqual([
 			{ id: 1, name: "Keyboard", status: "active" },
-			{ id: 3, name: "Sunscreen", status: "archived" },
+			{ id: 3, name: "Lighting", status: "archived" },
 		]);
 	});
 });
@@ -468,12 +466,12 @@ describe("PUT /categories/:id/translations/:locale", () => {
 	test("stores the intro of the product type page", async () => {
 		const res = await put("/categories/1/translations/es", {
 			name: "Teclado",
-			description: "Van después del tónico.",
+			description: "Para escribir y jugar.",
 		});
 		expect(res.status).toBe(200);
 		expect(await res.json()).toMatchObject({
 			categoryId: 1,
-			description: "Van después del tónico.",
+			description: "Para escribir y jugar.",
 		});
 	});
 });

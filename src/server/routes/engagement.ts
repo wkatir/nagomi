@@ -12,7 +12,6 @@ const { products, stockAlerts, variants } = schema;
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-// Public: approved reviews of a published product and their average.
 export const engagement = new Hono()
 	.get(
 		"/products/:slug/reviews",
@@ -30,8 +29,6 @@ export const engagement = new Hono()
 			return c.json(await approvedReviews(db, product.id));
 		},
 	)
-	// "Avísame": only for a size that is sold out now. There is no email sender: staff see
-	// the requests in the back office and write to the customers themselves.
 	.post(
 		"/stock-alerts",
 		validate(

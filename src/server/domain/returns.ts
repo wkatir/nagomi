@@ -89,7 +89,6 @@ export function planReturn(
 	return plan;
 }
 
-// For an order whose delivery failed.
 export function fullReturn(sold: SoldLot[]): ReturnLinePlan[] {
 	return sold
 		.filter((s) => s.sold > s.returned)
@@ -101,8 +100,7 @@ export function fullReturn(sold: SoldLot[]): ReturnLinePlan[] {
 		}));
 }
 
-// A written-off unit comes back into its lot and leaves it again as waste, so the ledger
-// shows where every unit went.
+// A written-off unit comes back into its lot and leaves again as waste, so the ledger shows it.
 export function returnMovements(line: ReturnLinePlan) {
 	const back = {
 		lotId: line.lotId,

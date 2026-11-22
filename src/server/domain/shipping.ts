@@ -7,8 +7,7 @@ export type Zone = {
 	deliveryDaysMax: number;
 };
 
-// `merchandise` is the subtotal minus the discount; `freeFrom` is
-// store_settings.free_shipping_from (null: never free).
+// `merchandise` is the subtotal minus the discount; a null `freeFrom` is never free.
 export function zoneFee(
 	zone: Zone,
 	merchandise: number,

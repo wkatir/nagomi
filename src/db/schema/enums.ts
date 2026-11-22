@@ -1,6 +1,5 @@
 import { ORDER_CHANNELS } from "#/lib/enums";
 
-// Lists shared with the browser live in #/lib/enums; the tables get them from here.
 export {
 	ARCHIVABLE_STATUSES,
 	IMAGE_KINDS,
@@ -21,8 +20,6 @@ export type ImageType = (typeof IMAGE_TYPES)[number];
 export const CONSENT_CHANNELS = ORDER_CHANNELS;
 export type ConsentChannel = (typeof CONSENT_CHANNELS)[number];
 
-// privacy_notice and terms are acknowledgements required to order; the marketing one is an
-// optional permission explained in the privacy notice.
 export const CONSENT_PURPOSES = [
 	"privacy_notice",
 	"terms",

@@ -62,8 +62,8 @@ update products set status = 'published' where id in (1, 2);
 update products set status = 'archived' where id = 4;
 insert into media_files (r2_key, content_type, byte_size, width, height) values ('${cover}', 'image/webp', 1, 1, 1);
 
-insert into bundles (slug, status, is_featured, position, price) values ('sakura', 'draft', 1, 2, 1500), ('noche', 'draft', 0, 1, 1500), ('verano', 'archived', 0, 3, 1500), ('mini', 'draft', 0, 2, 1500);
-insert into bundle_translations (bundle_id, locale, name) values (1, 'es', 'Set de mañana'), (1, 'en', 'Morning set'), (2, 'es', 'Set de noche'), (3, 'en', 'Summer set'), (4, 'es', 'Ágil');
+insert into bundles (slug, status, is_featured, position, price) values ('sakura', 'draft', 1, 2, 1500), ('oficina', 'draft', 0, 1, 1500), ('verano', 'archived', 0, 3, 1500), ('mini', 'draft', 0, 2, 1500);
+insert into bundle_translations (bundle_id, locale, name) values (1, 'es', 'Set de diseño'), (1, 'en', 'Design set'), (2, 'es', 'Set de oficina'), (3, 'en', 'Summer set'), (4, 'es', 'Ágil');
 insert into bundle_items (bundle_id, variant_id, position) values (1, 1, 1), (1, 2, 2), (3, 1, 1), (4, 1, 1);
 update bundles set status = 'published' where id = 1;
 
@@ -92,8 +92,8 @@ describe("GET /bundles", () => {
 		expect(page.items).toEqual([
 			{
 				id: 2,
-				slug: "noche",
-				name: "Set de noche",
+				slug: "oficina",
+				name: "Set de oficina",
 				status: "draft",
 				isFeatured: false,
 				position: 1,
@@ -103,7 +103,7 @@ describe("GET /bundles", () => {
 			{
 				id: 1,
 				slug: "sakura",
-				name: "Set de mañana",
+				name: "Set de diseño",
 				status: "published",
 				isFeatured: true,
 				position: 2,
@@ -135,7 +135,7 @@ describe("GET /bundles", () => {
 
 	test("narrows to a status and searches the name without accents or case", async () => {
 		expect(ids(await list<Bundle>("bundles", "status=draft"))).toEqual([2, 4]);
-		expect(ids(await list<Bundle>("bundles", "q=MA%C3%91ANA"))).toEqual([1]);
+		expect(ids(await list<Bundle>("bundles", "q=DISE%C3%91O"))).toEqual([1]);
 		expect(ids(await list<Bundle>("bundles", "q=agil"))).toEqual([4]);
 		expect(ids(await list<Bundle>("bundles", "q=sakura"))).toEqual([1]);
 	});
@@ -143,8 +143,8 @@ describe("GET /bundles", () => {
 	test("the options are the bundles named in the default language", async () => {
 		expect(await get<Option[]>("bundles/options")).toEqual([
 			{ id: 4, name: "Ágil", status: "draft" },
-			{ id: 1, name: "Set de mañana", status: "published" },
-			{ id: 2, name: "Set de noche", status: "draft" },
+			{ id: 1, name: "Set de diseño", status: "published" },
+			{ id: 2, name: "Set de oficina", status: "draft" },
 		]);
 	});
 });
@@ -308,9 +308,12 @@ describe("PATCH /bundles/:id", () => {
 describe("POST /bundles", () => {
 	test("creates a draft with its price, texts and items", async () => {
 		const res = await send("POST", "/bundles", {
-			slug: "calma",
+			slug: "streaming",
 			price: 1800,
-			translations: { es: { name: "Set Calma" }, en: { name: "Calm Set" } },
+			translations: {
+				es: { name: "Set Streaming" },
+				en: { name: "Streaming Set" },
+			},
 			items: [
 				{ variantId: 1, quantity: 1 },
 				{ variantId: 2, quantity: 1 },
@@ -318,7 +321,7 @@ describe("POST /bundles", () => {
 		});
 		expect(res.status).toBe(201);
 		expect(await res.json()).toMatchObject({
-			slug: "calma",
+			slug: "streaming",
 			status: "draft",
 			price: 1800,
 			itemsTotal: 2000,

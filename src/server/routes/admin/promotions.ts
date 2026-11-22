@@ -52,7 +52,6 @@ const promotionFields = z.object({
 	firstOrderOnly: z.boolean(),
 	status: z.enum(PROMOTION_STATUSES),
 });
-// The table checks, applied to the promotion as it would be stored.
 const promotionState = z
 	.object({
 		type: z.enum(PROMOTION_TYPES),
@@ -110,8 +109,7 @@ export const promotionsRouter = new Hono<AdminEnv>()
 			.limit(50);
 		return c.json({ ...promotion, recentOrders });
 	})
-	// The default locale's description is required: the storefront shows it with the
-	// discount.
+	// The storefront shows the default locale's description with the discount.
 	.post(
 		"/",
 		validate(

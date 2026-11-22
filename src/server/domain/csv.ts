@@ -1,9 +1,8 @@
 import { localDateTime } from "#/lib/dates";
 import { minorDigits } from "#/lib/money";
 
-// RFC 4180, UTF-8 with a byte order mark so Excel reads accents. Text starting with = + - @
-// (or a tab or CR) is prefixed with ' so a spreadsheet never runs it as a formula (OWASP CSV
-// injection).
+// RFC 4180 with a BOM so Excel reads accents. Text starting with = + - @ tab or CR gets a
+// leading ' so a spreadsheet never runs it as a formula (CSV injection).
 
 // A decimal string, so money keeps its trailing zeros.
 type Decimal = { decimal: string };
@@ -33,7 +32,6 @@ export function csvCell(value: Cell): string {
 export const csvRow = (cells: readonly Cell[]) =>
 	`${cells.map(csvCell).join(",")}\r\n`;
 
-// `amount` in minor units.
 export function csvMoney(amount: number, currency: string): Decimal {
 	if (!Number.isSafeInteger(amount))
 		throw new Error(`Invalid money amount ${amount}`);
@@ -86,6 +84,5 @@ export const csvHeaders = (filename: string) => ({
 	"Content-Disposition": `attachment; filename="${filename}"`,
 });
 
-// "2026-10-05 14:32:07" in the store's zone, the way a spreadsheet reads a date.
 export const csvDateTime = (instant: string | null, timeZone: string) =>
 	instant === null ? null : localDateTime(new Date(instant), timeZone);

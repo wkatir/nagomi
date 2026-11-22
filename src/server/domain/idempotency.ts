@@ -1,8 +1,6 @@
 import { z } from "zod";
 import { sha256Hex } from "./hash";
 
-// A retry with the same key and body returns the stored order; the same key with another
-// body is refused (422).
 export const idempotencyKey = z.string().trim().toLowerCase().pipe(z.uuid());
 
 export function canonicalJson(value: unknown): string {

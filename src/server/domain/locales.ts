@@ -21,8 +21,8 @@ const {
 	storePromiseTranslations,
 } = schema;
 
-// Includes archived categories a published product still uses. The default
-// locale is the fallback of every text, so it must cover them all.
+// Includes archived categories a published product still uses: the default locale backs
+// every text.
 export async function untranslated(db: Db, locale: Locale) {
 	const missing = (type: string) => (rows: { slug: string }[]) =>
 		rows.map((r) => ({ type, slug: r.slug }));

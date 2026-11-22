@@ -6,7 +6,7 @@ import { CUSTOMER_ROLE } from "#/lib/roles";
 
 const { customers } = schema;
 
-// The signed-in customer, or null for a guest (or a staff session, which never shops).
+// Null for a guest or a staff session: staff never shop.
 export async function sessionCustomer(c: Context) {
 	const session = await auth.api.getSession({ headers: c.req.raw.headers });
 	if (!session || session.user.banned || session.user.role !== CUSTOMER_ROLE)

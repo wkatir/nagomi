@@ -6,7 +6,6 @@ import { searchMatch } from "./search-sql";
 
 const { brands, productTranslations, products, variants } = schema;
 
-// For a query that joins products to their default-locale translation and to the brand.
 export const productSearch = (db: Db, term: string) =>
 	or(
 		searchMatch(term, [productTranslations.searchKey, brands.searchKey]),

@@ -4,7 +4,6 @@ export class InvalidGtinError extends Error {
 	}
 }
 
-// GS1 check digit.
 function checkDigit(data: string) {
 	let sum = 0;
 	for (let i = 0; i < data.length; i++) {

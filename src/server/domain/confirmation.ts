@@ -35,8 +35,7 @@ const methodLabel = {
 	courier: m.shipping_method_courier,
 } as const;
 
-// Consumer law: sent by the next calendar day, with every price, shipping, total and the
-// delivery time. Stored on the order exactly as sent.
+// Consumer law: sent by the next calendar day and stored on the order exactly as sent.
 export function confirmationMessage(input: ConfirmationInput): string {
 	if (input.discount > 0 && !input.discountReason)
 		throw new Error("A discount needs its reason");

@@ -1,17 +1,12 @@
 import { z } from "zod";
 
-// Wompi El Salvador (https://docs.wompi.sv): OAuth2 client credentials at id.wompi.sv, the
-// API at api.wompi.sv. The App ID of the business is the client id and its API Secret the
-// client secret; the same secret signs webhooks (header wompi_hash: HMAC-SHA256 of the raw
-// body, lower-case hex). A business in development mode approves every test card except
-// CVV 111; there is no separate sandbox host.
+// https://docs.wompi.sv. The API Secret also signs webhooks (wompi_hash: HMAC-SHA256 of the
+// raw body, lower-case hex).
 export const WOMPI_TOKEN_URL = "https://id.wompi.sv/connect/token";
 export const WOMPI_API_URL = "https://api.wompi.sv";
 
 export type WompiCredentials = { clientId: string; clientSecret: string };
 
-// Optional secrets: wrangler.jsonc does not require them. Without both the card method is
-// shown as unavailable.
 export type WompiEnv = {
 	WOMPI_CLIENT_ID?: string;
 	WOMPI_CLIENT_SECRET?: string;
@@ -50,9 +45,9 @@ const linkResponse = z.object({
 });
 
 export type PaymentLinkInput = {
-	// Our order code (identificadorEnlaceComercio): the webhook names the order with it.
+	// identificadorEnlaceComercio: the webhook names the order with it.
 	reference: string;
-	// Minor units (cents); Wompi takes dollars.
+	// Minor units; Wompi takes dollars.
 	amount: number;
 	productName: string;
 	redirectUrl: string;
@@ -100,7 +95,6 @@ export function wompiClient(
 	}
 
 	return {
-		// POST /EnlacePago: a hosted page that charges the amount once.
 		async createPaymentLink(input: PaymentLinkInput) {
 			const res = await fetcher(`${WOMPI_API_URL}/EnlacePago`, {
 				method: "POST",
@@ -173,7 +167,6 @@ function sameText(a: string, b: string) {
 	return diff === 0;
 }
 
-// The header is the HMAC of the body exactly as received.
 export async function validWebhookSignature(
 	secret: string,
 	rawBody: string,
@@ -198,7 +191,6 @@ const webhookBody = z.looseObject({
 export type WompiWebhook = {
 	transactionId: string;
 	approved: boolean;
-	// Minor units.
 	amount: number;
 	reference: string;
 	production: boolean | null;

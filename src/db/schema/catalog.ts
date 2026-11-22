@@ -32,7 +32,6 @@ export const brands = sqliteTable(
 		id: id(),
 		slug: text("slug").notNull().unique(),
 		name: text("name").notNull(),
-		// searchKey() of name and slug (src/server/domain/search.ts), written by the API.
 		searchKey: text("search_key").notNull(),
 		countryCode: text("country_code", { length: 2 }),
 		status: text("status", { enum: ARCHIVABLE_STATUSES })
@@ -138,7 +137,6 @@ export const productTranslations = sqliteTable(
 			.references(() => products.id),
 		locale: locale(),
 		name: text("name").notNull(),
-		// searchKey() of the name (src/server/domain/search.ts), written by the API.
 		searchKey: text("search_key").notNull(),
 		tagline: text("tagline"),
 		shortSpecs: text("short_specs"),
@@ -182,8 +180,7 @@ export const productSpecTranslations = sqliteTable(
 	],
 );
 
-// An active variant of a published product always has a price, and a published product has
-// at least one active priced variant (API checks, enforced by triggers).
+// A published product has at least one active priced variant (enforced by triggers).
 export const variants = sqliteTable(
 	"variants",
 	{
@@ -192,7 +189,6 @@ export const variants = sqliteTable(
 			.notNull()
 			.references(() => products.id),
 		sku: text("sku").notNull().unique(),
-		// searchKey() of SKU and barcode (src/server/domain/search.ts), written by the API.
 		searchKey: text("search_key").notNull(),
 		status: text("status", { enum: ARCHIVABLE_STATUSES })
 			.notNull()
@@ -255,8 +251,7 @@ export const priceHistory = sqliteTable(
 	],
 );
 
-// Stored in R2 under its content key (<sha256>.<ext>). A row never changes and is never
-// deleted: a key always names the same bytes.
+// Stored in R2 under <sha256>.<ext>; never changed or deleted, so a key always names the same bytes.
 export const mediaFiles = sqliteTable(
 	"media_files",
 	{

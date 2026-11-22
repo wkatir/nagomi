@@ -1,22 +1,21 @@
 import type { Database } from "bun:sqlite";
 import { searchKey } from "../../domain/search";
 
-// The store's time zone is El Salvador (UTC-6).
 export function seedSupply(db: Database) {
 	db.exec(`
-insert into store_settings (id, name, currency, default_locale, time_zone, country_code, order_code_prefix, max_quantity_per_line, low_stock_threshold) values (1, 'Store', 'USD', 'es', 'America/El_Salvador', 'SV', 'ECL', 20, 5);
+insert into store_settings (id, name, currency, default_locale, time_zone, country_code, order_code_prefix, max_quantity_per_line, low_stock_threshold) values (1, 'Store', 'USD', 'es', 'America/El_Salvador', 'SV', 'NAG', 20, 5);
 insert into users (id, name, email, role) values ('admin', 'Admin', 'admin@example.com', 'admin');
 insert into brands (slug, name, search_key) values ('brand', 'Brand', 'brand');
-insert into categories (slug, icon, sort_order) values ('cleanser', 'package', 1);
-insert into products (slug, brand_id, category_id) values ('oil', 1, 1), ('cream', 1, 1);
-insert into product_translations (product_id, locale, name, search_key) values (1, 'es', 'Aceite', 'aceite'), (2, 'es', 'Crema', 'crema');
-insert into variants (product_id, sku, search_key, reorder_point) values (1, 'OIL-001', 'oil-50', 10), (1, 'OIL-100', 'oil-100', NULL), (2, 'CRM-001', 'crm-30', NULL);
+insert into categories (slug, icon, sort_order) values ('accesorios', 'package', 1);
+insert into products (slug, brand_id, category_id) values ('pad', 1, 1), ('mouse', 1, 1);
+insert into product_translations (product_id, locale, name, search_key) values (1, 'es', 'Alfombrilla', 'alfombrilla'), (2, 'es', 'Ratón', 'raton');
+insert into variants (product_id, sku, search_key, reorder_point) values (1, 'PAD-001', 'pad-001', 10), (1, 'PAD-100', 'pad-100', NULL), (2, 'MOU-001', 'mou-001', NULL);
 `);
 }
 
-export const OIL_50 = 1;
-export const OIL_100 = 2;
-export const CRM_30 = 3;
+export const PAD_M = 1;
+export const PAD_XL = 2;
+export const MOU_BLACK = 3;
 
 export function addSupplier(
 	db: Database,

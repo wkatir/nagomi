@@ -46,20 +46,20 @@ const ago = (hours: number) =>
 		.toISOString()
 		.replace(/\.\d{3}Z$/, "Z");
 const line = (quantity: number) => [
-	{ variantId: 1, quantity, unitPrice: 1500, sku: "OIL-001" },
+	{ variantId: 1, quantity, unitPrice: 1500, sku: "TEC-001" },
 ];
 
 // One product with 3 units that expire long after today.
 beforeEach(() => {
 	db = migratedDatabase();
 	db.exec(`
-insert into store_settings (id, name, currency, default_locale, time_zone, country_code, order_code_prefix, max_quantity_per_line, low_stock_threshold, followup_pending_payment_hours, followup_paid_unshipped_hours, followup_shipped_undelivered_hours) values (1, 'Store', 'USD', 'es', 'America/El_Salvador', 'SV', 'ECL', 20, 5, 48, 24, 96);
+insert into store_settings (id, name, currency, default_locale, time_zone, country_code, order_code_prefix, max_quantity_per_line, low_stock_threshold, followup_pending_payment_hours, followup_paid_unshipped_hours, followup_shipped_undelivered_hours) values (1, 'Store', 'USD', 'es', 'America/El_Salvador', 'SV', 'NAG', 20, 5, 48, 24, 96);
 insert into brands (slug, name, search_key) values ('b', 'Brand', 'brand b');
-insert into categories (slug, icon, sort_order) values ('cleanser', 'package', 1);
-insert into category_translations (category_id, locale, name) values (1, 'es', 'Limpiador');
-insert into products (slug, brand_id, category_id) values ('oil', 1, 1);
-insert into product_translations (product_id, locale, name, search_key) values (1, 'es', 'Aceite', 'aceite');
-insert into variants (product_id, sku, price, search_key) values (1, 'OIL-001', 1500, 'oil');
+insert into categories (slug, icon, sort_order) values ('teclados', 'keyboard', 1);
+insert into category_translations (category_id, locale, name) values (1, 'es', 'Teclados');
+insert into products (slug, brand_id, category_id) values ('teclado', 1, 1);
+insert into product_translations (product_id, locale, name, search_key) values (1, 'es', 'Teclado', 'teclado');
+insert into variants (product_id, sku, price, search_key) values (1, 'TEC-001', 1500, 'tec-001');
 update products set status = 'published' where id = 1;
 insert into suppliers (name, search_key) values ('Supplier', 'supplier');
 insert into purchase_orders (supplier_id, reference, status, ordered_on) values (1, 'PO-1', 'ordered', '2026-01-01');

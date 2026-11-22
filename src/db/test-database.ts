@@ -20,8 +20,7 @@ export function migratedDatabase() {
 	return db;
 }
 
-// The part of D1 that drizzle-orm/d1 calls, so routers run against the real schema and
-// triggers.
+// The part of D1 that drizzle-orm/d1 calls.
 export function d1(db: Database) {
 	const statement = (sql: string, params: SQLQueryBindings[] = []) => {
 		const execute = () => {
@@ -86,8 +85,7 @@ export type TestOrder = {
 	shipping?: number;
 	notes?: string | null;
 	searchKey?: string;
-	// Units already taken from their lots (as checkout does); false leaves the order without
-	// sale movements.
+	// false leaves the order without sale movements.
 	takeStock?: boolean;
 };
 
@@ -98,8 +96,7 @@ const q = (v: string | number | null | undefined) =>
 			? String(v)
 			: `'${v.replaceAll("'", "''")}'`;
 
-// SQL that places an order the way checkout does (pending, its units taken) and walks it
-// through the statuses with their timestamps, so every trigger passes.
+// Places the order as checkout does and walks it through the statuses so every trigger passes.
 export function orderSql(o: TestOrder): string {
 	const status = o.status ?? "pending";
 	const method = o.method ?? "bank_transfer";
