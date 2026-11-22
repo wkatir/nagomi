@@ -18,7 +18,7 @@ import {
 	slugCheck,
 	updatedAt,
 } from "./_helpers";
-import { concerns, mediaFiles, products, variants } from "./catalog";
+import { mediaFiles, products, variants } from "./catalog";
 import { PRODUCT_STATUSES } from "./enums";
 
 // Only published products are shown in it.
@@ -82,7 +82,7 @@ export const collectionProducts = sqliteTable(
 
 // Shown while published and, when set, between its local start and end dates (store time
 // zone, both included). The link is a storefront path without the locale prefix (e.g.
-// /products?category=sunscreen); the storefront adds it.
+// /products?category=teclados); the storefront adds it.
 export const homeSlides = sqliteTable(
 	"home_slides",
 	{
@@ -132,8 +132,8 @@ export const homeSlideTranslations = sqliteTable(
 	(t) => [primaryKey({ columns: [t.slideId, t.locale] })],
 );
 
-export const routines = sqliteTable(
-	"routines",
+export const bundles = sqliteTable(
+	"bundles",
 	{
 		id: id(),
 		slug: text("slug").notNull().unique(),
@@ -144,44 +144,49 @@ export const routines = sqliteTable(
 			.notNull()
 			.default(false),
 		position: integer("position").notNull().default(0),
-		// The need this routine answers, shown on that need's page. A routine's steps can
-		// carry several needs, so this cannot be derived.
-		concernId: integer("concern_id").references(() => concerns.id),
+		price: integer("price").notNull(),
+		createdAt: createdAt(),
+		updatedAt: updatedAt(),
 	},
 	(t) => [
-		slugCheck("routines_slug", t.slug),
-		oneOf("routines_status", t.status, PRODUCT_STATUSES),
+		slugCheck("bundles_slug", t.slug),
+		oneOf("bundles_status", t.status, PRODUCT_STATUSES),
+		check("bundles_price_positive", sql`${t.price} > 0`),
+		check("bundles_position", sql`${t.position} >= 0`),
 	],
 );
 
-export const routineTranslations = sqliteTable(
-	"routine_translations",
+export const bundleTranslations = sqliteTable(
+	"bundle_translations",
 	{
-		routineId: integer("routine_id")
+		bundleId: integer("bundle_id")
 			.notNull()
-			.references(() => routines.id),
+			.references(() => bundles.id),
 		locale: locale(),
-		title: text("title").notNull(),
+		name: text("name").notNull(),
 		description: text("description"),
 		...seoText(),
 	},
-	(t) => [primaryKey({ columns: [t.routineId, t.locale] })],
+	(t) => [primaryKey({ columns: [t.bundleId, t.locale] })],
 );
 
-export const routineItems = sqliteTable(
-	"routine_items",
+export const bundleItems = sqliteTable(
+	"bundle_items",
 	{
-		routineId: integer("routine_id")
+		bundleId: integer("bundle_id")
 			.notNull()
-			.references(() => routines.id),
+			.references(() => bundles.id),
 		variantId: integer("variant_id")
 			.notNull()
 			.references(() => variants.id),
+		quantity: integer("quantity").notNull().default(1),
 		position: integer("position").notNull(),
 	},
 	(t) => [
-		primaryKey({ columns: [t.routineId, t.variantId] }),
-		uniqueIndex("routine_items_position").on(t.routineId, t.position),
-		index("routine_items_variant_idx").on(t.variantId),
+		primaryKey({ columns: [t.bundleId, t.variantId] }),
+		uniqueIndex("bundle_items_position").on(t.bundleId, t.position),
+		index("bundle_items_variant_idx").on(t.variantId),
+		check("bundle_items_quantity_positive", sql`${t.quantity} > 0`),
+		check("bundle_items_position_positive", sql`${t.position} > 0`),
 	],
 );

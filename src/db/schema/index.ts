@@ -7,7 +7,7 @@
 //   append-only and a lot balance can never go below zero (triggers in drizzle/).
 // - Customer-facing text lives in *_translations tables keyed by (entity, locale).
 // - Instants are ISO-8601 UTC strings produced by SQLite (`now`). Calendar dates
-//   (YYYY-MM-DD: expiry, ordered/received on, delivery estimate) and every "day" shown
+//   (YYYY-MM-DD: ordered/received on, delivery estimate) and every "day" shown
 //   or grouped are in store_settings.time_zone.
 // - Every enum is a CHECK in the table, except `locale` (only page_versions has one; the
 //   API validates the others). Business records are never deleted: no foreign

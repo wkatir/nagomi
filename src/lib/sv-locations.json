@@ -1,0 +1,93 @@
+[
+	{
+		"department": "Ahuachapán",
+		"municipalities": [
+			"Ahuachapán Norte",
+			"Ahuachapán Centro",
+			"Ahuachapán Sur"
+		]
+	},
+	{
+		"department": "Santa Ana",
+		"municipalities": [
+			"Santa Ana Norte",
+			"Santa Ana Centro",
+			"Santa Ana Este",
+			"Santa Ana Oeste"
+		]
+	},
+	{
+		"department": "Sonsonate",
+		"municipalities": [
+			"Sonsonate Norte",
+			"Sonsonate Centro",
+			"Sonsonate Este",
+			"Sonsonate Oeste"
+		]
+	},
+	{
+		"department": "Chalatenango",
+		"municipalities": [
+			"Chalatenango Norte",
+			"Chalatenango Centro",
+			"Chalatenango Sur"
+		]
+	},
+	{
+		"department": "La Libertad",
+		"municipalities": [
+			"La Libertad Norte",
+			"La Libertad Centro",
+			"La Libertad Oeste",
+			"La Libertad Este",
+			"La Libertad Costa",
+			"La Libertad Sur"
+		]
+	},
+	{
+		"department": "San Salvador",
+		"municipalities": [
+			"San Salvador Norte",
+			"San Salvador Oeste",
+			"San Salvador Este",
+			"San Salvador Centro",
+			"San Salvador Sur"
+		]
+	},
+	{
+		"department": "Cuscatlán",
+		"municipalities": ["Cuscatlán Norte", "Cuscatlán Sur"]
+	},
+	{
+		"department": "La Paz",
+		"municipalities": ["La Paz Oeste", "La Paz Centro", "La Paz Este"]
+	},
+	{
+		"department": "Cabañas",
+		"municipalities": ["Cabañas Oeste", "Cabañas Este"]
+	},
+	{
+		"department": "San Vicente",
+		"municipalities": ["San Vicente Norte", "San Vicente Sur"]
+	},
+	{
+		"department": "Usulután",
+		"municipalities": ["Usulután Norte", "Usulután Este", "Usulután Oeste"]
+	},
+	{
+		"department": "San Miguel",
+		"municipalities": [
+			"San Miguel Norte",
+			"San Miguel Centro",
+			"San Miguel Oeste"
+		]
+	},
+	{
+		"department": "Morazán",
+		"municipalities": ["Morazán Norte", "Morazán Sur"]
+	},
+	{
+		"department": "La Unión",
+		"municipalities": ["La Unión Norte", "La Unión Sur"]
+	}
+]

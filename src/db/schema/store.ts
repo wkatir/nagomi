@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import {
 	check,
+	index,
 	integer,
 	primaryKey,
 	sqliteTable,
@@ -13,6 +14,7 @@ import {
 	PAYMENT_METHODS,
 	SHIPPING_METHODS,
 } from "#/lib/enums";
+import { SV_MUNICIPALITIES } from "#/lib/sv-locations";
 import { actor, createdAt, id, locale, oneOf, updatedAt } from "./_helpers";
 
 // One deployment = one store.
@@ -40,13 +42,22 @@ export const storeSettings = sqliteTable(
 		countryCode: text("country_code", { length: 2 }),
 		orderCodePrefix: text("order_code_prefix"),
 		maxQuantityPerLine: integer("max_quantity_per_line"),
-		// Lots received with less shelf life than this are flagged for a supplier swap.
-		minShelfLifeDays: integer("min_shelf_life_days"),
-		// Lots expiring within this many days are flagged in inventory and the dashboard.
-		expiryWarningDays: integer("expiry_warning_days"),
 		// Null when the store states no return window.
 		returnWindowDays: integer("return_window_days"),
 		foundingYear: integer("founding_year"),
+		freeShippingFrom: integer("free_shipping_from"),
+		lowStockThreshold: integer("low_stock_threshold"),
+		frequentCustomerMinOrders: integer("frequent_customer_min_orders"),
+		inactiveCustomerDays: integer("inactive_customer_days"),
+		followupPendingPaymentHours: integer("followup_pending_payment_hours"),
+		followupPaidUnshippedHours: integer("followup_paid_unshipped_hours"),
+		followupShippedUndeliveredHours: integer(
+			"followup_shipped_undelivered_hours",
+		),
+		discordUrl: text("discord_url"),
+		instagramUrl: text("instagram_url"),
+		tiktokUrl: text("tiktok_url"),
+		youtubeUrl: text("youtube_url"),
 		updatedAt: updatedAt(),
 	},
 	(t) => [
@@ -58,15 +69,40 @@ export const storeSettings = sqliteTable(
 		),
 		check(
 			"store_settings_days",
-			sql`(${t.maxQuantityPerLine} is null or ${t.maxQuantityPerLine} > 0) and (${t.minShelfLifeDays} is null or ${t.minShelfLifeDays} > 0) and (${t.expiryWarningDays} is null or ${t.expiryWarningDays} > 0) and (${t.returnWindowDays} is null or ${t.returnWindowDays} > 0)`,
+			sql`(${t.maxQuantityPerLine} is null or ${t.maxQuantityPerLine} > 0) and (${t.returnWindowDays} is null or ${t.returnWindowDays} > 0)`,
+		),
+		check(
+			"store_settings_thresholds",
+			sql`(${t.freeShippingFrom} is null or ${t.freeShippingFrom} >= 0) and (${t.lowStockThreshold} is null or ${t.lowStockThreshold} >= 0) and (${t.frequentCustomerMinOrders} is null or ${t.frequentCustomerMinOrders} > 1) and (${t.inactiveCustomerDays} is null or ${t.inactiveCustomerDays} > 0)`,
+		),
+		check(
+			"store_settings_followup_hours",
+			sql`(${t.followupPendingPaymentHours} is null or ${t.followupPendingPaymentHours} > 0) and (${t.followupPaidUnshippedHours} is null or ${t.followupPaidUnshippedHours} > 0) and (${t.followupShippedUndeliveredHours} is null or ${t.followupShippedUndeliveredHours} > 0)`,
+		),
+		check(
+			"store_settings_social_urls",
+			sql`(${t.discordUrl} is null or ${t.discordUrl} glob 'https://*') and (${t.instagramUrl} is null or ${t.instagramUrl} glob 'https://*') and (${t.tiktokUrl} is null or ${t.tiktokUrl} glob 'https://*') and (${t.youtubeUrl} is null or ${t.youtubeUrl} glob 'https://*')`,
 		),
 	],
 );
 
 export const storePaymentMethods = sqliteTable(
 	"store_payment_methods",
-	{ method: text("method", { enum: PAYMENT_METHODS }).primaryKey() },
-	(t) => [oneOf("store_payment_methods_method", t.method, PAYMENT_METHODS)],
+	{
+		method: text("method", { enum: PAYMENT_METHODS }).primaryKey(),
+		position: integer("position").notNull().default(0),
+		maxTotal: integer("max_total"),
+		shippingZoneId: integer("shipping_zone_id").references(
+			() => shippingZones.id,
+		),
+	},
+	(t) => [
+		oneOf("store_payment_methods_method", t.method, PAYMENT_METHODS),
+		check(
+			"store_payment_methods_max_total",
+			sql`${t.maxTotal} is null or ${t.maxTotal} > 0`,
+		),
+	],
 );
 
 // Only facts go here; a promise is published once it is true. Text may use
@@ -94,14 +130,27 @@ export const storePromiseTranslations = sqliteTable(
 );
 
 // Their text is page_versions: the current text of a locale is its latest version.
-export const pages = sqliteTable("pages", {
-	id: id(),
-	slug: text("slug").notNull().unique(),
-	isPublished: integer("is_published", { mode: "boolean" })
-		.notNull()
-		.default(false),
-	updatedAt: updatedAt(),
-});
+export const pages = sqliteTable(
+	"pages",
+	{
+		id: id(),
+		slug: text("slug").notNull().unique(),
+		isPublished: integer("is_published", { mode: "boolean" })
+			.notNull()
+			.default(false),
+		footerPosition: integer("footer_position"),
+		updatedAt: updatedAt(),
+	},
+	(t) => [
+		check(
+			"pages_footer_position",
+			sql`${t.footerPosition} is null or ${t.footerPosition} > 0`,
+		),
+		uniqueIndex("pages_footer_position_unique")
+			.on(t.footerPosition)
+			.where(sql`footer_position is not null`),
+	],
+);
 
 // Append-only history of every page text, numbered per (page, locale). A consent points at
 // the exact version the customer was shown.
@@ -136,8 +185,9 @@ export const shippingZones = sqliteTable(
 		slug: text("slug").notNull().unique(),
 		method: text("method", { enum: SHIPPING_METHODS }).notNull(),
 		fee: integer("fee").notNull(),
-		// Subtotal after discount from which the fee is waived. Null: never free.
-		freeFrom: integer("free_from"),
+		coversRest: integer("covers_rest", { mode: "boolean" })
+			.notNull()
+			.default(false),
 		deliveryDaysMin: integer("delivery_days_min").notNull(),
 		deliveryDaysMax: integer("delivery_days_max").notNull(),
 		status: text("status", { enum: ARCHIVABLE_STATUSES })
@@ -148,14 +198,31 @@ export const shippingZones = sqliteTable(
 	(t) => [
 		oneOf("shipping_zones_method", t.method, SHIPPING_METHODS),
 		oneOf("shipping_zones_status", t.status, ARCHIVABLE_STATUSES),
-		check(
-			"shipping_zones_amounts",
-			sql`${t.fee} >= 0 and (${t.freeFrom} is null or ${t.freeFrom} >= 0)`,
-		),
+		check("shipping_zones_fee", sql`${t.fee} >= 0`),
 		check(
 			"shipping_zones_days",
 			sql`${t.deliveryDaysMin} >= 0 and ${t.deliveryDaysMax} >= ${t.deliveryDaysMin}`,
 		),
+		uniqueIndex("shipping_zones_one_rest")
+			.on(t.coversRest)
+			.where(sql`covers_rest = 1 and status = 'active'`),
+	],
+);
+
+export const shippingZoneMunicipalities = sqliteTable(
+	"shipping_zone_municipalities",
+	{
+		municipality: text("municipality").primaryKey(),
+		zoneId: integer("zone_id")
+			.notNull()
+			.references(() => shippingZones.id),
+	},
+	(t) => [
+		check(
+			"shipping_zone_municipalities_known",
+			sql`${t.municipality} in (${sql.raw(SV_MUNICIPALITIES.map((m) => `'${m}'`).join(", "))})`,
+		),
+		index("shipping_zone_municipalities_zone_idx").on(t.zoneId),
 	],
 );
 

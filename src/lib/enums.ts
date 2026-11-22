@@ -5,6 +5,7 @@ export const LOCALES = ["es", "en"] as const;
 export type Locale = (typeof LOCALES)[number];
 
 export const PAYMENT_METHODS = [
+	"card",
 	"bank_transfer",
 	"cash_on_delivery",
 	"payment_link",
@@ -25,9 +26,8 @@ export const ORDER_STATUSES = [
 export type OrderStatus = (typeof ORDER_STATUSES)[number];
 
 export const MOVEMENT_REASONS = [
-	"expired",
 	"damaged",
-	"sample_tester",
+	"demo_unit",
 	"own_use",
 	"lost_theft",
 	"count_difference",
@@ -43,23 +43,23 @@ export const SLUG_REGEX = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 export const PRODUCT_STATUSES = ["draft", "published", "archived"] as const;
 export type ProductStatus = (typeof PRODUCT_STATUSES)[number];
 
-// Labels are messages (skin_type_*); the list is the standard one, so it is fixed like the
-// other enums.
-export const SKIN_TYPES = [
-	"normal",
-	"dry",
-	"oily",
-	"combination",
-	"sensitive",
+export const CATEGORY_ICONS = [
+	"keyboard",
+	"mouse",
+	"square",
+	"headphones",
+	"lightbulb",
+	"package",
 ] as const;
-export type SkinType = (typeof SKIN_TYPES)[number];
+export type CategoryIcon = (typeof CATEGORY_ICONS)[number];
 
-export const SIZE_UNITS = ["ml", "g", "units"] as const;
-export type SizeUnit = (typeof SIZE_UNITS)[number];
+export const PRODUCT_BADGES = ["best_seller", "new"] as const;
+export type ProductBadge = (typeof PRODUCT_BADGES)[number];
 
-export const IMAGE_KINDS = ["packshot", "lifestyle", "texture"] as const;
+export const SKU_REGEX = /^[A-Z]{3}-[0-9]{3}$/;
 
-// The storefront places its orders through WhatsApp.
+export const IMAGE_KINDS = ["packshot", "lifestyle", "detail"] as const;
+
 export const ORDER_CHANNELS = ["whatsapp", "instagram", "in_person"] as const;
 export type OrderChannel = (typeof ORDER_CHANNELS)[number];
 
@@ -114,3 +114,11 @@ export const MOVEMENT_KINDS = [
 	"adjustment",
 	"waste",
 ] as const;
+
+export const CUSTOMER_SEGMENTS = [
+	"new",
+	"occasional",
+	"frequent",
+	"inactive",
+] as const;
+export type CustomerSegment = (typeof CUSTOMER_SEGMENTS)[number];

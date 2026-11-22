@@ -37,18 +37,22 @@ CREATE UNIQUE INDEX `brands_slug_unique` ON `brands` (`slug`);--> statement-brea
 CREATE TABLE `categories` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`slug` text NOT NULL,
-	`routine_step` integer NOT NULL,
+	`sort_order` integer DEFAULT 0 NOT NULL,
+	`icon` text NOT NULL,
 	`status` text DEFAULT 'active' NOT NULL,
 	CONSTRAINT "categories_slug" CHECK("categories"."slug" not glob '*[^a-z0-9-]*' and "categories"."slug" not glob '-*' and "categories"."slug" not glob '*-' and "categories"."slug" not glob '*--*' and length("categories"."slug") between 1 and 80),
 	CONSTRAINT "categories_status" CHECK("categories"."status" in ('active', 'archived')),
-	CONSTRAINT "categories_routine_step" CHECK("categories"."routine_step" > 0)
+	CONSTRAINT "categories_icon" CHECK("categories"."icon" in ('keyboard', 'mouse', 'square', 'headphones', 'lightbulb', 'package')),
+	CONSTRAINT "categories_sort_order" CHECK("categories"."sort_order" >= 0)
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `categories_slug_unique` ON `categories` (`slug`);--> statement-breakpoint
+CREATE INDEX `categories_sort_idx` ON `categories` (`sort_order`);--> statement-breakpoint
 CREATE TABLE `category_translations` (
 	`category_id` integer NOT NULL,
 	`locale` text NOT NULL,
 	`name` text NOT NULL,
+	`subtitle` text,
 	`description` text,
 	`seo_title` text,
 	`seo_description` text,
@@ -56,27 +60,6 @@ CREATE TABLE `category_translations` (
 	FOREIGN KEY (`category_id`) REFERENCES `categories`(`id`) ON UPDATE no action ON DELETE no action
 );
 --> statement-breakpoint
-CREATE TABLE `concern_translations` (
-	`concern_id` integer NOT NULL,
-	`locale` text NOT NULL,
-	`name` text NOT NULL,
-	`description` text,
-	`seo_title` text,
-	`seo_description` text,
-	PRIMARY KEY(`concern_id`, `locale`),
-	FOREIGN KEY (`concern_id`) REFERENCES `concerns`(`id`) ON UPDATE no action ON DELETE no action
-);
---> statement-breakpoint
-CREATE TABLE `concerns` (
-	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
-	`slug` text NOT NULL,
-	`position` integer DEFAULT 0 NOT NULL,
-	`status` text DEFAULT 'active' NOT NULL,
-	CONSTRAINT "concerns_slug" CHECK("concerns"."slug" not glob '*[^a-z0-9-]*' and "concerns"."slug" not glob '-*' and "concerns"."slug" not glob '*-' and "concerns"."slug" not glob '*--*' and length("concerns"."slug") between 1 and 80),
-	CONSTRAINT "concerns_status" CHECK("concerns"."status" in ('active', 'archived'))
-);
---> statement-breakpoint
-CREATE UNIQUE INDEX `concerns_slug_unique` ON `concerns` (`slug`);--> statement-breakpoint
 CREATE TABLE `media_files` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`r2_key` text NOT NULL,
@@ -92,15 +75,18 @@ CREATE TABLE `media_files` (
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `media_files_r2_key_unique` ON `media_files` (`r2_key`);--> statement-breakpoint
-CREATE TABLE `product_concerns` (
-	`product_id` integer NOT NULL,
-	`concern_id` integer NOT NULL,
-	PRIMARY KEY(`product_id`, `concern_id`),
-	FOREIGN KEY (`product_id`) REFERENCES `products`(`id`) ON UPDATE no action ON DELETE no action,
-	FOREIGN KEY (`concern_id`) REFERENCES `concerns`(`id`) ON UPDATE no action ON DELETE no action
+CREATE TABLE `price_history` (
+	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+	`variant_id` integer NOT NULL,
+	`old_price` integer,
+	`new_price` integer,
+	`changed_at` text DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')) NOT NULL,
+	`changed_by` text,
+	FOREIGN KEY (`variant_id`) REFERENCES `variants`(`id`) ON UPDATE no action ON DELETE no action,
+	CONSTRAINT "price_history_changed" CHECK("price_history"."old_price" is not "price_history"."new_price")
 );
 --> statement-breakpoint
-CREATE INDEX `product_concerns_concern_idx` ON `product_concerns` (`concern_id`);--> statement-breakpoint
+CREATE INDEX `price_history_variant_idx` ON `price_history` (`variant_id`,`id`);--> statement-breakpoint
 CREATE TABLE `product_image_translations` (
 	`image_id` integer NOT NULL,
 	`locale` text NOT NULL,
@@ -122,31 +108,39 @@ CREATE TABLE `product_images` (
 	FOREIGN KEY (`product_id`) REFERENCES `products`(`id`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`variant_id`) REFERENCES `variants`(`id`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`media_file_id`) REFERENCES `media_files`(`id`) ON UPDATE no action ON DELETE no action,
-	CONSTRAINT "product_images_kind" CHECK("product_images"."kind" in ('packshot', 'lifestyle', 'texture')),
+	CONSTRAINT "product_images_kind" CHECK("product_images"."kind" in ('packshot', 'lifestyle', 'detail')),
 	CONSTRAINT "product_images_status" CHECK("product_images"."status" in ('active', 'archived'))
 );
 --> statement-breakpoint
 CREATE INDEX `product_images_product_idx` ON `product_images` (`product_id`,`status`,`position`);--> statement-breakpoint
 CREATE UNIQUE INDEX `product_images_product_file` ON `product_images` (`product_id`,`media_file_id`) WHERE status = 'active';--> statement-breakpoint
-CREATE TABLE `product_skin_types` (
-	`product_id` integer NOT NULL,
-	`skin_type` text NOT NULL,
-	PRIMARY KEY(`product_id`, `skin_type`),
-	FOREIGN KEY (`product_id`) REFERENCES `products`(`id`) ON UPDATE no action ON DELETE no action,
-	CONSTRAINT "product_skin_types_skin_type" CHECK("product_skin_types"."skin_type" in ('normal', 'dry', 'oily', 'combination', 'sensitive'))
+CREATE TABLE `product_spec_translations` (
+	`spec_id` integer NOT NULL,
+	`locale` text NOT NULL,
+	`label` text NOT NULL,
+	`value` text NOT NULL,
+	PRIMARY KEY(`spec_id`, `locale`),
+	FOREIGN KEY (`spec_id`) REFERENCES `product_specs`(`id`) ON UPDATE no action ON DELETE no action,
+	CONSTRAINT "product_spec_translations_text" CHECK(trim("product_spec_translations"."label") <> '' and trim("product_spec_translations"."value") <> '')
 );
 --> statement-breakpoint
+CREATE TABLE `product_specs` (
+	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+	`product_id` integer NOT NULL,
+	`position` integer NOT NULL,
+	FOREIGN KEY (`product_id`) REFERENCES `products`(`id`) ON UPDATE no action ON DELETE no action,
+	CONSTRAINT "product_specs_position_positive" CHECK("product_specs"."position" > 0)
+);
+--> statement-breakpoint
+CREATE UNIQUE INDEX `product_specs_position` ON `product_specs` (`product_id`,`position`);--> statement-breakpoint
 CREATE TABLE `product_translations` (
 	`product_id` integer NOT NULL,
 	`locale` text NOT NULL,
 	`name` text NOT NULL,
 	`search_key` text NOT NULL,
 	`tagline` text,
+	`short_specs` text,
 	`description` text,
-	`how_to_use` text,
-	`key_ingredients` text,
-	`benefits` text,
-	`cautions` text,
 	`seo_title` text,
 	`seo_description` text,
 	PRIMARY KEY(`product_id`, `locale`),
@@ -159,13 +153,16 @@ CREATE TABLE `products` (
 	`brand_id` integer NOT NULL,
 	`category_id` integer NOT NULL,
 	`status` text DEFAULT 'draft' NOT NULL,
-	`inci` text,
-	`sanitary_registration` text,
+	`warranty_months` integer DEFAULT 0 NOT NULL,
+	`is_featured` integer DEFAULT false NOT NULL,
+	`badge` text,
 	`created_at` text DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')) NOT NULL,
 	`updated_at` text DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')) NOT NULL,
 	FOREIGN KEY (`brand_id`) REFERENCES `brands`(`id`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`category_id`) REFERENCES `categories`(`id`) ON UPDATE no action ON DELETE no action,
 	CONSTRAINT "products_status" CHECK("products"."status" in ('draft', 'published', 'archived')),
+	CONSTRAINT "products_badge" CHECK("products"."badge" in ('best_seller', 'new')),
+	CONSTRAINT "products_warranty_months" CHECK("products"."warranty_months" >= 0),
 	CONSTRAINT "products_slug" CHECK("products"."slug" not glob '*[^a-z0-9-]*' and "products"."slug" not glob '-*' and "products"."slug" not glob '*-' and "products"."slug" not glob '*--*' and length("products"."slug") between 1 and 80)
 );
 --> statement-breakpoint
@@ -179,19 +176,19 @@ CREATE TABLE `variants` (
 	`sku` text NOT NULL,
 	`search_key` text NOT NULL,
 	`status` text DEFAULT 'active' NOT NULL,
-	`size_value` integer,
-	`size_unit` text,
+	`option_label` text,
 	`price` integer,
 	`compare_at_price` integer,
 	`reorder_point` integer,
 	`gtin` text,
 	`created_at` text DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')) NOT NULL,
+	`updated_by` text,
 	FOREIGN KEY (`product_id`) REFERENCES `products`(`id`) ON UPDATE no action ON DELETE no action,
 	CONSTRAINT "variants_status" CHECK("variants"."status" in ('active', 'archived')),
-	CONSTRAINT "variants_size_unit" CHECK("variants"."size_unit" in ('ml', 'g', 'units')),
+	CONSTRAINT "variants_sku_format" CHECK("variants"."sku" glob '[A-Z][A-Z][A-Z]-[0-9][0-9][0-9]'),
+	CONSTRAINT "variants_option_label" CHECK("variants"."option_label" is null or trim("variants"."option_label") <> ''),
 	CONSTRAINT "variants_price_positive" CHECK("variants"."price" is null or "variants"."price" > 0),
 	CONSTRAINT "variants_compare_at_gt_price" CHECK("variants"."compare_at_price" is null or ("variants"."price" is not null and "variants"."compare_at_price" > "variants"."price")),
-	CONSTRAINT "variants_size_pair" CHECK(("variants"."size_value" is null) = ("variants"."size_unit" is null) and ("variants"."size_value" is null or "variants"."size_value" > 0)),
 	CONSTRAINT "variants_reorder_point" CHECK("variants"."reorder_point" is null or "variants"."reorder_point" >= 0),
 	CONSTRAINT "variants_gtin" CHECK("variants"."gtin" is null or (length("variants"."gtin") = 14 and "variants"."gtin" not glob '*[^0-9]*'))
 );
@@ -199,6 +196,29 @@ CREATE TABLE `variants` (
 CREATE UNIQUE INDEX `variants_sku_unique` ON `variants` (`sku`);--> statement-breakpoint
 CREATE INDEX `variants_product_idx` ON `variants` (`product_id`);--> statement-breakpoint
 CREATE UNIQUE INDEX `variants_gtin_unique` ON `variants` (`gtin`) WHERE gtin is not null;--> statement-breakpoint
+CREATE TABLE `customer_addresses` (
+	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+	`customer_id` integer NOT NULL,
+	`recipient_name` text NOT NULL,
+	`department` text NOT NULL,
+	`municipality` text NOT NULL,
+	`address_line` text NOT NULL,
+	`reference` text,
+	`phone_e164` text NOT NULL,
+	`is_default` integer DEFAULT false NOT NULL,
+	`status` text DEFAULT 'active' NOT NULL,
+	`created_at` text DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')) NOT NULL,
+	`updated_at` text DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')) NOT NULL,
+	FOREIGN KEY (`customer_id`) REFERENCES `customers`(`id`) ON UPDATE no action ON DELETE no action,
+	CONSTRAINT "customer_addresses_status" CHECK("customer_addresses"."status" in ('active', 'archived')),
+	CONSTRAINT "customer_addresses_place" CHECK("customer_addresses"."department" || '|' || "customer_addresses"."municipality" in ('Ahuachapán|Ahuachapán Norte', 'Ahuachapán|Ahuachapán Centro', 'Ahuachapán|Ahuachapán Sur', 'Santa Ana|Santa Ana Norte', 'Santa Ana|Santa Ana Centro', 'Santa Ana|Santa Ana Este', 'Santa Ana|Santa Ana Oeste', 'Sonsonate|Sonsonate Norte', 'Sonsonate|Sonsonate Centro', 'Sonsonate|Sonsonate Este', 'Sonsonate|Sonsonate Oeste', 'Chalatenango|Chalatenango Norte', 'Chalatenango|Chalatenango Centro', 'Chalatenango|Chalatenango Sur', 'La Libertad|La Libertad Norte', 'La Libertad|La Libertad Centro', 'La Libertad|La Libertad Oeste', 'La Libertad|La Libertad Este', 'La Libertad|La Libertad Costa', 'La Libertad|La Libertad Sur', 'San Salvador|San Salvador Norte', 'San Salvador|San Salvador Oeste', 'San Salvador|San Salvador Este', 'San Salvador|San Salvador Centro', 'San Salvador|San Salvador Sur', 'Cuscatlán|Cuscatlán Norte', 'Cuscatlán|Cuscatlán Sur', 'La Paz|La Paz Oeste', 'La Paz|La Paz Centro', 'La Paz|La Paz Este', 'Cabañas|Cabañas Oeste', 'Cabañas|Cabañas Este', 'San Vicente|San Vicente Norte', 'San Vicente|San Vicente Sur', 'Usulután|Usulután Norte', 'Usulután|Usulután Este', 'Usulután|Usulután Oeste', 'San Miguel|San Miguel Norte', 'San Miguel|San Miguel Centro', 'San Miguel|San Miguel Oeste', 'Morazán|Morazán Norte', 'Morazán|Morazán Sur', 'La Unión|La Unión Norte', 'La Unión|La Unión Sur')),
+	CONSTRAINT "customer_addresses_phone" CHECK("customer_addresses"."phone_e164" glob '+503[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]'),
+	CONSTRAINT "customer_addresses_text" CHECK(trim("customer_addresses"."recipient_name") <> '' and trim("customer_addresses"."address_line") <> ''),
+	CONSTRAINT "customer_addresses_default_active" CHECK("customer_addresses"."is_default" = 0 or "customer_addresses"."status" = 'active')
+);
+--> statement-breakpoint
+CREATE UNIQUE INDEX `customer_addresses_one_default` ON `customer_addresses` (`customer_id`) WHERE is_default = 1;--> statement-breakpoint
+CREATE INDEX `customer_addresses_customer_idx` ON `customer_addresses` (`customer_id`,`status`);--> statement-breakpoint
 CREATE TABLE `customer_consents` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`customer_id` integer,
@@ -212,7 +232,7 @@ CREATE TABLE `customer_consents` (
 	FOREIGN KEY (`customer_id`) REFERENCES `customers`(`id`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`order_id`) REFERENCES `orders`(`id`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`page_version_id`) REFERENCES `page_versions`(`id`) ON UPDATE no action ON DELETE no action,
-	CONSTRAINT "customer_consents_purpose" CHECK("customer_consents"."purpose" in ('privacy_notice', 'terms', 'marketing_whatsapp')),
+	CONSTRAINT "customer_consents_purpose" CHECK("customer_consents"."purpose" in ('privacy_notice', 'terms', 'marketing_email', 'marketing_whatsapp')),
 	CONSTRAINT "customer_consents_channel" CHECK("customer_consents"."channel" in ('web', 'whatsapp', 'instagram', 'in_person')),
 	CONSTRAINT "customer_consents_owner" CHECK("customer_consents"."customer_id" is not null or "customer_consents"."order_id" is not null)
 );
@@ -221,16 +241,21 @@ CREATE INDEX `customer_consents_customer_idx` ON `customer_consents` (`customer_
 CREATE INDEX `customer_consents_order_idx` ON `customer_consents` (`order_id`);--> statement-breakpoint
 CREATE TABLE `customers` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+	`auth_user_id` text,
 	`name` text,
 	`phone_e164` text,
 	`email` text,
 	`search_key` text NOT NULL,
 	`notes` text,
 	`created_at` text DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')) NOT NULL,
-	CONSTRAINT "customers_phone_e164" CHECK("customers"."phone_e164" is null or ("customers"."phone_e164" glob '+[1-9][0-9]*' and length("customers"."phone_e164") between 8 and 16))
+	FOREIGN KEY (`auth_user_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE no action,
+	CONSTRAINT "customers_phone_e164" CHECK("customers"."phone_e164" is null or "customers"."phone_e164" glob '+503[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]'),
+	CONSTRAINT "customers_email_normalized" CHECK("customers"."email" is null or ("customers"."email" = lower(trim("customers"."email")) and "customers"."email" like '%_@_%'))
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `customers_phone_e164_unique` ON `customers` (`phone_e164`);--> statement-breakpoint
+CREATE UNIQUE INDEX `customers_email_unique` ON `customers` (`email`) WHERE email is not null;--> statement-breakpoint
+CREATE UNIQUE INDEX `customers_auth_user_unique` ON `customers` (`auth_user_id`) WHERE auth_user_id is not null;--> statement-breakpoint
 CREATE TABLE `inventory_movements` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`lot_id` integer NOT NULL,
@@ -246,7 +271,7 @@ CREATE TABLE `inventory_movements` (
 	FOREIGN KEY (`order_item_id`) REFERENCES `order_items`(`id`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`return_line_id`) REFERENCES `return_lines`(`id`) ON UPDATE no action ON DELETE no action,
 	CONSTRAINT "inventory_movements_kind" CHECK("inventory_movements"."kind" in ('receive', 'sale', 'return', 'adjustment', 'waste')),
-	CONSTRAINT "inventory_movements_reason" CHECK("inventory_movements"."reason" in ('expired', 'damaged', 'sample_tester', 'own_use', 'lost_theft', 'count_difference', 'customer_return', 'other')),
+	CONSTRAINT "inventory_movements_reason" CHECK("inventory_movements"."reason" in ('damaged', 'demo_unit', 'own_use', 'lost_theft', 'count_difference', 'customer_return', 'other')),
 	CONSTRAINT "inventory_movements_nonzero" CHECK("inventory_movements"."quantity" <> 0),
 	CONSTRAINT "inventory_movements_sign" CHECK(("inventory_movements"."kind" in ('receive', 'return') and "inventory_movements"."quantity" > 0) or ("inventory_movements"."kind" in ('sale', 'waste') and "inventory_movements"."quantity" < 0) or "inventory_movements"."kind" = 'adjustment'),
 	CONSTRAINT "inventory_movements_links" CHECK(("inventory_movements"."kind" = 'sale') = ("inventory_movements"."order_item_id" is not null) and ("inventory_movements"."kind" = 'return' or ("inventory_movements"."kind" = 'waste' and "inventory_movements"."reason" = 'customer_return')) = ("inventory_movements"."return_line_id" is not null)),
@@ -262,20 +287,56 @@ CREATE TABLE `lots` (
 	`variant_id` integer NOT NULL,
 	`receipt_line_id` integer NOT NULL,
 	`code` text,
-	`expires_on` text NOT NULL,
-	`expiry_precision` text DEFAULT 'day' NOT NULL,
 	`unit_cost_e4` integer NOT NULL,
 	`created_at` text DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')) NOT NULL,
 	FOREIGN KEY (`variant_id`) REFERENCES `variants`(`id`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`receipt_line_id`) REFERENCES `purchase_receipt_lines`(`id`) ON UPDATE no action ON DELETE no action,
-	CONSTRAINT "lots_expiry_precision" CHECK("lots"."expiry_precision" in ('day', 'month')),
-	CONSTRAINT "lots_expires_on" CHECK("lots"."expires_on" glob '[0-9][0-9][0-9][0-9]-[0-1][0-9]-[0-3][0-9]'),
-	CONSTRAINT "lots_month_precision" CHECK("lots"."expiry_precision" = 'day' or "lots"."expires_on" = date("lots"."expires_on", 'start of month', '+1 month', '-1 day')),
 	CONSTRAINT "lots_unit_cost" CHECK("lots"."unit_cost_e4" >= 0)
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `lots_receipt_line_unique` ON `lots` (`receipt_line_id`);--> statement-breakpoint
-CREATE INDEX `lots_variant_expiry_idx` ON `lots` (`variant_id`,`expires_on`);--> statement-breakpoint
+CREATE INDEX `lots_variant_idx` ON `lots` (`variant_id`,`id`);--> statement-breakpoint
+CREATE TABLE `bundle_items` (
+	`bundle_id` integer NOT NULL,
+	`variant_id` integer NOT NULL,
+	`quantity` integer DEFAULT 1 NOT NULL,
+	`position` integer NOT NULL,
+	PRIMARY KEY(`bundle_id`, `variant_id`),
+	FOREIGN KEY (`bundle_id`) REFERENCES `bundles`(`id`) ON UPDATE no action ON DELETE no action,
+	FOREIGN KEY (`variant_id`) REFERENCES `variants`(`id`) ON UPDATE no action ON DELETE no action,
+	CONSTRAINT "bundle_items_quantity_positive" CHECK("bundle_items"."quantity" > 0),
+	CONSTRAINT "bundle_items_position_positive" CHECK("bundle_items"."position" > 0)
+);
+--> statement-breakpoint
+CREATE UNIQUE INDEX `bundle_items_position` ON `bundle_items` (`bundle_id`,`position`);--> statement-breakpoint
+CREATE INDEX `bundle_items_variant_idx` ON `bundle_items` (`variant_id`);--> statement-breakpoint
+CREATE TABLE `bundle_translations` (
+	`bundle_id` integer NOT NULL,
+	`locale` text NOT NULL,
+	`name` text NOT NULL,
+	`description` text,
+	`seo_title` text,
+	`seo_description` text,
+	PRIMARY KEY(`bundle_id`, `locale`),
+	FOREIGN KEY (`bundle_id`) REFERENCES `bundles`(`id`) ON UPDATE no action ON DELETE no action
+);
+--> statement-breakpoint
+CREATE TABLE `bundles` (
+	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+	`slug` text NOT NULL,
+	`status` text DEFAULT 'draft' NOT NULL,
+	`is_featured` integer DEFAULT false NOT NULL,
+	`position` integer DEFAULT 0 NOT NULL,
+	`price` integer NOT NULL,
+	`created_at` text DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')) NOT NULL,
+	`updated_at` text DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')) NOT NULL,
+	CONSTRAINT "bundles_slug" CHECK("bundles"."slug" not glob '*[^a-z0-9-]*' and "bundles"."slug" not glob '-*' and "bundles"."slug" not glob '*-' and "bundles"."slug" not glob '*--*' and length("bundles"."slug") between 1 and 80),
+	CONSTRAINT "bundles_status" CHECK("bundles"."status" in ('draft', 'published', 'archived')),
+	CONSTRAINT "bundles_price_positive" CHECK("bundles"."price" > 0),
+	CONSTRAINT "bundles_position" CHECK("bundles"."position" >= 0)
+);
+--> statement-breakpoint
+CREATE UNIQUE INDEX `bundles_slug_unique` ON `bundles` (`slug`);--> statement-breakpoint
 CREATE TABLE `collection_products` (
 	`collection_id` integer NOT NULL,
 	`product_id` integer NOT NULL,
@@ -348,41 +409,6 @@ CREATE TABLE `home_slides` (
 );
 --> statement-breakpoint
 CREATE INDEX `home_slides_status_idx` ON `home_slides` (`status`,`position`);--> statement-breakpoint
-CREATE TABLE `routine_items` (
-	`routine_id` integer NOT NULL,
-	`variant_id` integer NOT NULL,
-	`position` integer NOT NULL,
-	PRIMARY KEY(`routine_id`, `variant_id`),
-	FOREIGN KEY (`routine_id`) REFERENCES `routines`(`id`) ON UPDATE no action ON DELETE no action,
-	FOREIGN KEY (`variant_id`) REFERENCES `variants`(`id`) ON UPDATE no action ON DELETE no action
-);
---> statement-breakpoint
-CREATE UNIQUE INDEX `routine_items_position` ON `routine_items` (`routine_id`,`position`);--> statement-breakpoint
-CREATE INDEX `routine_items_variant_idx` ON `routine_items` (`variant_id`);--> statement-breakpoint
-CREATE TABLE `routine_translations` (
-	`routine_id` integer NOT NULL,
-	`locale` text NOT NULL,
-	`title` text NOT NULL,
-	`description` text,
-	`seo_title` text,
-	`seo_description` text,
-	PRIMARY KEY(`routine_id`, `locale`),
-	FOREIGN KEY (`routine_id`) REFERENCES `routines`(`id`) ON UPDATE no action ON DELETE no action
-);
---> statement-breakpoint
-CREATE TABLE `routines` (
-	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
-	`slug` text NOT NULL,
-	`status` text DEFAULT 'draft' NOT NULL,
-	`is_featured` integer DEFAULT false NOT NULL,
-	`position` integer DEFAULT 0 NOT NULL,
-	`concern_id` integer,
-	FOREIGN KEY (`concern_id`) REFERENCES `concerns`(`id`) ON UPDATE no action ON DELETE no action,
-	CONSTRAINT "routines_slug" CHECK("routines"."slug" not glob '*[^a-z0-9-]*' and "routines"."slug" not glob '-*' and "routines"."slug" not glob '*-' and "routines"."slug" not glob '*--*' and length("routines"."slug") between 1 and 80),
-	CONSTRAINT "routines_status" CHECK("routines"."status" in ('draft', 'published', 'archived'))
-);
---> statement-breakpoint
-CREATE UNIQUE INDEX `routines_slug_unique` ON `routines` (`slug`);--> statement-breakpoint
 CREATE TABLE `order_items` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`order_id` integer NOT NULL,
@@ -392,18 +418,28 @@ CREATE TABLE `order_items` (
 	`sku` text NOT NULL,
 	`brand_name` text NOT NULL,
 	`product_name` text NOT NULL,
-	`size_value` integer,
-	`size_unit` text,
+	`option_label` text,
 	FOREIGN KEY (`order_id`) REFERENCES `orders`(`id`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`variant_id`) REFERENCES `variants`(`id`) ON UPDATE no action ON DELETE no action,
-	CONSTRAINT "order_items_size_unit" CHECK("order_items"."size_unit" in ('ml', 'g', 'units')),
 	CONSTRAINT "order_items_quantity_positive" CHECK("order_items"."quantity" > 0),
-	CONSTRAINT "order_items_unit_price" CHECK("order_items"."unit_price" >= 0),
-	CONSTRAINT "order_items_size_pair" CHECK(("order_items"."size_value" is null) = ("order_items"."size_unit" is null))
+	CONSTRAINT "order_items_unit_price" CHECK("order_items"."unit_price" >= 0)
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `order_items_unique` ON `order_items` (`order_id`,`variant_id`);--> statement-breakpoint
 CREATE INDEX `order_items_variant_idx` ON `order_items` (`variant_id`);--> statement-breakpoint
+CREATE TABLE `order_status_history` (
+	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+	`order_id` integer NOT NULL,
+	`from_status` text,
+	`to_status` text NOT NULL,
+	`changed_at` text DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')) NOT NULL,
+	FOREIGN KEY (`order_id`) REFERENCES `orders`(`id`) ON UPDATE no action ON DELETE no action,
+	CONSTRAINT "order_status_history_from" CHECK("order_status_history"."from_status" in ('pending', 'confirmed', 'fulfilled', 'delivered', 'cancelled')),
+	CONSTRAINT "order_status_history_to" CHECK("order_status_history"."to_status" in ('pending', 'confirmed', 'fulfilled', 'delivered', 'cancelled')),
+	CONSTRAINT "order_status_history_changed" CHECK("order_status_history"."from_status" is not "order_status_history"."to_status")
+);
+--> statement-breakpoint
+CREATE INDEX `order_status_history_order_idx` ON `order_status_history` (`order_id`,`id`);--> statement-breakpoint
 CREATE TABLE `orders` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`code` text NOT NULL,
@@ -442,7 +478,7 @@ CREATE TABLE `orders` (
 	FOREIGN KEY (`promotion_id`) REFERENCES `promotions`(`id`) ON UPDATE no action ON DELETE no action,
 	CONSTRAINT "orders_channel" CHECK("orders"."channel" in ('whatsapp', 'instagram', 'in_person')),
 	CONSTRAINT "orders_status" CHECK("orders"."status" in ('pending', 'confirmed', 'fulfilled', 'delivered', 'cancelled')),
-	CONSTRAINT "orders_payment_method" CHECK("orders"."payment_method" in ('bank_transfer', 'cash_on_delivery', 'payment_link', 'cash')),
+	CONSTRAINT "orders_payment_method" CHECK("orders"."payment_method" in ('card', 'bank_transfer', 'cash_on_delivery', 'payment_link', 'cash')),
 	CONSTRAINT "orders_customer_phone" CHECK("orders"."customer_phone" is null or ("orders"."customer_phone" glob '+[1-9]*' and substr("orders"."customer_phone", 2) not glob '*[^0-9]*' and length("orders"."customer_phone") between 8 and 16)),
 	CONSTRAINT "orders_shipping_method" CHECK("orders"."shipping_method" in ('pickup', 'own_delivery', 'courier')),
 	CONSTRAINT "orders_total_consistent" CHECK("orders"."total" = "orders"."subtotal" - "orders"."discount" + "orders"."shipping"),
@@ -475,7 +511,7 @@ CREATE TABLE `payments` (
 	FOREIGN KEY (`order_id`) REFERENCES `orders`(`id`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`return_id`) REFERENCES `returns`(`id`) ON UPDATE no action ON DELETE no action,
 	CONSTRAINT "payments_kind" CHECK("payments"."kind" in ('payment', 'refund')),
-	CONSTRAINT "payments_method" CHECK("payments"."method" in ('bank_transfer', 'cash_on_delivery', 'payment_link', 'cash')),
+	CONSTRAINT "payments_method" CHECK("payments"."method" in ('card', 'bank_transfer', 'cash_on_delivery', 'payment_link', 'cash')),
 	CONSTRAINT "payments_status" CHECK("payments"."status" in ('pending', 'confirmed', 'failed')),
 	CONSTRAINT "payments_amount_positive" CHECK("payments"."amount" > 0),
 	CONSTRAINT "payments_return_is_refund" CHECK("payments"."return_id" is null or "payments"."kind" = 'refund')
@@ -665,10 +701,21 @@ CREATE TABLE `pages` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`slug` text NOT NULL,
 	`is_published` integer DEFAULT false NOT NULL,
-	`updated_at` text DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')) NOT NULL
+	`footer_position` integer,
+	`updated_at` text DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')) NOT NULL,
+	CONSTRAINT "pages_footer_position" CHECK("pages"."footer_position" is null or "pages"."footer_position" > 0)
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `pages_slug_unique` ON `pages` (`slug`);--> statement-breakpoint
+CREATE UNIQUE INDEX `pages_footer_position_unique` ON `pages` (`footer_position`) WHERE footer_position is not null;--> statement-breakpoint
+CREATE TABLE `shipping_zone_municipalities` (
+	`municipality` text PRIMARY KEY NOT NULL,
+	`zone_id` integer NOT NULL,
+	FOREIGN KEY (`zone_id`) REFERENCES `shipping_zones`(`id`) ON UPDATE no action ON DELETE no action,
+	CONSTRAINT "shipping_zone_municipalities_known" CHECK("shipping_zone_municipalities"."municipality" in ('Ahuachapán Norte', 'Ahuachapán Centro', 'Ahuachapán Sur', 'Santa Ana Norte', 'Santa Ana Centro', 'Santa Ana Este', 'Santa Ana Oeste', 'Sonsonate Norte', 'Sonsonate Centro', 'Sonsonate Este', 'Sonsonate Oeste', 'Chalatenango Norte', 'Chalatenango Centro', 'Chalatenango Sur', 'La Libertad Norte', 'La Libertad Centro', 'La Libertad Oeste', 'La Libertad Este', 'La Libertad Costa', 'La Libertad Sur', 'San Salvador Norte', 'San Salvador Oeste', 'San Salvador Este', 'San Salvador Centro', 'San Salvador Sur', 'Cuscatlán Norte', 'Cuscatlán Sur', 'La Paz Oeste', 'La Paz Centro', 'La Paz Este', 'Cabañas Oeste', 'Cabañas Este', 'San Vicente Norte', 'San Vicente Sur', 'Usulután Norte', 'Usulután Este', 'Usulután Oeste', 'San Miguel Norte', 'San Miguel Centro', 'San Miguel Oeste', 'Morazán Norte', 'Morazán Sur', 'La Unión Norte', 'La Unión Sur'))
+);
+--> statement-breakpoint
+CREATE INDEX `shipping_zone_municipalities_zone_idx` ON `shipping_zone_municipalities` (`zone_id`);--> statement-breakpoint
 CREATE TABLE `shipping_zone_translations` (
 	`zone_id` integer NOT NULL,
 	`locale` text NOT NULL,
@@ -683,21 +730,27 @@ CREATE TABLE `shipping_zones` (
 	`slug` text NOT NULL,
 	`method` text NOT NULL,
 	`fee` integer NOT NULL,
-	`free_from` integer,
+	`covers_rest` integer DEFAULT false NOT NULL,
 	`delivery_days_min` integer NOT NULL,
 	`delivery_days_max` integer NOT NULL,
 	`status` text DEFAULT 'active' NOT NULL,
 	`position` integer DEFAULT 0 NOT NULL,
 	CONSTRAINT "shipping_zones_method" CHECK("shipping_zones"."method" in ('pickup', 'own_delivery', 'courier')),
 	CONSTRAINT "shipping_zones_status" CHECK("shipping_zones"."status" in ('active', 'archived')),
-	CONSTRAINT "shipping_zones_amounts" CHECK("shipping_zones"."fee" >= 0 and ("shipping_zones"."free_from" is null or "shipping_zones"."free_from" >= 0)),
+	CONSTRAINT "shipping_zones_fee" CHECK("shipping_zones"."fee" >= 0),
 	CONSTRAINT "shipping_zones_days" CHECK("shipping_zones"."delivery_days_min" >= 0 and "shipping_zones"."delivery_days_max" >= "shipping_zones"."delivery_days_min")
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `shipping_zones_slug_unique` ON `shipping_zones` (`slug`);--> statement-breakpoint
+CREATE UNIQUE INDEX `shipping_zones_one_rest` ON `shipping_zones` (`covers_rest`) WHERE covers_rest = 1 and status = 'active';--> statement-breakpoint
 CREATE TABLE `store_payment_methods` (
 	`method` text PRIMARY KEY NOT NULL,
-	CONSTRAINT "store_payment_methods_method" CHECK("store_payment_methods"."method" in ('bank_transfer', 'cash_on_delivery', 'payment_link', 'cash'))
+	`position` integer DEFAULT 0 NOT NULL,
+	`max_total` integer,
+	`shipping_zone_id` integer,
+	FOREIGN KEY (`shipping_zone_id`) REFERENCES `shipping_zones`(`id`) ON UPDATE no action ON DELETE no action,
+	CONSTRAINT "store_payment_methods_method" CHECK("store_payment_methods"."method" in ('card', 'bank_transfer', 'cash_on_delivery', 'payment_link', 'cash')),
+	CONSTRAINT "store_payment_methods_max_total" CHECK("store_payment_methods"."max_total" is null or "store_payment_methods"."max_total" > 0)
 );
 --> statement-breakpoint
 CREATE TABLE `store_promise_translations` (
@@ -733,15 +786,27 @@ CREATE TABLE `store_settings` (
 	`country_code` text(2),
 	`order_code_prefix` text,
 	`max_quantity_per_line` integer,
-	`min_shelf_life_days` integer,
-	`expiry_warning_days` integer,
 	`return_window_days` integer,
 	`founding_year` integer,
+	`free_shipping_from` integer,
+	`low_stock_threshold` integer,
+	`frequent_customer_min_orders` integer,
+	`inactive_customer_days` integer,
+	`followup_pending_payment_hours` integer,
+	`followup_paid_unshipped_hours` integer,
+	`followup_shipped_undelivered_hours` integer,
+	`discord_url` text,
+	`instagram_url` text,
+	`tiktok_url` text,
+	`youtube_url` text,
 	`updated_at` text DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')) NOT NULL,
 	CONSTRAINT "store_settings_single_row" CHECK("store_settings"."id" = 1),
 	CONSTRAINT "store_settings_currency" CHECK(length("store_settings"."currency") = 3),
 	CONSTRAINT "store_settings_country" CHECK("store_settings"."country_code" is null or length("store_settings"."country_code") = 2),
-	CONSTRAINT "store_settings_days" CHECK(("store_settings"."max_quantity_per_line" is null or "store_settings"."max_quantity_per_line" > 0) and ("store_settings"."min_shelf_life_days" is null or "store_settings"."min_shelf_life_days" > 0) and ("store_settings"."expiry_warning_days" is null or "store_settings"."expiry_warning_days" > 0) and ("store_settings"."return_window_days" is null or "store_settings"."return_window_days" > 0))
+	CONSTRAINT "store_settings_days" CHECK(("store_settings"."max_quantity_per_line" is null or "store_settings"."max_quantity_per_line" > 0) and ("store_settings"."return_window_days" is null or "store_settings"."return_window_days" > 0)),
+	CONSTRAINT "store_settings_thresholds" CHECK(("store_settings"."free_shipping_from" is null or "store_settings"."free_shipping_from" >= 0) and ("store_settings"."low_stock_threshold" is null or "store_settings"."low_stock_threshold" >= 0) and ("store_settings"."frequent_customer_min_orders" is null or "store_settings"."frequent_customer_min_orders" > 1) and ("store_settings"."inactive_customer_days" is null or "store_settings"."inactive_customer_days" > 0)),
+	CONSTRAINT "store_settings_followup_hours" CHECK(("store_settings"."followup_pending_payment_hours" is null or "store_settings"."followup_pending_payment_hours" > 0) and ("store_settings"."followup_paid_unshipped_hours" is null or "store_settings"."followup_paid_unshipped_hours" > 0) and ("store_settings"."followup_shipped_undelivered_hours" is null or "store_settings"."followup_shipped_undelivered_hours" > 0)),
+	CONSTRAINT "store_settings_social_urls" CHECK(("store_settings"."discord_url" is null or "store_settings"."discord_url" glob 'https://*') and ("store_settings"."instagram_url" is null or "store_settings"."instagram_url" glob 'https://*') and ("store_settings"."tiktok_url" is null or "store_settings"."tiktok_url" glob 'https://*') and ("store_settings"."youtube_url" is null or "store_settings"."youtube_url" glob 'https://*'))
 );
 --> statement-breakpoint
 CREATE TABLE `accounts` (

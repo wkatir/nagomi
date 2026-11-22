@@ -8,24 +8,23 @@ import {
 	text,
 	uniqueIndex,
 } from "drizzle-orm/sqlite-core";
-import { ARCHIVABLE_STATUSES } from "#/lib/enums";
+import {
+	ARCHIVABLE_STATUSES,
+	CATEGORY_ICONS,
+	PRODUCT_BADGES,
+} from "#/lib/enums";
 import {
 	actor,
 	createdAt,
 	id,
 	locale,
+	now,
 	oneOf,
 	seoText,
 	slugCheck,
 	updatedAt,
 } from "./_helpers";
-import {
-	IMAGE_KINDS,
-	IMAGE_TYPES,
-	PRODUCT_STATUSES,
-	SIZE_UNITS,
-	SKIN_TYPES,
-} from "./enums";
+import { IMAGE_KINDS, IMAGE_TYPES, PRODUCT_STATUSES } from "./enums";
 
 export const brands = sqliteTable(
 	"brands",
@@ -68,8 +67,8 @@ export const categories = sqliteTable(
 	{
 		id: id(),
 		slug: text("slug").notNull().unique(),
-		// Order of use in a routine (1 = first). Drives sorting, not business rules.
-		routineStep: integer("routine_step").notNull(),
+		sortOrder: integer("sort_order").notNull().default(0),
+		icon: text("icon", { enum: CATEGORY_ICONS }).notNull(),
 		status: text("status", { enum: ARCHIVABLE_STATUSES })
 			.notNull()
 			.default("active"),
@@ -77,7 +76,9 @@ export const categories = sqliteTable(
 	(t) => [
 		slugCheck("categories_slug", t.slug),
 		oneOf("categories_status", t.status, ARCHIVABLE_STATUSES),
-		check("categories_routine_step", sql`${t.routineStep} > 0`),
+		oneOf("categories_icon", t.icon, CATEGORY_ICONS),
+		check("categories_sort_order", sql`${t.sortOrder} >= 0`),
+		index("categories_sort_idx").on(t.sortOrder),
 	],
 );
 
@@ -89,40 +90,11 @@ export const categoryTranslations = sqliteTable(
 			.references(() => categories.id),
 		locale: locale(),
 		name: text("name").notNull(),
+		subtitle: text("subtitle"),
 		description: text("description"),
 		...seoText(),
 	},
 	(t) => [primaryKey({ columns: [t.categoryId, t.locale] })],
-);
-
-export const concerns = sqliteTable(
-	"concerns",
-	{
-		id: id(),
-		slug: text("slug").notNull().unique(),
-		position: integer("position").notNull().default(0),
-		status: text("status", { enum: ARCHIVABLE_STATUSES })
-			.notNull()
-			.default("active"),
-	},
-	(t) => [
-		slugCheck("concerns_slug", t.slug),
-		oneOf("concerns_status", t.status, ARCHIVABLE_STATUSES),
-	],
-);
-
-export const concernTranslations = sqliteTable(
-	"concern_translations",
-	{
-		concernId: integer("concern_id")
-			.notNull()
-			.references(() => concerns.id),
-		locale: locale(),
-		name: text("name").notNull(),
-		description: text("description"),
-		...seoText(),
-	},
-	(t) => [primaryKey({ columns: [t.concernId, t.locale] })],
 );
 
 export const products = sqliteTable(
@@ -139,14 +111,18 @@ export const products = sqliteTable(
 		status: text("status", { enum: PRODUCT_STATUSES })
 			.notNull()
 			.default("draft"),
-		// INCI names are international; they are not translated.
-		inci: text("inci"),
-		sanitaryRegistration: text("sanitary_registration"),
+		warrantyMonths: integer("warranty_months").notNull().default(0),
+		isFeatured: integer("is_featured", { mode: "boolean" })
+			.notNull()
+			.default(false),
+		badge: text("badge", { enum: PRODUCT_BADGES }),
 		createdAt: createdAt(),
 		updatedAt: updatedAt(),
 	},
 	(t) => [
 		oneOf("products_status", t.status, PRODUCT_STATUSES),
+		oneOf("products_badge", t.badge, PRODUCT_BADGES),
+		check("products_warranty_months", sql`${t.warrantyMonths} >= 0`),
 		slugCheck("products_slug", t.slug),
 		index("products_brand_idx").on(t.brandId),
 		index("products_category_idx").on(t.categoryId),
@@ -165,45 +141,44 @@ export const productTranslations = sqliteTable(
 		// searchKey() of the name (src/server/domain/search.ts), written by the API.
 		searchKey: text("search_key").notNull(),
 		tagline: text("tagline"),
+		shortSpecs: text("short_specs"),
 		description: text("description"),
-		howToUse: text("how_to_use"),
-		// One per line.
-		keyIngredients: text("key_ingredients"),
-		// The brand's cosmetic benefits, one per line.
-		benefits: text("benefits"),
-		cautions: text("cautions"),
 		...seoText(),
 	},
 	(t) => [primaryKey({ columns: [t.productId, t.locale] })],
 );
 
-export const productConcerns = sqliteTable(
-	"product_concerns",
+export const productSpecs = sqliteTable(
+	"product_specs",
 	{
+		id: id(),
 		productId: integer("product_id")
 			.notNull()
 			.references(() => products.id),
-		concernId: integer("concern_id")
-			.notNull()
-			.references(() => concerns.id),
+		position: integer("position").notNull(),
 	},
 	(t) => [
-		primaryKey({ columns: [t.productId, t.concernId] }),
-		index("product_concerns_concern_idx").on(t.concernId),
+		uniqueIndex("product_specs_position").on(t.productId, t.position),
+		check("product_specs_position_positive", sql`${t.position} > 0`),
 	],
 );
 
-export const productSkinTypes = sqliteTable(
-	"product_skin_types",
+export const productSpecTranslations = sqliteTable(
+	"product_spec_translations",
 	{
-		productId: integer("product_id")
+		specId: integer("spec_id")
 			.notNull()
-			.references(() => products.id),
-		skinType: text("skin_type", { enum: SKIN_TYPES }).notNull(),
+			.references(() => productSpecs.id),
+		locale: locale(),
+		label: text("label").notNull(),
+		value: text("value").notNull(),
 	},
 	(t) => [
-		primaryKey({ columns: [t.productId, t.skinType] }),
-		oneOf("product_skin_types_skin_type", t.skinType, SKIN_TYPES),
+		primaryKey({ columns: [t.specId, t.locale] }),
+		check(
+			"product_spec_translations_text",
+			sql`trim(${t.label}) <> '' and trim(${t.value}) <> ''`,
+		),
 	],
 );
 
@@ -222,9 +197,7 @@ export const variants = sqliteTable(
 		status: text("status", { enum: ARCHIVABLE_STATUSES })
 			.notNull()
 			.default("active"),
-		// Null until the presentation is confirmed by the supplier.
-		sizeValue: integer("size_value"),
-		sizeUnit: text("size_unit", { enum: SIZE_UNITS }),
+		optionLabel: text("option_label"),
 		// Null only while the product is a draft.
 		price: integer("price"),
 		compareAtPrice: integer("compare_at_price"),
@@ -232,21 +205,24 @@ export const variants = sqliteTable(
 		reorderPoint: integer("reorder_point"),
 		// GS1 barcode stored as GTIN-14 (shorter GTINs left-padded with zeros).
 		gtin: text("gtin"),
-
 		createdAt: createdAt(),
+		updatedBy: actor("updated_by"),
 	},
 	(t) => [
 		oneOf("variants_status", t.status, ARCHIVABLE_STATUSES),
-		oneOf("variants_size_unit", t.sizeUnit, SIZE_UNITS),
+		check(
+			"variants_sku_format",
+			sql`${t.sku} glob '[A-Z][A-Z][A-Z]-[0-9][0-9][0-9]'`,
+		),
+		check(
+			"variants_option_label",
+			sql`${t.optionLabel} is null or trim(${t.optionLabel}) <> ''`,
+		),
 		index("variants_product_idx").on(t.productId),
 		check("variants_price_positive", sql`${t.price} is null or ${t.price} > 0`),
 		check(
 			"variants_compare_at_gt_price",
 			sql`${t.compareAtPrice} is null or (${t.price} is not null and ${t.compareAtPrice} > ${t.price})`,
-		),
-		check(
-			"variants_size_pair",
-			sql`(${t.sizeValue} is null) = (${t.sizeUnit} is null) and (${t.sizeValue} is null or ${t.sizeValue} > 0)`,
 		),
 		check(
 			"variants_reorder_point",
@@ -258,6 +234,24 @@ export const variants = sqliteTable(
 		),
 
 		uniqueIndex("variants_gtin_unique").on(t.gtin).where(sql`gtin is not null`),
+	],
+);
+
+export const priceHistory = sqliteTable(
+	"price_history",
+	{
+		id: id(),
+		variantId: integer("variant_id")
+			.notNull()
+			.references(() => variants.id),
+		oldPrice: integer("old_price"),
+		newPrice: integer("new_price"),
+		changedAt: text("changed_at").notNull().default(now),
+		changedBy: actor("changed_by"),
+	},
+	(t) => [
+		index("price_history_variant_idx").on(t.variantId, t.id),
+		check("price_history_changed", sql`${t.oldPrice} is not ${t.newPrice}`),
 	],
 );
 
@@ -289,7 +283,7 @@ export const mediaFiles = sqliteTable(
 	],
 );
 
-// A variant id limits it to one size; null shows it for every size. Archived, never deleted.
+// A variant id limits it to one variant; null shows it for every variant. Archived, never deleted.
 export const productImages = sqliteTable(
 	"product_images",
 	{

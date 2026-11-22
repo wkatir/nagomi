@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "2c14d558-e35d-4746-8e7c-f2dd1263fbc4",
+  "id": "e237524d-fece-4c01-a591-f6bdb539d4f8",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "audit_events": {
@@ -247,9 +247,17 @@
           "notNull": true,
           "autoincrement": false
         },
-        "routine_step": {
-          "name": "routine_step",
+        "sort_order": {
+          "name": "sort_order",
           "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "icon": {
+          "name": "icon",
+          "type": "text",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
@@ -270,6 +278,13 @@
             "slug"
           ],
           "isUnique": true
+        },
+        "categories_sort_idx": {
+          "name": "categories_sort_idx",
+          "columns": [
+            "sort_order"
+          ],
+          "isUnique": false
         }
       },
       "foreignKeys": {},
@@ -284,9 +299,13 @@
           "name": "categories_status",
           "value": "\"categories\".\"status\" in ('active', 'archived')"
         },
-        "categories_routine_step": {
-          "name": "categories_routine_step",
-          "value": "\"categories\".\"routine_step\" > 0"
+        "categories_icon": {
+          "name": "categories_icon",
+          "value": "\"categories\".\"icon\" in ('keyboard', 'mouse', 'square', 'headphones', 'lightbulb', 'package')"
+        },
+        "categories_sort_order": {
+          "name": "categories_sort_order",
+          "value": "\"categories\".\"sort_order\" >= 0"
         }
       }
     },
@@ -312,6 +331,13 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true,
+          "autoincrement": false
+        },
+        "subtitle": {
+          "name": "subtitle",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
           "autoincrement": false
         },
         "description": {
@@ -363,137 +389,6 @@
       },
       "uniqueConstraints": {},
       "checkConstraints": {}
-    },
-    "concern_translations": {
-      "name": "concern_translations",
-      "columns": {
-        "concern_id": {
-          "name": "concern_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "locale": {
-          "name": "locale",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "name": {
-          "name": "name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "description": {
-          "name": "description",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "seo_title": {
-          "name": "seo_title",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "seo_description": {
-          "name": "seo_description",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "concern_translations_concern_id_concerns_id_fk": {
-          "name": "concern_translations_concern_id_concerns_id_fk",
-          "tableFrom": "concern_translations",
-          "tableTo": "concerns",
-          "columnsFrom": [
-            "concern_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {
-        "concern_translations_concern_id_locale_pk": {
-          "columns": [
-            "concern_id",
-            "locale"
-          ],
-          "name": "concern_translations_concern_id_locale_pk"
-        }
-      },
-      "uniqueConstraints": {},
-      "checkConstraints": {}
-    },
-    "concerns": {
-      "name": "concerns",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "integer",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": true
-        },
-        "slug": {
-          "name": "slug",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "position": {
-          "name": "position",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": 0
-        },
-        "status": {
-          "name": "status",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "'active'"
-        }
-      },
-      "indexes": {
-        "concerns_slug_unique": {
-          "name": "concerns_slug_unique",
-          "columns": [
-            "slug"
-          ],
-          "isUnique": true
-        }
-      },
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "checkConstraints": {
-        "concerns_slug": {
-          "name": "concerns_slug",
-          "value": "\"concerns\".\"slug\" not glob '*[^a-z0-9-]*' and \"concerns\".\"slug\" not glob '-*' and \"concerns\".\"slug\" not glob '*-' and \"concerns\".\"slug\" not glob '*--*' and length(\"concerns\".\"slug\") between 1 and 80"
-        },
-        "concerns_status": {
-          "name": "concerns_status",
-          "value": "\"concerns\".\"status\" in ('active', 'archived')"
-        }
-      }
     },
     "media_files": {
       "name": "media_files",
@@ -583,53 +478,70 @@
         }
       }
     },
-    "product_concerns": {
-      "name": "product_concerns",
+    "price_history": {
+      "name": "price_history",
       "columns": {
-        "product_id": {
-          "name": "product_id",
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "variant_id": {
+          "name": "variant_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "concern_id": {
-          "name": "concern_id",
+        "old_price": {
+          "name": "old_price",
           "type": "integer",
           "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "new_price": {
+          "name": "new_price",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "changed_at": {
+          "name": "changed_at",
+          "type": "text",
+          "primaryKey": false,
           "notNull": true,
+          "autoincrement": false,
+          "default": "(strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))"
+        },
+        "changed_by": {
+          "name": "changed_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
           "autoincrement": false
         }
       },
       "indexes": {
-        "product_concerns_concern_idx": {
-          "name": "product_concerns_concern_idx",
+        "price_history_variant_idx": {
+          "name": "price_history_variant_idx",
           "columns": [
-            "concern_id"
+            "variant_id",
+            "id"
           ],
           "isUnique": false
         }
       },
       "foreignKeys": {
-        "product_concerns_product_id_products_id_fk": {
-          "name": "product_concerns_product_id_products_id_fk",
-          "tableFrom": "product_concerns",
-          "tableTo": "products",
+        "price_history_variant_id_variants_id_fk": {
+          "name": "price_history_variant_id_variants_id_fk",
+          "tableFrom": "price_history",
+          "tableTo": "variants",
           "columnsFrom": [
-            "product_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "product_concerns_concern_id_concerns_id_fk": {
-          "name": "product_concerns_concern_id_concerns_id_fk",
-          "tableFrom": "product_concerns",
-          "tableTo": "concerns",
-          "columnsFrom": [
-            "concern_id"
+            "variant_id"
           ],
           "columnsTo": [
             "id"
@@ -638,17 +550,14 @@
           "onUpdate": "no action"
         }
       },
-      "compositePrimaryKeys": {
-        "product_concerns_product_id_concern_id_pk": {
-          "columns": [
-            "product_id",
-            "concern_id"
-          ],
-          "name": "product_concerns_product_id_concern_id_pk"
-        }
-      },
+      "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "checkConstraints": {}
+      "checkConstraints": {
+        "price_history_changed": {
+          "name": "price_history_changed",
+          "value": "\"price_history\".\"old_price\" is not \"price_history\".\"new_price\""
+        }
+      }
     },
     "product_image_translations": {
       "name": "product_image_translations",
@@ -839,7 +748,7 @@
       "checkConstraints": {
         "product_images_kind": {
           "name": "product_images_kind",
-          "value": "\"product_images\".\"kind\" in ('packshot', 'lifestyle', 'texture')"
+          "value": "\"product_images\".\"kind\" in ('packshot', 'lifestyle', 'detail')"
         },
         "product_images_status": {
           "name": "product_images_status",
@@ -847,18 +756,32 @@
         }
       }
     },
-    "product_skin_types": {
-      "name": "product_skin_types",
+    "product_spec_translations": {
+      "name": "product_spec_translations",
       "columns": {
-        "product_id": {
-          "name": "product_id",
+        "spec_id": {
+          "name": "spec_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "skin_type": {
-          "name": "skin_type",
+        "locale": {
+          "name": "locale",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "label": {
+          "name": "label",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "value": {
+          "name": "value",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
@@ -867,9 +790,76 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "product_skin_types_product_id_products_id_fk": {
-          "name": "product_skin_types_product_id_products_id_fk",
-          "tableFrom": "product_skin_types",
+        "product_spec_translations_spec_id_product_specs_id_fk": {
+          "name": "product_spec_translations_spec_id_product_specs_id_fk",
+          "tableFrom": "product_spec_translations",
+          "tableTo": "product_specs",
+          "columnsFrom": [
+            "spec_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "product_spec_translations_spec_id_locale_pk": {
+          "columns": [
+            "spec_id",
+            "locale"
+          ],
+          "name": "product_spec_translations_spec_id_locale_pk"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "product_spec_translations_text": {
+          "name": "product_spec_translations_text",
+          "value": "trim(\"product_spec_translations\".\"label\") <> '' and trim(\"product_spec_translations\".\"value\") <> ''"
+        }
+      }
+    },
+    "product_specs": {
+      "name": "product_specs",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "product_id": {
+          "name": "product_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "position": {
+          "name": "position",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "product_specs_position": {
+          "name": "product_specs_position",
+          "columns": [
+            "product_id",
+            "position"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "product_specs_product_id_products_id_fk": {
+          "name": "product_specs_product_id_products_id_fk",
+          "tableFrom": "product_specs",
           "tableTo": "products",
           "columnsFrom": [
             "product_id"
@@ -881,20 +871,12 @@
           "onUpdate": "no action"
         }
       },
-      "compositePrimaryKeys": {
-        "product_skin_types_product_id_skin_type_pk": {
-          "columns": [
-            "product_id",
-            "skin_type"
-          ],
-          "name": "product_skin_types_product_id_skin_type_pk"
-        }
-      },
+      "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "checkConstraints": {
-        "product_skin_types_skin_type": {
-          "name": "product_skin_types_skin_type",
-          "value": "\"product_skin_types\".\"skin_type\" in ('normal', 'dry', 'oily', 'combination', 'sensitive')"
+        "product_specs_position_positive": {
+          "name": "product_specs_position_positive",
+          "value": "\"product_specs\".\"position\" > 0"
         }
       }
     },
@@ -936,36 +918,15 @@
           "notNull": false,
           "autoincrement": false
         },
+        "short_specs": {
+          "name": "short_specs",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
         "description": {
           "name": "description",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "how_to_use": {
-          "name": "how_to_use",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "key_ingredients": {
-          "name": "key_ingredients",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "benefits": {
-          "name": "benefits",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "cautions": {
-          "name": "cautions",
           "type": "text",
           "primaryKey": false,
           "notNull": false,
@@ -1053,15 +1014,24 @@
           "autoincrement": false,
           "default": "'draft'"
         },
-        "inci": {
-          "name": "inci",
-          "type": "text",
+        "warranty_months": {
+          "name": "warranty_months",
+          "type": "integer",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
         },
-        "sanitary_registration": {
-          "name": "sanitary_registration",
+        "is_featured": {
+          "name": "is_featured",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "badge": {
+          "name": "badge",
           "type": "text",
           "primaryKey": false,
           "notNull": false,
@@ -1149,6 +1119,14 @@
           "name": "products_status",
           "value": "\"products\".\"status\" in ('draft', 'published', 'archived')"
         },
+        "products_badge": {
+          "name": "products_badge",
+          "value": "\"products\".\"badge\" in ('best_seller', 'new')"
+        },
+        "products_warranty_months": {
+          "name": "products_warranty_months",
+          "value": "\"products\".\"warranty_months\" >= 0"
+        },
         "products_slug": {
           "name": "products_slug",
           "value": "\"products\".\"slug\" not glob '*[^a-z0-9-]*' and \"products\".\"slug\" not glob '-*' and \"products\".\"slug\" not glob '*-' and \"products\".\"slug\" not glob '*--*' and length(\"products\".\"slug\") between 1 and 80"
@@ -1194,15 +1172,8 @@
           "autoincrement": false,
           "default": "'active'"
         },
-        "size_value": {
-          "name": "size_value",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "size_unit": {
-          "name": "size_unit",
+        "option_label": {
+          "name": "option_label",
           "type": "text",
           "primaryKey": false,
           "notNull": false,
@@ -1243,6 +1214,13 @@
           "notNull": true,
           "autoincrement": false,
           "default": "(strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))"
+        },
+        "updated_by": {
+          "name": "updated_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
         }
       },
       "indexes": {
@@ -1291,9 +1269,13 @@
           "name": "variants_status",
           "value": "\"variants\".\"status\" in ('active', 'archived')"
         },
-        "variants_size_unit": {
-          "name": "variants_size_unit",
-          "value": "\"variants\".\"size_unit\" in ('ml', 'g', 'units')"
+        "variants_sku_format": {
+          "name": "variants_sku_format",
+          "value": "\"variants\".\"sku\" glob '[A-Z][A-Z][A-Z]-[0-9][0-9][0-9]'"
+        },
+        "variants_option_label": {
+          "name": "variants_option_label",
+          "value": "\"variants\".\"option_label\" is null or trim(\"variants\".\"option_label\") <> ''"
         },
         "variants_price_positive": {
           "name": "variants_price_positive",
@@ -1303,10 +1285,6 @@
           "name": "variants_compare_at_gt_price",
           "value": "\"variants\".\"compare_at_price\" is null or (\"variants\".\"price\" is not null and \"variants\".\"compare_at_price\" > \"variants\".\"price\")"
         },
-        "variants_size_pair": {
-          "name": "variants_size_pair",
-          "value": "(\"variants\".\"size_value\" is null) = (\"variants\".\"size_unit\" is null) and (\"variants\".\"size_value\" is null or \"variants\".\"size_value\" > 0)"
-        },
         "variants_reorder_point": {
           "name": "variants_reorder_point",
           "value": "\"variants\".\"reorder_point\" is null or \"variants\".\"reorder_point\" >= 0"
@@ -1314,6 +1292,156 @@
         "variants_gtin": {
           "name": "variants_gtin",
           "value": "\"variants\".\"gtin\" is null or (length(\"variants\".\"gtin\") = 14 and \"variants\".\"gtin\" not glob '*[^0-9]*')"
+        }
+      }
+    },
+    "customer_addresses": {
+      "name": "customer_addresses",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "customer_id": {
+          "name": "customer_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "recipient_name": {
+          "name": "recipient_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "department": {
+          "name": "department",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "municipality": {
+          "name": "municipality",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "address_line": {
+          "name": "address_line",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "reference": {
+          "name": "reference",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "phone_e164": {
+          "name": "phone_e164",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "is_default": {
+          "name": "is_default",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'active'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))"
+        }
+      },
+      "indexes": {
+        "customer_addresses_one_default": {
+          "name": "customer_addresses_one_default",
+          "columns": [
+            "customer_id"
+          ],
+          "isUnique": true,
+          "where": "is_default = 1"
+        },
+        "customer_addresses_customer_idx": {
+          "name": "customer_addresses_customer_idx",
+          "columns": [
+            "customer_id",
+            "status"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "customer_addresses_customer_id_customers_id_fk": {
+          "name": "customer_addresses_customer_id_customers_id_fk",
+          "tableFrom": "customer_addresses",
+          "tableTo": "customers",
+          "columnsFrom": [
+            "customer_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "customer_addresses_status": {
+          "name": "customer_addresses_status",
+          "value": "\"customer_addresses\".\"status\" in ('active', 'archived')"
+        },
+        "customer_addresses_place": {
+          "name": "customer_addresses_place",
+          "value": "\"customer_addresses\".\"department\" || '|' || \"customer_addresses\".\"municipality\" in ('Ahuachapán|Ahuachapán Norte', 'Ahuachapán|Ahuachapán Centro', 'Ahuachapán|Ahuachapán Sur', 'Santa Ana|Santa Ana Norte', 'Santa Ana|Santa Ana Centro', 'Santa Ana|Santa Ana Este', 'Santa Ana|Santa Ana Oeste', 'Sonsonate|Sonsonate Norte', 'Sonsonate|Sonsonate Centro', 'Sonsonate|Sonsonate Este', 'Sonsonate|Sonsonate Oeste', 'Chalatenango|Chalatenango Norte', 'Chalatenango|Chalatenango Centro', 'Chalatenango|Chalatenango Sur', 'La Libertad|La Libertad Norte', 'La Libertad|La Libertad Centro', 'La Libertad|La Libertad Oeste', 'La Libertad|La Libertad Este', 'La Libertad|La Libertad Costa', 'La Libertad|La Libertad Sur', 'San Salvador|San Salvador Norte', 'San Salvador|San Salvador Oeste', 'San Salvador|San Salvador Este', 'San Salvador|San Salvador Centro', 'San Salvador|San Salvador Sur', 'Cuscatlán|Cuscatlán Norte', 'Cuscatlán|Cuscatlán Sur', 'La Paz|La Paz Oeste', 'La Paz|La Paz Centro', 'La Paz|La Paz Este', 'Cabañas|Cabañas Oeste', 'Cabañas|Cabañas Este', 'San Vicente|San Vicente Norte', 'San Vicente|San Vicente Sur', 'Usulután|Usulután Norte', 'Usulután|Usulután Este', 'Usulután|Usulután Oeste', 'San Miguel|San Miguel Norte', 'San Miguel|San Miguel Centro', 'San Miguel|San Miguel Oeste', 'Morazán|Morazán Norte', 'Morazán|Morazán Sur', 'La Unión|La Unión Norte', 'La Unión|La Unión Sur')"
+        },
+        "customer_addresses_phone": {
+          "name": "customer_addresses_phone",
+          "value": "\"customer_addresses\".\"phone_e164\" glob '+503[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]'"
+        },
+        "customer_addresses_text": {
+          "name": "customer_addresses_text",
+          "value": "trim(\"customer_addresses\".\"recipient_name\") <> '' and trim(\"customer_addresses\".\"address_line\") <> ''"
+        },
+        "customer_addresses_default_active": {
+          "name": "customer_addresses_default_active",
+          "value": "\"customer_addresses\".\"is_default\" = 0 or \"customer_addresses\".\"status\" = 'active'"
         }
       }
     },
@@ -1449,7 +1577,7 @@
       "checkConstraints": {
         "customer_consents_purpose": {
           "name": "customer_consents_purpose",
-          "value": "\"customer_consents\".\"purpose\" in ('privacy_notice', 'terms', 'marketing_whatsapp')"
+          "value": "\"customer_consents\".\"purpose\" in ('privacy_notice', 'terms', 'marketing_email', 'marketing_whatsapp')"
         },
         "customer_consents_channel": {
           "name": "customer_consents_channel",
@@ -1470,6 +1598,13 @@
           "primaryKey": true,
           "notNull": true,
           "autoincrement": true
+        },
+        "auth_user_id": {
+          "name": "auth_user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
         },
         "name": {
           "name": "name",
@@ -1522,15 +1657,49 @@
             "phone_e164"
           ],
           "isUnique": true
+        },
+        "customers_email_unique": {
+          "name": "customers_email_unique",
+          "columns": [
+            "email"
+          ],
+          "isUnique": true,
+          "where": "email is not null"
+        },
+        "customers_auth_user_unique": {
+          "name": "customers_auth_user_unique",
+          "columns": [
+            "auth_user_id"
+          ],
+          "isUnique": true,
+          "where": "auth_user_id is not null"
         }
       },
-      "foreignKeys": {},
+      "foreignKeys": {
+        "customers_auth_user_id_users_id_fk": {
+          "name": "customers_auth_user_id_users_id_fk",
+          "tableFrom": "customers",
+          "tableTo": "users",
+          "columnsFrom": [
+            "auth_user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "checkConstraints": {
         "customers_phone_e164": {
           "name": "customers_phone_e164",
-          "value": "\"customers\".\"phone_e164\" is null or (\"customers\".\"phone_e164\" glob '+[1-9][0-9]*' and length(\"customers\".\"phone_e164\") between 8 and 16)"
+          "value": "\"customers\".\"phone_e164\" is null or \"customers\".\"phone_e164\" glob '+503[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]'"
+        },
+        "customers_email_normalized": {
+          "name": "customers_email_normalized",
+          "value": "\"customers\".\"email\" is null or (\"customers\".\"email\" = lower(trim(\"customers\".\"email\")) and \"customers\".\"email\" like '%_@_%')"
         }
       }
     },
@@ -1689,7 +1858,7 @@
         },
         "inventory_movements_reason": {
           "name": "inventory_movements_reason",
-          "value": "\"inventory_movements\".\"reason\" in ('expired', 'damaged', 'sample_tester', 'own_use', 'lost_theft', 'count_difference', 'customer_return', 'other')"
+          "value": "\"inventory_movements\".\"reason\" in ('damaged', 'demo_unit', 'own_use', 'lost_theft', 'count_difference', 'customer_return', 'other')"
         },
         "inventory_movements_nonzero": {
           "name": "inventory_movements_nonzero",
@@ -1740,21 +1909,6 @@
           "notNull": false,
           "autoincrement": false
         },
-        "expires_on": {
-          "name": "expires_on",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "expiry_precision": {
-          "name": "expiry_precision",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "'day'"
-        },
         "unit_cost_e4": {
           "name": "unit_cost_e4",
           "type": "integer",
@@ -1779,11 +1933,11 @@
           ],
           "isUnique": true
         },
-        "lots_variant_expiry_idx": {
-          "name": "lots_variant_expiry_idx",
+        "lots_variant_idx": {
+          "name": "lots_variant_idx",
           "columns": [
             "variant_id",
-            "expires_on"
+            "id"
           ],
           "isUnique": false
         }
@@ -1819,21 +1973,278 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "checkConstraints": {
-        "lots_expiry_precision": {
-          "name": "lots_expiry_precision",
-          "value": "\"lots\".\"expiry_precision\" in ('day', 'month')"
-        },
-        "lots_expires_on": {
-          "name": "lots_expires_on",
-          "value": "\"lots\".\"expires_on\" glob '[0-9][0-9][0-9][0-9]-[0-1][0-9]-[0-3][0-9]'"
-        },
-        "lots_month_precision": {
-          "name": "lots_month_precision",
-          "value": "\"lots\".\"expiry_precision\" = 'day' or \"lots\".\"expires_on\" = date(\"lots\".\"expires_on\", 'start of month', '+1 month', '-1 day')"
-        },
         "lots_unit_cost": {
           "name": "lots_unit_cost",
           "value": "\"lots\".\"unit_cost_e4\" >= 0"
+        }
+      }
+    },
+    "bundle_items": {
+      "name": "bundle_items",
+      "columns": {
+        "bundle_id": {
+          "name": "bundle_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "variant_id": {
+          "name": "variant_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "quantity": {
+          "name": "quantity",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 1
+        },
+        "position": {
+          "name": "position",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "bundle_items_position": {
+          "name": "bundle_items_position",
+          "columns": [
+            "bundle_id",
+            "position"
+          ],
+          "isUnique": true
+        },
+        "bundle_items_variant_idx": {
+          "name": "bundle_items_variant_idx",
+          "columns": [
+            "variant_id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "bundle_items_bundle_id_bundles_id_fk": {
+          "name": "bundle_items_bundle_id_bundles_id_fk",
+          "tableFrom": "bundle_items",
+          "tableTo": "bundles",
+          "columnsFrom": [
+            "bundle_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "bundle_items_variant_id_variants_id_fk": {
+          "name": "bundle_items_variant_id_variants_id_fk",
+          "tableFrom": "bundle_items",
+          "tableTo": "variants",
+          "columnsFrom": [
+            "variant_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "bundle_items_bundle_id_variant_id_pk": {
+          "columns": [
+            "bundle_id",
+            "variant_id"
+          ],
+          "name": "bundle_items_bundle_id_variant_id_pk"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "bundle_items_quantity_positive": {
+          "name": "bundle_items_quantity_positive",
+          "value": "\"bundle_items\".\"quantity\" > 0"
+        },
+        "bundle_items_position_positive": {
+          "name": "bundle_items_position_positive",
+          "value": "\"bundle_items\".\"position\" > 0"
+        }
+      }
+    },
+    "bundle_translations": {
+      "name": "bundle_translations",
+      "columns": {
+        "bundle_id": {
+          "name": "bundle_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "locale": {
+          "name": "locale",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "seo_title": {
+          "name": "seo_title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "seo_description": {
+          "name": "seo_description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "bundle_translations_bundle_id_bundles_id_fk": {
+          "name": "bundle_translations_bundle_id_bundles_id_fk",
+          "tableFrom": "bundle_translations",
+          "tableTo": "bundles",
+          "columnsFrom": [
+            "bundle_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "bundle_translations_bundle_id_locale_pk": {
+          "columns": [
+            "bundle_id",
+            "locale"
+          ],
+          "name": "bundle_translations_bundle_id_locale_pk"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "bundles": {
+      "name": "bundles",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "slug": {
+          "name": "slug",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'draft'"
+        },
+        "is_featured": {
+          "name": "is_featured",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "position": {
+          "name": "position",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "price": {
+          "name": "price",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))"
+        }
+      },
+      "indexes": {
+        "bundles_slug_unique": {
+          "name": "bundles_slug_unique",
+          "columns": [
+            "slug"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "bundles_slug": {
+          "name": "bundles_slug",
+          "value": "\"bundles\".\"slug\" not glob '*[^a-z0-9-]*' and \"bundles\".\"slug\" not glob '-*' and \"bundles\".\"slug\" not glob '*-' and \"bundles\".\"slug\" not glob '*--*' and length(\"bundles\".\"slug\") between 1 and 80"
+        },
+        "bundles_status": {
+          "name": "bundles_status",
+          "value": "\"bundles\".\"status\" in ('draft', 'published', 'archived')"
+        },
+        "bundles_price_positive": {
+          "name": "bundles_price_positive",
+          "value": "\"bundles\".\"price\" > 0"
+        },
+        "bundles_position": {
+          "name": "bundles_position",
+          "value": "\"bundles\".\"position\" >= 0"
         }
       }
     },
@@ -2330,248 +2741,6 @@
         }
       }
     },
-    "routine_items": {
-      "name": "routine_items",
-      "columns": {
-        "routine_id": {
-          "name": "routine_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "variant_id": {
-          "name": "variant_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "position": {
-          "name": "position",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        }
-      },
-      "indexes": {
-        "routine_items_position": {
-          "name": "routine_items_position",
-          "columns": [
-            "routine_id",
-            "position"
-          ],
-          "isUnique": true
-        },
-        "routine_items_variant_idx": {
-          "name": "routine_items_variant_idx",
-          "columns": [
-            "variant_id"
-          ],
-          "isUnique": false
-        }
-      },
-      "foreignKeys": {
-        "routine_items_routine_id_routines_id_fk": {
-          "name": "routine_items_routine_id_routines_id_fk",
-          "tableFrom": "routine_items",
-          "tableTo": "routines",
-          "columnsFrom": [
-            "routine_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "routine_items_variant_id_variants_id_fk": {
-          "name": "routine_items_variant_id_variants_id_fk",
-          "tableFrom": "routine_items",
-          "tableTo": "variants",
-          "columnsFrom": [
-            "variant_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {
-        "routine_items_routine_id_variant_id_pk": {
-          "columns": [
-            "routine_id",
-            "variant_id"
-          ],
-          "name": "routine_items_routine_id_variant_id_pk"
-        }
-      },
-      "uniqueConstraints": {},
-      "checkConstraints": {}
-    },
-    "routine_translations": {
-      "name": "routine_translations",
-      "columns": {
-        "routine_id": {
-          "name": "routine_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "locale": {
-          "name": "locale",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "title": {
-          "name": "title",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "description": {
-          "name": "description",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "seo_title": {
-          "name": "seo_title",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "seo_description": {
-          "name": "seo_description",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "routine_translations_routine_id_routines_id_fk": {
-          "name": "routine_translations_routine_id_routines_id_fk",
-          "tableFrom": "routine_translations",
-          "tableTo": "routines",
-          "columnsFrom": [
-            "routine_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {
-        "routine_translations_routine_id_locale_pk": {
-          "columns": [
-            "routine_id",
-            "locale"
-          ],
-          "name": "routine_translations_routine_id_locale_pk"
-        }
-      },
-      "uniqueConstraints": {},
-      "checkConstraints": {}
-    },
-    "routines": {
-      "name": "routines",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "integer",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": true
-        },
-        "slug": {
-          "name": "slug",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "status": {
-          "name": "status",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "'draft'"
-        },
-        "is_featured": {
-          "name": "is_featured",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": false
-        },
-        "position": {
-          "name": "position",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": 0
-        },
-        "concern_id": {
-          "name": "concern_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        }
-      },
-      "indexes": {
-        "routines_slug_unique": {
-          "name": "routines_slug_unique",
-          "columns": [
-            "slug"
-          ],
-          "isUnique": true
-        }
-      },
-      "foreignKeys": {
-        "routines_concern_id_concerns_id_fk": {
-          "name": "routines_concern_id_concerns_id_fk",
-          "tableFrom": "routines",
-          "tableTo": "concerns",
-          "columnsFrom": [
-            "concern_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "checkConstraints": {
-        "routines_slug": {
-          "name": "routines_slug",
-          "value": "\"routines\".\"slug\" not glob '*[^a-z0-9-]*' and \"routines\".\"slug\" not glob '-*' and \"routines\".\"slug\" not glob '*-' and \"routines\".\"slug\" not glob '*--*' and length(\"routines\".\"slug\") between 1 and 80"
-        },
-        "routines_status": {
-          "name": "routines_status",
-          "value": "\"routines\".\"status\" in ('draft', 'published', 'archived')"
-        }
-      }
-    },
     "order_items": {
       "name": "order_items",
       "columns": {
@@ -2631,15 +2800,8 @@
           "notNull": true,
           "autoincrement": false
         },
-        "size_value": {
-          "name": "size_value",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "size_unit": {
-          "name": "size_unit",
+        "option_label": {
+          "name": "option_label",
           "type": "text",
           "primaryKey": false,
           "notNull": false,
@@ -2694,10 +2856,6 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "checkConstraints": {
-        "order_items_size_unit": {
-          "name": "order_items_size_unit",
-          "value": "\"order_items\".\"size_unit\" in ('ml', 'g', 'units')"
-        },
         "order_items_quantity_positive": {
           "name": "order_items_quantity_positive",
           "value": "\"order_items\".\"quantity\" > 0"
@@ -2705,10 +2863,88 @@
         "order_items_unit_price": {
           "name": "order_items_unit_price",
           "value": "\"order_items\".\"unit_price\" >= 0"
+        }
+      }
+    },
+    "order_status_history": {
+      "name": "order_status_history",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
         },
-        "order_items_size_pair": {
-          "name": "order_items_size_pair",
-          "value": "(\"order_items\".\"size_value\" is null) = (\"order_items\".\"size_unit\" is null)"
+        "order_id": {
+          "name": "order_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "from_status": {
+          "name": "from_status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "to_status": {
+          "name": "to_status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "changed_at": {
+          "name": "changed_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))"
+        }
+      },
+      "indexes": {
+        "order_status_history_order_idx": {
+          "name": "order_status_history_order_idx",
+          "columns": [
+            "order_id",
+            "id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "order_status_history_order_id_orders_id_fk": {
+          "name": "order_status_history_order_id_orders_id_fk",
+          "tableFrom": "order_status_history",
+          "tableTo": "orders",
+          "columnsFrom": [
+            "order_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "order_status_history_from": {
+          "name": "order_status_history_from",
+          "value": "\"order_status_history\".\"from_status\" in ('pending', 'confirmed', 'fulfilled', 'delivered', 'cancelled')"
+        },
+        "order_status_history_to": {
+          "name": "order_status_history_to",
+          "value": "\"order_status_history\".\"to_status\" in ('pending', 'confirmed', 'fulfilled', 'delivered', 'cancelled')"
+        },
+        "order_status_history_changed": {
+          "name": "order_status_history_changed",
+          "value": "\"order_status_history\".\"from_status\" is not \"order_status_history\".\"to_status\""
         }
       }
     },
@@ -3065,7 +3301,7 @@
         },
         "orders_payment_method": {
           "name": "orders_payment_method",
-          "value": "\"orders\".\"payment_method\" in ('bank_transfer', 'cash_on_delivery', 'payment_link', 'cash')"
+          "value": "\"orders\".\"payment_method\" in ('card', 'bank_transfer', 'cash_on_delivery', 'payment_link', 'cash')"
         },
         "orders_customer_phone": {
           "name": "orders_customer_phone",
@@ -3236,7 +3472,7 @@
         },
         "payments_method": {
           "name": "payments_method",
-          "value": "\"payments\".\"method\" in ('bank_transfer', 'cash_on_delivery', 'payment_link', 'cash')"
+          "value": "\"payments\".\"method\" in ('card', 'bank_transfer', 'cash_on_delivery', 'payment_link', 'cash')"
         },
         "payments_status": {
           "name": "payments_status",
@@ -4451,6 +4687,13 @@
           "autoincrement": false,
           "default": false
         },
+        "footer_position": {
+          "name": "footer_position",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
         "updated_at": {
           "name": "updated_at",
           "type": "text",
@@ -4467,12 +4710,76 @@
             "slug"
           ],
           "isUnique": true
+        },
+        "pages_footer_position_unique": {
+          "name": "pages_footer_position_unique",
+          "columns": [
+            "footer_position"
+          ],
+          "isUnique": true,
+          "where": "footer_position is not null"
         }
       },
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "checkConstraints": {}
+      "checkConstraints": {
+        "pages_footer_position": {
+          "name": "pages_footer_position",
+          "value": "\"pages\".\"footer_position\" is null or \"pages\".\"footer_position\" > 0"
+        }
+      }
+    },
+    "shipping_zone_municipalities": {
+      "name": "shipping_zone_municipalities",
+      "columns": {
+        "municipality": {
+          "name": "municipality",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "zone_id": {
+          "name": "zone_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "shipping_zone_municipalities_zone_idx": {
+          "name": "shipping_zone_municipalities_zone_idx",
+          "columns": [
+            "zone_id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "shipping_zone_municipalities_zone_id_shipping_zones_id_fk": {
+          "name": "shipping_zone_municipalities_zone_id_shipping_zones_id_fk",
+          "tableFrom": "shipping_zone_municipalities",
+          "tableTo": "shipping_zones",
+          "columnsFrom": [
+            "zone_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "shipping_zone_municipalities_known": {
+          "name": "shipping_zone_municipalities_known",
+          "value": "\"shipping_zone_municipalities\".\"municipality\" in ('Ahuachapán Norte', 'Ahuachapán Centro', 'Ahuachapán Sur', 'Santa Ana Norte', 'Santa Ana Centro', 'Santa Ana Este', 'Santa Ana Oeste', 'Sonsonate Norte', 'Sonsonate Centro', 'Sonsonate Este', 'Sonsonate Oeste', 'Chalatenango Norte', 'Chalatenango Centro', 'Chalatenango Sur', 'La Libertad Norte', 'La Libertad Centro', 'La Libertad Oeste', 'La Libertad Este', 'La Libertad Costa', 'La Libertad Sur', 'San Salvador Norte', 'San Salvador Oeste', 'San Salvador Este', 'San Salvador Centro', 'San Salvador Sur', 'Cuscatlán Norte', 'Cuscatlán Sur', 'La Paz Oeste', 'La Paz Centro', 'La Paz Este', 'Cabañas Oeste', 'Cabañas Este', 'San Vicente Norte', 'San Vicente Sur', 'Usulután Norte', 'Usulután Este', 'Usulután Oeste', 'San Miguel Norte', 'San Miguel Centro', 'San Miguel Oeste', 'Morazán Norte', 'Morazán Sur', 'La Unión Norte', 'La Unión Sur')"
+        }
+      }
     },
     "shipping_zone_translations": {
       "name": "shipping_zone_translations",
@@ -4565,12 +4872,13 @@
           "notNull": true,
           "autoincrement": false
         },
-        "free_from": {
-          "name": "free_from",
+        "covers_rest": {
+          "name": "covers_rest",
           "type": "integer",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
         },
         "delivery_days_min": {
           "name": "delivery_days_min",
@@ -4610,6 +4918,14 @@
             "slug"
           ],
           "isUnique": true
+        },
+        "shipping_zones_one_rest": {
+          "name": "shipping_zones_one_rest",
+          "columns": [
+            "covers_rest"
+          ],
+          "isUnique": true,
+          "where": "covers_rest = 1 and status = 'active'"
         }
       },
       "foreignKeys": {},
@@ -4624,9 +4940,9 @@
           "name": "shipping_zones_status",
           "value": "\"shipping_zones\".\"status\" in ('active', 'archived')"
         },
-        "shipping_zones_amounts": {
-          "name": "shipping_zones_amounts",
-          "value": "\"shipping_zones\".\"fee\" >= 0 and (\"shipping_zones\".\"free_from\" is null or \"shipping_zones\".\"free_from\" >= 0)"
+        "shipping_zones_fee": {
+          "name": "shipping_zones_fee",
+          "value": "\"shipping_zones\".\"fee\" >= 0"
         },
         "shipping_zones_days": {
           "name": "shipping_zones_days",
@@ -4643,16 +4959,56 @@
           "primaryKey": true,
           "notNull": true,
           "autoincrement": false
+        },
+        "position": {
+          "name": "position",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "max_total": {
+          "name": "max_total",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "shipping_zone_id": {
+          "name": "shipping_zone_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
         }
       },
       "indexes": {},
-      "foreignKeys": {},
+      "foreignKeys": {
+        "store_payment_methods_shipping_zone_id_shipping_zones_id_fk": {
+          "name": "store_payment_methods_shipping_zone_id_shipping_zones_id_fk",
+          "tableFrom": "store_payment_methods",
+          "tableTo": "shipping_zones",
+          "columnsFrom": [
+            "shipping_zone_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "checkConstraints": {
         "store_payment_methods_method": {
           "name": "store_payment_methods_method",
-          "value": "\"store_payment_methods\".\"method\" in ('bank_transfer', 'cash_on_delivery', 'payment_link', 'cash')"
+          "value": "\"store_payment_methods\".\"method\" in ('card', 'bank_transfer', 'cash_on_delivery', 'payment_link', 'cash')"
+        },
+        "store_payment_methods_max_total": {
+          "name": "store_payment_methods_max_total",
+          "value": "\"store_payment_methods\".\"max_total\" is null or \"store_payment_methods\".\"max_total\" > 0"
         }
       }
     },
@@ -4872,20 +5228,6 @@
           "notNull": false,
           "autoincrement": false
         },
-        "min_shelf_life_days": {
-          "name": "min_shelf_life_days",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "expiry_warning_days": {
-          "name": "expiry_warning_days",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
         "return_window_days": {
           "name": "return_window_days",
           "type": "integer",
@@ -4896,6 +5238,83 @@
         "founding_year": {
           "name": "founding_year",
           "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "free_shipping_from": {
+          "name": "free_shipping_from",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "low_stock_threshold": {
+          "name": "low_stock_threshold",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "frequent_customer_min_orders": {
+          "name": "frequent_customer_min_orders",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "inactive_customer_days": {
+          "name": "inactive_customer_days",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "followup_pending_payment_hours": {
+          "name": "followup_pending_payment_hours",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "followup_paid_unshipped_hours": {
+          "name": "followup_paid_unshipped_hours",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "followup_shipped_undelivered_hours": {
+          "name": "followup_shipped_undelivered_hours",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "discord_url": {
+          "name": "discord_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "instagram_url": {
+          "name": "instagram_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "tiktok_url": {
+          "name": "tiktok_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "youtube_url": {
+          "name": "youtube_url",
+          "type": "text",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
@@ -4928,7 +5347,19 @@
         },
         "store_settings_days": {
           "name": "store_settings_days",
-          "value": "(\"store_settings\".\"max_quantity_per_line\" is null or \"store_settings\".\"max_quantity_per_line\" > 0) and (\"store_settings\".\"min_shelf_life_days\" is null or \"store_settings\".\"min_shelf_life_days\" > 0) and (\"store_settings\".\"expiry_warning_days\" is null or \"store_settings\".\"expiry_warning_days\" > 0) and (\"store_settings\".\"return_window_days\" is null or \"store_settings\".\"return_window_days\" > 0)"
+          "value": "(\"store_settings\".\"max_quantity_per_line\" is null or \"store_settings\".\"max_quantity_per_line\" > 0) and (\"store_settings\".\"return_window_days\" is null or \"store_settings\".\"return_window_days\" > 0)"
+        },
+        "store_settings_thresholds": {
+          "name": "store_settings_thresholds",
+          "value": "(\"store_settings\".\"free_shipping_from\" is null or \"store_settings\".\"free_shipping_from\" >= 0) and (\"store_settings\".\"low_stock_threshold\" is null or \"store_settings\".\"low_stock_threshold\" >= 0) and (\"store_settings\".\"frequent_customer_min_orders\" is null or \"store_settings\".\"frequent_customer_min_orders\" > 1) and (\"store_settings\".\"inactive_customer_days\" is null or \"store_settings\".\"inactive_customer_days\" > 0)"
+        },
+        "store_settings_followup_hours": {
+          "name": "store_settings_followup_hours",
+          "value": "(\"store_settings\".\"followup_pending_payment_hours\" is null or \"store_settings\".\"followup_pending_payment_hours\" > 0) and (\"store_settings\".\"followup_paid_unshipped_hours\" is null or \"store_settings\".\"followup_paid_unshipped_hours\" > 0) and (\"store_settings\".\"followup_shipped_undelivered_hours\" is null or \"store_settings\".\"followup_shipped_undelivered_hours\" > 0)"
+        },
+        "store_settings_social_urls": {
+          "name": "store_settings_social_urls",
+          "value": "(\"store_settings\".\"discord_url\" is null or \"store_settings\".\"discord_url\" glob 'https://*') and (\"store_settings\".\"instagram_url\" is null or \"store_settings\".\"instagram_url\" glob 'https://*') and (\"store_settings\".\"tiktok_url\" is null or \"store_settings\".\"tiktok_url\" glob 'https://*') and (\"store_settings\".\"youtube_url\" is null or \"store_settings\".\"youtube_url\" glob 'https://*')"
         }
       }
     },

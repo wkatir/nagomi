@@ -18,7 +18,7 @@ import {
 import { actor, createdAt, id, isDate, locale, now, oneOf } from "./_helpers";
 import { variants } from "./catalog";
 import { customers } from "./customers";
-import { PAYMENT_KINDS, PAYMENT_STATUSES, SIZE_UNITS } from "./enums";
+import { PAYMENT_KINDS, PAYMENT_STATUSES } from "./enums";
 import { lots } from "./inventory";
 import { promotions } from "./promotions";
 import { shippingZones } from "./store";
@@ -129,19 +129,35 @@ export const orderItems = sqliteTable(
 		brandName: text("brand_name").notNull(),
 		// In the store's default locale.
 		productName: text("product_name").notNull(),
-		sizeValue: integer("size_value"),
-		sizeUnit: text("size_unit", { enum: SIZE_UNITS }),
+		optionLabel: text("option_label"),
 	},
 	(t) => [
 		uniqueIndex("order_items_unique").on(t.orderId, t.variantId),
 		index("order_items_variant_idx").on(t.variantId),
-		oneOf("order_items_size_unit", t.sizeUnit, SIZE_UNITS),
 		check("order_items_quantity_positive", sql`${t.quantity} > 0`),
 		check("order_items_unit_price", sql`${t.unitPrice} >= 0`),
+	],
+);
+
+export const orderStatusHistory = sqliteTable(
+	"order_status_history",
+	{
+		id: id(),
+		orderId: integer("order_id")
+			.notNull()
+			.references(() => orders.id),
+		fromStatus: text("from_status", { enum: ORDER_STATUSES }),
+		toStatus: text("to_status", { enum: ORDER_STATUSES }).notNull(),
+		changedAt: text("changed_at").notNull().default(now),
+	},
+	(t) => [
+		oneOf("order_status_history_from", t.fromStatus, ORDER_STATUSES),
+		oneOf("order_status_history_to", t.toStatus, ORDER_STATUSES),
 		check(
-			"order_items_size_pair",
-			sql`(${t.sizeValue} is null) = (${t.sizeUnit} is null)`,
+			"order_status_history_changed",
+			sql`${t.fromStatus} is not ${t.toStatus}`,
 		),
+		index("order_status_history_order_idx").on(t.orderId, t.id),
 	],
 );
 

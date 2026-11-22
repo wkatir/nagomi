@@ -48,7 +48,10 @@ describe("migrations", () => {
 			"products_publish_requires_price_insert",
 			"variants_product_locked",
 			"orders_require_lines",
-			"lots_expiry_locked",
+			"variants_price_history_update",
+			"bundles_published_price_below_items",
+			"variants_bundle_price_below_items",
+			"orders_status_history_update",
 			"customer_consents_page_matches_purpose",
 			"purchase_orders_active_supplier_insert",
 			"supplier_items_no_delete",
@@ -104,21 +107,21 @@ describe("integrity triggers", () => {
 		db = migrated();
 		db.exec(`
 INSERT INTO brands (slug, name, search_key) VALUES ('b', 'Brand', 'brand b');
-INSERT INTO categories (slug, routine_step) VALUES ('c', 1);
+INSERT INTO categories (slug, icon, sort_order) VALUES ('c', 'package', 1);
 INSERT INTO products (slug, brand_id, category_id) VALUES ('p', 1, 1);
-INSERT INTO variants (product_id, sku, price, search_key) VALUES (1, 'SKU-1', 1700, 'sku-1');
+INSERT INTO variants (product_id, sku, price, search_key) VALUES (1, 'SKU-001', 1700, 'sku-1');
 UPDATE products SET status = 'published' WHERE id = 1;
 INSERT INTO products (slug, brand_id, category_id) VALUES ('d', 1, 1);
-INSERT INTO variants (product_id, sku, search_key) VALUES (2, 'SKU-2', 'sku-2');
+INSERT INTO variants (product_id, sku, search_key) VALUES (2, 'SKU-002', 'sku-2');
 INSERT INTO suppliers (name, search_key) VALUES ('Supplier', 'supplier');
 INSERT INTO purchase_orders (supplier_id, reference, status, ordered_on) VALUES (1, 'PO-1', 'ordered', '2026-10-01');
 INSERT INTO purchase_order_items (purchase_order_id, variant_id, quantity, unit_cost) VALUES (1, 1, 4, 700);
 INSERT INTO purchase_receipts (purchase_order_id, received_on, created_by) VALUES (1, '2026-10-05', 'u');
 INSERT INTO purchase_receipt_lines (receipt_id, purchase_order_item_id, quantity, allocated_shipping_e4) VALUES (1, 1, 2, 0);
-INSERT INTO lots (variant_id, receipt_line_id, expires_on, unit_cost_e4) VALUES (1, 1, '2027-01-31', 70000);
+INSERT INTO lots (variant_id, receipt_line_id, unit_cost_e4) VALUES (1, 1, 70000);
 INSERT INTO inventory_movements (lot_id, kind, quantity, created_by) VALUES (1, 'receive', 2, 'u');
 INSERT INTO orders (code, idempotency_key, request_hash, locale, channel, subtotal, total, search_key) VALUES ('O-1', 'k1', 'h', 'es', 'whatsapp', 1700, 1700, 'o-1');
-INSERT INTO order_items (order_id, variant_id, quantity, unit_price, sku, brand_name, product_name) VALUES (1, 1, 1, 1700, 'SKU-1', 'Brand', 'Name');
+INSERT INTO order_items (order_id, variant_id, quantity, unit_price, sku, brand_name, product_name) VALUES (1, 1, 1, 1700, 'SKU-001', 'Brand', 'Name');
 INSERT INTO pages (slug, is_published) VALUES ('privacy', 1);
 INSERT INTO page_versions (page_id, locale, version, title, body_markdown) VALUES (1, 'es', 1, 'Aviso', 'Texto');
 INSERT INTO pages (slug, is_published) VALUES ('terms', 1);
@@ -360,7 +363,7 @@ INSERT INTO purchase_order_items (purchase_order_id, variant_id, quantity, unit_
 			).toContain("brands_slug");
 	});
 
-	test("an image's size belongs to its product and its file never changes", () => {
+	test("an image's variant belongs to its product and its file never changes", () => {
 		const file = (letter: string) =>
 			`INSERT INTO media_files (r2_key, content_type, byte_size, width, height) VALUES ('${letter.repeat(64)}.webp', 'image/webp', 10, 800, 800)`;
 		db.exec(file("a"));
@@ -413,50 +416,18 @@ INSERT INTO purchase_order_items (purchase_order_id, variant_id, quantity, unit_
 		expect(refused(db, "DELETE FROM product_images")).toContain(
 			"product_images_are_archived",
 		);
-		db.exec(
-			"INSERT INTO concerns (slug) VALUES ('c'); INSERT INTO routines (slug) VALUES ('r')",
-		);
-		for (const table of [
-			"brands",
-			"categories",
-			"concerns",
-			"routines",
-			"suppliers",
-		])
+		db.exec("INSERT INTO bundles (slug, price) VALUES ('r', 1)");
+		for (const table of ["brands", "categories", "bundles", "suppliers"])
 			expect(refused(db, `DELETE FROM ${table}`)).toContain(
 				`${table}_are_archived`,
 			);
-	});
-
-	test("a lot's expiry is fixed once anything but its receipt moved it", () => {
-		expect(
-			refused(
-				db,
-				"UPDATE lots SET expires_on = '2027-02-28', expiry_precision = 'month' WHERE id = 1",
-			),
-		).toBe("accepted");
-		db.exec(
-			"INSERT INTO inventory_movements (lot_id, kind, quantity, reason, created_by) VALUES (1, 'waste', -1, 'damaged', 'u')",
-		);
-		expect(
-			refused(
-				db,
-				"UPDATE lots SET expires_on = '2027-03-01', expiry_precision = 'day' WHERE id = 1",
-			),
-		).toContain("lot_expiry_locked");
-		expect(
-			refused(db, "UPDATE lots SET expiry_precision = 'day' WHERE id = 1"),
-		).toContain("lot_expiry_locked");
-		expect(refused(db, "UPDATE lots SET code = 'L-1' WHERE id = 1")).toBe(
-			"accepted",
-		);
 	});
 
 	test("an order is confirmed only while its units fit in its lots", () => {
 		// The lot holds 2 units; O-1 wants 1 and O-2 wants 2.
 		db.exec(`
 INSERT INTO orders (code, idempotency_key, request_hash, locale, channel, subtotal, total, search_key) VALUES ('O-2', 'k2', 'h', 'es', 'whatsapp', 3400, 3400, 'o-2');
-INSERT INTO order_items (order_id, variant_id, quantity, unit_price, sku, brand_name, product_name) VALUES (2, 1, 2, 1700, 'SKU-1', 'Brand', 'Name');
+INSERT INTO order_items (order_id, variant_id, quantity, unit_price, sku, brand_name, product_name) VALUES (2, 1, 2, 1700, 'SKU-001', 'Brand', 'Name');
 `);
 		const confirmSecond = confirm.replace("WHERE id = 1", "WHERE id = 2");
 		expect(refused(db, confirm)).toBe("accepted");
@@ -582,7 +553,8 @@ INSERT INTO supplier_items (supplier_id, variant_id, pack_size, min_order_quanti
 		expect(refused(db, consent("terms", 2))).toBe("accepted");
 		expect(refused(db, consent("privacy_notice", 1))).toBe("accepted");
 		expect(refused(db, consent("marketing_whatsapp", 1))).toBe("accepted");
-		expect(refused(db, consent("marketing_email", 1))).toContain(
+		expect(refused(db, consent("marketing_email", 1))).toBe("accepted");
+		expect(refused(db, consent("marketing_sms", 1))).toContain(
 			"CHECK constraint failed: customer_consents_purpose",
 		);
 	});
@@ -616,7 +588,7 @@ describe("collections, slides, media files and promotions", () => {
 		db = migrated();
 		db.exec(`
 INSERT INTO brands (slug, name, search_key) VALUES ('b', 'Brand', 'brand b');
-INSERT INTO categories (slug, routine_step) VALUES ('c', 1);
+INSERT INTO categories (slug, icon, sort_order) VALUES ('c', 'package', 1);
 INSERT INTO products (slug, brand_id, category_id) VALUES ('p', 1, 1);
 INSERT INTO products (slug, brand_id, category_id, status) VALUES ('old', 1, 1, 'archived');
 INSERT INTO media_files (r2_key, content_type, byte_size, width, height) VALUES ('${KEY}', 'image/webp', 10, 100, 50);

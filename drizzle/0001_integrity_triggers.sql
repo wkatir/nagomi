@@ -2,8 +2,7 @@
 -- mapped to a 409 in src/server/domain/db-errors.ts. Written for the D1 statement
 -- splitter: uppercase block keywords, no conditional expressions in trigger bodies, LF.
 
--- Stock ledger: append-only, and no lot balance below zero. A lot's expiry is fixed once
--- anything but its receipt moved it.
+-- Stock ledger: append-only, and no lot balance below zero.
 CREATE TRIGGER `inventory_movements_no_update` BEFORE UPDATE ON `inventory_movements`
 BEGIN
 	SELECT RAISE(ABORT, 'inventory_movements_append_only');
@@ -81,13 +80,6 @@ WHEN NEW.`variant_id` IS NOT OLD.`variant_id`
 	OR NEW.`unit_cost_e4` IS NOT OLD.`unit_cost_e4`
 BEGIN
 	SELECT RAISE(ABORT, 'lots_cost_locked');
-END;
---> statement-breakpoint
-CREATE TRIGGER `lots_expiry_locked` BEFORE UPDATE OF `expires_on`, `expiry_precision` ON `lots`
-WHEN (NEW.`expires_on` IS NOT OLD.`expires_on` OR NEW.`expiry_precision` IS NOT OLD.`expiry_precision`)
-	AND EXISTS (SELECT 1 FROM `inventory_movements` WHERE `lot_id` = OLD.`id` AND `kind` <> 'receive')
-BEGIN
-	SELECT RAISE(ABORT, 'lot_expiry_locked');
 END;
 --> statement-breakpoint
 CREATE TRIGGER `lots_variant_of_receipt_line` BEFORE INSERT ON `lots`
@@ -363,7 +355,7 @@ END;
 --> statement-breakpoint
 
 -- Catalogue: a published product always has an active variant with a price, a variant
--- stays with its product, an image's file never changes and its size belongs to its
+-- stays with its product, an image's file never changes and its variant belongs to its
 -- product. Catalogue rows are archived, never deleted.
 CREATE TRIGGER `products_publish_requires_price_insert` BEFORE INSERT ON `products`
 WHEN NEW.`status` = 'published'
@@ -446,14 +438,9 @@ BEGIN
 	SELECT RAISE(ABORT, 'categories_are_archived');
 END;
 --> statement-breakpoint
-CREATE TRIGGER `concerns_no_delete` BEFORE DELETE ON `concerns`
+CREATE TRIGGER `bundles_no_delete` BEFORE DELETE ON `bundles`
 BEGIN
-	SELECT RAISE(ABORT, 'concerns_are_archived');
-END;
---> statement-breakpoint
-CREATE TRIGGER `routines_no_delete` BEFORE DELETE ON `routines`
-BEGIN
-	SELECT RAISE(ABORT, 'routines_are_archived');
+	SELECT RAISE(ABORT, 'bundles_are_archived');
 END;
 --> statement-breakpoint
 CREATE TRIGGER `suppliers_no_delete` BEFORE DELETE ON `suppliers`
@@ -755,3 +742,266 @@ WHEN OLD.`status` = 'pending' AND NEW.`status` = 'confirmed'
 BEGIN
 	SELECT RAISE(ABORT, 'order_exceeds_stock');
 END;
+--> statement-breakpoint
+CREATE TRIGGER `variants_price_history_insert` AFTER INSERT ON `variants`
+WHEN NEW.`price` IS NOT NULL
+BEGIN
+	INSERT INTO `price_history` (`variant_id`, `old_price`, `new_price`, `changed_by`) VALUES (NEW.`id`, NULL, NEW.`price`, NEW.`updated_by`);
+END;
+--> statement-breakpoint
+CREATE TRIGGER `variants_price_history_update` AFTER UPDATE OF `price` ON `variants`
+WHEN NEW.`price` IS NOT OLD.`price`
+BEGIN
+	INSERT INTO `price_history` (`variant_id`, `old_price`, `new_price`, `changed_by`) VALUES (NEW.`id`, OLD.`price`, NEW.`price`, NEW.`updated_by`);
+END;
+--> statement-breakpoint
+CREATE TRIGGER `price_history_no_update` BEFORE UPDATE ON `price_history`
+BEGIN
+	SELECT RAISE(ABORT, 'price_history_append_only');
+END;
+--> statement-breakpoint
+CREATE TRIGGER `price_history_no_delete` BEFORE DELETE ON `price_history`
+BEGIN
+	SELECT RAISE(ABORT, 'price_history_append_only');
+END;
+--> statement-breakpoint
+
+CREATE TRIGGER `bundles_publish_requires_items_insert` BEFORE INSERT ON `bundles`
+WHEN NEW.`status` = 'published'
+BEGIN
+	SELECT RAISE(ABORT, 'bundle_requires_two_items');
+END;
+--> statement-breakpoint
+CREATE TRIGGER `bundles_published_two_items` BEFORE UPDATE OF `status`, `price` ON `bundles`
+WHEN NEW.`status` = 'published'
+	AND (SELECT count(*) FROM `bundle_items` WHERE `bundle_id` = NEW.`id`) < 2
+BEGIN
+	SELECT RAISE(ABORT, 'bundle_requires_two_items');
+END;
+--> statement-breakpoint
+CREATE TRIGGER `bundles_published_items_available` BEFORE UPDATE OF `status`, `price` ON `bundles`
+WHEN NEW.`status` = 'published'
+	AND EXISTS (SELECT 1 FROM `bundle_items` i JOIN `variants` v ON v.`id` = i.`variant_id` JOIN `products` p ON p.`id` = v.`product_id`
+		WHERE i.`bundle_id` = NEW.`id` AND (v.`status` <> 'active' OR v.`price` IS NULL OR p.`status` <> 'published'))
+BEGIN
+	SELECT RAISE(ABORT, 'bundle_item_unavailable');
+END;
+--> statement-breakpoint
+CREATE TRIGGER `bundles_published_price_below_items` BEFORE UPDATE OF `status`, `price` ON `bundles`
+WHEN NEW.`status` = 'published'
+	AND NEW.`price` >= (SELECT coalesce(sum(i.`quantity` * v.`price`), 0) FROM `bundle_items` i JOIN `variants` v ON v.`id` = i.`variant_id` WHERE i.`bundle_id` = NEW.`id`)
+BEGIN
+	SELECT RAISE(ABORT, 'bundle_price_not_below_items');
+END;
+--> statement-breakpoint
+CREATE TRIGGER `bundle_items_bundle_locked` BEFORE UPDATE OF `bundle_id` ON `bundle_items`
+WHEN NEW.`bundle_id` IS NOT OLD.`bundle_id`
+BEGIN
+	SELECT RAISE(ABORT, 'bundle_items_bundle_locked');
+END;
+--> statement-breakpoint
+CREATE TRIGGER `bundle_items_published_insert_available` AFTER INSERT ON `bundle_items`
+WHEN (SELECT `status` FROM `bundles` WHERE `id` = NEW.`bundle_id`) = 'published'
+	AND EXISTS (SELECT 1 FROM `variants` v JOIN `products` p ON p.`id` = v.`product_id`
+		WHERE v.`id` = NEW.`variant_id` AND (v.`status` <> 'active' OR v.`price` IS NULL OR p.`status` <> 'published'))
+BEGIN
+	SELECT RAISE(ABORT, 'bundle_item_unavailable');
+END;
+--> statement-breakpoint
+CREATE TRIGGER `bundle_items_published_insert_price` AFTER INSERT ON `bundle_items`
+WHEN (SELECT `status` FROM `bundles` WHERE `id` = NEW.`bundle_id`) = 'published'
+	AND (SELECT `price` FROM `bundles` WHERE `id` = NEW.`bundle_id`)
+		>= (SELECT coalesce(sum(i.`quantity` * v.`price`), 0) FROM `bundle_items` i JOIN `variants` v ON v.`id` = i.`variant_id` WHERE i.`bundle_id` = NEW.`bundle_id`)
+BEGIN
+	SELECT RAISE(ABORT, 'bundle_price_not_below_items');
+END;
+--> statement-breakpoint
+CREATE TRIGGER `bundle_items_published_update_available` AFTER UPDATE ON `bundle_items`
+WHEN (SELECT `status` FROM `bundles` WHERE `id` = NEW.`bundle_id`) = 'published'
+	AND EXISTS (SELECT 1 FROM `variants` v JOIN `products` p ON p.`id` = v.`product_id`
+		WHERE v.`id` = NEW.`variant_id` AND (v.`status` <> 'active' OR v.`price` IS NULL OR p.`status` <> 'published'))
+BEGIN
+	SELECT RAISE(ABORT, 'bundle_item_unavailable');
+END;
+--> statement-breakpoint
+CREATE TRIGGER `bundle_items_published_update_price` AFTER UPDATE ON `bundle_items`
+WHEN (SELECT `status` FROM `bundles` WHERE `id` = NEW.`bundle_id`) = 'published'
+	AND (SELECT `price` FROM `bundles` WHERE `id` = NEW.`bundle_id`)
+		>= (SELECT coalesce(sum(i.`quantity` * v.`price`), 0) FROM `bundle_items` i JOIN `variants` v ON v.`id` = i.`variant_id` WHERE i.`bundle_id` = NEW.`bundle_id`)
+BEGIN
+	SELECT RAISE(ABORT, 'bundle_price_not_below_items');
+END;
+--> statement-breakpoint
+CREATE TRIGGER `bundle_items_published_delete_two_items` AFTER DELETE ON `bundle_items`
+WHEN (SELECT `status` FROM `bundles` WHERE `id` = OLD.`bundle_id`) = 'published'
+	AND (SELECT count(*) FROM `bundle_items` WHERE `bundle_id` = OLD.`bundle_id`) < 2
+BEGIN
+	SELECT RAISE(ABORT, 'bundle_requires_two_items');
+END;
+--> statement-breakpoint
+CREATE TRIGGER `bundle_items_published_delete_price` AFTER DELETE ON `bundle_items`
+WHEN (SELECT `status` FROM `bundles` WHERE `id` = OLD.`bundle_id`) = 'published'
+	AND (SELECT `price` FROM `bundles` WHERE `id` = OLD.`bundle_id`)
+		>= (SELECT coalesce(sum(i.`quantity` * v.`price`), 0) FROM `bundle_items` i JOIN `variants` v ON v.`id` = i.`variant_id` WHERE i.`bundle_id` = OLD.`bundle_id`)
+BEGIN
+	SELECT RAISE(ABORT, 'bundle_price_not_below_items');
+END;
+--> statement-breakpoint
+CREATE TRIGGER `variants_bundle_price_below_items` BEFORE UPDATE OF `price` ON `variants`
+WHEN NEW.`price` IS NOT NULL AND EXISTS (
+	SELECT 1 FROM `bundle_items` bi JOIN `bundles` b ON b.`id` = bi.`bundle_id`
+	WHERE bi.`variant_id` = NEW.`id` AND b.`status` = 'published'
+		AND b.`price` >= bi.`quantity` * NEW.`price`
+			+ (SELECT coalesce(sum(i.`quantity` * v.`price`), 0) FROM `bundle_items` i JOIN `variants` v ON v.`id` = i.`variant_id` WHERE i.`bundle_id` = b.`id` AND i.`variant_id` <> NEW.`id`)
+)
+BEGIN
+	SELECT RAISE(ABORT, 'bundle_price_not_below_items');
+END;
+--> statement-breakpoint
+CREATE TRIGGER `variants_bundle_item_available` BEFORE UPDATE OF `price`, `status` ON `variants`
+WHEN (NEW.`price` IS NULL OR NEW.`status` <> 'active')
+	AND EXISTS (SELECT 1 FROM `bundle_items` bi JOIN `bundles` b ON b.`id` = bi.`bundle_id` WHERE bi.`variant_id` = NEW.`id` AND b.`status` = 'published')
+BEGIN
+	SELECT RAISE(ABORT, 'bundle_item_unavailable');
+END;
+--> statement-breakpoint
+CREATE TRIGGER `products_bundle_item_available` BEFORE UPDATE OF `status` ON `products`
+WHEN NEW.`status` <> 'published'
+	AND EXISTS (SELECT 1 FROM `variants` v JOIN `bundle_items` bi ON bi.`variant_id` = v.`id` JOIN `bundles` b ON b.`id` = bi.`bundle_id`
+		WHERE v.`product_id` = NEW.`id` AND b.`status` = 'published')
+BEGIN
+	SELECT RAISE(ABORT, 'bundle_item_unavailable');
+END;
+--> statement-breakpoint
+
+CREATE TRIGGER `users_email_normalized_insert` BEFORE INSERT ON `users`
+WHEN NEW.`email` IS NOT lower(trim(NEW.`email`))
+BEGIN
+	SELECT RAISE(ABORT, 'email_not_normalized');
+END;
+--> statement-breakpoint
+CREATE TRIGGER `users_email_normalized_update` BEFORE UPDATE OF `email` ON `users`
+WHEN NEW.`email` IS NOT lower(trim(NEW.`email`))
+BEGIN
+	SELECT RAISE(ABORT, 'email_not_normalized');
+END;
+--> statement-breakpoint
+CREATE TRIGGER `users_role_known_insert` BEFORE INSERT ON `users`
+WHEN NEW.`role` IS NULL OR NEW.`role` NOT IN ('customer', 'support', 'admin')
+BEGIN
+	SELECT RAISE(ABORT, 'unknown_role');
+END;
+--> statement-breakpoint
+CREATE TRIGGER `users_role_known_update` BEFORE UPDATE OF `role` ON `users`
+WHEN NEW.`role` IS NULL OR NEW.`role` NOT IN ('customer', 'support', 'admin')
+BEGIN
+	SELECT RAISE(ABORT, 'unknown_role');
+END;
+--> statement-breakpoint
+CREATE TRIGGER `customers_account_is_customer_insert` BEFORE INSERT ON `customers`
+WHEN NEW.`auth_user_id` IS NOT NULL
+	AND (SELECT `role` FROM `users` WHERE `id` = NEW.`auth_user_id`) IS NOT 'customer'
+BEGIN
+	SELECT RAISE(ABORT, 'customer_account_not_customer');
+END;
+--> statement-breakpoint
+CREATE TRIGGER `customers_account_locked` BEFORE UPDATE OF `auth_user_id` ON `customers`
+WHEN NEW.`auth_user_id` IS NOT OLD.`auth_user_id`
+	AND (OLD.`auth_user_id` IS NOT NULL
+		OR (SELECT `role` FROM `users` WHERE `id` = NEW.`auth_user_id`) IS NOT 'customer')
+BEGIN
+	SELECT RAISE(ABORT, 'customer_account_locked');
+END;
+--> statement-breakpoint
+CREATE TRIGGER `customers_no_delete` BEFORE DELETE ON `customers`
+BEGIN
+	SELECT RAISE(ABORT, 'customers_are_permanent');
+END;
+--> statement-breakpoint
+CREATE TRIGGER `customer_addresses_owner_locked` BEFORE UPDATE OF `customer_id` ON `customer_addresses`
+WHEN NEW.`customer_id` IS NOT OLD.`customer_id`
+BEGIN
+	SELECT RAISE(ABORT, 'customer_addresses_owner_locked');
+END;
+--> statement-breakpoint
+CREATE TRIGGER `customer_addresses_no_delete` BEFORE DELETE ON `customer_addresses`
+BEGIN
+	SELECT RAISE(ABORT, 'customer_addresses_are_archived');
+END;
+--> statement-breakpoint
+
+CREATE TRIGGER `orders_status_history_insert` AFTER INSERT ON `orders`
+BEGIN
+	INSERT INTO `order_status_history` (`order_id`, `from_status`, `to_status`) VALUES (NEW.`id`, NULL, NEW.`status`);
+END;
+--> statement-breakpoint
+CREATE TRIGGER `orders_status_history_update` AFTER UPDATE OF `status` ON `orders`
+WHEN NEW.`status` IS NOT OLD.`status`
+BEGIN
+	INSERT INTO `order_status_history` (`order_id`, `from_status`, `to_status`) VALUES (NEW.`id`, OLD.`status`, NEW.`status`);
+END;
+--> statement-breakpoint
+CREATE TRIGGER `order_status_history_no_update` BEFORE UPDATE ON `order_status_history`
+BEGIN
+	SELECT RAISE(ABORT, 'order_status_history_append_only');
+END;
+--> statement-breakpoint
+CREATE TRIGGER `order_status_history_no_delete` BEFORE DELETE ON `order_status_history`
+BEGIN
+	SELECT RAISE(ABORT, 'order_status_history_append_only');
+END;
+--> statement-breakpoint
+
+CREATE TRIGGER `shipping_zone_municipalities_not_rest_insert` BEFORE INSERT ON `shipping_zone_municipalities`
+WHEN (SELECT `covers_rest` FROM `shipping_zones` WHERE `id` = NEW.`zone_id`) = 1
+BEGIN
+	SELECT RAISE(ABORT, 'zone_covers_rest');
+END;
+--> statement-breakpoint
+CREATE TRIGGER `shipping_zone_municipalities_not_rest_update` BEFORE UPDATE OF `zone_id` ON `shipping_zone_municipalities`
+WHEN (SELECT `covers_rest` FROM `shipping_zones` WHERE `id` = NEW.`zone_id`) = 1
+BEGIN
+	SELECT RAISE(ABORT, 'zone_covers_rest');
+END;
+--> statement-breakpoint
+CREATE TRIGGER `shipping_zones_rest_has_no_municipalities` BEFORE UPDATE OF `covers_rest` ON `shipping_zones`
+WHEN NEW.`covers_rest` = 1
+	AND EXISTS (SELECT 1 FROM `shipping_zone_municipalities` WHERE `zone_id` = NEW.`id`)
+BEGIN
+	SELECT RAISE(ABORT, 'zone_covers_rest');
+END;
+--> statement-breakpoint
+
+CREATE VIEW `customer_segments` AS
+SELECT c.`id` AS `customer_id`,
+	count(o.`id`) AS `order_count`,
+	max(o.`created_at`) AS `last_order_at`,
+	iif(s.`inactive_customer_days` IS NULL OR s.`frequent_customer_min_orders` IS NULL, NULL,
+		iif(count(o.`id`) = 0, 'new',
+			iif(julianday('now') - julianday(max(o.`created_at`)) > s.`inactive_customer_days`, 'inactive',
+				iif(count(o.`id`) >= s.`frequent_customer_min_orders`, 'frequent', 'occasional')))) AS `segment`
+FROM `customers` c
+JOIN `store_settings` s ON s.`id` = 1
+LEFT JOIN `orders` o ON o.`customer_id` = c.`id` AND o.`status` IN ('confirmed', 'fulfilled', 'delivered')
+GROUP BY c.`id`;
+--> statement-breakpoint
+
+CREATE VIEW `order_followups` AS
+SELECT o.`id` AS `order_id`,
+	o.`status` AS `status`,
+	o.`since` AS `since`,
+	o.`deadline_hours` AS `deadline_hours`,
+	strftime('%Y-%m-%dT%H:%M:%SZ', julianday(o.`since`) + o.`deadline_hours` / 24.0) AS `due_at`,
+	round((julianday('now') - julianday(o.`since`)) * 24 - o.`deadline_hours`, 1) AS `hours_overdue`
+FROM (
+	SELECT x.`id`, x.`status`, x.`created_at` AS `since`, s.`followup_pending_payment_hours` AS `deadline_hours`
+	FROM `orders` x JOIN `store_settings` s ON s.`id` = 1 WHERE x.`status` = 'pending'
+	UNION ALL
+	SELECT x.`id`, x.`status`, x.`confirmed_at`, s.`followup_paid_unshipped_hours`
+	FROM `orders` x JOIN `store_settings` s ON s.`id` = 1 WHERE x.`status` = 'confirmed'
+	UNION ALL
+	SELECT x.`id`, x.`status`, x.`fulfilled_at`, s.`followup_shipped_undelivered_hours`
+	FROM `orders` x JOIN `store_settings` s ON s.`id` = 1 WHERE x.`status` = 'fulfilled'
+) o
+WHERE o.`deadline_hours` IS NOT NULL
+	AND julianday('now') > julianday(o.`since`) + o.`deadline_hours` / 24.0;

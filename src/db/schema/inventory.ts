@@ -8,14 +8,13 @@ import {
 	uniqueIndex,
 } from "drizzle-orm/sqlite-core";
 import { MOVEMENT_REASONS } from "#/lib/enums";
-import { actor, createdAt, id, isDate, oneOf } from "./_helpers";
+import { actor, createdAt, id, oneOf } from "./_helpers";
 import { variants } from "./catalog";
-import { EXPIRY_PRECISIONS, MOVEMENT_KINDS } from "./enums";
+import { MOVEMENT_KINDS } from "./enums";
 import { orderItems, returnLines } from "./orders";
 import { purchaseReceiptLines } from "./purchasing";
 
-// Stock is sold first-expired, first-out. A label that only prints the month ("EXP 2027.05")
-// is stored as the last day of that month with precision 'month'.
+// Stock is sold first-in, first-out: the oldest lot first.
 export const lots = sqliteTable(
 	"lots",
 	{
@@ -27,24 +26,14 @@ export const lots = sqliteTable(
 			.notNull()
 			.references(() => purchaseReceiptLines.id),
 		code: text("code"),
-		expiresOn: text("expires_on").notNull(),
-		expiryPrecision: text("expiry_precision", { enum: EXPIRY_PRECISIONS })
-			.notNull()
-			.default("day"),
 		// Landed unit cost (supplier price + shipping share) in 1/10,000 currency units.
 		unitCostE4: integer("unit_cost_e4").notNull(),
 		createdAt: createdAt(),
 	},
 	(t) => [
-		oneOf("lots_expiry_precision", t.expiryPrecision, EXPIRY_PRECISIONS),
-		check("lots_expires_on", isDate(t.expiresOn)),
-		check(
-			"lots_month_precision",
-			sql`${t.expiryPrecision} = 'day' or ${t.expiresOn} = date(${t.expiresOn}, 'start of month', '+1 month', '-1 day')`,
-		),
 		check("lots_unit_cost", sql`${t.unitCostE4} >= 0`),
 		uniqueIndex("lots_receipt_line_unique").on(t.receiptLineId),
-		index("lots_variant_expiry_idx").on(t.variantId, t.expiresOn),
+		index("lots_variant_idx").on(t.variantId, t.id),
 	],
 );
 
