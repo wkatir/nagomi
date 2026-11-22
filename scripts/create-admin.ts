@@ -58,7 +58,7 @@ VALUES (${quote(randomUUID())}, ${quote(userId)}, 'credential', ${quote(userId)}
 const sql = googleOnly ? userSql : `${userSql}
 ${await passwordSql()}`;
 
-const file = join(tmpdir(), `eclalune-admin-${userId}.sql`);
+const file = join(tmpdir(), `nagomi-admin-${userId}.sql`);
 writeFileSync(file, sql);
 try {
 	const target = values.remote ? "--remote" : "--local";
@@ -75,5 +75,5 @@ try {
 }
 
 console.log(`\nAdmin created: ${email}`);
-if (googleOnly) console.log("Sign in with Google using that Workspace account.");
+if (googleOnly) console.log("Sign in with Google using that account.");
 else if (generated) console.log(`Password (shown once, store it in your password manager): ${password}`);

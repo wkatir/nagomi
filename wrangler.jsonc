@@ -1,43 +1,26 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "eclalune",
-  "account_id": "862a466eb72b12e342a73ae1feb6036b",
+  "name": "nagomi",
   "compatibility_date": "2026-09-30",
   "compatibility_flags": ["nodejs_compat"],
   "main": "src/server.ts",
   "observability": { "enabled": true },
-  "workers_dev": false,
+  "workers_dev": true,
   "preview_urls": false,
-  "routes": [
-    { "pattern": "eclalune.com", "custom_domain": true },
-    { "pattern": "www.eclalune.com", "custom_domain": true }
-  ],
   "ratelimits": [
     { "name": "ORDER_LIMITER", "namespace_id": "1001", "simple": { "limit": 10, "period": 60 } },
     { "name": "EXPORT_LIMITER", "namespace_id": "1002", "simple": { "limit": 10, "period": 60 } }
   ],
   "secrets": {
-    "required": [
-      "BETTER_AUTH_SECRET",
-      "BETTER_AUTH_URL",
-      "GOOGLE_CLIENT_ID",
-      "GOOGLE_CLIENT_SECRET",
-      "GOOGLE_WORKSPACE_DOMAIN",
-      "GREENERSYS_API_URL",
-      "GREENERSYS_API_KEY"
-    ]
+    "required": ["BETTER_AUTH_SECRET", "BETTER_AUTH_URL"]
   },
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "eclalune",
-      "database_id": "e8d35068-4ab5-4219-ab97-fbe525c76c40",
+      "database_name": "nagomi",
+      "database_id": "00000000-0000-0000-0000-000000000000",
       "migrations_dir": "drizzle"
     }
   ],
-  "r2_buckets": [
-    { "binding": "MEDIA", "bucket_name": "eclalune-media" },
-    { "binding": "DOCUMENTS", "bucket_name": "eclalune-documents" }
-  ],
-  "triggers": { "crons": ["*/5 * * * *"] }
+  "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "nagomi-media" }]
 }

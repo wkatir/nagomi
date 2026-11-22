@@ -7,7 +7,6 @@ const env = {
 	BETTER_AUTH_URL: "https://eclalune.test",
 	GOOGLE_CLIENT_ID: "client-id",
 	GOOGLE_CLIENT_SECRET: "client-secret",
-	GOOGLE_WORKSPACE_DOMAIN: "eclalune.test",
 	DB: d1(migratedDatabase()),
 };
 mock.module("cloudflare:workers", () => ({ env }));

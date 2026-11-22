@@ -1,5 +1,5 @@
 {
-  "name": "eclalune",
+  "name": "nagomi",
   "private": true,
   "type": "module",
   "imports": {
@@ -11,12 +11,13 @@
     "preview": "vite preview",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "wrangler d1 migrations apply DB --local",
+    "db:reset": "bun scripts/db-reset.ts",
     "format": "biome format",
     "lint": "biome lint",
     "check": "biome check",
     "deploy": "bun run build && wrangler deploy",
     "db:migrate:remote": "wrangler d1 migrations apply DB --remote",
-    "db:seed": "wrangler d1 execute DB --local --file=./seed/seed.sql",
+    "db:seed": "bun seed/build.ts && wrangler d1 execute DB --local --file=./seed/seed.sql",
     "db:sync-texts": "bun seed/sync-texts.ts && wrangler d1 execute DB --local --file=./seed/sync-texts.sql",
     "media:seed": "bun seed/media.ts --local",
     "test": "bun test",

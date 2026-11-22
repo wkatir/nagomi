@@ -10,6 +10,7 @@ src/paraglide
 public/fonts/*.woff2
 seed/seed.sql
 seed/sync-texts.sql
+seed/media.sql
 worker-configuration.d.ts
 
 # Local Worker secrets
@@ -25,3 +26,4 @@ worker-configuration.d.ts
 *.pdf
 /Base de datos ejemplo.sql
 /23d8fed8-716f-4c7f-bf6d-de075fbd32d3.jpg
+!.dev.vars.example

@@ -1,0 +1,14 @@
+# Copy to .dev.vars for local development (never commit .dev.vars). In production set each
+# one with `wrangler secret put <NAME>`.
+
+# Signs and encrypts sessions; at least 32 random characters (openssl rand -base64 32).
+BETTER_AUTH_SECRET=
+
+# The site's public origin; sign-in, canonical URLs and the sitemap use it. https outside
+# localhost, e.g. http://localhost:4600 locally.
+BETTER_AUTH_URL=
+
+# Optional Google sign-in for existing admins. Set both or neither; with them set, password
+# sign-in is off.
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=

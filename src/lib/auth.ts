@@ -5,13 +5,14 @@ import { tanstackStartCookies } from "better-auth/tanstack-start";
 import { getDb } from "#/db";
 import {
 	assertSecureBaseUrl,
+	type GoogleEnv,
 	googleProvider,
 	signInMethods,
 } from "#/server/auth/config";
 import { authOptions } from "#/server/auth/options";
 
 assertSecureBaseUrl(env.BETTER_AUTH_URL);
-const google = googleProvider(env);
+const google = googleProvider(env as GoogleEnv);
 
 export const authMethods = signInMethods(google);
 
